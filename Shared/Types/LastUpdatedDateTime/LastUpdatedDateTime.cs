@@ -28,7 +28,9 @@ public sealed record LastUpdatedDateTime : IType
 
     public static implicit operator DateTime(LastUpdatedDateTime d) => d?.Value ?? default;
 
-    public static implicit operator LastUpdatedDateTime(DateTime dt) => new LastUpdatedDateTime(dt);`r`n`r`n    public static implicit operator LastUpdatedDateTime(AuditDateTime auditDateTime) => new LastUpdatedDateTime(auditDateTime?.Value ?? default);
+    public static implicit operator LastUpdatedDateTime(DateTime dt) => new LastUpdatedDateTime(dt);
+
+    public static implicit operator LastUpdatedDateTime(AuditDateTime auditDateTime) => new LastUpdatedDateTime(auditDateTime?.Value ?? default);
 
     public override string ToString() => Value.ToString("o");
 
