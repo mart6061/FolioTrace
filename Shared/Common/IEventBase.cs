@@ -1,6 +1,6 @@
 ﻿using AILibrary.Types;
 
-namespace AILibrary.Domain;
+namespace AILibrary.Common;
 
 // Event base interface placed in Events folder but uses the top-level AILibrary.Types namespace
 public interface IEventBase : IType

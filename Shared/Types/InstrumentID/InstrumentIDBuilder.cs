@@ -2,7 +2,7 @@ using System;
 
 namespace AILibrary.Types;
 
-public static class BuilderInstrumentID
+public static class InstrumentIDBuilder
 {
     // Create a new InstrumentID with a newly generated non-empty GUID
     public static InstrumentID Create() => new InstrumentID(Guid.NewGuid());

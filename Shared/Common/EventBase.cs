@@ -1,7 +1,8 @@
 ﻿using System.Text.Json.Serialization;
+using AILibrary.Aggregates;
 using AILibrary.Types;
 
-namespace AILibrary.Domain;
+namespace AILibrary.Common;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
