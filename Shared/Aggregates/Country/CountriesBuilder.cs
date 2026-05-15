@@ -1,12 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using AILibrary.Types;
 
 namespace AILibrary.Aggregates;
 
 public static class CountriesBuilder
 {
+    // TODO: Check for completeness.
+    public static IReadOnlyList<Type> GetCountryEventTypes() =>
+    [
+        typeof(CountryCreatedEvent),
+        typeof(CountryModifiedEvent)
+    ];
+
     public static Countries Create(EventDateTime eventDate, AuditDateTime auditDateTime, List<ICountryEvent> countryEvents)
     {
         if (eventDate is null)
