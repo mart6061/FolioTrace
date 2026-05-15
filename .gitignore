@@ -1,0 +1,12 @@
+﻿.vs/
+.vscode/
+[Bb]in/
+[Oo]bj/
+TestResults/
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+*.nupkg
+*.snupkg
