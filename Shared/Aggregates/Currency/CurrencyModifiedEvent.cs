@@ -1,6 +1,7 @@
-﻿using AILibrary.Types;
+﻿using AILibrary.Common;
+using AILibrary.Types;
 
-namespace AILibrary.Domain;
+namespace AILibrary.Aggregates;
 
 public sealed record CurrencyModifiedEvent(
     EventID EventID,

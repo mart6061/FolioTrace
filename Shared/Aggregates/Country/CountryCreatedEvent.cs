@@ -1,6 +1,7 @@
-﻿using AILibrary.Types;
+﻿using AILibrary.Common;
+using AILibrary.Types;
 
-namespace AILibrary.Domain;
+namespace AILibrary.Aggregates;
 
 public sealed record CountryCreatedEvent(
     EventID EventID,
@@ -10,7 +11,7 @@ public sealed record CountryCreatedEvent(
     ISO2 ISO2,
     ISO3 ISO3,
     short Numeric
-) : EventBase(EventID, EventDateTime, AuditDateTime, Reason)
+) : EventBase(EventID, EventDateTime, AuditDateTime, Reason), ICountryEvent
 {
     public override string Type => nameof(CountryCreatedEvent); // TODO: Remind me to create a universal constant for this event type.
 
