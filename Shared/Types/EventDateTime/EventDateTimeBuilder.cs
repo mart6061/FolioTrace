@@ -1,6 +1,6 @@
 using System;
 
-namespace AILibrary.Types;
+namespace FolioTrace.Types;
 
 public static class EventDateTimeBuilder
 {
@@ -11,8 +11,8 @@ public static class EventDateTimeBuilder
     public static EventDateTime Create(DateTime value) => new EventDateTime(value);
 
     // Create an EventDateTime representing the beginning of time
-    public static EventDateTime CreateBeginningOfTime() => new EventDateTime(DateTime.MinValue.AddTicks(1));
+    //public static EventDateTime CreateBeginningOfTime() => new EventDateTime(DateTime.MinValue.AddTicks(1));
 
     // Create an EventDateTime representing the end of time
-    public static EventDateTime CreateEndOfTime() => new EventDateTime(DateTime.MaxValue);
+    //public static EventDateTime CreateEndOfTime() => new EventDateTime(DateTime.MaxValue);
 }

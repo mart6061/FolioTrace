@@ -1,11 +1,11 @@
-using AILibrary.Types;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public static class CurrencyBuilder
 {
     // Create a new Currency from provided values (validation enforced by Currency constructor)
-    public static Currency Create(ISO3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime) => new Currency(alphabeticCode, numericCode, decimalPlace, name, valuationDateTime, asOfDateTime, lastAuditDateTime);
+    public static Currency Create(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime) => new Currency(alphabeticCode, numericCode, decimalPlace, name, valuationDateTime, asOfDateTime, lastAuditDateTime);
 
     // Create a new Currency from a CurrencyCreatedEvent
     public static Currency Create(CurrencyCreatedEvent createdEvent)

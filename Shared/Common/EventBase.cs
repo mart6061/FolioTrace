@@ -1,8 +1,8 @@
-﻿using System.Text.Json.Serialization;
-using AILibrary.Aggregates;
-using AILibrary.Types;
+using System.Text.Json.Serialization;
+using FolioTrace.Aggregates;
+using FolioTrace.Types;
 
-namespace AILibrary.Common;
+namespace FolioTrace.Common;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
@@ -11,6 +11,9 @@ namespace AILibrary.Common;
 [JsonDerivedType(typeof(CurrencyModifiedEvent), nameof(CurrencyModifiedEvent))]
 public abstract record EventBase(EventID EventID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase
 {
+    [JsonIgnore]
+    public Guid Id => EventID.Value;
+
     [JsonPropertyName("$type")]
     public abstract string Type { get; }
 

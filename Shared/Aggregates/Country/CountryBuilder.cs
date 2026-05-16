@@ -1,11 +1,11 @@
-using AILibrary.Types;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public static class CountryBuilder
 {
     // Create a new Country from provided alues (validation enforced by Country constructor)
-    public static Country Create(ISO2 iso2, ISO3 iso3, short numeric, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime) => new Country(iso2, iso3, numeric, valuationDateTime, asOfDateTime, lastAuditDateTime);
+    public static Country Create(Alpha2 alpha2, Alpha3 alpha3, short numeric, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime) => new Country(alpha2, alpha3, numeric, valuationDateTime, asOfDateTime, lastAuditDateTime);
 
     // Create a new Country from a CountryCreatedEvent
     public static Country Create(CountryCreatedEvent createdEvent)
@@ -13,7 +13,7 @@ public static class CountryBuilder
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Country(createdEvent.ISO2, createdEvent.ISO3, createdEvent.Numeric, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.AuditDateTime);
+        return new Country(createdEvent.Alpha2, createdEvent.Alpha3, createdEvent.Numeric, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.AuditDateTime);
     }
 
     extension(Country country)
@@ -29,8 +29,8 @@ public static class CountryBuilder
 
             return country with
             {
-                ISO2 = modifiedEvent.ISO2,
-                ISO3 = modifiedEvent.ISO3,
+                Alpha2 = modifiedEvent.Alpha2,
+                Alpha3 = modifiedEvent.Alpha3,
                 Numeric = modifiedEvent.Numeric,
                 ValuationDateTime = modifiedEvent.EventDateTime,
                 AsOfDateTime = modifiedEvent.AuditDateTime,

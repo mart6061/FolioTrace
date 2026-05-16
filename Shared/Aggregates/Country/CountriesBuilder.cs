@@ -1,6 +1,6 @@
-using AILibrary.Types;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public static class CountriesBuilder
 {

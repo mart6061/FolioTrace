@@ -1,7 +1,7 @@
-using AILibrary.Common;
-using AILibrary.Types;
+using FolioTrace.Common;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 // Marker interface for domain models
 public interface IAggregate : IType

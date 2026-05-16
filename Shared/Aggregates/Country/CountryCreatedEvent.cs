@@ -1,23 +1,23 @@
-﻿using AILibrary.Common;
-using AILibrary.Types;
+using FolioTrace.Common;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public sealed record CountryCreatedEvent(
     EventID EventID,
     EventDateTime EventDateTime,
     AuditDateTime AuditDateTime,
     string Reason,
-    ISO2 ISO2,
-    ISO3 ISO3,
+    Alpha2 Alpha2,
+    Alpha3 Alpha3,
     short Numeric
 ) : EventBase(EventID, EventDateTime, AuditDateTime, Reason), ICountryEvent
 {
     public override string Type => nameof(CountryCreatedEvent); // TODO: Remind me to create a universal constant for this event type.
 
     public override string ToData() =>
-        $"{base.ToData()}|{ISO2.ToData()}|{ISO3.ToData()}|{Numeric}";
+        $"{base.ToData()}|{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}";
 
     public override string ToDetail() =>
-        $"{nameof(CountryCreatedEvent)}: ({base.ToDetail()}, ISO2: {ISO2.ToDetail()}, ISO3: {ISO3.ToDetail()}, Numeric: {Numeric})";
+        $"{nameof(CountryCreatedEvent)}: ({base.ToDetail()}, Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric})";
 }

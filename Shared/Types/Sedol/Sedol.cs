@@ -1,7 +1,7 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace AILibrary.Types;
+namespace FolioTrace.Types;
 
 [JsonConverter(typeof(SedolJsonConverter))]
 public sealed record Sedol : IType

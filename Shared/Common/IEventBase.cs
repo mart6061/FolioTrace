@@ -1,8 +1,8 @@
-﻿using AILibrary.Types;
+using FolioTrace.Types;
 
-namespace AILibrary.Common;
+namespace FolioTrace.Common;
 
-// Event base interface placed in Events folder but uses the top-level AILibrary.Types namespace
+// Event base interface placed in Events folder but uses the top-level FolioTrace.Types namespace
 public interface IEventBase : IType
 {
     string Type { get; }

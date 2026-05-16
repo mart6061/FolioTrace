@@ -1,12 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using AILibrary.Types;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public sealed record Currency : IAggregate
 {
-    public required ISO3 AlphabeticCode { get; init; }
+    public required Alpha3 AlphabeticCode { get; init; }
 
     public required int NumericCode { get; init; }
 
@@ -23,7 +23,7 @@ public sealed record Currency : IAggregate
     // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Currency(ISO3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime)
+    public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime)
     {
         if (alphabeticCode is null)
             throw new ArgumentNullException(nameof(alphabeticCode));
@@ -57,7 +57,7 @@ public sealed record Currency : IAggregate
     }
 
     [SetsRequiredMembers]
-    public Currency(ISO3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime auditDateTime)
+    public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime auditDateTime)
         : this(alphabeticCode, numericCode, decimalPlace, name, valuationDateTime, auditDateTime, ToLastAuditDateTime(auditDateTime))
     {
     }
