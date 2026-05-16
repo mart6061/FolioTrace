@@ -1,6 +1,6 @@
 using System;
 
-namespace AILibrary.Types;
+namespace FolioTrace.Types;
 
 public static class LastAuditDateTimeBuilder
 {

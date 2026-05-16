@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using AILibrary.Types;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public sealed record Countries : IAggregate
 {
@@ -76,8 +76,8 @@ public sealed record Countries : IAggregate
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        if (Items.Any(country => country.ISO2 == createdEvent.ISO2))
-            throw new InvalidOperationException($"Country already exists for ISO2 '{createdEvent.ISO2}'.");
+        if (Items.Any(country => country.Alpha2 == createdEvent.Alpha2))
+            throw new InvalidOperationException($"Country already exists for Alpha2 '{createdEvent.Alpha2}'.");
 
         Items.Add(CountryBuilder.Create(createdEvent));
         LastAuditDateTime = GetLastAuditDateTime(Items);
@@ -88,9 +88,9 @@ public sealed record Countries : IAggregate
         if (modifiedEvent is null)
             throw new ArgumentNullException(nameof(modifiedEvent));
 
-        var index = Items.FindIndex(country => country.ISO2 == modifiedEvent.ISO2);
+        var index = Items.FindIndex(country => country.Alpha2 == modifiedEvent.Alpha2);
         if (index < 0)
-            throw new InvalidOperationException($"No matching country found for ISO2 '{modifiedEvent.ISO2}'.");
+            throw new InvalidOperationException($"No matching country found for Alpha2 '{modifiedEvent.Alpha2}'.");
 
         Items[index] = Items[index].Apply(modifiedEvent);
         LastAuditDateTime = GetLastAuditDateTime(Items);

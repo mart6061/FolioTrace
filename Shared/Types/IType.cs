@@ -1,6 +1,6 @@
-﻿using AILibrary.Common;
+using FolioTrace.Common;
 
-namespace AILibrary.Types;
+namespace FolioTrace.Types;
 
 // Marker interface for lightweight type markers
 public interface IType : IDisplayFor

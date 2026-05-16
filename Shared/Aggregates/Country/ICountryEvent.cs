@@ -1,6 +1,6 @@
-using AILibrary.Common;
+using FolioTrace.Common;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public interface ICountryEvent : IEventBase
 {

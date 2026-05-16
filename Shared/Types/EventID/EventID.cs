@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace AILibrary.Types;
+namespace FolioTrace.Types;
 
 [JsonConverter(typeof(EventIDJsonConverter))]
 public sealed record EventID : IType

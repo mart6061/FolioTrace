@@ -1,14 +1,14 @@
-﻿using AILibrary.Common;
-using AILibrary.Types;
+using FolioTrace.Common;
+using FolioTrace.Types;
 
-namespace AILibrary.Aggregates;
+namespace FolioTrace.Aggregates;
 
 public sealed record CurrencyCreatedEvent(
     EventID EventID,
     EventDateTime EventDateTime,
     AuditDateTime AuditDateTime,
     string Reason,
-    ISO3 AlphabeticCode,
+    Alpha3 AlphabeticCode,
     int NumericCode,
     short DecimalPlace,
     string Name
