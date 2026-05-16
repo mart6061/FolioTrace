@@ -278,12 +278,7 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
 
     private async Task CreateCountrySetupEvents(CancellationToken cancellationToken)
     {
-        await using var session = store.LightweightSession();
-
-        foreach (var countryEvent in CreateInitialCountryCreatedEvents())
-            session.Store(countryEvent);
-
-        await session.SaveChangesAsync(cancellationToken);
+        await StoreEvents(CreateInitialCountryCreatedEvents(), cancellationToken);
     }
 
     public static IReadOnlyList<CountryCreatedEvent> CreateInitialCountryCreatedEvents() =>
@@ -297,6 +292,21 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
                 country.Alpha3,
                 country.Numeric))
             .ToList();
+
+    private async Task StoreEvents<TEvent>(IEnumerable<TEvent> events, CancellationToken cancellationToken)
+        where TEvent : class, IEventBase
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        await using var session = store.LightweightSession();
+
+        foreach (var @event in events)
+            session.Store(@event);
+
+        await session.SaveChangesAsync(cancellationToken);
+    }
+
     private static IEnumerable<Type> GetEventTypes() =>
         typeof(IEventBase).Assembly
             .GetTypes()
