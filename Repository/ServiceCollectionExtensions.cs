@@ -1,4 +1,5 @@
 using Marten;
+using FolioTrace.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddMarten(options =>
         {
             options.Connection(connectionString);
+            options.Events.AddEventTypes(GetEventTypes());
         });
 
         services.AddScoped<IEventRepository, EventRepository>();
@@ -25,4 +27,9 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    private static IEnumerable<Type> GetEventTypes() =>
+        typeof(IEventBase).Assembly
+            .GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(IEventBase).IsAssignableFrom(type));
 }

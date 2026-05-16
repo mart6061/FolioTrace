@@ -6,22 +6,21 @@ namespace Repository;
 
 public sealed class EventRepository(IDocumentSession session) : IEventRepository
 {
-    public IQueryable<T> Query<T>() where T : class, IEventBase => session.Query<T>();
-
-    public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase
+    public async Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase
     {
         if (eventId is null)
             throw new ArgumentNullException(nameof(eventId));
 
-        return session.LoadAsync<T>(eventId.Value, cancellationToken);
+        var @event = await session.Events.LoadAsync<T>(eventId.Value, cancellationToken);
+        return @event?.Data;
     }
 
-    public async Task StoreAsync<T>(T document, CancellationToken cancellationToken = default) where T : class, IEventBase
+    public async Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase
     {
-        if (document is null)
-            throw new ArgumentNullException(nameof(document));
+        if (@event is null)
+            throw new ArgumentNullException(nameof(@event));
 
-        session.Store(document);
+        session.Events.Append(streamId, @event);
         await session.SaveChangesAsync(cancellationToken);
     }
 }

@@ -267,8 +267,7 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
 
     private async Task DeleteEvents(CancellationToken cancellationToken)
     {
-        foreach (var eventType in GetEventTypes())
-            await store.Advanced.Clean.DeleteDocumentsByTypeAsync(eventType, cancellationToken);
+        await store.Advanced.Clean.DeleteAllEventDataAsync(cancellationToken);
     }
 
     private async Task CreateSetupEvents(CancellationToken cancellationToken)
@@ -278,7 +277,10 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
 
     private async Task CreateCountrySetupEvents(CancellationToken cancellationToken)
     {
-        await StoreEvents(CreateInitialCountryCreatedEvents(), cancellationToken);
+        await StoreEvents<Countries, CountryCreatedEvent>(
+            Constants.Initialisation.CountriesStreamId,
+            CreateInitialCountryCreatedEvents(),
+            cancellationToken);
     }
 
     public static IReadOnlyList<CountryCreatedEvent> CreateInitialCountryCreatedEvents() =>
@@ -293,17 +295,20 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
                 country.Numeric))
             .ToList();
 
-    private async Task StoreEvents<TEvent>(IEnumerable<TEvent> events, CancellationToken cancellationToken)
+    private async Task StoreEvents<TAggregate, TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
+        where TAggregate : class, IAggregate
         where TEvent : class, IEventBase
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
 
+        var eventData = events.Cast<object>().ToArray();
+        if (eventData.Length == 0)
+            return;
+
         await using var session = store.LightweightSession();
 
-        foreach (var @event in events)
-            session.Store(@event);
-
+        session.Events.StartStream<TAggregate>(streamId, eventData);
         await session.SaveChangesAsync(cancellationToken);
     }
 
