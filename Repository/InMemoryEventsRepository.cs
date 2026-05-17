@@ -38,6 +38,37 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
+    public async Task<EventID?> GetLastEventIDAsync(Guid streamId, CancellationToken cancellationToken = default)
+    {
+        await EnsureLoadedAsync(cancellationToken);
+
+        lock (sync)
+        {
+            return streams.TryGetValue(streamId, out var events) && events.Count > 0
+                ? events[^1].EventID
+                : null;
+        }
+    }
+
+    public async Task<EventID?> GetLastEventIDAsync(Guid streamId, DateTime valuationDateTime, DateTime? asOfDateTime = null, CancellationToken cancellationToken = default)
+    {
+        await EnsureLoadedAsync(cancellationToken);
+
+        lock (sync)
+        {
+            if (!streams.TryGetValue(streamId, out var events))
+                return null;
+
+            return events
+                .Where(@event => @event.EventDateTime.Value <= valuationDateTime && (!asOfDateTime.HasValue || @event.AuditDateTime.Value <= asOfDateTime.Value))
+                .OrderBy(@event => @event.EventDateTime.Value)
+                .ThenBy(@event => @event.AuditDateTime.Value)
+                .ThenBy(@event => @event.EventID.Value)
+                .LastOrDefault()
+                ?.EventID;
+        }
+    }
+
     public async Task<IReadOnlyList<IEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
     {
         await EnsureLoadedAsync(cancellationToken);

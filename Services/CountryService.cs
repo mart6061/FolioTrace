@@ -16,14 +16,19 @@ public sealed class CountryService(IEventRepository eventRepository)
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = CountryCacheKey.ForAllAuditHistory(valuationDate);
+        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.CountriesStreamId, valuationDate.Value);
+
+        lock (cacheLock)
+        {
+            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == lastEventID)
+                return cached;
+        }
+
         var events = await eventRepository.LoadStreamAsync<ICountryEvent>(Constants.Initialisation.CountriesStreamId);
         var current = new Countries(valuationDate, events.ToList());
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == current.LastEventID)
-                return cached;
-
             cache[cacheKey] = current;
             return current;
         }
