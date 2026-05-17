@@ -22,7 +22,9 @@ public static class ServiceCollectionExtensions
             options.Events.AddEventTypes(GetEventTypes());
         });
 
-        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddSingleton<MartenEventRepository>();
+        services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
+        services.AddHostedService<InMemoryEventsRepositoryInitializer>();
         services.AddScoped<IInitRepository, InitRepository>();
 
         return services;

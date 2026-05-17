@@ -1,11 +1,10 @@
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
-using Marten;
 
 namespace Repository;
 
-public sealed class InitRepository(IDocumentStore store) : IInitRepository
+public sealed class InitRepository(IEventRepository eventRepository) : IInitRepository
 {
     private static readonly (string Alpha2, string Alpha3, short Numeric)[] InitialCountryCodes =
     [
@@ -267,7 +266,7 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
 
     private async Task DeleteEvents(CancellationToken cancellationToken)
     {
-        await store.Advanced.Clean.DeleteAllEventDataAsync(cancellationToken);
+        await eventRepository.ClearAsync(cancellationToken);
     }
 
     private async Task CreateSetupEvents(CancellationToken cancellationToken)
@@ -302,18 +301,10 @@ public sealed class InitRepository(IDocumentStore store) : IInitRepository
         if (events is null)
             throw new ArgumentNullException(nameof(events));
 
-        var eventData = events.Cast<object>().ToArray();
-        if (eventData.Length == 0)
+        var eventData = events.ToList();
+        if (eventData.Count == 0)
             return;
 
-        await using var session = store.LightweightSession();
-
-        session.Events.StartStream<TAggregate>(streamId, eventData);
-        await session.SaveChangesAsync(cancellationToken);
+        await eventRepository.StartStreamAsync<TAggregate, TEvent>(streamId, eventData, cancellationToken);
     }
-
-    private static IEnumerable<Type> GetEventTypes() =>
-        typeof(IEventBase).Assembly
-            .GetTypes()
-            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(IEventBase).IsAssignableFrom(type));
 }
