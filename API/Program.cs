@@ -3,6 +3,7 @@ using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
 using Repository;
+using Scalar.AspNetCore;
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ app.UsePathBase("/API");
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
