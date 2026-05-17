@@ -1,3 +1,6 @@
+using FolioTrace;
+using FolioTrace.Aggregates;
+using FolioTrace.Common;
 using Repository;
 using Services;
 
@@ -17,5 +20,21 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+var api = app.MapGroup("");
+var countryEvents = api.MapGroup("/Events/Country");
+
+countryEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+    await eventRepository.LoadStreamAsync<ICountryEvent>(Constants.Initialisation.CountriesStreamId, cancellationToken));
+
+countryEvents.MapPost("/", async (IEventRepository eventRepository, IEnumerable<IEventBase> events, CancellationToken cancellationToken) =>
+{
+    var eventData = events.ToList();
+    if (eventData.Any(@event => @event is not ICountryEvent))
+        return Results.BadRequest("All events must be country events.");
+
+    await eventRepository.AppendAsync(Constants.Initialisation.CountriesStreamId, eventData, cancellationToken);
+    return Results.Accepted($"/API/Events/Country", new { Count = eventData.Count });
+});
 
 app.Run();

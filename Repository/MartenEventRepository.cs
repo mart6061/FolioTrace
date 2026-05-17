@@ -59,4 +59,21 @@ public sealed class MartenEventRepository(IDocumentStore store)
         session.Events.Append(streamId, @event);
         await session.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task AppendAsync(Guid streamId, IReadOnlyList<IEventBase> events, CancellationToken cancellationToken = default)
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        if (events.Any(@event => @event is null))
+            throw new ArgumentException("Value must not contain null events.", nameof(events));
+
+        if (events.Count == 0)
+            return;
+
+        await using var session = store.LightweightSession();
+
+        session.Events.Append(streamId, events.Cast<object>());
+        await session.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -25,4 +25,6 @@ public interface IEventRepository
         where TEvent : class, IEventBase;
 
     Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase;
+
+    Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default);
 }

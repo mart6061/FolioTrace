@@ -1,8 +1,15 @@
+using System.Text.Json.Serialization;
+using FolioTrace.Aggregates;
 using FolioTrace.Types;
 
 namespace FolioTrace.Common;
 
-// Event base interface placed in Events folder but uses the top-level FolioTrace.Types namespace
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
+[JsonDerivedType(typeof(CountryModifiedEvent), nameof(CountryModifiedEvent))]
+[JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
+[JsonDerivedType(typeof(CurrencyCreatedEvent), nameof(CurrencyCreatedEvent))]
+[JsonDerivedType(typeof(CurrencyModifiedEvent), nameof(CurrencyModifiedEvent))]
 public interface IEventBase : IType
 {
     string Type { get; }

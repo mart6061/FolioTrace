@@ -118,6 +118,28 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
+    public async Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default)
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        var eventData = events.ToList();
+        if (eventData.Any(@event => @event is null))
+            throw new ArgumentException("Value must not contain null events.", nameof(events));
+
+        if (eventData.Count == 0)
+            return;
+
+        await EnsureLoadedAsync(cancellationToken);
+        await durableRepository.AppendAsync(streamId, eventData, cancellationToken);
+
+        lock (sync)
+        {
+            foreach (var @event in eventData)
+                AddEvent(streamId, @event);
+        }
+    }
+
     private async Task EnsureLoadedAsync(CancellationToken cancellationToken)
     {
         if (isLoaded)

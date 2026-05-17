@@ -7,6 +7,7 @@ namespace FolioTrace.Common;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
 [JsonDerivedType(typeof(CountryModifiedEvent), nameof(CountryModifiedEvent))]
+[JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
 [JsonDerivedType(typeof(CurrencyCreatedEvent), nameof(CurrencyCreatedEvent))]
 [JsonDerivedType(typeof(CurrencyModifiedEvent), nameof(CurrencyModifiedEvent))]
 public abstract record EventBase(EventID EventID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase
