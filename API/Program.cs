@@ -27,6 +27,14 @@ var countryEvents = api.MapGroup("/Events/Country");
 countryEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
     await eventRepository.LoadStreamAsync<ICountryEvent>(Constants.Initialisation.CountriesStreamId, cancellationToken));
 
+countryEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+{
+    var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+    return @event is ICountryEvent
+        ? Results.Ok(@event)
+        : Results.NotFound();
+});
+
 countryEvents.MapPost("/", async (IEventRepository eventRepository, IEnumerable<IEventBase> events, CancellationToken cancellationToken) =>
 {
     var eventData = events.ToList();
@@ -34,7 +42,22 @@ countryEvents.MapPost("/", async (IEventRepository eventRepository, IEnumerable<
         return Results.BadRequest("All events must be country events.");
 
     await eventRepository.AppendAsync(Constants.Initialisation.CountriesStreamId, eventData, cancellationToken);
-    return Results.Accepted($"/API/Events/Country", new { Count = eventData.Count });
+
+    return Results.Accepted(
+        "/API/Events/Country",
+        eventData.Select(@event => new
+        {
+            EventID = @event.EventID.Value,
+            Links = new[]
+            {
+                new
+                {
+                    Rel = "self",
+                    Href = $"/API/Events/Country/{@event.EventID.Value}",
+                    Method = "GET"
+                }
+            }
+        }));
 });
 
 app.Run();
