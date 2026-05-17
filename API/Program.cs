@@ -9,6 +9,8 @@ builder.Services.AddFolioTraceServices();
 
 var app = builder.Build();
 
+app.UsePathBase("/API");
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
