@@ -1,6 +1,7 @@
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
+using FolioTrace.Types;
 using Repository;
 using Services;
 
@@ -22,7 +23,17 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 var api = app.MapGroup("");
+var countries = api.MapGroup("/Countries");
 var countryEvents = api.MapGroup("/Events/Country");
+
+countries.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, CountryService countryService) =>
+{
+    var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+    return auditDateTime.HasValue
+        ? Results.Ok(await countryService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+        : Results.Ok(await countryService.Get(valuationDate));
+});
 
 countryEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
     await eventRepository.LoadStreamAsync<ICountryEvent>(Constants.Initialisation.CountriesStreamId, cancellationToken));
