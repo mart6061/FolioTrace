@@ -16,12 +16,14 @@ public sealed record Country : IAggregate
 
     public required AuditDateTime AsOfDateTime { get; init; }
 
+    public required EventID LastEventID { get; init; }
+
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
     // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Country(Alpha2 alpha2, Alpha3 alpha3, short numeric, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime)
+    public Country(Alpha2 alpha2, Alpha3 alpha3, short numeric, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         if (alpha2 is null)
             throw new ArgumentNullException(nameof(alpha2));
@@ -38,6 +40,9 @@ public sealed record Country : IAggregate
         if (asOfDateTime is null)
             throw new ArgumentNullException(nameof(asOfDateTime));
 
+        if (lastEventID is null)
+            throw new ArgumentNullException(nameof(lastEventID));
+
         if (lastAuditDateTime is null)
             throw new ArgumentNullException(nameof(lastAuditDateTime));
 
@@ -46,12 +51,13 @@ public sealed record Country : IAggregate
         Numeric = numeric;
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
+        LastEventID = lastEventID;
         LastAuditDateTime = lastAuditDateTime;
     }
 
     public override string ToString() => Alpha2.ToString();
 
-    public string ToData() => $"{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(Country)}: (Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
+    public string ToDetail() => $"{nameof(Country)}: (Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

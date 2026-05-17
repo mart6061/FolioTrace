@@ -28,6 +28,8 @@ Events implement `IEventBase` through `EventBase`. Examples include:
 
 Aggregates such as `Countries` are rebuilt by applying the relevant event stream. The aggregate constructor currently filters events by valuation date and audit/as-at date, then applies creation and modification events in order.
 
+Aggregates also carry provenance metadata, including the `LastEventID` and `LastAuditDateTime` of the state they represent.
+
 ## Event Storage
 
 Marten is treated as the durable event store. Domain events are written to Marten's event-store tables rather than being stored as separate document tables.

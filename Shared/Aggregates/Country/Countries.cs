@@ -10,6 +10,8 @@ public sealed record Countries : IAggregate
 
     public required AuditDateTime AsOfDateTime { get; init; }
 
+    public EventID LastEventID { get; private set; }
+
     public LastAuditDateTime LastAuditDateTime { get; private set; }
 
     public required List<Country> Items { get; init; }
@@ -41,15 +43,19 @@ public sealed record Countries : IAggregate
         if (!includedItems.Any())
             throw new ArgumentException("Value must contain at least one country event within the valuation and as-of date time.", nameof(items));
 
+        var orderedItems = includedItems
+            .OrderBy(@event => @event.EventDateTime.Value)
+            .ThenBy(@event => @event.AuditDateTime.Value)
+            .ThenBy(@event => @event.EventID.Value)
+            .ToList();
+
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
+        LastEventID = orderedItems.Last().EventID;
         LastAuditDateTime = new LastAuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value));
         Items = [];
 
-        foreach (var item in includedItems.OfType<CountryCreatedEvent>().OrderBy(@event => @event.EventDateTime))
-            Apply(item);
-
-        foreach (var item in includedItems.OfType<CountryModifiedEvent>().OrderBy(@event => @event.EventDateTime))
+        foreach (var item in orderedItems)
             Apply(item);
     }
 
@@ -80,6 +86,7 @@ public sealed record Countries : IAggregate
             throw new InvalidOperationException($"Country already exists for Alpha2 '{createdEvent.Alpha2}'.");
 
         Items.Add(CountryBuilder.Create(createdEvent));
+        LastEventID = createdEvent.EventID;
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
@@ -93,13 +100,15 @@ public sealed record Countries : IAggregate
             throw new InvalidOperationException($"No matching country found for Alpha2 '{modifiedEvent.Alpha2}'.");
 
         Items[index] = Items[index].Apply(modifiedEvent);
+        LastEventID = modifiedEvent.EventID;
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(Countries)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
+    public string ToDetail() => $"{nameof(Countries)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
 
     private static LastAuditDateTime GetLastAuditDateTime(List<Country> items) =>
         new LastAuditDateTime(items.Max(country => country.LastAuditDateTime.Value));
+
 }

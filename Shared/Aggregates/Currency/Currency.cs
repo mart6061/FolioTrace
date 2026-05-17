@@ -18,12 +18,14 @@ public sealed record Currency : IAggregate
 
     public required AuditDateTime AsOfDateTime { get; init; }
 
+    public required EventID LastEventID { get; init; }
+
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
     // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, LastAuditDateTime lastAuditDateTime)
+    public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         if (alphabeticCode is null)
             throw new ArgumentNullException(nameof(alphabeticCode));
@@ -44,6 +46,9 @@ public sealed record Currency : IAggregate
         if (asOfDateTime is null)
             throw new ArgumentNullException(nameof(asOfDateTime));
 
+        if (lastEventID is null)
+            throw new ArgumentNullException(nameof(lastEventID));
+
         if (lastAuditDateTime is null)
             throw new ArgumentNullException(nameof(lastAuditDateTime));
 
@@ -53,12 +58,13 @@ public sealed record Currency : IAggregate
         Name = name;
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
+        LastEventID = lastEventID;
         LastAuditDateTime = lastAuditDateTime;
     }
 
     [SetsRequiredMembers]
-    public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime auditDateTime)
-        : this(alphabeticCode, numericCode, decimalPlace, name, valuationDateTime, auditDateTime, ToLastAuditDateTime(auditDateTime))
+    public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
+        : this(alphabeticCode, numericCode, decimalPlace, name, valuationDateTime, auditDateTime, lastEventID, ToLastAuditDateTime(auditDateTime))
     {
     }
 
@@ -72,7 +78,7 @@ public sealed record Currency : IAggregate
 
     public override string ToString() => AlphabeticCode.ToString();
 
-    public string ToData() => $"{AlphabeticCode.ToData()}|{NumericCode}|{DecimalPlace}|{Name}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{AlphabeticCode.ToData()}|{NumericCode}|{DecimalPlace}|{Name}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(Currency)}: {Name} ({AlphabeticCode}, {NumericCode:D3}, {DecimalPlace}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
+    public string ToDetail() => $"{nameof(Currency)}: {Name} ({AlphabeticCode}, {NumericCode:D3}, {DecimalPlace}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }
