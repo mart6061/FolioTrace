@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="package.json" />
+    <None Include="svelte.config.js" />
+    <None Include="vite.config.ts" />
+    <None Include="tsconfig.json" />
+    <None Include="src\**\*" />
+    <None Include="static\**\*" />
+  </ItemGroup>
+</Project>

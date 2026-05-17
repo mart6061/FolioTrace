@@ -1,6 +1,11 @@
-@repository_HostAddress = http://localhost:5227
+@repository_HostAddress = http://localhost:5227/API
 
-GET {{repository_HostAddress}}/weatherforecast/
+GET {{repository_HostAddress}}/Countries/?eventDateTime=2026-05-17T23:59:59
+Accept: application/json
+
+###
+
+GET {{repository_HostAddress}}/Events/Country/
 Accept: application/json
 
 ###

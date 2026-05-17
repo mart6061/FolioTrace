@@ -10,3 +10,6 @@ TestResults/
 *.sln.docstates
 *.nupkg
 *.snupkg
+node_modules/
+.svelte-kit/
+UI/build/
