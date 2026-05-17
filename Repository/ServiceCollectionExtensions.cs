@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MartenEventRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddHostedService<InMemoryEventsRepositoryInitializer>();
-        services.AddScoped<IInitRepository, InitRepository>();
+        services.AddScoped<ISeedRepository, SeedRepository>();
 
         return services;
     }
@@ -35,3 +35,4 @@ public static class ServiceCollectionExtensions
             .GetTypes()
             .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(IEventBase).IsAssignableFrom(type));
 }
+

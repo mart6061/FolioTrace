@@ -20,7 +20,7 @@ using var services = new ServiceCollection()
 while (true)
 {
     Console.WriteLine("FolioTrace");
-    Console.WriteLine("1. Run initialisation");
+    Console.WriteLine("1. Run seed");
     Console.WriteLine("2. Reference Data");
     Console.WriteLine("C. Close");
     Console.Write("Select an option: ");
@@ -31,7 +31,7 @@ while (true)
     switch (option?.ToUpperInvariant())
     {
         case "1":
-            await RunInitialisation(services);
+            await RunSeed(services);
             break;
         case "2":
             await ShowReferenceDataMenu(services);
@@ -46,20 +46,20 @@ while (true)
     Console.WriteLine();
 }
 
-static async Task RunInitialisation(ServiceProvider services)
+static async Task RunSeed(ServiceProvider services)
 {
     try
     {
         using var scope = services.CreateScope();
-        var initRepository = scope.ServiceProvider.GetRequiredService<IInitRepository>();
+        var seedRepository = scope.ServiceProvider.GetRequiredService<ISeedRepository>();
 
-        Console.WriteLine("Running initialisation...");
-        await initRepository.Build();
-        Console.WriteLine("Initialisation complete.");
+        Console.WriteLine("Running seed...");
+        await seedRepository.Build();
+        Console.WriteLine("Seed complete.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Initialisation failed: {ex.Message}");
+        Console.WriteLine($"Seed failed: {ex.Message}");
     }
 }
 
@@ -111,3 +111,4 @@ static async Task DisplayCountries(ServiceProvider services)
         Console.WriteLine($"Display countries failed: {ex.Message}");
     }
 }
+

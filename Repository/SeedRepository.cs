@@ -5,7 +5,7 @@ using FolioTrace.Types;
 
 namespace Repository;
 
-public sealed class InitRepository(IEventRepository eventRepository) : IInitRepository
+public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepository
 {
     private static readonly (string Alpha2, string Alpha3, short Numeric, string Name)[] InitialCountryCodes =
     [
@@ -363,6 +363,7 @@ public sealed class InitRepository(IEventRepository eventRepository) : IInitRepo
             await eventRepository.AppendAsync(streamId, @event, cancellationToken);
     }
 }
+
 
 
 

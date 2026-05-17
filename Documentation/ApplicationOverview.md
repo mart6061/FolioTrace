@@ -45,7 +45,7 @@ This keeps Marten as the source of durable truth while allowing the app to explo
 
 ## Initialization
 
-`InitRepository` currently clears existing event data and creates setup events for country reference data. These country setup events are written to a deterministic countries stream using `Constants.Initialisation.CountriesStreamId`.
+`SeedRepository` currently clears existing event data and creates setup events for country reference data. These country setup events are written to a deterministic countries stream using `Constants.Initialisation.CountriesStreamId`.
 
 The setup reason and setup timestamps live under `Constants.Initialisation`.
 
@@ -71,3 +71,4 @@ The architecture is moving toward:
 5. Console/API projects as thin entry points over the service layer.
 
 The application is still early, but the emerging design is a clean event-sourced core with explicit domain types and a pragmatic in-memory read path.
+
