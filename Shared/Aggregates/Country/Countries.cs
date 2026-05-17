@@ -78,6 +78,9 @@ public sealed record Countries : IAggregate
             case CountryModifiedEvent modifiedEvent:
                 Apply(modifiedEvent);
                 break;
+            case CountryFlagModifiedEvent modifiedEvent:
+                Apply(modifiedEvent);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported country event type '{countryEvent.GetType().Name}'.");
         }
@@ -97,6 +100,20 @@ public sealed record Countries : IAggregate
     }
 
     public void Apply(CountryModifiedEvent modifiedEvent)
+    {
+        if (modifiedEvent is null)
+            throw new ArgumentNullException(nameof(modifiedEvent));
+
+        var index = Items.FindIndex(country => country.Alpha2 == modifiedEvent.Alpha2);
+        if (index < 0)
+            throw new InvalidOperationException($"No matching country found for Alpha2 '{modifiedEvent.Alpha2}'.");
+
+        Items[index] = Items[index].Apply(modifiedEvent);
+        LastEventID = modifiedEvent.EventID;
+        LastAuditDateTime = GetLastAuditDateTime(Items);
+    }
+
+    public void Apply(CountryFlagModifiedEvent modifiedEvent)
     {
         if (modifiedEvent is null)
             throw new ArgumentNullException(nameof(modifiedEvent));

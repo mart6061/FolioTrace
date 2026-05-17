@@ -39,6 +39,24 @@ public static class CountryBuilder
                 LastAuditDateTime = modifiedEvent.AuditDateTime
             };
         }
+
+        public Country Apply(CountryFlagModifiedEvent modifiedEvent)
+        {
+            if (country is null)
+                throw new ArgumentNullException(nameof(country));
+
+            if (modifiedEvent is null)
+                throw new ArgumentNullException(nameof(modifiedEvent));
+
+            return country with
+            {
+                Flag = modifiedEvent.Flag,
+                ValuationDateTime = modifiedEvent.EventDateTime,
+                AsOfDateTime = modifiedEvent.AuditDateTime,
+                LastEventID = modifiedEvent.EventID,
+                LastAuditDateTime = modifiedEvent.AuditDateTime
+            };
+        }
     }
 }
 
