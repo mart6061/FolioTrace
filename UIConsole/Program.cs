@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Repository;
+using Services;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -41,6 +42,7 @@ static async Task RunInitialisation(IConfiguration configuration)
         using var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddFolioTraceRepository(configuration)
+            .AddFolioTraceServices()
             .BuildServiceProvider();
 
         using var scope = services.CreateScope();
