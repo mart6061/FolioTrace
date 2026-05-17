@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using FolioTrace.Common;
 using FolioTrace.Types;
 
@@ -19,24 +18,19 @@ public static class Constants
 
     public static class Valuation
     {
-        [Description("Today")]
-        [Details("End of today")]
+        [UIDetails(Short: "Today", Long: "End of today", Order: 1)]
         public static readonly EventDateTime Today = EventDateTimeBuilder.Create(DateTime.Now.AddDays(1).AddTicks(-1));
 
-        [Description("Month End")]
-        [Details("End of the current calendar month")]
+        [UIDetails(Short: "Month End", Long: "End of the current calendar month", Order: 2)]
         public static readonly EventDateTime MonthEnd = EventDateTimeBuilder.Create(new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1).AddTicks(-1));
 
-        [Description("Last Month End")]
-        [Details("End of the previous calendar month")]
+        [UIDetails(Short: "Last Month End", Long: "End of the previous calendar month", Order: 3)]
         public static readonly EventDateTime LastMonthEnd = EventDateTimeBuilder.Create(new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddTicks(-1));
 
-        [Description("Last Year End")]
-        [Details("End of the previous calendar year")]
+        [UIDetails(Short: "Last Year End", Long: "End of the previous calendar year", Order: 4)]
         public static readonly EventDateTime LastYearEnd = EventDateTimeBuilder.Create(new DateTime(DateTime.Now.Year, 1, 1).AddTicks(-1));
 
-        [Description("Last Financial Year End")]
-        [Details("End of the previous financial year ending 31 March")]
+        [UIDetails(Short: "Last Financial Year End", Long: "End of the previous financial year ending 31 March", Order: 5)]
         public static readonly EventDateTime LastFinancialYearEnd = EventDateTimeBuilder.Create(DateTime.Now.Date > new DateTime(DateTime.Now.Year, 3, 31) ? new DateTime(DateTime.Now.Year, 4, 1).AddTicks(-1) : new DateTime(DateTime.Now.Year - 1, 4, 1).AddTicks(-1));
     }
 }
