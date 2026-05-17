@@ -13,7 +13,7 @@ public static class CountryBuilder
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Country(createdEvent.Alpha2, createdEvent.Alpha3, createdEvent.Numeric, CountryNameLookup.Resolve(createdEvent.Name, createdEvent.Alpha2), createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID, createdEvent.AuditDateTime);
+        return new Country(createdEvent.Alpha2, createdEvent.Alpha3, createdEvent.Numeric, createdEvent.Name, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID, createdEvent.AuditDateTime);
     }
 
     extension(Country country)
@@ -32,7 +32,7 @@ public static class CountryBuilder
                 Alpha2 = modifiedEvent.Alpha2,
                 Alpha3 = modifiedEvent.Alpha3,
                 Numeric = modifiedEvent.Numeric,
-                Name = CountryNameLookup.Resolve(modifiedEvent.Name, modifiedEvent.Alpha2),
+                Name = modifiedEvent.Name,
                 ValuationDateTime = modifiedEvent.EventDateTime,
                 AsOfDateTime = modifiedEvent.AuditDateTime,
                 LastEventID = modifiedEvent.EventID,
