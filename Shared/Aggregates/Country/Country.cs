@@ -12,6 +12,8 @@ public sealed record Country : IAggregate
 
     public required short Numeric { get; init; }
 
+    public required string Name { get; init; }
+
     public required EventDateTime ValuationDateTime { get; init; }
 
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -23,7 +25,7 @@ public sealed record Country : IAggregate
     // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Country(Alpha2 alpha2, Alpha3 alpha3, short numeric, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public Country(Alpha2 alpha2, Alpha3 alpha3, short numeric, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         if (alpha2 is null)
             throw new ArgumentNullException(nameof(alpha2));
@@ -33,6 +35,9 @@ public sealed record Country : IAggregate
 
         if (numeric < 0 || numeric > 999)
             throw new ArgumentException("Value must be between 0 and 999.", nameof(numeric));
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Value must not be null, empty, or whitespace.", nameof(name));
 
         if (valuationDateTime is null)
             throw new ArgumentNullException(nameof(valuationDateTime));
@@ -49,15 +54,16 @@ public sealed record Country : IAggregate
         Alpha2 = alpha2;
         Alpha3 = alpha3;
         Numeric = numeric;
+        Name = name;
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
         LastEventID = lastEventID;
         LastAuditDateTime = lastAuditDateTime;
     }
 
-    public override string ToString() => Alpha2.ToString();
+    public override string ToString() => Name;
 
-    public string ToData() => $"{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}|{Name}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(Country)}: (Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
+    public string ToDetail() => $"{nameof(Country)}: (Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric}, Name: {Name}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

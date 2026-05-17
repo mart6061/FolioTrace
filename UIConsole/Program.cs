@@ -101,10 +101,10 @@ static async Task DisplayCountries(ServiceProvider services)
         var countries = await countryService.Get(Constants.Valuation.Today);
 
         Console.WriteLine($"Countries as at {countries.ValuationDateTime}");
-        Console.WriteLine($"{"Alpha2",-6} {"Alpha3",-6} {"Numeric",7}");
+        Console.WriteLine($"{"Alpha2",-6} {"Alpha3",-6} {"Numeric",7} Name");
 
         foreach (var country in countries.Items.OrderBy(country => country.Alpha2.Value))
-            Console.WriteLine($"{country.Alpha2.Value,-6} {country.Alpha3.Value,-6} {country.Numeric,7:D3}");
+            Console.WriteLine($"{country.Alpha2.Value,-6} {country.Alpha3.Value,-6} {country.Numeric,7:D3} {country.Name}");
     }
     catch (Exception ex)
     {
