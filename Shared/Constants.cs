@@ -18,6 +18,5 @@ public static class Constants
     public static class Valuation
     {
         public static readonly EventDateTime Today = EventDateTimeBuilder.Create(DateTime.Now.AddDays(1).AddTicks(-1));
-        public static readonly AuditDateTime All = AuditDateTimeBuilder.Create(DateTime.MaxValue);
     }
 }

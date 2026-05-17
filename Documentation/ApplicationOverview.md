@@ -53,9 +53,9 @@ The setup reason and setup timestamps live under `Constants.Initialisation`.
 
 The `Services` project is intended to become the application-facing layer for aggregate and entity access.
 
-`CountryService` currently exposes a `Get` method that rebuilds the `Countries` aggregate from country events:
+`CountryService` currently exposes `Get` methods that rebuild the `Countries` aggregate from country events:
 
-- `Get(EventDateTime valuationDate)` uses `Constants.Valuation.All` as the audit/as-at date.
+- `Get(EventDateTime valuationDate)` uses all audit history known for that valuation date and sets the aggregate as-of date from the latest included audit timestamp.
 - `Get(EventDateTime valuationDate, AuditDateTime asAt)` rebuilds the aggregate for explicit valuation and audit/as-at dates.
 
 Over time, this layer can become the main source for application use cases, hiding event storage and aggregate rebuild mechanics from UI and API code.

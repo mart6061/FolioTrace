@@ -16,6 +16,12 @@ public sealed record Countries : IAggregate
 
     public required List<Country> Items { get; init; }
 
+    [SetsRequiredMembers]
+    public Countries(EventDateTime valuationDateTime, List<ICountryEvent> items)
+        : this(valuationDateTime, GetLatestAuditDateTime(valuationDateTime, items), items)
+    {
+    }
+
     // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
@@ -111,4 +117,24 @@ public sealed record Countries : IAggregate
     private static LastAuditDateTime GetLastAuditDateTime(List<Country> items) =>
         new LastAuditDateTime(items.Max(country => country.LastAuditDateTime.Value));
 
+    private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<ICountryEvent> items)
+    {
+        if (valuationDateTime is null)
+            throw new ArgumentNullException(nameof(valuationDateTime));
+
+        if (items is null)
+            throw new ArgumentNullException(nameof(items));
+
+        if (items.Any(@event => @event is null))
+            throw new ArgumentException("Value must not contain null country events.", nameof(items));
+
+        var includedItems = items
+            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value)
+            .ToList();
+
+        if (!includedItems.Any())
+            throw new ArgumentException("Value must contain at least one country event within the valuation date time.", nameof(items));
+
+        return new AuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value));
+    }
 }

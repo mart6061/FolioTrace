@@ -16,6 +16,9 @@ public sealed record AuditDateTime : IType
         if (value == default)
             throw new ArgumentException("Value must be a non-default DateTime.", nameof(value));
 
+        if (value.ToUniversalTime() > DateTime.UtcNow)
+            throw new ArgumentException("Value must not be in the future.", nameof(value));
+
         Value = value;
     }
 
@@ -23,8 +26,8 @@ public sealed record AuditDateTime : IType
     [JsonConstructor]
     private AuditDateTime() { }
 
-    // Factory used by converter to create an instance without validation
-    internal static AuditDateTime FromJson(string? value) => new AuditDateTime { Value = DateTime.Parse(value!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind) };
+    // Factory used by converter to create an instance with validation
+    internal static AuditDateTime FromJson(string? value) => new AuditDateTime(DateTime.Parse(value!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
 
     public static implicit operator DateTime(AuditDateTime d) => d?.Value ?? default;
 

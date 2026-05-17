@@ -7,8 +7,14 @@ namespace Services;
 
 public sealed class CountryService(IEventRepository eventRepository)
 {
-    public Task<Countries> Get(EventDateTime valuationDate) =>
-        Get(valuationDate, Constants.Valuation.All);
+    public async Task<Countries> Get(EventDateTime valuationDate)
+    {
+        if (valuationDate is null)
+            throw new ArgumentNullException(nameof(valuationDate));
+
+        var events = await eventRepository.LoadStreamAsync<ICountryEvent>(Constants.Initialisation.CountriesStreamId);
+        return new Countries(valuationDate, events.ToList());
+    }
 
     public async Task<Countries> Get(EventDateTime valuationDate, AuditDateTime asAt)
     {
