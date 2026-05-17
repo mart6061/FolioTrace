@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using FolioTrace;
 using Repository;
+using Services;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -9,22 +11,32 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
+using var services = new ServiceCollection()
+    .AddSingleton<IConfiguration>(configuration)
+    .AddFolioTraceRepository(configuration)
+    .AddFolioTraceServices()
+    .BuildServiceProvider();
+
 while (true)
 {
     Console.WriteLine("FolioTrace");
-    Console.WriteLine("1. Run initialisation");
-    Console.WriteLine("2. Close");
+    Console.WriteLine("1. Run seed");
+    Console.WriteLine("2. Reference Data");
+    Console.WriteLine("C. Close");
     Console.Write("Select an option: ");
 
-    var option = Console.ReadLine();
+    var option = Console.ReadLine()?.Trim();
     Console.WriteLine();
 
-    switch (option)
+    switch (option?.ToUpperInvariant())
     {
         case "1":
-            await RunInitialisation(configuration);
+            await RunSeed(services);
             break;
         case "2":
+            await ShowReferenceDataMenu(services);
+            break;
+        case "C":
             return;
         default:
             Console.WriteLine("Invalid option.");
@@ -34,24 +46,69 @@ while (true)
     Console.WriteLine();
 }
 
-static async Task RunInitialisation(IConfiguration configuration)
+static async Task RunSeed(ServiceProvider services)
 {
     try
     {
-        using var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddFolioTraceRepository(configuration)
-            .BuildServiceProvider();
-
         using var scope = services.CreateScope();
-        var initRepository = scope.ServiceProvider.GetRequiredService<IInitRepository>();
+        var seedRepository = scope.ServiceProvider.GetRequiredService<ISeedRepository>();
 
-        Console.WriteLine("Running initialisation...");
-        await initRepository.Build();
-        Console.WriteLine("Initialisation complete.");
+        Console.WriteLine("Running seed...");
+        await seedRepository.Build();
+        Console.WriteLine("Seed complete.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Initialisation failed: {ex.Message}");
+        Console.WriteLine($"Seed failed: {ex.Message}");
     }
 }
+
+static async Task ShowReferenceDataMenu(ServiceProvider services)
+{
+    while (true)
+    {
+        Console.WriteLine("Reference Data");
+        Console.WriteLine("1. Display Countries");
+        Console.WriteLine("R. Return");
+        Console.Write("Select an option: ");
+
+        var option = Console.ReadLine()?.Trim();
+        Console.WriteLine();
+
+        switch (option?.ToUpperInvariant())
+        {
+            case "1":
+                await DisplayCountries(services);
+                break;
+            case "R":
+                return;
+            default:
+                Console.WriteLine("Invalid option.");
+                break;
+        }
+
+        Console.WriteLine();
+    }
+}
+
+static async Task DisplayCountries(ServiceProvider services)
+{
+    try
+    {
+        using var scope = services.CreateScope();
+        var countryService = scope.ServiceProvider.GetRequiredService<CountryService>();
+
+        var countries = await countryService.Get(Constants.Valuation.Today);
+
+        Console.WriteLine($"Countries as at {countries.ValuationDateTime}");
+        Console.WriteLine($"{"Alpha2",-6} {"Alpha3",-6} {"Numeric",7} Name");
+
+        foreach (var country in countries.Items.OrderBy(country => country.Alpha2.Value))
+            Console.WriteLine($"{country.Alpha2.Value,-6} {country.Alpha3.Value,-6} {country.Numeric,7:D3} {country.Name}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Display countries failed: {ex.Message}");
+    }
+}
+

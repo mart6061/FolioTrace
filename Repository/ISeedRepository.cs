@@ -1,6 +1,7 @@
 namespace Repository;
 
-public interface IInitRepository
+public interface ISeedRepository
 {
     Task Build(CancellationToken cancellationToken = default);
 }
+

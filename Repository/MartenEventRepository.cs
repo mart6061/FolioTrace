@@ -1,0 +1,79 @@
+using FolioTrace.Common;
+using FolioTrace.Types;
+using Marten;
+
+namespace Repository;
+
+public sealed class MartenEventRepository(IDocumentStore store)
+{
+    public async Task ClearAsync(CancellationToken cancellationToken = default)
+    {
+        await store.Advanced.Clean.DeleteAllEventDataAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<StoredEvent>> LoadAllAsync(CancellationToken cancellationToken = default)
+    {
+        await using var session = store.QuerySession();
+
+        var rawEvents = session.Events.QueryAllRawEvents().ToList();
+        return rawEvents
+            .Where(@event => @event.Data is IEventBase)
+            .Select(@event => new StoredEvent(@event.StreamId, (IEventBase)@event.Data))
+            .ToList();
+    }
+
+    public async Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase
+    {
+        if (eventId is null)
+            throw new ArgumentNullException(nameof(eventId));
+
+        await using var session = store.QuerySession();
+
+        var @event = await session.Events.LoadAsync<T>(eventId.Value, cancellationToken);
+        return @event?.Data;
+    }
+
+    public async Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
+        where TAggregate : class
+        where TEvent : class, IEventBase
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        if (events.Count == 0)
+            return;
+
+        await using var session = store.LightweightSession();
+
+        session.Events.StartStream<TAggregate>(streamId, events.Cast<object>());
+        await session.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase
+    {
+        if (@event is null)
+            throw new ArgumentNullException(nameof(@event));
+
+        await using var session = store.LightweightSession();
+
+        session.Events.Append(streamId, @event);
+        await session.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AppendAsync(Guid streamId, IReadOnlyList<IEventBase> events, CancellationToken cancellationToken = default)
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        if (events.Any(@event => @event is null))
+            throw new ArgumentException("Value must not contain null events.", nameof(events));
+
+        if (events.Count == 0)
+            return;
+
+        await using var session = store.LightweightSession();
+
+        session.Events.Append(streamId, events.Cast<object>());
+        await session.SaveChangesAsync(cancellationToken);
+    }
+}
