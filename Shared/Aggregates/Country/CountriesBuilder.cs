@@ -8,7 +8,8 @@ public static class CountriesBuilder
     public static IReadOnlyList<Type> GetCountryEventTypes() =>
     [
         typeof(CountryCreatedEvent),
-        typeof(CountryModifiedEvent)
+        typeof(CountryModifiedEvent),
+        typeof(CountryFlagModifiedEvent)
     ];
 
     public static Countries Create(EventDateTime eventDate, AuditDateTime auditDateTime, List<ICountryEvent> countryEvents)

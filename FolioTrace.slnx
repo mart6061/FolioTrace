@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="UIConsole/UIConsole.csproj" />
+  <Project Path="UI/UI.csproj" />
   <Project Path="API/API.csproj" />
   <Project Path="Services/Services.csproj" />
   <Project Path="Repository/Repository.csproj" />

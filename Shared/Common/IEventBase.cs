@@ -10,11 +10,15 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
 [JsonDerivedType(typeof(CurrencyCreatedEvent), nameof(CurrencyCreatedEvent))]
 [JsonDerivedType(typeof(CurrencyModifiedEvent), nameof(CurrencyModifiedEvent))]
+[JsonDerivedType(typeof(UserCreatedEvent), nameof(UserCreatedEvent))]
+[JsonDerivedType(typeof(UserModifiedEvent), nameof(UserModifiedEvent))]
 public interface IEventBase : IType
 {
     string Type { get; }
 
     EventID EventID { get; }
+
+    UserID UserID { get; }
 
     EventDateTime EventDateTime { get; }
 

@@ -1,6 +1,6 @@
 namespace Repository.Seed;
 
-internal static class InitialCountryCodes
+internal static class SeedCountryCodes
 {
     public static IReadOnlyList<(string Alpha2, string Alpha3, short Numeric, string Name)> Items { get; } =
     [
@@ -18,7 +18,7 @@ internal static class InitialCountryCodes
         ("AT", "AUT", 40, "Austria"),
         ("AU", "AUS", 36, "Australia"),
         ("AW", "ABW", 533, "Aruba"),
-        ("AX", "ALA", 248, "Åland Islands"),
+        ("AX", "ALA", 248, "ï¿½land Islands"),
         ("AZ", "AZE", 31, "Azerbaijan"),
         ("BA", "BIH", 70, "Bosnia and Herzegovina"),
         ("BB", "BRB", 52, "Barbados"),
@@ -29,7 +29,7 @@ internal static class InitialCountryCodes
         ("BH", "BHR", 48, "Bahrain"),
         ("BI", "BDI", 108, "Burundi"),
         ("BJ", "BEN", 204, "Benin"),
-        ("BL", "BLM", 652, "Saint Barthélemy"),
+        ("BL", "BLM", 652, "Saint Barthï¿½lemy"),
         ("BM", "BMU", 60, "Bermuda"),
         ("BN", "BRN", 96, "Brunei Darussalam"),
         ("BO", "BOL", 68, "Bolivia (Plurinational State of)"),
@@ -47,7 +47,7 @@ internal static class InitialCountryCodes
         ("CF", "CAF", 140, "Central African Republic (the)"),
         ("CG", "COG", 178, "Congo (the)"),
         ("CH", "CHE", 756, "Switzerland"),
-        ("CI", "CIV", 384, "Côte d'Ivoire"),
+        ("CI", "CIV", 384, "Cï¿½te d'Ivoire"),
         ("CK", "COK", 184, "Cook Islands (the)"),
         ("CL", "CHL", 152, "Chile"),
         ("CM", "CMR", 120, "Cameroon"),
@@ -56,7 +56,7 @@ internal static class InitialCountryCodes
         ("CR", "CRI", 188, "Costa Rica"),
         ("CU", "CUB", 192, "Cuba"),
         ("CV", "CPV", 132, "Cabo Verde"),
-        ("CW", "CUW", 531, "Curaçao"),
+        ("CW", "CUW", 531, "Curaï¿½ao"),
         ("CX", "CXR", 162, "Christmas Island"),
         ("CY", "CYP", 196, "Cyprus"),
         ("CZ", "CZE", 203, "Czechia"),
@@ -192,7 +192,7 @@ internal static class InitialCountryCodes
         ("PW", "PLW", 585, "Palau"),
         ("PY", "PRY", 600, "Paraguay"),
         ("QA", "QAT", 634, "Qatar"),
-        ("RE", "REU", 638, "Réunion"),
+        ("RE", "REU", 638, "Rï¿½union"),
         ("RO", "ROU", 642, "Romania"),
         ("RS", "SRB", 688, "Serbia"),
         ("RU", "RUS", 643, "Russian Federation (the)"),

@@ -4,7 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record Currency : IAggregate
+public sealed record Currency : IModel
 {
     public required Alpha3 AlphabeticCode { get; init; }
 
@@ -22,36 +22,10 @@ public sealed record Currency : IAggregate
 
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
-    // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
     public Currency(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
-        if (alphabeticCode is null)
-            throw new ArgumentNullException(nameof(alphabeticCode));
-
-
-        if (numericCode < 0 || numericCode > 999)
-            throw new ArgumentException("Value must be between 0 and 999.", nameof(numericCode));
-
-        if (decimalPlace < 0)
-            throw new ArgumentException("Value must be zero or greater.", nameof(decimalPlace));
-
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Value must not be null, empty, or whitespace.", nameof(name));
-
-        if (valuationDateTime is null)
-            throw new ArgumentNullException(nameof(valuationDateTime));
-
-        if (asOfDateTime is null)
-            throw new ArgumentNullException(nameof(asOfDateTime));
-
-        if (lastEventID is null)
-            throw new ArgumentNullException(nameof(lastEventID));
-
-        if (lastAuditDateTime is null)
-            throw new ArgumentNullException(nameof(lastAuditDateTime));
-
         AlphabeticCode = alphabeticCode;
         NumericCode = numericCode;
         DecimalPlace = decimalPlace;
@@ -70,9 +44,6 @@ public sealed record Currency : IAggregate
 
     private static LastAuditDateTime ToLastAuditDateTime(AuditDateTime auditDateTime)
     {
-        if (auditDateTime is null)
-            throw new ArgumentNullException(nameof(auditDateTime));
-
         return new LastAuditDateTime(auditDateTime.Value);
     }
 
