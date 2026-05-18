@@ -22,6 +22,7 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
     private async Task CreateSetupEvents(CancellationToken cancellationToken)
     {
         await CreateCountrySetupEvents(cancellationToken);
+        await CreateCurrencySetupEvents(cancellationToken);
     }
 
     private async Task CreateCountrySetupEvents(CancellationToken cancellationToken)
@@ -38,16 +39,17 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
     }
 
     public static IReadOnlyList<CountryCreatedEvent> CreateInitialCountryCreatedEvents() =>
-        InitialCountryCodes.Items
-            .Select(country => CountryCreatedEventBuilder.Create(
+        SeedCountryCodes.Items
+            .Select(country => CountryCreatedEventBuilder.CreateSeed(
                 Guid.NewGuid(),
+                Constants.Initialisation.UserID,
                 Constants.Initialisation.EventDateTime,
                 Constants.Initialisation.AuditDateTime,
                 Constants.Initialisation.Reason,
                 country.Alpha2,
                 country.Alpha3,
                 country.Numeric,
-                country.Name))
+                country.Name).Value!)
             .ToList();
 
     public static IReadOnlyList<CountryFlagModifiedEvent> CreateInitialCountryFlagModifiedEvents()
@@ -55,16 +57,39 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
         var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(1));
         var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(1));
 
-        return InitialCountryFlags.Items
-            .Select(country => CountryFlagModifiedEventBuilder.Create(
+        return SeedCountryFlags.Items
+            .Select(country => CountryFlagModifiedEventBuilder.CreateSeed(
                 Guid.NewGuid(),
+                Constants.Initialisation.UserID,
                 eventDateTime,
                 auditDateTime,
                 Constants.Initialisation.Reason,
                 country.Alpha2,
-                new CountryFlag(country.Svg)))
+                new CountryFlag(country.Svg)).Value!)
             .ToList();
     }
+
+    private async Task CreateCurrencySetupEvents(CancellationToken cancellationToken)
+    {
+        await StoreEvents<Currencies, CurrencyCreatedEvent>(
+            Constants.Initialisation.CurrenciesStreamId,
+            CreateInitialCurrencyCreatedEvents(),
+            cancellationToken);
+    }
+
+    public static IReadOnlyList<CurrencyCreatedEvent> CreateInitialCurrencyCreatedEvents() =>
+        SeedCurrencyCodes.Items
+            .Select(currency => CurrencyCreatedEventBuilder.CreateSeed(
+                Guid.NewGuid(),
+                Constants.Initialisation.UserID,
+                Constants.Initialisation.EventDateTime,
+                Constants.Initialisation.AuditDateTime,
+                Constants.Initialisation.Reason,
+                currency.AlphabeticCode,
+                currency.NumericCode,
+                currency.DecimalPlace,
+                currency.Name).Value!)
+            .ToList();
 
     private async Task StoreEvents<TAggregate, TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
         where TAggregate : class, IAggregate
@@ -90,8 +115,6 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
             await eventRepository.AppendAsync(streamId, @event, cancellationToken);
     }
 }
-
-
 
 
 

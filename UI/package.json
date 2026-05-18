@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite --host localhost --port 5173",
-    "build": "vite build",
-    "preview": "vite preview --host localhost --port 4173",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
-  },
+
+  
+"scripts": {
+  "ensure-dev-cert": "node scripts/ensure-dev-cert.mjs",
+  "dev": "node scripts/run-vite.mjs dev --host localhost --port 5173",
+  "build": "vite build",
+  "preview": "node scripts/run-vite.mjs preview --host localhost --port 4173",
+  "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+},
+
   "devDependencies": {
     "@sveltejs/adapter-auto": "^6.1.0",
     "@sveltejs/kit": "^2.22.0",

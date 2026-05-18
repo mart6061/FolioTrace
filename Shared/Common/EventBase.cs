@@ -10,7 +10,9 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
 [JsonDerivedType(typeof(CurrencyCreatedEvent), nameof(CurrencyCreatedEvent))]
 [JsonDerivedType(typeof(CurrencyModifiedEvent), nameof(CurrencyModifiedEvent))]
-public abstract record EventBase(EventID EventID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase
+[JsonDerivedType(typeof(UserCreatedEvent), nameof(UserCreatedEvent))]
+[JsonDerivedType(typeof(UserModifiedEvent), nameof(UserModifiedEvent))]
+public abstract record EventBase(EventID EventID, UserID UserID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase
 {
     [JsonIgnore]
     public Guid Id => EventID.Value;
@@ -18,7 +20,7 @@ public abstract record EventBase(EventID EventID, EventDateTime EventDateTime, A
     [JsonPropertyName("$type")]
     public abstract string Type { get; }
 
-    public virtual string ToData() => $"{EventID.ToData()}|{EventDateTime.ToData()}|{AuditDateTime.ToData()}|{Reason}";
+    public virtual string ToData() => $"{EventID.ToData()}|{UserID.ToData()}|{EventDateTime.ToData()}|{AuditDateTime.ToData()}|{Reason}";
 
-    public  virtual string ToDetail() => $"{nameof(EventBase)}: ({EventID.ToDetail()}, {EventDateTime.ToDetail()}, {AuditDateTime.ToDetail()}, Reason: {Reason})";
+    public  virtual string ToDetail() => $"{nameof(EventBase)}: ({EventID.ToDetail()}, {UserID.ToDetail()}, {EventDateTime.ToDetail()}, {AuditDateTime.ToDetail()}, Reason: {Reason})";
 }

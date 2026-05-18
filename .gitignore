@@ -13,3 +13,4 @@ TestResults/
 node_modules/
 .svelte-kit/
 UI/build/
+UI/.certs/

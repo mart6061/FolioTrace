@@ -9,12 +9,19 @@ public static class Constants
     {
         public const string Reason = "Setup";
 
+        public static readonly UserID UserID = Guid.Parse("334f6bb3-762d-4d10-9752-f913d75f7c6c");
+
         public static readonly Guid CountriesStreamId = Guid.Parse("6b9326f8-5d39-4f56-9817-b86cf8ed1e5a");
+
+        public static readonly Guid CurrenciesStreamId = Guid.Parse("dc34cb31-f7f8-4c0d-88b1-f6f60413bc55");
+
+        public static readonly Guid UsersStreamId = Guid.Parse("02ff99c6-dfe9-4e61-aa02-bd1ca3a540a2");
 
         public static readonly EventDateTime EventDateTime = EventDateTimeBuilder.Create(DateTime.MinValue.AddTicks(1));
 
         public static readonly AuditDateTime AuditDateTime = AuditDateTimeBuilder.Create(DateTime.MinValue.AddTicks(1));
     }
+
 
     public static class Valuation
     {

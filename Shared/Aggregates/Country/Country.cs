@@ -4,7 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record Country : IAggregate
+public sealed record Country : IModel
 {
     public required Alpha2 Alpha2 { get; init; }
 
@@ -24,35 +24,10 @@ public sealed record Country : IAggregate
 
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
-    // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
     public Country(Alpha2 alpha2, Alpha3 alpha3, short numeric, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, CountryFlag? flag = null)
     {
-        if (alpha2 is null)
-            throw new ArgumentNullException(nameof(alpha2));
-
-        if (alpha3 is null)
-            throw new ArgumentNullException(nameof(alpha3));
-
-        if (numeric < 0 || numeric > 999)
-            throw new ArgumentException("Value must be between 0 and 999.", nameof(numeric));
-
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Value must not be null, empty, or whitespace.", nameof(name));
-
-        if (valuationDateTime is null)
-            throw new ArgumentNullException(nameof(valuationDateTime));
-
-        if (asOfDateTime is null)
-            throw new ArgumentNullException(nameof(asOfDateTime));
-
-        if (lastEventID is null)
-            throw new ArgumentNullException(nameof(lastEventID));
-
-        if (lastAuditDateTime is null)
-            throw new ArgumentNullException(nameof(lastAuditDateTime));
-
         Alpha2 = alpha2;
         Alpha3 = alpha3;
         Numeric = numeric;

@@ -1,6 +1,6 @@
 namespace Repository.Seed;
 
-internal static class InitialCountryFlags
+internal static class SeedCountryFlags
 {
     public static IReadOnlyList<(string Alpha2, string Svg)> Items { get; } =
     [

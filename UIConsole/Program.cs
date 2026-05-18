@@ -69,6 +69,7 @@ static async Task ShowReferenceDataMenu(ServiceProvider services)
     {
         Console.WriteLine("Reference Data");
         Console.WriteLine("1. Display Countries");
+        Console.WriteLine("2. Display Currencies");
         Console.WriteLine("R. Return");
         Console.Write("Select an option: ");
 
@@ -80,6 +81,9 @@ static async Task ShowReferenceDataMenu(ServiceProvider services)
             case "1":
                 await DisplayCountries(services);
                 break;
+            case "2":
+                await DisplayCurrencies(services);
+                break;
             case "R":
                 return;
             default:
@@ -88,6 +92,27 @@ static async Task ShowReferenceDataMenu(ServiceProvider services)
         }
 
         Console.WriteLine();
+    }
+}
+
+static async Task DisplayCurrencies(ServiceProvider services)
+{
+    try
+    {
+        using var scope = services.CreateScope();
+        var currencyService = scope.ServiceProvider.GetRequiredService<CurrencyService>();
+
+        var currencies = await currencyService.Get(Constants.Valuation.Today);
+
+        Console.WriteLine($"Currencies as at {currencies.ValuationDateTime}");
+        Console.WriteLine($"{"Code",-6} {"Numeric",7} {"Decimals",8} Name");
+
+        foreach (var currency in currencies.Items.OrderBy(currency => currency.AlphabeticCode.Value))
+            Console.WriteLine($"{currency.AlphabeticCode.Value,-6} {currency.NumericCode,7:D3} {currency.DecimalPlace,8} {currency.Name}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Display currencies failed: {ex.Message}");
     }
 }
 

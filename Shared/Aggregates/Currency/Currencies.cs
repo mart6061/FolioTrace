@@ -4,34 +4,137 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record Currencies
+public sealed record Currencies : IAggregate
 {
-    public required EventDateTime EventDate { get; init; }
+    public required EventDateTime ValuationDateTime { get; init; }
 
-    public required LastAuditDateTime LastAuditDateTime { get; init; }
+    public required AuditDateTime AsOfDateTime { get; init; }
+
+    public EventID LastEventID { get; private set; }
+
+    public LastAuditDateTime LastAuditDateTime { get; private set; }
 
     public required List<Currency> Items { get; init; }
+
+    [SetsRequiredMembers]
+    public Currencies(EventDateTime valuationDateTime, List<ICurrencyEvent> items)
+        : this(valuationDateTime, GetLatestAuditDateTime(valuationDateTime, items), items)
+    {
+    }
 
     // Regular constructor enforces rules
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Currencies(EventDateTime eventDate, LastAuditDateTime lastAuditDateTime, List<Currency> items)
+    public Currencies(EventDateTime valuationDateTime, AuditDateTime asOfDateTime, List<ICurrencyEvent> items)
     {
-        if (eventDate is null)
-            throw new ArgumentNullException(nameof(eventDate));
+        if (valuationDateTime is null)
+            throw new ArgumentNullException(nameof(valuationDateTime));
 
-        if (lastAuditDateTime is null)
-            throw new ArgumentNullException(nameof(lastAuditDateTime));
+        if (asOfDateTime is null)
+            throw new ArgumentNullException(nameof(asOfDateTime));
 
         if (items is null)
             throw new ArgumentNullException(nameof(items));
 
-        if (items.Any(currency => currency is null))
-            throw new ArgumentException("Value must not contain null currencies.", nameof(items));
+        if (items.Any(@event => @event is null))
+            throw new ArgumentException("Value must not contain null currency events.", nameof(items));
 
-        EventDate = eventDate;
-        LastAuditDateTime = lastAuditDateTime;
-        Items = items;
+        if (!items.Any())
+            throw new ArgumentException("Value must contain at least one currency event.", nameof(items));
+
+        var includedItems = items
+            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
+            .ToList();
+
+        if (!includedItems.Any())
+            throw new ArgumentException("Value must contain at least one currency event within the valuation and as-of date time.", nameof(items));
+
+        var orderedItems = includedItems
+            .OrderBy(@event => @event.EventDateTime.Value)
+            .ThenBy(@event => @event.AuditDateTime.Value)
+            .ThenBy(@event => @event.EventID.Value)
+            .ToList();
+
+        ValuationDateTime = valuationDateTime;
+        AsOfDateTime = asOfDateTime;
+        LastEventID = orderedItems.Last().EventID;
+        LastAuditDateTime = new LastAuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value));
+        Items = [];
+
+        foreach (var item in orderedItems)
+            Apply(item);
+    }
+
+    public void Apply(ICurrencyEvent currencyEvent)
+    {
+        if (currencyEvent is null)
+            throw new ArgumentNullException(nameof(currencyEvent));
+
+        switch (currencyEvent)
+        {
+            case CurrencyCreatedEvent createdEvent:
+                Apply(createdEvent);
+                break;
+            case CurrencyModifiedEvent modifiedEvent:
+                Apply(modifiedEvent);
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported currency event type '{currencyEvent.GetType().Name}'.");
+        }
+    }
+
+    public void Apply(CurrencyCreatedEvent createdEvent)
+    {
+        if (createdEvent is null)
+            throw new ArgumentNullException(nameof(createdEvent));
+
+        if (Items.Any(currency => currency.AlphabeticCode == createdEvent.AlphabeticCode))
+            throw new InvalidOperationException($"Currency already exists for AlphabeticCode '{createdEvent.AlphabeticCode}'.");
+
+        Items.Add(CurrencyBuilder.Create(createdEvent));
+        LastEventID = createdEvent.EventID;
+        LastAuditDateTime = GetLastAuditDateTime(Items);
+    }
+
+    public void Apply(CurrencyModifiedEvent modifiedEvent)
+    {
+        if (modifiedEvent is null)
+            throw new ArgumentNullException(nameof(modifiedEvent));
+
+        var index = Items.FindIndex(currency => currency.AlphabeticCode == modifiedEvent.AlphabeticCode);
+        if (index < 0)
+            throw new InvalidOperationException($"No matching currency found for AlphabeticCode '{modifiedEvent.AlphabeticCode}'.");
+
+        Items[index] = Items[index].Apply(modifiedEvent);
+        LastEventID = modifiedEvent.EventID;
+        LastAuditDateTime = GetLastAuditDateTime(Items);
+    }
+
+    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
+
+    public string ToDetail() => $"{nameof(Currencies)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
+
+    private static LastAuditDateTime GetLastAuditDateTime(List<Currency> items) =>
+        new LastAuditDateTime(items.Max(currency => currency.LastAuditDateTime.Value));
+
+    private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<ICurrencyEvent> items)
+    {
+        if (valuationDateTime is null)
+            throw new ArgumentNullException(nameof(valuationDateTime));
+
+        if (items is null)
+            throw new ArgumentNullException(nameof(items));
+
+        if (items.Any(@event => @event is null))
+            throw new ArgumentException("Value must not contain null currency events.", nameof(items));
+
+        var includedItems = items
+            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value)
+            .ToList();
+
+        if (!includedItems.Any())
+            throw new ArgumentException("Value must contain at least one currency event within the valuation date time.", nameof(items));
+
+        return new AuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value));
     }
 }
-

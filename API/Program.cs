@@ -27,6 +27,10 @@ app.UseHttpsRedirection();
 var api = app.MapGroup("");
 var countries = api.MapGroup("/Countries");
 var countryEvents = api.MapGroup("/Events/Country");
+var currencyEvents = api.MapGroup("/Events/Currency");
+var userEvents = api.MapGroup("/Events/User");
+
+var helloWorld = api.MapGet("/HelloWorld", () => "Hello World!");
 
 countries.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, CountryService countryService) =>
 {
@@ -73,4 +77,150 @@ countryEvents.MapPost("/", async (IEventRepository eventRepository, IEnumerable<
         }));
 });
 
+countryEvents.MapPost($"/{nameof(CountryCreatedEvent)}", async (IEventRepository eventRepository, CountryCreatedRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.CountriesStreamId,
+        "/API/Events/Country",
+        eventRepository,
+        () => CountryCreatedEventBuilder.Create(request),
+        cancellationToken));
+
+countryEvents.MapPost($"/{nameof(CountryModifiedEvent)}", async (IEventRepository eventRepository, CountryModifiedRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.CountriesStreamId,
+        "/API/Events/Country",
+        eventRepository,
+        () => CountryModifiedEventBuilder.Create(request),
+        cancellationToken));
+
+countryEvents.MapPost($"/{nameof(CountryFlagModifiedEvent)}", async (IEventRepository eventRepository, CountryFlagModifiedRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.CountriesStreamId,
+        "/API/Events/Country",
+        eventRepository,
+        () => CountryFlagModifiedEventBuilder.Create(request),
+        cancellationToken));
+
+currencyEvents.MapPost($"/{nameof(CurrencyCreatedEvent)}", async (IEventRepository eventRepository, CurrencyEventRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.CurrenciesStreamId,
+        "/API/Events/Currency",
+        eventRepository,
+        () =>
+        CurrencyCreatedEventBuilder.Create(
+            request.UserID,
+            EventDateTimeBuilder.Create(request.EventDateTime),
+            request.Reason,
+            Alpha3Builder.Create(request.AlphabeticCode),
+            request.NumericCode,
+            request.DecimalPlace,
+            request.Name),
+        cancellationToken));
+
+currencyEvents.MapPost($"/{nameof(CurrencyModifiedEvent)}", async (IEventRepository eventRepository, CurrencyEventRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.CurrenciesStreamId,
+        "/API/Events/Currency",
+        eventRepository,
+        () =>
+        CurrencyModifiedEventBuilder.Create(
+            request.UserID,
+            EventDateTimeBuilder.Create(request.EventDateTime),
+            request.Reason,
+            Alpha3Builder.Create(request.AlphabeticCode),
+            request.NumericCode,
+            request.DecimalPlace,
+            request.Name),
+        cancellationToken));
+
+userEvents.MapPost($"/{nameof(UserCreatedEvent)}", async (IEventRepository eventRepository, UserEventRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.UsersStreamId,
+        "/API/Events/User",
+        eventRepository,
+        () =>
+        UserCreatedEventBuilder.Create(
+            request.UserID,
+            EventDateTimeBuilder.Create(request.EventDateTime),
+            request.Reason,
+            request.DisplayName,
+            new UserDisplayPreferences(request.DisplayPreferences.DarkMode, request.DisplayPreferences.RememberTraceDate),
+            new UserValuationPreferences(EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate), request.ValuationPreferences.ShowIncome, request.ValuationPreferences.ShowBook)),
+        cancellationToken));
+
+userEvents.MapPost($"/{nameof(UserModifiedEvent)}", async (IEventRepository eventRepository, UserEventRequest request, CancellationToken cancellationToken) =>
+    await EventEndpointFactory.CreateAndAppend(
+        Constants.Initialisation.UsersStreamId,
+        "/API/Events/User",
+        eventRepository,
+        () =>
+        UserModifiedEventBuilder.Create(
+            request.UserID,
+            EventDateTimeBuilder.Create(request.EventDateTime),
+            request.Reason,
+            request.DisplayName,
+            new UserDisplayPreferences(request.DisplayPreferences.DarkMode, request.DisplayPreferences.RememberTraceDate),
+            new UserValuationPreferences(EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate), request.ValuationPreferences.ShowIncome, request.ValuationPreferences.ShowBook)),
+        cancellationToken));
+
 app.Run();
+
+public sealed record CurrencyEventRequest(Guid UserID, DateTime EventDateTime, string Reason, string AlphabeticCode, int NumericCode, short DecimalPlace, string Name);
+
+public sealed record UserEventRequest(Guid UserID, DateTime EventDateTime, string Reason, string DisplayName, UserDisplayPreferencesRequest DisplayPreferences, UserValuationPreferencesRequest ValuationPreferences);
+
+public sealed record UserDisplayPreferencesRequest(bool DarkMode, bool RememberTraceDate);
+
+public sealed record UserValuationPreferencesRequest(DateTime ValuationDate, bool ShowIncome, bool ShowBook);
+
+public static class EventEndpointFactory
+{
+    public static async Task<IResult> CreateAndAppend<TEvent>(Guid streamId, string eventRoute, IEventRepository eventRepository, Func<Result<TEvent>> createEvent, CancellationToken cancellationToken)
+        where TEvent : class, IEventBase
+    {
+        var result = Create(createEvent);
+        if (!result.IsValid || result.Value is null)
+            return Results.BadRequest(result);
+
+        await eventRepository.AppendAsync(streamId, result.Value, cancellationToken);
+
+        return Results.Accepted(
+            eventRoute,
+            new
+        {
+            EventID = result.Value.EventID.Value,
+            Links = new[]
+            {
+                new
+                {
+                    Rel = "self",
+                    Href = $"{eventRoute}/{result.Value.EventID.Value}",
+                    Method = "GET"
+                }
+            }
+        });
+    }
+
+    private static Result<TEvent> Create<TEvent>(Func<Result<TEvent>> createEvent) =>
+        TryCreate(createEvent);
+
+    private static Result<TEvent> TryCreate<TEvent>(Func<Result<TEvent>> createEvent)
+    {
+        try
+        {
+            return createEvent();
+        }
+        catch (ArgumentException exception)
+        {
+            return Result<TEvent>.Invalid([exception.Message]);
+        }
+        catch (FormatException exception)
+        {
+            return Result<TEvent>.Invalid([exception.Message]);
+        }
+        catch (NullReferenceException exception)
+        {
+            return Result<TEvent>.Invalid([exception.Message]);
+        }
+    }
+}

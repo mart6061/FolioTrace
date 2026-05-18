@@ -4,8 +4,35 @@ namespace FolioTrace.Aggregates;
 
 public static class CountryBuilder
 {
-    // Create a new Country from provided alues (validation enforced by Country constructor)
-    public static Country Create(Alpha2 alpha2, Alpha3 alpha3, short numeric, string name, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime) => new Country(alpha2, alpha3, numeric, name, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime);
+    public static Country Create(UserID userId, Alpha2 alpha2, Alpha3 alpha3, short numeric, string name)
+    {
+        var createdEvent = CountryCreatedEventBuilder.Create(
+            userId,
+            EventDateTimeBuilder.Create(),
+            $"Create {nameof(Country)}",
+            alpha2,
+            alpha3,
+            numeric,
+            name);
+
+        return Create(createdEvent.Value!);
+    }
+
+    public static Country CreateSeed(Alpha2 alpha2, Alpha3 alpha3, short numeric, string name)
+    {
+        var createdEvent = CountryCreatedEventBuilder.CreateSeed(
+            Guid.NewGuid(),
+            Constants.Initialisation.UserID,
+            Constants.Initialisation.EventDateTime,
+            Constants.Initialisation.AuditDateTime,
+            Constants.Initialisation.Reason,
+            alpha2,
+            alpha3,
+            numeric,
+            name);
+
+        return Create(createdEvent.Value!);
+    }
 
     // Create a new Country from a CountryCreatedEvent
     public static Country Create(CountryCreatedEvent createdEvent)
