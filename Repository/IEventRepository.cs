@@ -5,6 +5,8 @@ namespace Repository;
 
 public interface IEventRepository
 {
+    EventRepositoryCacheDiagnostics GetCacheDiagnostics();
+
     Task InitializeAsync(CancellationToken cancellationToken = default);
 
     Task ClearAsync(CancellationToken cancellationToken = default);

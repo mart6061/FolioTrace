@@ -21,3 +21,15 @@ export type Countries = {
   lastAuditDateTime: string;
   items: Country[];
 };
+
+export type MemoryDiagnostics = {
+  eventCache: {
+    isLoaded: boolean;
+    streamCount: number;
+    eventCount: number;
+  };
+  countryService: {
+    cacheEntryCount: number;
+    countryCount: number;
+  };
+};

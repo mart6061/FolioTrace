@@ -10,6 +10,19 @@ public sealed class CountryService(IEventRepository eventRepository)
     private readonly Lock cacheLock = new();
     private readonly Dictionary<CountryCacheKey, Countries> cache = [];
 
+    public CountryServiceDiagnostics GetDiagnostics()
+    {
+        lock (cacheLock)
+        {
+            var countryCount = cache.Values
+                .OrderByDescending(countries => countries.LastAuditDateTime.Value)
+                .FirstOrDefault()
+                ?.Items.Count ?? 0;
+
+            return new CountryServiceDiagnostics(cache.Count, countryCount);
+        }
+    }
+
     public async Task<Countries> Get(EventDateTime valuationDate)
     {
         if (valuationDate is null)

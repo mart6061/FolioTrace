@@ -1,3 +1,7 @@
+<script lang="ts">
+  let { data } = $props();
+</script>
+
 <main class="min-h-screen">
   <section class="page-header">
     <div class="page-container">
@@ -7,6 +11,12 @@
   </section>
 
   <section class="page-container page-section">
+    {#if data.error}
+      <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        {data.error}
+      </div>
+    {/if}
+
     <div class="dashboard-grid">
       <article class="metric-card">
         <span class="metric-label">Reference Data</span>
@@ -18,6 +28,21 @@
         <span class="metric-label">Trace Mode</span>
         <strong>Available</strong>
         <span>Use the footer to view data as of a specific audit date.</span>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Write-Through Cache</span>
+        <strong>{data.memoryDiagnostics?.eventCache.eventCount ?? '-'}</strong>
+        <span>
+          {data.memoryDiagnostics?.eventCache.streamCount ?? '-'} streams
+          {data.memoryDiagnostics?.eventCache.isLoaded ? 'loaded' : 'not loaded'}
+        </span>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Country Service</span>
+        <strong>{data.memoryDiagnostics?.countryService.countryCount ?? '-'}</strong>
+        <span>{data.memoryDiagnostics?.countryService.cacheEntryCount ?? '-'} cached views</span>
       </article>
 
       <article class="metric-card">

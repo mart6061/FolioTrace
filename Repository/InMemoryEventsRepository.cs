@@ -11,6 +11,17 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
     private readonly Dictionary<Guid, IEventBase> eventsById = [];
     private bool isLoaded;
 
+    public EventRepositoryCacheDiagnostics GetCacheDiagnostics()
+    {
+        lock (sync)
+        {
+            return new EventRepositoryCacheDiagnostics(
+                isLoaded,
+                streams.Count,
+                eventsById.Count);
+        }
+    }
+
     public Task InitializeAsync(CancellationToken cancellationToken = default) => EnsureLoadedAsync(cancellationToken);
 
     public async Task ClearAsync(CancellationToken cancellationToken = default)

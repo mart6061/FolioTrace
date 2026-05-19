@@ -29,8 +29,24 @@ var countries = api.MapGroup("/Countries");
 var countryEvents = api.MapGroup("/Events/Country");
 var currencyEvents = api.MapGroup("/Events/Currency");
 var userEvents = api.MapGroup("/Events/User");
+var diagnostics = api.MapGroup("/Diagnostics");
 
 var helloWorld = api.MapGet("/HelloWorld", () => "Hello World!");
+
+diagnostics.MapGet("/Memory", (IEventRepository eventRepository, CountryService countryService) =>
+{
+    var repositoryDiagnostics = eventRepository.GetCacheDiagnostics();
+    var countryDiagnostics = countryService.GetDiagnostics();
+
+    return Results.Ok(new MemoryDiagnosticsResponse(
+        new EventCacheDiagnosticsResponse(
+            repositoryDiagnostics.IsLoaded,
+            repositoryDiagnostics.StreamCount,
+            repositoryDiagnostics.EventCount),
+        new CountryServiceDiagnosticsResponse(
+            countryDiagnostics.CacheEntryCount,
+            countryDiagnostics.CountryCount)));
+});
 
 countries.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, CountryService countryService) =>
 {
@@ -172,6 +188,12 @@ public sealed record UserEventRequest(Guid UserID, DateTime EventDateTime, strin
 public sealed record UserDisplayPreferencesRequest(bool DarkMode, bool RememberTraceDate);
 
 public sealed record UserValuationPreferencesRequest(DateTime ValuationDate, bool ShowIncome, bool ShowBook);
+
+public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, CountryServiceDiagnosticsResponse CountryService);
+
+public sealed record EventCacheDiagnosticsResponse(bool IsLoaded, int StreamCount, int EventCount);
+
+public sealed record CountryServiceDiagnosticsResponse(int CacheEntryCount, int CountryCount);
 
 public static class EventEndpointFactory
 {

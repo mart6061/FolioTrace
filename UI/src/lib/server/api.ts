@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import type { Countries } from '$lib/types';
+import type { Countries, MemoryDiagnostics } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
 
@@ -44,6 +44,15 @@ export async function getCountries(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as Countries;
+}
+
+export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Diagnostics/Memory`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as MemoryDiagnostics;
 }
 
 export async function postCountryCreatedEvent(
