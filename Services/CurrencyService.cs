@@ -10,6 +10,10 @@ public sealed class CurrencyService(IEventRepository eventRepository)
     private readonly Lock cacheLock = new();
     private readonly Dictionary<CurrencyCacheKey, Currencies> cache = [];
 
+    public int Invalidate(CurrencyCreatedEvent @event) => InvalidateFrom(@event.EventDateTime);
+
+    public int Invalidate(CurrencyModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
+
     public async Task<Currencies> Get(EventDateTime valuationDate)
     {
         if (valuationDate is null)
@@ -67,5 +71,24 @@ public sealed class CurrencyService(IEventRepository eventRepository)
 
         public static CurrencyCacheKey ForAsAt(EventDateTime valuationDate, AuditDateTime asAt) =>
             new(valuationDate.Value, asAt.Value);
+    }
+
+    private int InvalidateFrom(EventDateTime eventDateTime)
+    {
+        if (eventDateTime is null)
+            throw new ArgumentNullException(nameof(eventDateTime));
+
+        lock (cacheLock)
+        {
+            var removedCount = 0;
+
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            {
+                if (cache.Remove(cacheKey))
+                    removedCount++;
+            }
+
+            return removedCount;
+        }
     }
 }

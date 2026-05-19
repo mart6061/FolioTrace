@@ -23,6 +23,12 @@ public sealed class CountryService(IEventRepository eventRepository)
         }
     }
 
+    public int Invalidate(CountryCreatedEvent @event) => InvalidateFrom(@event.EventDateTime);
+
+    public int Invalidate(CountryModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
+
+    public int Invalidate(CountryFlagModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
+
     public async Task<Countries> Get(EventDateTime valuationDate)
     {
         if (valuationDate is null)
@@ -80,5 +86,24 @@ public sealed class CountryService(IEventRepository eventRepository)
 
         public static CountryCacheKey ForAsAt(EventDateTime valuationDate, AuditDateTime asAt) =>
             new(valuationDate.Value, asAt.Value);
+    }
+
+    private int InvalidateFrom(EventDateTime eventDateTime)
+    {
+        if (eventDateTime is null)
+            throw new ArgumentNullException(nameof(eventDateTime));
+
+        lock (cacheLock)
+        {
+            var removedCount = 0;
+
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            {
+                if (cache.Remove(cacheKey))
+                    removedCount++;
+            }
+
+            return removedCount;
+        }
     }
 }

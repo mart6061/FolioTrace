@@ -68,13 +68,14 @@ countryEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository ev
         : Results.NotFound();
 });
 
-countryEvents.MapPost("/", async (IEventRepository eventRepository, IEnumerable<IEventBase> events, CancellationToken cancellationToken) =>
+countryEvents.MapPost("/", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IEnumerable<IEventBase> events, CancellationToken cancellationToken) =>
 {
     var eventData = events.ToList();
     if (eventData.Any(@event => @event is not ICountryEvent))
         return Results.BadRequest("All events must be country events.");
 
     await eventRepository.AppendAsync(Constants.Initialisation.CountriesStreamId, eventData, cancellationToken);
+    cacheInvalidationService.Invalidate(eventData);
 
     return Results.Accepted(
         "/API/Events/Country",
@@ -93,35 +94,39 @@ countryEvents.MapPost("/", async (IEventRepository eventRepository, IEnumerable<
         }));
 });
 
-countryEvents.MapPost($"/{nameof(CountryCreatedEvent)}", async (IEventRepository eventRepository, CountryCreatedRequest request, CancellationToken cancellationToken) =>
+countryEvents.MapPost($"/{nameof(CountryCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CountryCreatedRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.CountriesStreamId,
         "/API/Events/Country",
         eventRepository,
+        cacheInvalidationService,
         () => CountryCreatedEventBuilder.Create(request),
         cancellationToken));
 
-countryEvents.MapPost($"/{nameof(CountryModifiedEvent)}", async (IEventRepository eventRepository, CountryModifiedRequest request, CancellationToken cancellationToken) =>
+countryEvents.MapPost($"/{nameof(CountryModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CountryModifiedRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.CountriesStreamId,
         "/API/Events/Country",
         eventRepository,
+        cacheInvalidationService,
         () => CountryModifiedEventBuilder.Create(request),
         cancellationToken));
 
-countryEvents.MapPost($"/{nameof(CountryFlagModifiedEvent)}", async (IEventRepository eventRepository, CountryFlagModifiedRequest request, CancellationToken cancellationToken) =>
+countryEvents.MapPost($"/{nameof(CountryFlagModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CountryFlagModifiedRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.CountriesStreamId,
         "/API/Events/Country",
         eventRepository,
+        cacheInvalidationService,
         () => CountryFlagModifiedEventBuilder.Create(request),
         cancellationToken));
 
-currencyEvents.MapPost($"/{nameof(CurrencyCreatedEvent)}", async (IEventRepository eventRepository, CurrencyEventRequest request, CancellationToken cancellationToken) =>
+currencyEvents.MapPost($"/{nameof(CurrencyCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CurrencyEventRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.CurrenciesStreamId,
         "/API/Events/Currency",
         eventRepository,
+        cacheInvalidationService,
         () =>
         CurrencyCreatedEventBuilder.Create(
             request.UserID,
@@ -133,11 +138,12 @@ currencyEvents.MapPost($"/{nameof(CurrencyCreatedEvent)}", async (IEventReposito
             request.Name),
         cancellationToken));
 
-currencyEvents.MapPost($"/{nameof(CurrencyModifiedEvent)}", async (IEventRepository eventRepository, CurrencyEventRequest request, CancellationToken cancellationToken) =>
+currencyEvents.MapPost($"/{nameof(CurrencyModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CurrencyEventRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.CurrenciesStreamId,
         "/API/Events/Currency",
         eventRepository,
+        cacheInvalidationService,
         () =>
         CurrencyModifiedEventBuilder.Create(
             request.UserID,
@@ -149,11 +155,12 @@ currencyEvents.MapPost($"/{nameof(CurrencyModifiedEvent)}", async (IEventReposit
             request.Name),
         cancellationToken));
 
-userEvents.MapPost($"/{nameof(UserCreatedEvent)}", async (IEventRepository eventRepository, UserEventRequest request, CancellationToken cancellationToken) =>
+userEvents.MapPost($"/{nameof(UserCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserEventRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.UsersStreamId,
         "/API/Events/User",
         eventRepository,
+        cacheInvalidationService,
         () =>
         UserCreatedEventBuilder.Create(
             request.UserID,
@@ -164,11 +171,12 @@ userEvents.MapPost($"/{nameof(UserCreatedEvent)}", async (IEventRepository event
             new UserValuationPreferences(EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate), request.ValuationPreferences.ShowIncome, request.ValuationPreferences.ShowBook)),
         cancellationToken));
 
-userEvents.MapPost($"/{nameof(UserModifiedEvent)}", async (IEventRepository eventRepository, UserEventRequest request, CancellationToken cancellationToken) =>
+userEvents.MapPost($"/{nameof(UserModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserEventRequest request, CancellationToken cancellationToken) =>
     await EventEndpointFactory.CreateAndAppend(
         Constants.Initialisation.UsersStreamId,
         "/API/Events/User",
         eventRepository,
+        cacheInvalidationService,
         () =>
         UserModifiedEventBuilder.Create(
             request.UserID,
@@ -197,7 +205,7 @@ public sealed record CountryServiceDiagnosticsResponse(int CacheEntryCount, int 
 
 public static class EventEndpointFactory
 {
-    public static async Task<IResult> CreateAndAppend<TEvent>(Guid streamId, string eventRoute, IEventRepository eventRepository, Func<Result<TEvent>> createEvent, CancellationToken cancellationToken)
+    public static async Task<IResult> CreateAndAppend<TEvent>(Guid streamId, string eventRoute, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, Func<Result<TEvent>> createEvent, CancellationToken cancellationToken)
         where TEvent : class, IEventBase
     {
         var result = Create(createEvent);
@@ -205,6 +213,7 @@ public static class EventEndpointFactory
             return Results.BadRequest(result);
 
         await eventRepository.AppendAsync(streamId, result.Value, cancellationToken);
+        cacheInvalidationService.Invalidate(result.Value);
 
         return Results.Accepted(
             eventRoute,
