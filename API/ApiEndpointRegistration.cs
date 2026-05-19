@@ -45,6 +45,50 @@ public static class ApiEndpointRegistration
                     countryDiagnostics.CacheEntryCount,
                     countryDiagnostics.CountryCount)));
         });
+
+        diagnostics.MapGet("/HttpExchanges", async (
+            DateTime? fromUtc,
+            DateTime? toUtc,
+            string? method,
+            string? path,
+            int? statusCode,
+            int? minimumDurationMilliseconds,
+            int? maximumDurationMilliseconds,
+            string? text,
+            int? page,
+            int? pageSize,
+            IApiExchangeRepository repository,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await repository.SearchAsync(
+                new ApiExchangeSearchCriteria(
+                    fromUtc,
+                    toUtc,
+                    method,
+                    path,
+                    statusCode,
+                    minimumDurationMilliseconds,
+                    maximumDurationMilliseconds,
+                    text,
+                    page ?? 1,
+                    pageSize ?? 50),
+                cancellationToken);
+
+            return Results.Ok(new ApiExchangeSearchResponse(
+                result.Items.Select(ToResponse).ToList(),
+                result.TotalCount,
+                result.Page,
+                result.PageSize));
+        });
+
+        diagnostics.MapGet("/HttpExchanges/{id:guid}", async (Guid id, IApiExchangeRepository repository, CancellationToken cancellationToken) =>
+        {
+            var exchange = await repository.LoadAsync(id, cancellationToken);
+
+            return exchange is null
+                ? Results.NotFound()
+                : Results.Ok(ToResponse(exchange));
+        });
     }
 
     private static void MapCountryEndpoints(this RouteGroupBuilder api)
@@ -200,4 +244,22 @@ public static class ApiEndpointRegistration
             EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate),
             request.ValuationPreferences.ShowIncome,
             request.ValuationPreferences.ShowBook);
+
+    private static ApiExchangeResponse ToResponse(ApiExchange exchange) =>
+        new(
+            exchange.Id,
+            exchange.StartedAtUtc,
+            exchange.CompletedAtUtc,
+            exchange.DurationMilliseconds,
+            exchange.Method,
+            exchange.Path,
+            exchange.QueryString,
+            exchange.StatusCode,
+            exchange.ExceptionType,
+            exchange.ExceptionMessage,
+            ToResponse(exchange.Request),
+            ToResponse(exchange.Response));
+
+    private static ApiHttpMessageResponse ToResponse(ApiHttpMessage message) =>
+        new(message.Headers, message.Body, message.ContentType, message.ContentLength, message.BodyTruncated);
 }

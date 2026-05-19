@@ -21,6 +21,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseApiExchangeCapture();
+
 app.MapFolioTraceApi();
 
 app.Run();

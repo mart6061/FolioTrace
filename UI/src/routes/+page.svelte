@@ -40,6 +40,12 @@
       </article>
 
       <article class="metric-card">
+        <span class="metric-label">API Diagnostics</span>
+        <strong>HTTP</strong>
+        <a href="/Diagnostics/HttpExchanges">Search request/response captures</a>
+      </article>
+
+      <article class="metric-card">
         <span class="metric-label">Country Service</span>
         <strong>{data.memoryDiagnostics?.countryService.countryCount ?? '-'}</strong>
         <span>{data.memoryDiagnostics?.countryService.cacheEntryCount ?? '-'} cached views</span>

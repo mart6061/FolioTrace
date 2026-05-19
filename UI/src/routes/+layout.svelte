@@ -188,6 +188,7 @@
                 Country Data
               </a>
             {/if}
+            <a href={pathWithTrace('/Diagnostics/HttpExchanges')} onclick={closeSystemMenu}>API Diagnostics</a>
             <button type="button">Help</button>
           </nav>
         {/if}

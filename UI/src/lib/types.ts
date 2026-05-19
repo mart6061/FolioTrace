@@ -33,3 +33,33 @@ export type MemoryDiagnostics = {
     countryCount: number;
   };
 };
+
+export type ApiHttpMessage = {
+  headers: Record<string, string[]>;
+  body: string | null;
+  contentType: string | null;
+  contentLength: number | null;
+  bodyTruncated: boolean;
+};
+
+export type ApiExchange = {
+  id: string;
+  startedAtUtc: string;
+  completedAtUtc: string;
+  durationMilliseconds: number;
+  method: string;
+  path: string;
+  queryString: string;
+  statusCode: number | null;
+  exceptionType: string | null;
+  exceptionMessage: string | null;
+  request: ApiHttpMessage;
+  response: ApiHttpMessage;
+};
+
+export type ApiExchangeSearchResponse = {
+  items: ApiExchange[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};

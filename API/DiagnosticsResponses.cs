@@ -5,3 +5,30 @@ public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse Eve
 public sealed record EventCacheDiagnosticsResponse(bool IsLoaded, int StreamCount, int EventCount);
 
 public sealed record CountryServiceDiagnosticsResponse(int CacheEntryCount, int CountryCount);
+
+public sealed record ApiExchangeSearchResponse(
+    IReadOnlyList<ApiExchangeResponse> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public sealed record ApiExchangeResponse(
+    Guid Id,
+    DateTime StartedAtUtc,
+    DateTime CompletedAtUtc,
+    long DurationMilliseconds,
+    string Method,
+    string Path,
+    string QueryString,
+    int? StatusCode,
+    string? ExceptionType,
+    string? ExceptionMessage,
+    ApiHttpMessageResponse Request,
+    ApiHttpMessageResponse Response);
+
+public sealed record ApiHttpMessageResponse(
+    Dictionary<string, string[]> Headers,
+    string? Body,
+    string? ContentType,
+    long? ContentLength,
+    bool BodyTruncated);

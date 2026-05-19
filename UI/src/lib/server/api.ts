@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import type { Countries, MemoryDiagnostics } from '$lib/types';
+import type { ApiExchangeSearchResponse, Countries, MemoryDiagnostics } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
 
@@ -53,6 +53,35 @@ export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as MemoryDiagnostics;
+}
+
+export type ApiExchangeSearchRequest = {
+  fromUtc?: string;
+  toUtc?: string;
+  method?: string;
+  path?: string;
+  statusCode?: string;
+  minimumDurationMilliseconds?: string;
+  maximumDurationMilliseconds?: string;
+  text?: string;
+  page?: string;
+  pageSize?: string;
+};
+
+export async function getApiExchanges(fetchApi: typeof fetch, request: ApiExchangeSearchRequest) {
+  const url = new URL(`${getApiBaseUrl()}/Diagnostics/HttpExchanges`);
+
+  for (const [key, value] of Object.entries(request)) {
+    if (value)
+      url.searchParams.set(key, value);
+  }
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as ApiExchangeSearchResponse;
 }
 
 export async function postCountryCreatedEvent(
