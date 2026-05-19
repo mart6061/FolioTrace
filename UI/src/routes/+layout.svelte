@@ -155,6 +155,16 @@
           type="search"
         />
 
+        <a
+          aria-label="User preferences"
+          class="system-user-link"
+          href={pathWithTrace('/User/Preferences')}
+          onclick={closeSystemMenu}
+          title="User preferences"
+        >
+          me
+        </a>
+
         {#if systemMenuOpen}
           <nav class="system-menu" aria-label="System menu">
             <button type="button">Blotter</button>

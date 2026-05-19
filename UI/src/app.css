@@ -94,7 +94,7 @@ main {
   border: 1px solid rgb(203 213 225 / 0.9);
   border-radius: 8px;
   background: #fff;
-  padding: 0 14px 0 48px;
+  padding: 0 48px 0 48px;
   color: var(--ink);
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
   outline: none;
@@ -144,6 +144,35 @@ main {
   height: 2px;
   border-radius: 999px;
   background: currentColor;
+}
+
+.system-user-link {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 620;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.system-user-link:hover,
+.system-user-link:focus-visible {
+  border-color: var(--accent);
+  background: #ecfdf5;
+  color: var(--accent);
+  outline: none;
 }
 
 .system-menu {
