@@ -12,8 +12,10 @@
   let sortKey = $state<SortKey>('country');
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
+  let addingCountry = $state(false);
   let editingAlpha2 = $state('');
   let submittingAlpha2 = $state('');
+  let submittingCreate = $state(false);
 
   const filteredCountries = $derived(
     (data.countries?.items ?? []).filter((country) => {
@@ -156,12 +158,34 @@
   }
 
   function startEdit(alpha2: string) {
+    addingCountry = false;
     editingAlpha2 = alpha2;
   }
 
   function cancelEdit() {
     editingAlpha2 = '';
   }
+
+  function startAdd() {
+    editingAlpha2 = '';
+    addingCountry = true;
+  }
+
+  function cancelAdd() {
+    addingCountry = false;
+  }
+
+  const enhanceCountryCreate: SubmitFunction = () => {
+    submittingCreate = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingCreate = false;
+
+      if (result.type === 'success')
+        addingCountry = false;
+    };
+  };
 
   const enhanceCountryEdit: SubmitFunction = ({ formData }) => {
     const alpha2 = formData.get('alpha2');
@@ -259,6 +283,11 @@
           </label>
 
           <div class="table-actions" aria-label="Table actions">
+            <button aria-label="Add country" onclick={startAdd} title="Add country" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
             <button aria-label="Export countries to JSON" onclick={exportJson} title="Export JSON" type="button">
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" />
@@ -316,6 +345,111 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
+              {#if addingCountry}
+                <tr class="bg-teal-50/30 align-top">
+                  <td class="px-3 py-2"></td>
+                  <td class="px-3 py-2">
+                    <form
+                      id="country-create"
+                      action="?/createCountry"
+                      method="POST"
+                      use:enhance={enhanceCountryCreate}
+                    >
+                      <label class="grid gap-1 text-xs font-medium text-slate-600">
+                        <span>Country</span>
+                        <input
+                          class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          name="name"
+                          required
+                          type="text"
+                          value={form?.intent === 'createCountry' ? (form.values?.name ?? '') : ''}
+                        />
+                      </label>
+                    </form>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="country-create">
+                      <span>Alpha-2</span>
+                      <input
+                        class="h-8 w-20 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="country-create"
+                        maxlength="2"
+                        minlength="2"
+                        name="alpha2"
+                        required
+                        type="text"
+                        value={form?.intent === 'createCountry' ? (form.values?.alpha2 ?? '') : ''}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="country-create">
+                      <span>Alpha-3</span>
+                      <input
+                        class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="country-create"
+                        maxlength="3"
+                        minlength="3"
+                        name="alpha3"
+                        required
+                        type="text"
+                        value={form?.intent === 'createCountry' ? (form.values?.alpha3 ?? '') : ''}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2 text-right">
+                    <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form="country-create">
+                      <span>Numeric</span>
+                      <input
+                        class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="country-create"
+                        max="999"
+                        min="0"
+                        name="numeric"
+                        required
+                        type="number"
+                        value={form?.intent === 'createCountry' ? (form.values?.numeric ?? '') : ''}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="country-create">
+                      <span>Event date</span>
+                      <input
+                        class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="country-create"
+                        name="eventDateTime"
+                        required
+                        type="datetime-local"
+                        value={form?.intent === 'createCountry' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
+                      <span>Actions</span>
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                          onclick={cancelAdd}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                          disabled={submittingCreate}
+                          form="country-create"
+                          type="submit"
+                        >
+                          {submittingCreate ? 'Adding' : 'Add'}
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              {/if}
+
               {#each sortedCountries as country}
                 {#if editingAlpha2 === country.alpha2}
                   <tr class="bg-teal-50/30 align-top">

@@ -12,6 +12,8 @@ export type CountryModifiedRequest = {
   name: string;
 };
 
+export type CountryCreatedRequest = CountryModifiedRequest;
+
 export type EventSubmissionResponse = {
   eventID: string;
   links: {
@@ -44,12 +46,29 @@ export async function getCountries(
   return (await response.json()) as Countries;
 }
 
+export async function postCountryCreatedEvent(
+  fetchApi: typeof fetch,
+  request: CountryCreatedRequest,
+  userID: string
+) {
+  return postCountryEvent(fetchApi, 'CountryCreatedEvent', request, userID);
+}
+
 export async function postCountryModifiedEvent(
   fetchApi: typeof fetch,
   request: CountryModifiedRequest,
   userID: string
 ) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Country/CountryModifiedEvent`, {
+  return postCountryEvent(fetchApi, 'CountryModifiedEvent', request, userID);
+}
+
+async function postCountryEvent(
+  fetchApi: typeof fetch,
+  eventType: 'CountryCreatedEvent' | 'CountryModifiedEvent',
+  request: CountryCreatedRequest | CountryModifiedRequest,
+  userID: string
+) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Country/${eventType}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json'
