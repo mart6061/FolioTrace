@@ -41,12 +41,27 @@ main {
 }
 
 .trace-warning {
-  border-bottom: 1px solid #f59e0b;
-  background: #fffbeb;
-  color: #92400e;
+  border-bottom: 1px solid #b45309;
+  background: #f59e0b;
+  color: #451a03;
+  box-shadow: 0 8px 20px rgb(120 53 15 / 0.2);
   font-size: 14px;
-  font-weight: 560;
-  padding: 10px 0;
+  padding: 9px 0;
+}
+
+.trace-warning-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trace-warning strong {
+  color: #111827;
+  font-weight: 760;
+}
+
+.trace-warning span {
+  font-weight: 620;
 }
 
 .app-header {
