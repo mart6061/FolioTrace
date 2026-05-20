@@ -222,7 +222,7 @@
     {@render children()}
   </div>
 
-  <footer class="trace-footer">
+  <footer class={`trace-footer ${traceMode && auditDateTime ? 'trace-footer-active' : ''}`}>
     <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium text-slate-950">Trace Mode</span>

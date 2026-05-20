@@ -439,6 +439,26 @@ main {
   backdrop-filter: blur(10px);
 }
 
+.trace-footer-active {
+  border-top-color: #b45309;
+  background: #f59e0b;
+  color: #451a03;
+  box-shadow: 0 -8px 20px rgb(120 53 15 / 0.2);
+}
+
+.trace-footer-active span,
+.trace-footer-active label {
+  color: #451a03 !important;
+}
+
+.trace-footer-active .trace-toggle span {
+  background: #92400e;
+}
+
+.trace-footer-active .trace-toggle input:checked + span {
+  background: #111827;
+}
+
 .trace-toggle {
   position: relative;
   display: inline-flex;
