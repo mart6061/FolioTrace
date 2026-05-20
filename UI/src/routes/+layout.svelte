@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { formatDisplayDateTime } from '$lib/dates';
   import '../app.css';
   import { onMount } from 'svelte';
 
@@ -116,17 +117,7 @@
     return `${url.pathname}${url.search}`;
   }
 
-  function formatRecordedBy(value: string) {
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime()))
-      return value;
-
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date);
-  }
+  const formatRecordedBy = formatDisplayDateTime;
 </script>
 
 <svelte:document onclick={handleDocumentClick} onkeydown={handleDocumentKeydown} />

@@ -22,6 +22,21 @@ export function formatDateTime(value: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export function formatDisplayDateTime(value: string) {
+  const date = new Date(value);
+
+  if (date.getFullYear() <= 1)
+    return 'now';
+
+  if (date.getFullYear() >= 9999)
+    return '-';
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
+}
+
 export function formatTableDateTime(value: string) {
   const date = new Date(value);
 

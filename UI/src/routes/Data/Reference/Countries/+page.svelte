@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { formatDateTime, formatTableDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -267,7 +267,7 @@
           countries
         </div>
         <div>
-          Valuation {formatDateTime(data.countries.valuationDateTime)} · As-of {formatDateTime(data.countries.asOfDateTime)}
+          Valuation {formatDisplayDateTime(data.countries.valuationDateTime)} · As-of {formatDisplayDateTime(data.countries.asOfDateTime)}
         </div>
       </div>
 
