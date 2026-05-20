@@ -2,7 +2,7 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { formatDisplayDateTime } from '$lib/dates';
+  import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
   import '../app.css';
   import { onMount } from 'svelte';
 
@@ -19,9 +19,9 @@
   let systemMenuContainer: HTMLDivElement;
 
   onMount(() => {
-    const urlAuditDateTime = page.url.searchParams.get('auditDateTime') ?? '';
+    const urlAuditDateTime = clampFutureInputDateTime(page.url.searchParams.get('auditDateTime') ?? '');
     const storedTraceMode = sessionStorage.getItem(traceModeStorageKey) === 'true';
-    const storedAuditDateTime = sessionStorage.getItem(auditDateTimeStorageKey) ?? '';
+    const storedAuditDateTime = clampFutureInputDateTime(sessionStorage.getItem(auditDateTimeStorageKey) ?? '');
 
     traceMode = urlAuditDateTime ? true : storedTraceMode;
     auditDateTime = urlAuditDateTime || (traceMode ? storedAuditDateTime : '');
@@ -45,6 +45,8 @@
   function syncTraceStateToUrl(replaceState = false) {
     if (!browser || !hydrated)
       return;
+
+    auditDateTime = clampFutureInputDateTime(auditDateTime);
 
     updateTraceSession();
 
@@ -76,6 +78,7 @@
   }
 
   function handleAuditDateTimeChange() {
+    auditDateTime = clampFutureInputDateTime(auditDateTime);
     syncTraceStateToUrl();
   }
 
@@ -233,6 +236,7 @@
           <input
             class="h-8 min-w-56 rounded-md border border-slate-300 bg-white px-2.5 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             bind:value={auditDateTime}
+            max={nowForInput()}
             name="traceAuditDateTime"
             onchange={handleAuditDateTimeChange}
             type="datetime-local"

@@ -6,6 +6,22 @@ export function todayEndForInput(now = new Date()) {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:59`;
 }
 
+export function nowForInput(now = new Date()) {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+export function clampFutureInputDateTime(value: string, now = new Date()) {
+  if (!value)
+    return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime()))
+    return value;
+
+  return date.getTime() > now.getTime() ? nowForInput(now) : value;
+}
+
 export function toApiDateTime(value: string) {
   return new Date(value).toISOString();
 }

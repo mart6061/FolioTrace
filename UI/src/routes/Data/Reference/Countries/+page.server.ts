@@ -1,4 +1,4 @@
-import { todayEndForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
 import {
   getApiBaseUrl,
@@ -13,7 +13,7 @@ const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
-  const auditDateTime = url.searchParams.get('auditDateTime') || '';
+  const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
 
   try {
     const countries = await getCountries(
