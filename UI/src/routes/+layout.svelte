@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
   import '../app.css';
   import { onMount } from 'svelte';
 
@@ -18,9 +19,9 @@
   let systemMenuContainer: HTMLDivElement;
 
   onMount(() => {
-    const urlAuditDateTime = page.url.searchParams.get('auditDateTime') ?? '';
+    const urlAuditDateTime = clampFutureInputDateTime(page.url.searchParams.get('auditDateTime') ?? '');
     const storedTraceMode = sessionStorage.getItem(traceModeStorageKey) === 'true';
-    const storedAuditDateTime = sessionStorage.getItem(auditDateTimeStorageKey) ?? '';
+    const storedAuditDateTime = clampFutureInputDateTime(sessionStorage.getItem(auditDateTimeStorageKey) ?? '');
 
     traceMode = urlAuditDateTime ? true : storedTraceMode;
     auditDateTime = urlAuditDateTime || (traceMode ? storedAuditDateTime : '');
@@ -44,6 +45,8 @@
   function syncTraceStateToUrl(replaceState = false) {
     if (!browser || !hydrated)
       return;
+
+    auditDateTime = clampFutureInputDateTime(auditDateTime);
 
     updateTraceSession();
 
@@ -75,6 +78,7 @@
   }
 
   function handleAuditDateTimeChange() {
+    auditDateTime = clampFutureInputDateTime(auditDateTime);
     syncTraceStateToUrl();
   }
 
@@ -115,6 +119,8 @@
 
     return `${url.pathname}${url.search}`;
   }
+
+  const formatRecordedBy = formatDisplayDateTime;
 </script>
 
 <svelte:document onclick={handleDocumentClick} onkeydown={handleDocumentKeydown} />
@@ -128,6 +134,15 @@
 </svelte:head>
 
 <div class="app-shell">
+  {#if traceMode && auditDateTime}
+    <div class="trace-warning" role="alert">
+      <div class="page-container trace-warning-inner">
+        <strong>Trace Mode is on</strong>
+        <span>This view only includes events recorded on or before {formatRecordedBy(auditDateTime)}.</span>
+      </div>
+    </div>
+  {/if}
+
   <header class="app-header">
     <div class="app-header-inner">
       <a class="app-brand" href={pathWithTrace('/')} onclick={closeSystemMenu}>
@@ -155,6 +170,16 @@
           type="search"
         />
 
+        <a
+          aria-label="User preferences"
+          class="system-user-link"
+          href={pathWithTrace('/User/Preferences')}
+          onclick={closeSystemMenu}
+          title="User preferences"
+        >
+          me
+        </a>
+
         {#if systemMenuOpen}
           <nav class="system-menu" aria-label="System menu">
             <button type="button">Blotter</button>
@@ -177,7 +202,15 @@
               >
                 Country Data
               </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Data/Reference/Currencies')}
+                onclick={closeSystemMenu}
+              >
+                Currency Data
+              </a>
             {/if}
+            <a href={pathWithTrace('/Diagnostics/HttpExchanges')} onclick={closeSystemMenu}>API Diagnostics</a>
             <button type="button">Help</button>
           </nav>
         {/if}
@@ -189,7 +222,7 @@
     {@render children()}
   </div>
 
-  <footer class="trace-footer">
+  <footer class={`trace-footer ${traceMode && auditDateTime ? 'trace-footer-active' : ''}`}>
     <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium text-slate-950">Trace Mode</span>
@@ -210,6 +243,7 @@
           <input
             class="h-8 min-w-56 rounded-md border border-slate-300 bg-white px-2.5 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             bind:value={auditDateTime}
+            max={nowForInput()}
             name="traceAuditDateTime"
             onchange={handleAuditDateTimeChange}
             type="datetime-local"

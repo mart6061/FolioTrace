@@ -1,12 +1,19 @@
-import { todayEndForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
-import { getApiBaseUrl, getCountries, postCountryModifiedEvent, type CountryModifiedRequest } from '$lib/server/api';
+import {
+  getApiBaseUrl,
+  getCountries,
+  postCountryCreatedEvent,
+  postCountryModifiedEvent,
+  type CountryCreatedRequest,
+  type CountryModifiedRequest
+} from '$lib/server/api';
 
 const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
-  const auditDateTime = url.searchParams.get('auditDateTime') || '';
+  const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
 
   try {
     const countries = await getCountries(
@@ -34,6 +41,63 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
+  createCountry: async ({ fetch, request }) => {
+    const formData = await request.formData();
+    const alpha2 = getFormString(formData, 'alpha2').toUpperCase();
+    const alpha3 = getFormString(formData, 'alpha3').toUpperCase();
+    const name = getFormString(formData, 'name');
+    const numericText = getFormString(formData, 'numeric');
+    const eventDateTime = getFormString(formData, 'eventDateTime');
+    const numeric = Number.parseInt(numericText, 10);
+
+    if (!alpha2 || !alpha3 || !name || !numericText || !eventDateTime)
+      return fail(400, {
+        alpha2,
+        intent: 'createCountry',
+        message: 'Country, Alpha-2, Alpha-3, numeric code, name, and event date are required.',
+        status: 'failure',
+        values: { alpha2, alpha3, eventDateTime, name, numeric: numericText }
+      });
+
+    if (!Number.isInteger(numeric) || numeric < 0 || numeric > 999)
+      return fail(400, {
+        alpha2,
+        intent: 'createCountry',
+        message: 'Numeric code must be between 000 and 999.',
+        status: 'failure',
+        values: { alpha2, alpha3, eventDateTime, name, numeric: numericText }
+      });
+
+    try {
+      const countryCreatedRequest: CountryCreatedRequest = {
+        eventDateTime: toApiDateTime(eventDateTime),
+        reason: `Create country ${alpha2}`,
+        alpha2,
+        alpha3,
+        numeric,
+        name
+      };
+
+      const result = await postCountryCreatedEvent(fetch, countryCreatedRequest, systemUserID);
+
+      return {
+        alpha2,
+        eventID: result.eventID,
+        intent: 'createCountry',
+        message: `${alpha2} was created successfully.`,
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, {
+        alpha2,
+        intent: 'createCountry',
+        message: error instanceof Error ? error.message : 'Unable to create country.',
+        status: 'failure',
+        values: { alpha2, alpha3, eventDateTime, name, numeric: numericText }
+      });
+    }
+  },
+
   modifyCountry: async ({ fetch, request }) => {
     const formData = await request.formData();
     const alpha2 = getFormString(formData, 'alpha2').toUpperCase();
@@ -46,17 +110,19 @@ export const actions = {
     if (!alpha2 || !alpha3 || !name || !numericText || !eventDateTime)
       return fail(400, {
         alpha2,
+        intent: 'modifyCountry',
         message: 'Country, Alpha-3, numeric code, name, and event date are required.',
         status: 'failure',
-        values: { alpha3, eventDateTime, name, numeric: numericText }
+        values: { alpha2, alpha3, eventDateTime, name, numeric: numericText }
       });
 
     if (!Number.isInteger(numeric) || numeric < 0 || numeric > 999)
       return fail(400, {
         alpha2,
+        intent: 'modifyCountry',
         message: 'Numeric code must be between 000 and 999.',
         status: 'failure',
-        values: { alpha3, eventDateTime, name, numeric: numericText }
+        values: { alpha2, alpha3, eventDateTime, name, numeric: numericText }
       });
 
     try {
@@ -74,15 +140,17 @@ export const actions = {
       return {
         alpha2,
         eventID: result.eventID,
+        intent: 'modifyCountry',
         message: `${alpha2} was updated successfully.`,
         status: 'success'
       };
     } catch (error) {
       return fail(502, {
         alpha2,
+        intent: 'modifyCountry',
         message: error instanceof Error ? error.message : 'Unable to update country.',
         status: 'failure',
-        values: { alpha3, eventDateTime, name, numeric: numericText }
+        values: { alpha2, alpha3, eventDateTime, name, numeric: numericText }
       });
     }
   }

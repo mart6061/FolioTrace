@@ -6,6 +6,22 @@ export function todayEndForInput(now = new Date()) {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:59`;
 }
 
+export function nowForInput(now = new Date()) {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+export function clampFutureInputDateTime(value: string, now = new Date()) {
+  if (!value)
+    return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime()))
+    return value;
+
+  return date.getTime() > now.getTime() ? nowForInput(now) : value;
+}
+
 export function toApiDateTime(value: string) {
   return new Date(value).toISOString();
 }
@@ -20,6 +36,21 @@ export function formatDateTime(value: string) {
     return '-';
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function formatDisplayDateTime(value: string) {
+  const date = new Date(value);
+
+  if (date.getFullYear() <= 1)
+    return 'now';
+
+  if (date.getFullYear() >= 9999)
+    return '-';
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
 }
 
 export function formatTableDateTime(value: string) {

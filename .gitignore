@@ -3,6 +3,7 @@
 [Bb]in/
 [Oo]bj/
 TestResults/
+API/Logs/
 *.user
 *.suo
 *.rsuser
