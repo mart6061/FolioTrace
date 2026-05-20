@@ -115,6 +115,18 @@
 
     return `${url.pathname}${url.search}`;
   }
+
+  function formatRecordedBy(value: string) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime()))
+      return value;
+
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(date);
+  }
 </script>
 
 <svelte:document onclick={handleDocumentClick} onkeydown={handleDocumentKeydown} />
@@ -197,6 +209,14 @@
   </header>
 
   <div class="app-content">
+    {#if traceMode && auditDateTime}
+      <div class="trace-warning" role="status">
+        <div class="page-container">
+          Trace Mode is on. This view only includes events recorded on or before {formatRecordedBy(auditDateTime)}.
+        </div>
+      </div>
+    {/if}
+
     {@render children()}
   </div>
 

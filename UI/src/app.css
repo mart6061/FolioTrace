@@ -40,6 +40,15 @@ main {
   padding-bottom: 76px;
 }
 
+.trace-warning {
+  border-bottom: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 560;
+  padding: 10px 0;
+}
+
 .app-header {
   position: sticky;
   top: 0;
