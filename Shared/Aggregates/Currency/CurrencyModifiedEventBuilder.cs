@@ -5,6 +5,14 @@ namespace FolioTrace.Aggregates;
 
 public static class CurrencyModifiedEventBuilder
 {
+    public static Result<CurrencyModifiedEvent> Create(CurrencyModifiedRequest request)
+    {
+        if (request is null)
+            throw new ArgumentNullException(nameof(request));
+
+        return Create(request.UserID, request.EventDateTime, request.Reason, request.AlphabeticCode, request.NumericCode, request.DecimalPlace, request.Name);
+    }
+
     public static Result<CurrencyModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();

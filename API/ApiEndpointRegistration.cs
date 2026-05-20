@@ -20,6 +20,7 @@ public static class ApiEndpointRegistration
         api.MapGet("/HelloWorld", () => "Hello World!");
         api.MapDiagnosticsEndpoints();
         api.MapCountryEndpoints();
+        api.MapCurrencyEndpoints();
         api.MapCountryEventEndpoints();
         api.MapCurrencyEventEndpoints();
         api.MapUserEventEndpoints();
@@ -31,10 +32,11 @@ public static class ApiEndpointRegistration
     {
         var diagnostics = api.MapGroup("/Diagnostics");
 
-        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, CountryService countryService) =>
+        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, CountryService countryService, CurrencyService currencyService) =>
         {
             var repositoryDiagnostics = eventRepository.GetCacheDiagnostics();
             var countryDiagnostics = countryService.GetDiagnostics();
+            var currencyDiagnostics = currencyService.GetDiagnostics();
 
             return Results.Ok(new MemoryDiagnosticsResponse(
                 new EventCacheDiagnosticsResponse(
@@ -43,7 +45,10 @@ public static class ApiEndpointRegistration
                     repositoryDiagnostics.EventCount),
                 new CountryServiceDiagnosticsResponse(
                     countryDiagnostics.CacheEntryCount,
-                    countryDiagnostics.CountryCount)));
+                    countryDiagnostics.CountryCount),
+                new CurrencyServiceDiagnosticsResponse(
+                    currencyDiagnostics.CacheEntryCount,
+                    currencyDiagnostics.CurrencyCount)));
         });
 
         diagnostics.MapGet("/HttpExchanges", async (
@@ -102,6 +107,20 @@ public static class ApiEndpointRegistration
             return auditDateTime.HasValue
                 ? Results.Ok(await countryService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await countryService.Get(valuationDate));
+        });
+    }
+
+    private static void MapCurrencyEndpoints(this RouteGroupBuilder api)
+    {
+        var currencies = api.MapGroup("/Currencies");
+
+        currencies.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, CurrencyService currencyService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await currencyService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await currencyService.Get(valuationDate));
         });
     }
 
@@ -166,38 +185,33 @@ public static class ApiEndpointRegistration
     {
         var currencyEvents = api.MapGroup("/Events/Currency");
 
-        currencyEvents.MapPost($"/{nameof(CurrencyCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CurrencyEventRequest request, CancellationToken cancellationToken) =>
+        currencyEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+            await eventRepository.LoadStreamAsync<ICurrencyEvent>(Constants.Initialisation.CurrenciesStreamId, cancellationToken));
+
+        currencyEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is ICurrencyEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
+        currencyEvents.MapPost($"/{nameof(CurrencyCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CurrencyCreatedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.CurrenciesStreamId,
                 CurrencyEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
-                () =>
-                CurrencyCreatedEventBuilder.Create(
-                    request.UserID,
-                    EventDateTimeBuilder.Create(request.EventDateTime),
-                    request.Reason,
-                    Alpha3Builder.Create(request.AlphabeticCode),
-                    request.NumericCode,
-                    request.DecimalPlace,
-                    request.Name),
+                () => CurrencyCreatedEventBuilder.Create(request),
                 cancellationToken));
 
-        currencyEvents.MapPost($"/{nameof(CurrencyModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CurrencyEventRequest request, CancellationToken cancellationToken) =>
+        currencyEvents.MapPost($"/{nameof(CurrencyModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CurrencyModifiedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.CurrenciesStreamId,
                 CurrencyEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
-                () =>
-                CurrencyModifiedEventBuilder.Create(
-                    request.UserID,
-                    EventDateTimeBuilder.Create(request.EventDateTime),
-                    request.Reason,
-                    Alpha3Builder.Create(request.AlphabeticCode),
-                    request.NumericCode,
-                    request.DecimalPlace,
-                    request.Name),
+                () => CurrencyModifiedEventBuilder.Create(request),
                 cancellationToken));
     }
 

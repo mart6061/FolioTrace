@@ -10,6 +10,19 @@ public sealed class CurrencyService(IEventRepository eventRepository)
     private readonly Lock cacheLock = new();
     private readonly Dictionary<CurrencyCacheKey, Currencies> cache = [];
 
+    public CurrencyServiceDiagnostics GetDiagnostics()
+    {
+        lock (cacheLock)
+        {
+            var currencyCount = cache.Values
+                .OrderByDescending(currencies => currencies.LastAuditDateTime.Value)
+                .FirstOrDefault()
+                ?.Items.Count ?? 0;
+
+            return new CurrencyServiceDiagnostics(cache.Count, currencyCount);
+        }
+    }
+
     public int Invalidate(CurrencyCreatedEvent @event) => InvalidateFrom(@event.EventDateTime);
 
     public int Invalidate(CurrencyModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);

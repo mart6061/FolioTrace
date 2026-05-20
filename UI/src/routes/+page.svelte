@@ -25,6 +25,12 @@
       </article>
 
       <article class="metric-card">
+        <span class="metric-label">Reference Data</span>
+        <strong>Currencies</strong>
+        <a href="/Data/Reference/Currencies">Open currency data</a>
+      </article>
+
+      <article class="metric-card">
         <span class="metric-label">Trace Mode</span>
         <strong>Available</strong>
         <span>Use the footer to view data as of a specific audit date.</span>
@@ -49,6 +55,12 @@
         <span class="metric-label">Country Service</span>
         <strong>{data.memoryDiagnostics?.countryService.countryCount ?? '-'}</strong>
         <span>{data.memoryDiagnostics?.countryService.cacheEntryCount ?? '-'} cached views</span>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Currency Service</span>
+        <strong>{data.memoryDiagnostics?.currencyService.currencyCount ?? '-'}</strong>
+        <span>{data.memoryDiagnostics?.currencyService.cacheEntryCount ?? '-'} cached views</span>
       </article>
 
       <article class="metric-card">

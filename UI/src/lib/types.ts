@@ -22,6 +22,25 @@ export type Countries = {
   items: Country[];
 };
 
+export type Currency = {
+  alphabeticCode: string;
+  numericCode: number;
+  decimalPlace: number;
+  name: string;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type Currencies = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: Currency[];
+};
+
 export type MemoryDiagnostics = {
   eventCache: {
     isLoaded: boolean;
@@ -31,6 +50,10 @@ export type MemoryDiagnostics = {
   countryService: {
     cacheEntryCount: number;
     countryCount: number;
+  };
+  currencyService: {
+    cacheEntryCount: number;
+    currencyCount: number;
   };
 };
 

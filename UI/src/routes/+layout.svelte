@@ -202,6 +202,13 @@
               >
                 Country Data
               </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Data/Reference/Currencies')}
+                onclick={closeSystemMenu}
+              >
+                Currency Data
+              </a>
             {/if}
             <a href={pathWithTrace('/Diagnostics/HttpExchanges')} onclick={closeSystemMenu}>API Diagnostics</a>
             <button type="button">Help</button>

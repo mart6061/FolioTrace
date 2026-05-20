@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import type { ApiExchangeSearchResponse, Countries, MemoryDiagnostics } from '$lib/types';
+import type { ApiExchangeSearchResponse, Countries, Currencies, MemoryDiagnostics } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
 
@@ -13,6 +13,17 @@ export type CountryModifiedRequest = {
 };
 
 export type CountryCreatedRequest = CountryModifiedRequest;
+
+export type CurrencyModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  alphabeticCode: string;
+  numericCode: number;
+  decimalPlace: number;
+  name: string;
+};
+
+export type CurrencyCreatedRequest = CurrencyModifiedRequest;
 
 export type EventSubmissionResponse = {
   eventID: string;
@@ -44,6 +55,25 @@ export async function getCountries(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as Countries;
+}
+
+export async function getCurrencies(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/Currencies/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Currencies;
 }
 
 export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
@@ -100,6 +130,22 @@ export async function postCountryModifiedEvent(
   return postCountryEvent(fetchApi, 'CountryModifiedEvent', request, userID);
 }
 
+export async function postCurrencyCreatedEvent(
+  fetchApi: typeof fetch,
+  request: CurrencyCreatedRequest,
+  userID: string
+) {
+  return postCurrencyEvent(fetchApi, 'CurrencyCreatedEvent', request, userID);
+}
+
+export async function postCurrencyModifiedEvent(
+  fetchApi: typeof fetch,
+  request: CurrencyModifiedRequest,
+  userID: string
+) {
+  return postCurrencyEvent(fetchApi, 'CurrencyModifiedEvent', request, userID);
+}
+
 async function postCountryEvent(
   fetchApi: typeof fetch,
   eventType: 'CountryCreatedEvent' | 'CountryModifiedEvent',
@@ -118,6 +164,36 @@ async function postCountryEvent(
       Alpha2: request.alpha2,
       Alpha3: request.alpha3,
       Numeric: request.numeric,
+      Name: request.name
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postCurrencyEvent(
+  fetchApi: typeof fetch,
+  eventType: 'CurrencyCreatedEvent' | 'CurrencyModifiedEvent',
+  request: CurrencyCreatedRequest | CurrencyModifiedRequest,
+  userID: string
+) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Currency/${eventType}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      AlphabeticCode: request.alphabeticCode,
+      NumericCode: request.numericCode,
+      DecimalPlace: request.decimalPlace,
       Name: request.name
     })
   });
