@@ -24,7 +24,7 @@ export const load = async ({ fetch, url }) => {
   } catch (error) {
     return {
       apiBaseUrl: getApiBaseUrl(),
-      error: error instanceof Error ? error.message : 'Unable to load API exchanges.',
+      error: error instanceof Error ? error.message : 'Unable to load request trace.',
       exchanges: null,
       filters
     };

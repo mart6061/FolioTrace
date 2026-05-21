@@ -10,6 +10,9 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
 [JsonDerivedType(typeof(CurrencyCreatedEvent), nameof(CurrencyCreatedEvent))]
 [JsonDerivedType(typeof(CurrencyModifiedEvent), nameof(CurrencyModifiedEvent))]
+[JsonDerivedType(typeof(FXCreatedEvent), nameof(FXCreatedEvent))]
+[JsonDerivedType(typeof(FXActiveModifiedEvent), nameof(FXActiveModifiedEvent))]
+[JsonDerivedType(typeof(FXRateSetEvent), nameof(FXRateSetEvent))]
 [JsonDerivedType(typeof(UserCreatedEvent), nameof(UserCreatedEvent))]
 [JsonDerivedType(typeof(UserModifiedEvent), nameof(UserModifiedEvent))]
 public abstract record EventBase(EventID EventID, UserID UserID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase

@@ -66,7 +66,7 @@
 
     params.set('page', String(nextPage));
 
-    return `/Diagnostics/HttpExchanges?${params.toString()}`;
+    return `/Diagnostics/RequestTrace?${params.toString()}`;
   }
 </script>
 
@@ -75,13 +75,13 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Diagnostics</p>
-        <h1 class="page-title">HTTP Exchanges</h1>
+        <h1 class="page-title">Request Trace</h1>
       </div>
 
-      <form class="grid gap-3 lg:grid-cols-[120px_1fr_120px_150px_150px_150px_auto] lg:items-end">
-        <label class="grid gap-1 text-xs font-medium text-slate-600">
+      <form class="grid gap-3 md:grid-cols-2 lg:grid-cols-[96px_minmax(150px,0.75fr)_88px_96px_190px_minmax(150px,0.7fr)_auto] lg:items-end">
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Method
-          <select class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="method">
+          <select class="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="method">
             <option value="">All</option>
             {#each ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as method}
               <option selected={data.filters.method === method} value={method}>{method}</option>
@@ -89,10 +89,10 @@
           </select>
         </label>
 
-        <label class="grid gap-1 text-xs font-medium text-slate-600">
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Path
           <input
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             name="path"
             placeholder="/Events/Country"
             type="search"
@@ -100,10 +100,10 @@
           />
         </label>
 
-        <label class="grid gap-1 text-xs font-medium text-slate-600">
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Status
           <input
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             max="599"
             min="100"
             name="statusCode"
@@ -112,10 +112,10 @@
           />
         </label>
 
-        <label class="grid gap-1 text-xs font-medium text-slate-600">
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Min ms
           <input
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             min="0"
             name="minimumDurationMilliseconds"
             type="number"
@@ -123,20 +123,20 @@
           />
         </label>
 
-        <label class="grid gap-1 text-xs font-medium text-slate-600">
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           From UTC
           <input
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             name="fromUtc"
             type="datetime-local"
             value={data.filters.fromUtc}
           />
         </label>
 
-        <label class="grid gap-1 text-xs font-medium text-slate-600">
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Search
           <input
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             name="text"
             type="search"
             value={data.filters.text}
@@ -144,7 +144,7 @@
         </label>
 
         <button
-          class="h-9 rounded-md bg-teal-700 px-4 text-sm font-medium text-white hover:bg-teal-800"
+          class="h-9 rounded-md bg-teal-700 px-4 text-sm font-medium text-white hover:bg-teal-800 md:self-end"
           type="submit"
         >
           Apply

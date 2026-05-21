@@ -6,7 +6,7 @@
   import '../app.css';
   import { onMount } from 'svelte';
 
-  let { children } = $props();
+  let { children, data } = $props();
 
   const traceModeStorageKey = 'foliotrace.traceMode';
   const auditDateTimeStorageKey = 'foliotrace.auditDateTime';
@@ -16,6 +16,7 @@
   let hydrated = $state(false);
   let systemMenuOpen = $state(false);
   let referenceDataOpen = $state(false);
+  let valueDataOpen = $state(false);
   let systemMenuContainer: HTMLDivElement;
 
   onMount(() => {
@@ -86,16 +87,24 @@
     systemMenuOpen = !systemMenuOpen;
 
     if (!systemMenuOpen)
+    {
       referenceDataOpen = false;
+      valueDataOpen = false;
+    }
   }
 
   function toggleReferenceDataMenu() {
     referenceDataOpen = !referenceDataOpen;
   }
 
+  function toggleValueDataMenu() {
+    valueDataOpen = !valueDataOpen;
+  }
+
   function closeSystemMenu() {
     systemMenuOpen = false;
     referenceDataOpen = false;
+    valueDataOpen = false;
   }
 
   function handleDocumentClick(event: MouseEvent) {
@@ -184,7 +193,31 @@
           <nav class="system-menu" aria-label="System menu">
             <button type="button">Blotter</button>
             <a href={pathWithTrace('/')} onclick={closeSystemMenu}>Dashboard</a>
-            <button type="button">Value Data</button>
+            <button
+              aria-expanded={valueDataOpen}
+              class="system-menu-parent"
+              onclick={toggleValueDataMenu}
+              type="button"
+            >
+              <span>Value Data</span>
+              <span aria-hidden="true">&gt;</span>
+            </button>
+            {#if valueDataOpen}
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Value/FXs')}
+                onclick={closeSystemMenu}
+              >
+                FX Data
+              </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Value/FXRates')}
+                onclick={closeSystemMenu}
+              >
+                FX Rate Data
+              </a>
+            {/if}
             <button
               aria-expanded={referenceDataOpen}
               class="system-menu-parent"
@@ -210,7 +243,7 @@
                 Currency Data
               </a>
             {/if}
-            <a href={pathWithTrace('/Diagnostics/HttpExchanges')} onclick={closeSystemMenu}>API Diagnostics</a>
+            <a href={pathWithTrace('/Diagnostics/RequestTrace')} onclick={closeSystemMenu}>Request Trace</a>
             <button type="button">Help</button>
           </nav>
         {/if}
@@ -223,33 +256,39 @@
   </div>
 
   <footer class={`trace-footer ${traceMode && auditDateTime ? 'trace-footer-active' : ''}`}>
-    <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium text-slate-950">Trace Mode</span>
-        <label class="trace-toggle">
-          <input
-            aria-label="Trace Mode"
-            bind:checked={traceMode}
-            onchange={handleTraceModeChange}
-            type="checkbox"
-          />
-          <span></span>
-        </label>
+    <div class="trace-footer-inner">
+      <div class="trace-footer-controls">
+        <div class="trace-mode-control">
+          <span>Trace Mode</span>
+          <label class="trace-toggle">
+            <input
+              aria-label="Trace Mode"
+              bind:checked={traceMode}
+              onchange={handleTraceModeChange}
+              type="checkbox"
+            />
+            <span></span>
+          </label>
+        </div>
+
+        {#if traceMode}
+          <label class="trace-date-control">
+            <span>Trace Date</span>
+            <input
+              bind:value={auditDateTime}
+              max={nowForInput()}
+              name="traceAuditDateTime"
+              onchange={handleAuditDateTimeChange}
+              type="datetime-local"
+            />
+          </label>
+        {/if}
       </div>
 
-      {#if traceMode}
-        <label class="flex items-center gap-2 text-sm font-normal text-slate-700">
-          <span>Trace Date</span>
-          <input
-            class="h-8 min-w-56 rounded-md border border-slate-300 bg-white px-2.5 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-            bind:value={auditDateTime}
-            max={nowForInput()}
-            name="traceAuditDateTime"
-            onchange={handleAuditDateTimeChange}
-            type="datetime-local"
-          />
-        </label>
-      {/if}
+      <div class="app-version-strip" aria-label="Application versions">
+        <span>UI {data.uiVersion}</span>
+        <span>API {data.apiVersion}</span>
+      </div>
     </div>
   </footer>
 </div>

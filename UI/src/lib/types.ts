@@ -41,6 +41,68 @@ export type Currencies = {
   items: Currency[];
 };
 
+export type FX = {
+  pair: string;
+  baseCurrency: string;
+  quoteCurrency: string;
+  displayPair: string;
+  active: boolean;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type FXs = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: FX[];
+};
+
+export type FXPrice = {
+  bid: number;
+  mid: number;
+  ask: number;
+};
+
+export type FXRate = FX & {
+  price: FXPrice;
+};
+
+export type FXRates = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: FXRate[];
+};
+
+export type ReferenceEventBase = {
+  $type: string;
+  eventID: string;
+  userID: string;
+  eventDateTime: string;
+  auditDateTime: string;
+  reason: string;
+};
+
+export type CountryReferenceEvent = ReferenceEventBase & {
+  alpha2: string;
+  alpha3?: string;
+  numeric?: number;
+  name?: string;
+  flag?: CountryFlag | null;
+};
+
+export type CurrencyReferenceEvent = ReferenceEventBase & {
+  alphabeticCode: string;
+  numericCode: number;
+  decimalPlace: number;
+  name: string;
+};
+
 export type MemoryDiagnostics = {
   eventCache: {
     isLoaded: boolean;
@@ -54,6 +116,14 @@ export type MemoryDiagnostics = {
   currencyService: {
     cacheEntryCount: number;
     currencyCount: number;
+  };
+  fxService: {
+    cacheEntryCount: number;
+    fxCount: number;
+  };
+  fxRateService: {
+    cacheEntryCount: number;
+    fxRateCount: number;
   };
 };
 
