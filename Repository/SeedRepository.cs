@@ -23,6 +23,7 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
     {
         await CreateCountrySetupEvents(cancellationToken);
         await CreateCurrencySetupEvents(cancellationToken);
+        await CreateFXSetupEvents(cancellationToken);
     }
 
     private async Task CreateCountrySetupEvents(CancellationToken cancellationToken)
@@ -91,6 +92,45 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
                 currency.Name).Value!)
             .ToList();
 
+    private async Task CreateFXSetupEvents(CancellationToken cancellationToken)
+    {
+        var pairSeeds = SeedFXData.CreatePairSeeds();
+
+        await StoreEvents<FXs, FXCreatedEvent>(
+            Constants.Initialisation.FXsStreamId,
+            CreateInitialFXCreatedEvents(pairSeeds),
+            cancellationToken);
+
+        await StoreEventsInBatches<FXRates, FXRateSetEvent>(
+            Constants.Initialisation.FXRatesStreamId,
+            CreateInitialFXRateSetEvents(pairSeeds),
+            cancellationToken);
+    }
+
+    private static IReadOnlyList<FXCreatedEvent> CreateInitialFXCreatedEvents(IReadOnlyList<FXPairSeed> pairSeeds) =>
+        pairSeeds
+            .Select(pair => FXCreatedEventBuilder.CreateSeed(
+                Guid.NewGuid(),
+                Constants.Initialisation.UserID,
+                EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(2)),
+                AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(2)),
+                Constants.Initialisation.Reason,
+                pair.Pair.BaseCurrency,
+                pair.Pair.QuoteCurrency,
+                active: true).Value!)
+            .ToList();
+
+    private static IEnumerable<FXRateSetEvent> CreateInitialFXRateSetEvents(IReadOnlyList<FXPairSeed> pairSeeds) =>
+        SeedFXData.CreateRateSeeds(pairSeeds)
+            .Select(rate => FXRateSetEventBuilder.CreateSeed(
+                Guid.NewGuid(),
+                Constants.Initialisation.UserID,
+                EventDateTimeBuilder.Create(rate.Timestamp),
+                AuditDateTimeBuilder.Create(rate.Timestamp.AddMinutes(1)),
+                Constants.Initialisation.Reason,
+                rate.Pair,
+                rate.Price).Value!);
+
     private async Task StoreEvents<TAggregate, TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
         where TAggregate : class, IAggregate
         where TEvent : class, IEventBase
@@ -105,6 +145,27 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
         await eventRepository.StartStreamAsync<TAggregate, TEvent>(streamId, eventData, cancellationToken);
     }
 
+    private async Task StoreEventsInBatches<TAggregate, TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
+        where TAggregate : class, IAggregate
+        where TEvent : class, IEventBase
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        var firstBatch = true;
+        foreach (var batch in events.Chunk(5_000))
+        {
+            if (firstBatch)
+            {
+                await eventRepository.StartStreamAsync<TAggregate, TEvent>(streamId, batch, cancellationToken);
+                firstBatch = false;
+                continue;
+            }
+
+            await eventRepository.AppendAsync(streamId, batch, cancellationToken);
+        }
+    }
+
     private async Task AppendEvents<TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
         where TEvent : class, IEventBase
     {
@@ -115,8 +176,6 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
             await eventRepository.AppendAsync(streamId, @event, cancellationToken);
     }
 }
-
-
 
 
 

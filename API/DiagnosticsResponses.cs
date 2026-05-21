@@ -1,12 +1,16 @@
 namespace API;
 
-public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService);
+public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService);
 
 public sealed record EventCacheDiagnosticsResponse(bool IsLoaded, int StreamCount, int EventCount);
 
 public sealed record CountryServiceDiagnosticsResponse(int CacheEntryCount, int CountryCount);
 
 public sealed record CurrencyServiceDiagnosticsResponse(int CacheEntryCount, int CurrencyCount);
+
+public sealed record FXServiceDiagnosticsResponse(int CacheEntryCount, int FXCount);
+
+public sealed record FXRateServiceDiagnosticsResponse(int CacheEntryCount, int FXRateCount);
 
 public sealed record ApiExchangeSearchResponse(
     IReadOnlyList<ApiExchangeResponse> Items,

@@ -1,4 +1,5 @@
-import { getApiBaseUrl, getMemoryDiagnostics } from '$lib/server/api';
+import { fail } from '@sveltejs/kit';
+import { getApiBaseUrl, getMemoryDiagnostics, postSystemBuild } from '$lib/server/api';
 
 export const load = async ({ fetch }) => {
   try {
@@ -13,5 +14,25 @@ export const load = async ({ fetch }) => {
       error: error instanceof Error ? error.message : 'Unable to load dashboard analytics.',
       memoryDiagnostics: null
     };
+  }
+};
+
+export const actions = {
+  build: async ({ fetch }) => {
+    try {
+      const result = await postSystemBuild(fetch);
+
+      return {
+        intent: 'build',
+        message: result.message || 'Database rebuild complete.',
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, {
+        intent: 'build',
+        message: error instanceof Error ? error.message : 'Unable to rebuild the database.',
+        status: 'failure'
+      });
+    }
   }
 };

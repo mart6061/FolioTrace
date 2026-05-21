@@ -1,11 +1,13 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
+  import type { CountryReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
   const countryCount = $derived(data.countries?.items.length ?? 0);
+  const asOfSummary = $derived(data.auditDateTime && data.countries ? formatDisplayDateTime(data.countries.asOfDateTime) : 'now');
 
   type SortKey = 'country' | 'alpha2' | 'alpha3' | 'numeric' | 'lastAudit';
 
@@ -16,6 +18,8 @@
   let editingAlpha2 = $state('');
   let submittingAlpha2 = $state('');
   let submittingCreate = $state(false);
+  let openHistoryAlpha2 = $state('');
+  let historyByAlpha2 = $state<Record<string, { events: CountryReferenceEvent[]; error: string; loading: boolean }>>({});
 
   const filteredCountries = $derived(
     (data.countries?.items ?? []).filter((country) => {
@@ -200,6 +204,52 @@
         editingAlpha2 = '';
     };
   };
+
+  async function toggleHistory(alpha2: string) {
+    if (openHistoryAlpha2 === alpha2) {
+      openHistoryAlpha2 = '';
+      delete historyByAlpha2[alpha2];
+      return;
+    }
+
+    openHistoryAlpha2 = alpha2;
+
+    if (historyByAlpha2[alpha2])
+      return;
+
+    historyByAlpha2[alpha2] = { events: [], error: '', loading: true };
+
+    try {
+      const response = await fetch(`/Data/Reference/Countries/History?alpha2=${encodeURIComponent(alpha2)}`);
+
+      if (!response.ok)
+        throw new Error(`History request returned ${response.status} ${response.statusText}`);
+
+      historyByAlpha2[alpha2] = {
+        events: await response.json() as CountryReferenceEvent[],
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      historyByAlpha2[alpha2] = {
+        events: [],
+        error: error instanceof Error ? error.message : 'Unable to load history.',
+        loading: false
+      };
+    }
+  }
+
+  function countryEventSummary(event: CountryReferenceEvent) {
+    if (event.$type === 'CountryFlagModifiedEvent')
+      return 'Flag updated';
+
+    return [
+      event.name,
+      event.alpha2,
+      event.alpha3,
+      typeof event.numeric === 'number' ? event.numeric.toString().padStart(3, '0') : ''
+    ].filter(Boolean).join(' · ');
+  }
 </script>
 
 <main class="min-h-screen">
@@ -267,7 +317,7 @@
           countries
         </div>
         <div>
-          Valuation {formatDisplayDateTime(data.countries.valuationDateTime)} · As-of {formatDisplayDateTime(data.countries.asOfDateTime)}
+          Valuation {formatDisplayDateTime(data.countries.valuationDateTime)} · As-of {asOfSummary}
         </div>
       </div>
 
@@ -341,7 +391,7 @@
                     Last audit{sortLabel('lastAudit')}
                   </button>
                 </th>
-                <th class="w-28 px-3 py-2 text-right">Edit</th>
+                <th class="w-40 px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -566,16 +616,65 @@
                       {country.numeric.toString().padStart(3, '0')}
                     </td>
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(country.lastAuditDateTime)}</td>
-                    <td class="px-3 py-2 text-right">
-                      <button
-                        class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
-                        onclick={() => startEdit(country.alpha2)}
-                        type="button"
-                      >
-                        Edit
-                      </button>
+                    <td class="px-3 py-2">
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          onclick={() => toggleHistory(country.alpha2)}
+                          type="button"
+                        >
+                          {openHistoryAlpha2 === country.alpha2 ? 'Hide' : 'History'}
+                        </button>
+                        <button
+                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          onclick={() => startEdit(country.alpha2)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
+                  {#if openHistoryAlpha2 === country.alpha2}
+                    {@const history = historyByAlpha2[country.alpha2]}
+                    <tr class="bg-slate-50/80">
+                      <td class="px-3 py-3" colspan="7">
+                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
+                          <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-sm font-semibold text-slate-950">{country.alpha2} history</h2>
+                            <span class="text-xs text-slate-500">{history?.events.length ?? 0} events</span>
+                          </div>
+
+                          {#if history?.loading}
+                            <div class="text-sm text-slate-600">Loading history...</div>
+                          {:else if history?.error}
+                            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                          {:else if history?.events.length}
+                            <ol class="grid gap-2">
+                              {#each history.events as event}
+                                <li class="grid gap-2 rounded-md border border-slate-200 px-3 py-2 md:grid-cols-[180px_1fr]">
+                                  <div class="text-xs text-slate-500">
+                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
+                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
+                                  </div>
+                                  <div class="grid gap-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <span class="font-medium text-slate-950">{event.$type}</span>
+                                      <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
+                                    </div>
+                                    <div class="text-sm text-slate-700">{countryEventSummary(event)}</div>
+                                    <div class="text-xs text-slate-500">{event.reason}</div>
+                                  </div>
+                                </li>
+                              {/each}
+                            </ol>
+                          {:else}
+                            <div class="text-sm text-slate-600">No history found for this country.</div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
                 {/if}
               {/each}
             </tbody>

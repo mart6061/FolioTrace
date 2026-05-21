@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
+  import type { CurrencyReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -14,8 +15,11 @@
   let editingCode = $state('');
   let submittingCode = $state('');
   let submittingCreate = $state(false);
+  let openHistoryCode = $state('');
+  let historyByCode = $state<Record<string, { events: CurrencyReferenceEvent[]; error: string; loading: boolean }>>({});
 
   const currencyCount = $derived(data.currencies?.items.length ?? 0);
+  const asOfSummary = $derived(data.auditDateTime && data.currencies ? formatDisplayDateTime(data.currencies.asOfDateTime) : 'now');
 
   const filteredCurrencies = $derived(
     (data.currencies?.items ?? []).filter((currency) => {
@@ -200,6 +204,49 @@
         editingCode = '';
     };
   };
+
+  async function toggleHistory(alphabeticCode: string) {
+    if (openHistoryCode === alphabeticCode) {
+      openHistoryCode = '';
+      delete historyByCode[alphabeticCode];
+      return;
+    }
+
+    openHistoryCode = alphabeticCode;
+
+    if (historyByCode[alphabeticCode])
+      return;
+
+    historyByCode[alphabeticCode] = { events: [], error: '', loading: true };
+
+    try {
+      const response = await fetch(`/Data/Reference/Currencies/History?alphabeticCode=${encodeURIComponent(alphabeticCode)}`);
+
+      if (!response.ok)
+        throw new Error(`History request returned ${response.status} ${response.statusText}`);
+
+      historyByCode[alphabeticCode] = {
+        events: await response.json() as CurrencyReferenceEvent[],
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      historyByCode[alphabeticCode] = {
+        events: [],
+        error: error instanceof Error ? error.message : 'Unable to load history.',
+        loading: false
+      };
+    }
+  }
+
+  function currencyEventSummary(event: CurrencyReferenceEvent) {
+    return [
+      event.name,
+      event.alphabeticCode,
+      event.numericCode.toString().padStart(3, '0'),
+      `${event.decimalPlace} decimals`
+    ].filter(Boolean).join(' · ');
+  }
 </script>
 
 <main class="min-h-screen">
@@ -263,7 +310,7 @@
           currencies
         </div>
         <div>
-          Valuation {formatDisplayDateTime(data.currencies.valuationDateTime)} · As-of {formatDisplayDateTime(data.currencies.asOfDateTime)}
+          Valuation {formatDisplayDateTime(data.currencies.valuationDateTime)} · As-of {asOfSummary}
         </div>
       </div>
 
@@ -312,7 +359,7 @@
                 <th class="px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">Last audit{sortLabel('lastAudit')}</button>
                 </th>
-                <th class="w-28 px-3 py-2 text-right">Edit</th>
+                <th class="w-40 px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -415,12 +462,57 @@
                     <td class="px-3 py-2 text-right font-mono text-slate-700">{currency.numericCode.toString().padStart(3, '0')}</td>
                     <td class="px-3 py-2 text-right font-mono text-slate-700">{currency.decimalPlace}</td>
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(currency.lastAuditDateTime)}</td>
-                    <td class="px-3 py-2 text-right">
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(currency.alphabeticCode)} type="button">
-                        Edit
-                      </button>
+                    <td class="px-3 py-2">
+                      <div class="flex justify-end gap-2">
+                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(currency.alphabeticCode)} type="button">
+                          {openHistoryCode === currency.alphabeticCode ? 'Hide' : 'History'}
+                        </button>
+                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(currency.alphabeticCode)} type="button">
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
+                  {#if openHistoryCode === currency.alphabeticCode}
+                    {@const history = historyByCode[currency.alphabeticCode]}
+                    <tr class="bg-slate-50/80">
+                      <td class="px-3 py-3" colspan="6">
+                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
+                          <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-sm font-semibold text-slate-950">{currency.alphabeticCode} history</h2>
+                            <span class="text-xs text-slate-500">{history?.events.length ?? 0} events</span>
+                          </div>
+
+                          {#if history?.loading}
+                            <div class="text-sm text-slate-600">Loading history...</div>
+                          {:else if history?.error}
+                            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                          {:else if history?.events.length}
+                            <ol class="grid gap-2">
+                              {#each history.events as event}
+                                <li class="grid gap-2 rounded-md border border-slate-200 px-3 py-2 md:grid-cols-[180px_1fr]">
+                                  <div class="text-xs text-slate-500">
+                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
+                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
+                                  </div>
+                                  <div class="grid gap-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <span class="font-medium text-slate-950">{event.$type}</span>
+                                      <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
+                                    </div>
+                                    <div class="text-sm text-slate-700">{currencyEventSummary(event)}</div>
+                                    <div class="text-xs text-slate-500">{event.reason}</div>
+                                  </div>
+                                </li>
+                              {/each}
+                            </ol>
+                          {:else}
+                            <div class="text-sm text-slate-600">No history found for this currency.</div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
                 {/if}
               {/each}
             </tbody>

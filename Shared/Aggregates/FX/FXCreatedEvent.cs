@@ -1,0 +1,62 @@
+using System.Text.Json.Serialization;
+using FolioTrace.Common;
+using FolioTrace.Types;
+
+namespace FolioTrace.Aggregates;
+
+public sealed record FXCreatedEvent : EventBase, IFXEvent
+{
+    public CurrencyPair Pair { get; init; } = null!;
+
+    public Alpha3 BaseCurrency { get; init; } = null!;
+
+    public Alpha3 QuoteCurrency { get; init; } = null!;
+
+    public bool Active { get; init; }
+
+    [JsonConstructor]
+    private FXCreatedEvent()
+        : base(null!, null!, null!, null!, string.Empty)
+    {
+    }
+
+    internal FXCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, CurrencyPair pair, bool active)
+        : base(eventId, userId, eventDateTime, auditDateTime, reason)
+    {
+        Pair = pair;
+        BaseCurrency = pair.BaseCurrency;
+        QuoteCurrency = pair.QuoteCurrency;
+        Active = active;
+    }
+
+    public override string Type => nameof(FXCreatedEvent);
+
+    public override string ToData() => $"{base.ToData()}|{Pair.ToData()}|{Active}";
+
+    public override string ToDetail() => $"{nameof(FXCreatedEvent)}: ({base.ToDetail()}, Pair: {Pair.ToDetail()}, Active: {Active})";
+
+    public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, CurrencyPair? pair)
+    {
+        var messages = new List<string>();
+
+        if (eventId is null)
+            messages.Add("EventID is required.");
+
+        if (userId is null)
+            messages.Add("UserID is required.");
+
+        if (eventDateTime is null)
+            messages.Add("EventDateTime is required.");
+
+        if (auditDateTime is null)
+            messages.Add("AuditDateTime is required.");
+
+        if (string.IsNullOrWhiteSpace(reason))
+            messages.Add("Reason is required.");
+
+        if (pair is null)
+            messages.Add("Pair is required.");
+
+        return messages;
+    }
+}

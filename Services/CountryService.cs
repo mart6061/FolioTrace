@@ -29,6 +29,16 @@ public sealed class CountryService(IEventRepository eventRepository)
 
     public int Invalidate(CountryFlagModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
 
+    public int InvalidateAll()
+    {
+        lock (cacheLock)
+        {
+            var removedCount = cache.Count;
+            cache.Clear();
+            return removedCount;
+        }
+    }
+
     public async Task<Countries> Get(EventDateTime valuationDate)
     {
         if (valuationDate is null)

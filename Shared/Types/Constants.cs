@@ -15,7 +15,13 @@ public static class Constants
 
         public static readonly Guid CurrenciesStreamId = Guid.Parse("dc34cb31-f7f8-4c0d-88b1-f6f60413bc55");
 
+        public static readonly Guid FXsStreamId = Guid.Parse("87487872-101c-4fec-bf37-0ddd9a7efb47");
+
+        public static readonly Guid FXRatesStreamId = Guid.Parse("f7a242f1-96ad-4328-a903-670a78c8b2f4");
+
         public static readonly Guid UsersStreamId = Guid.Parse("02ff99c6-dfe9-4e61-aa02-bd1ca3a540a2");
+
+        public static readonly EventID EmptyViewEventID = Guid.Parse("11111111-1111-4111-8111-111111111111");
 
         public static readonly EventDateTime EventDateTime = EventDateTimeBuilder.Create(DateTime.MinValue.AddTicks(1));
 

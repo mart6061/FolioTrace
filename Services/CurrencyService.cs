@@ -27,6 +27,16 @@ public sealed class CurrencyService(IEventRepository eventRepository)
 
     public int Invalidate(CurrencyModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
 
+    public int InvalidateAll()
+    {
+        lock (cacheLock)
+        {
+            var removedCount = cache.Count;
+            cache.Clear();
+            return removedCount;
+        }
+    }
+
     public async Task<Currencies> Get(EventDateTime valuationDate)
     {
         if (valuationDate is null)

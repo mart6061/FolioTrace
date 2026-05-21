@@ -1,5 +1,14 @@
 import { env } from '$env/dynamic/private';
-import type { ApiExchangeSearchResponse, Countries, Currencies, MemoryDiagnostics } from '$lib/types';
+import type {
+  ApiExchangeSearchResponse,
+  Countries,
+  CountryReferenceEvent,
+  Currencies,
+  CurrencyReferenceEvent,
+  FXRates,
+  FXs,
+  MemoryDiagnostics
+} from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
 
@@ -24,6 +33,30 @@ export type CurrencyModifiedRequest = {
 };
 
 export type CurrencyCreatedRequest = CurrencyModifiedRequest;
+
+export type FXCreatedRequest = {
+  eventDateTime: string;
+  reason: string;
+  baseCurrency: string;
+  quoteCurrency: string;
+  active: boolean;
+};
+
+export type FXActiveModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  pair: string;
+  active: boolean;
+};
+
+export type FXRateSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  pair: string;
+  bid: number;
+  mid: number;
+  ask: number;
+};
 
 export type EventSubmissionResponse = {
   eventID: string;
@@ -76,6 +109,54 @@ export async function getCurrencies(
   return (await response.json()) as Currencies;
 }
 
+export async function getCountryEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Country/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as CountryReferenceEvent[];
+}
+
+export async function getCurrencyEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Currency/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as CurrencyReferenceEvent[];
+}
+
+export async function getFXs(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/FXs/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as FXs;
+}
+
+export async function getFXRates(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/FXRates/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as FXRates;
+}
+
 export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
   const response = await fetchApi(`${getApiBaseUrl()}/Diagnostics/Memory`);
 
@@ -83,6 +164,37 @@ export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as MemoryDiagnostics;
+}
+
+export async function getSystemVersion(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/System/Version`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as { apiVersion: string };
+}
+
+export async function postSystemBuild(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/System/Build`, {
+    method: 'POST'
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as {
+    status: string;
+    message: string;
+    removedCacheViews: {
+      countries: number;
+      currencies: number;
+      fXs: number;
+      fXRates: number;
+    };
+  };
 }
 
 export type ApiExchangeSearchRequest = {
@@ -99,7 +211,7 @@ export type ApiExchangeSearchRequest = {
 };
 
 export async function getApiExchanges(fetchApi: typeof fetch, request: ApiExchangeSearchRequest) {
-  const url = new URL(`${getApiBaseUrl()}/Diagnostics/HttpExchanges`);
+  const url = new URL(`${getApiBaseUrl()}/Diagnostics/RequestTrace`);
 
   for (const [key, value] of Object.entries(request)) {
     if (value)
@@ -144,6 +256,53 @@ export async function postCurrencyModifiedEvent(
   userID: string
 ) {
   return postCurrencyEvent(fetchApi, 'CurrencyModifiedEvent', request, userID);
+}
+
+export async function postFXCreatedEvent(fetchApi: typeof fetch, request: FXCreatedRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/FX/FXCreatedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      BaseCurrency: request.baseCurrency,
+      QuoteCurrency: request.quoteCurrency,
+      Active: request.active
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postFXActiveModifiedEvent(fetchApi: typeof fetch, request: FXActiveModifiedRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/FX/FXActiveModifiedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      Pair: request.pair,
+      Active: request.active
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postFXRateSetEvent(fetchApi: typeof fetch, request: FXRateSetRequest, userID: string) {
+  return postFXRateEvent(fetchApi, request, userID);
 }
 
 async function postCountryEvent(
@@ -195,6 +354,37 @@ async function postCurrencyEvent(
       NumericCode: request.numericCode,
       DecimalPlace: request.decimalPlace,
       Name: request.name
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postFXRateEvent(
+  fetchApi: typeof fetch,
+  request: FXRateSetRequest,
+  userID: string
+) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/FXRate/FXRateSetEvent`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      Pair: request.pair,
+      Price: {
+        Bid: request.bid,
+        Mid: request.mid,
+        Ask: request.ask
+      }
     })
   });
 
