@@ -16,7 +16,6 @@
   let hydrated = $state(false);
   let systemMenuOpen = $state(false);
   let referenceDataOpen = $state(false);
-  let valueDataOpen = $state(false);
   let systemMenuContainer: HTMLDivElement;
 
   onMount(() => {
@@ -89,7 +88,6 @@
     if (!systemMenuOpen)
     {
       referenceDataOpen = false;
-      valueDataOpen = false;
     }
   }
 
@@ -97,14 +95,9 @@
     referenceDataOpen = !referenceDataOpen;
   }
 
-  function toggleValueDataMenu() {
-    valueDataOpen = !valueDataOpen;
-  }
-
   function closeSystemMenu() {
     systemMenuOpen = false;
     referenceDataOpen = false;
-    valueDataOpen = false;
   }
 
   function handleDocumentClick(event: MouseEvent) {
@@ -194,31 +187,6 @@
             <button type="button">Blotter</button>
             <a href={pathWithTrace('/')} onclick={closeSystemMenu}>Dashboard</a>
             <button
-              aria-expanded={valueDataOpen}
-              class="system-menu-parent"
-              onclick={toggleValueDataMenu}
-              type="button"
-            >
-              <span>Value Data</span>
-              <span aria-hidden="true">&gt;</span>
-            </button>
-            {#if valueDataOpen}
-              <a
-                class="system-submenu-item"
-                href={pathWithTrace('/Value/FXs')}
-                onclick={closeSystemMenu}
-              >
-                FX Data
-              </a>
-              <a
-                class="system-submenu-item"
-                href={pathWithTrace('/Value/FXRates')}
-                onclick={closeSystemMenu}
-              >
-                FX Rate Data
-              </a>
-            {/if}
-            <button
               aria-expanded={referenceDataOpen}
               class="system-menu-parent"
               onclick={toggleReferenceDataMenu}
@@ -241,6 +209,34 @@
                 onclick={closeSystemMenu}
               >
                 Currency Data
+              </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Value/FXs')}
+                onclick={closeSystemMenu}
+              >
+                FX Data
+              </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Data/Reference/Instruments')}
+                onclick={closeSystemMenu}
+              >
+                Instrument Data
+              </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Value/FXRates')}
+                onclick={closeSystemMenu}
+              >
+                FX Rate Data
+              </a>
+              <a
+                class="system-submenu-item"
+                href={pathWithTrace('/Value/InstrumentValues')}
+                onclick={closeSystemMenu}
+              >
+                Instrument Value Data
               </a>
             {/if}
             <a href={pathWithTrace('/Diagnostics/RequestTrace')} onclick={closeSystemMenu}>Request Trace</a>

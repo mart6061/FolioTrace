@@ -3,6 +3,8 @@
 [Bb]in/
 [Oo]bj/
 TestResults/
+.build/
+**/.build/
 API/Logs/
 *.user
 *.suo

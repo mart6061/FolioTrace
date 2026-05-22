@@ -1,3 +1,4 @@
+using FolioTrace.Aggregates;
 using FolioTrace.Types;
 
 namespace Test;
@@ -34,6 +35,23 @@ public sealed class TypeValidationTests
         "GBRA",
         "gbr",
         "GB1"
+    };
+
+    public static TheoryData<string> ValidCfiValues => new()
+    {
+        "ESVUFR",
+        "DBFUFR",
+        "OCASPS"
+    };
+
+    public static TheoryData<string?> InvalidCfiValues => new()
+    {
+        null,
+        "",
+        "ESVUF",
+        "ESVUFRX",
+        "esvufr",
+        "ESVU1R"
     };
 
     public static TheoryData<string> ValidIsinValues => new()
@@ -86,6 +104,23 @@ public sealed class TypeValidationTests
         "ABCDEFGHIJKLMNOPQRSTU"
     };
 
+    public static TheoryData<string> ValidExchangeValues => new()
+    {
+        "XLON",
+        "XNYS",
+        "XNAS",
+        "XETR"
+    };
+
+    public static TheoryData<string?> InvalidExchangeValues => new()
+    {
+        null,
+        "",
+        "X",
+        "lower",
+        "EXCHANGE-CODE-TOO-LONG"
+    };
+
     [Theory]
     [MemberData(nameof(ValidAlpha2Values))]
     public void Alpha2_AcceptsValidValues(string value)
@@ -113,6 +148,47 @@ public sealed class TypeValidationTests
     [MemberData(nameof(InvalidAlpha3Values))]
     public void Alpha3_RejectsInvalidValues(string? value) =>
         Assert.ThrowsAny<ArgumentException>(() => Alpha3Builder.Create(value!));
+
+    [Theory]
+    [MemberData(nameof(ValidCfiValues))]
+    public void Cfi_AcceptsValidValues(string value)
+    {
+        var cfi = CFIBuilder.Create(value);
+
+        Assert.Equal(value, cfi.Value);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidCfiValues))]
+    public void Cfi_RejectsInvalidValues(string? value) =>
+        Assert.ThrowsAny<ArgumentException>(() => CFIBuilder.Create(value!));
+
+    [Fact]
+    public void Cfi_ExposesCategoryAndGroup()
+    {
+        var cfi = CFIBuilder.Create("ESVUFR");
+
+        Assert.Equal('E', cfi.CategoryCode);
+        Assert.Equal("Equities", cfi.Category.Name);
+        Assert.True(cfi.IsEquity);
+        Assert.Equal('S', cfi.GroupCode);
+        Assert.Equal("Shares", cfi.Group.Name);
+        Assert.Equal('V', cfi.Attribute1);
+        Assert.Equal('R', cfi.Attribute4);
+        Assert.Equal("ESVUFR", cfi.ToData());
+        Assert.Contains("Equities / Shares", cfi.ToDetail());
+    }
+
+    [Fact]
+    public void Cfi_AllowsUnknownCategoryAndGroup()
+    {
+        var cfi = CFIBuilder.Create("ZZZZZZ");
+
+        Assert.Equal("Unknown", cfi.Category.Name);
+        Assert.Equal("Unknown", cfi.Group.Name);
+        Assert.False(cfi.Category.IsKnown);
+        Assert.False(cfi.Group.IsKnown);
+    }
 
     [Fact]
     public void AuditDateTime_AcceptsCurrentUtcValue()
@@ -171,6 +247,52 @@ public sealed class TypeValidationTests
     [Fact]
     public void InstrumentId_RejectsEmptyGuid() =>
         Assert.Throws<ArgumentException>(() => new InstrumentID(Guid.Empty));
+
+    [Theory]
+    [MemberData(nameof(ValidExchangeValues))]
+    public void Exchange_AcceptsValidValues(string value)
+    {
+        var exchange = ExchangeBuilder.Create(value);
+
+        Assert.Equal(value, exchange.Value);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidExchangeValues))]
+    public void Exchange_RejectsInvalidValues(string? value) =>
+        Assert.ThrowsAny<ArgumentException>(() => ExchangeBuilder.Create(value!));
+
+    [Fact]
+    public void Money_AddsAndSubtractsSameCurrency()
+    {
+        var currency = Alpha3Builder.Create("GBP");
+        var left = new Money(10.25m, currency);
+        var right = new Money(2.50m, currency);
+
+        Assert.Equal(12.75m, (left + right).Amount);
+        Assert.Equal(7.75m, (left - right).Amount);
+    }
+
+    [Fact]
+    public void Money_RejectsCrossCurrencyOperations()
+    {
+        var sterling = new Money(10m, Alpha3Builder.Create("GBP"));
+        var dollars = new Money(10m, Alpha3Builder.Create("USD"));
+
+        Assert.Throws<InvalidOperationException>(() => sterling + dollars);
+        Assert.Throws<InvalidOperationException>(() => sterling - dollars);
+    }
+
+    [Fact]
+    public void InstrumentIdentifier_ValidatesTypedValues()
+    {
+        var ticker = new InstrumentIdentifier(InstrumentIdentifierType.Ticker, "MSFT");
+        var sedol = new InstrumentIdentifier(InstrumentIdentifierType.Sedol, "B1YW440");
+
+        Assert.Equal("MSFT", ticker.Value);
+        Assert.Equal("B1YW440", sedol.Value);
+        Assert.ThrowsAny<ArgumentException>(() => new InstrumentIdentifier(InstrumentIdentifierType.Ticker, "msft"));
+    }
 
     [Theory]
     [MemberData(nameof(ValidIsinValues))]

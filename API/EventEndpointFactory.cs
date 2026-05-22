@@ -12,7 +12,8 @@ public static class EventEndpointFactory
         IEventRepository eventRepository,
         AggregateCacheInvalidationService cacheInvalidationService,
         Func<Result<TEvent>> createEvent,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<TEvent, CancellationToken, Task>? afterAppend = null)
         where TEvent : class, IEventBase
     {
         var result = Create(createEvent);
@@ -20,6 +21,9 @@ public static class EventEndpointFactory
             return Results.BadRequest(result);
 
         await eventRepository.AppendAsync(streamId, result.Value, cancellationToken);
+        if (afterAppend is not null)
+            await afterAppend(result.Value, cancellationToken);
+
         cacheInvalidationService.Invalidate(result.Value);
 
         return Results.Accepted(eventRoute, CreateAcceptedEventResponse(eventRoute, result.Value));

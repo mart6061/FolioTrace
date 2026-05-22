@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
   import type { FXRate } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -184,6 +185,8 @@
           {/if}
         </div>
       {/if}
+
+      <AggregateUpdateWatcher aggregateKind="FXRates" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.fxRates.lastEventID} />
 
       <div class="data-summary">
         <div><span class="font-semibold text-slate-950">{data.fxRates.items.length}</span> FX rates</div>

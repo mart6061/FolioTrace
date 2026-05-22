@@ -7,7 +7,11 @@ import type {
   CurrencyReferenceEvent,
   FXRates,
   FXs,
-  MemoryDiagnostics
+  InstrumentLogo,
+  InstrumentValues,
+  Instruments,
+  MemoryDiagnostics,
+  BuildProgressNotification
 } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
@@ -58,6 +62,49 @@ export type FXRateSetRequest = {
   ask: number;
 };
 
+export type InstrumentPriceSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  instrumentID: string;
+  currency: string;
+  bid: number;
+  mid: number;
+  ask: number;
+  nav: number;
+};
+
+export type InstrumentCreatedRequest = {
+  eventDateTime: string;
+  reason: string;
+  instrumentID: string;
+  name: string;
+  formalName: string;
+  exchange: string;
+  cfi: string;
+  active: boolean;
+  incomeCountry: string;
+  priceCountry: string;
+};
+
+export type InstrumentModifiedRequest = Omit<InstrumentCreatedRequest, 'active'> & {
+  logo?: InstrumentLogo | null;
+};
+
+export type InstrumentIdentifierSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  instrumentID: string;
+  identifierType: 'Ticker' | 'Sedol' | 'ISIN' | 'CUSIP' | 'FIGI' | 'RIC';
+  identifierValue: string;
+};
+
+export type InstrumentIdentifierUnsetRequest = {
+  eventDateTime: string;
+  reason: string;
+  instrumentID: string;
+  identifierType: 'Ticker' | 'Sedol' | 'ISIN' | 'CUSIP' | 'FIGI' | 'RIC';
+};
+
 export type EventSubmissionResponse = {
   eventID: string;
   links: {
@@ -66,6 +113,12 @@ export type EventSubmissionResponse = {
     method: string;
   }[];
 };
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+  }
+}
 
 export function getApiBaseUrl() {
   return (env.API_BASE_URL || fallbackApiBaseUrl).replace(/\/$/, '');
@@ -157,6 +210,36 @@ export async function getFXRates(fetchApi: typeof fetch, eventDateTime: string, 
   return (await response.json()) as FXRates;
 }
 
+export async function getInstruments(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/Instruments/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Instruments;
+}
+
+export async function getInstrumentValues(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/InstrumentValues/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentValues;
+}
+
 export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
   const response = await fetchApi(`${getApiBaseUrl()}/Diagnostics/Memory`);
 
@@ -182,6 +265,29 @@ export async function postSystemBuild(fetchApi: typeof fetch) {
 
   if (!response.ok) {
     const errorText = await response.text();
+    throw new ApiError(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`, response.status);
+  }
+
+  return (await response.json()) as {
+    status: string;
+    message: string;
+    removedCacheViews: {
+      countries: number;
+      currencies: number;
+      fXs: number;
+      fXRates: number;
+    };
+    progress: BuildProgressNotification;
+  };
+}
+
+export async function postSystemClearCacheAndProjections(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/System/ClearCacheAndProjections`, {
+    method: 'POST'
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
     throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
   }
 
@@ -194,6 +300,7 @@ export async function postSystemBuild(fetchApi: typeof fetch) {
       fXs: number;
       fXRates: number;
     };
+    clearedProjections: string[];
   };
 }
 
@@ -305,6 +412,157 @@ export async function postFXRateSetEvent(fetchApi: typeof fetch, request: FXRate
   return postFXRateEvent(fetchApi, request, userID);
 }
 
+export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, request: InstrumentPriceSetRequest, userID: string) {
+  const money = (amount: number) => ({ Amount: amount, Currency: request.currency });
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/InstrumentPrice/InstrumentPriceSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      Price: {
+        $type: 'InstrumentPriceEquity',
+        Bid: money(request.bid),
+        Mid: money(request.mid),
+        Ask: money(request.ask),
+        Nav: money(request.nav)
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentCreatedEvent(fetchApi: typeof fetch, request: InstrumentCreatedRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/InstrumentCreatedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      Name: request.name,
+      FormalName: request.formalName,
+      Exchange: request.exchange,
+      CFI: request.cfi,
+      Logo: null,
+      Active: request.active,
+      IncomeCountry: request.incomeCountry,
+      PriceCountry: request.priceCountry
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentModifiedEvent(fetchApi: typeof fetch, request: InstrumentModifiedRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/InstrumentModifiedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      Name: request.name,
+      FormalName: request.formalName,
+      Exchange: request.exchange,
+      CFI: request.cfi,
+      Logo: request.logo ? { Svg: request.logo.svg } : null,
+      IncomeCountry: request.incomeCountry,
+      PriceCountry: request.priceCountry
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentIdentifierSetEvent(fetchApi: typeof fetch, request: InstrumentIdentifierSetRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/InstrumentIdentifierSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      Identifier: {
+        Type: request.identifierType,
+        Value: request.identifierValue
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentIdentifierUnsetEvent(fetchApi: typeof fetch, request: InstrumentIdentifierUnsetRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/InstrumentIdentifierUnsetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      IdentifierType: request.identifierType
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentTermsEquitySetEvent(fetchApi: typeof fetch, eventDateTime: string, instrumentID: string, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/InstrumentTermsSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: eventDateTime,
+      Reason: `Set equity terms ${instrumentID}`,
+      InstrumentID: instrumentID,
+      Terms: {
+        $type: 'InstrumentTermsEquity'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
 async function postCountryEvent(
   fetchApi: typeof fetch,
   eventType: 'CountryCreatedEvent' | 'CountryModifiedEvent',
@@ -401,8 +659,8 @@ function readApiError(errorText: string) {
     return '';
 
   try {
-    const error = JSON.parse(errorText) as { validationErrors?: string[]; title?: string };
-    return error.validationErrors?.join(' ') || error.title || errorText;
+    const error = JSON.parse(errorText) as { message?: string; validationErrors?: string[]; title?: string };
+    return error.validationErrors?.join(' ') || error.message || error.title || errorText;
   } catch {
     return errorText;
   }

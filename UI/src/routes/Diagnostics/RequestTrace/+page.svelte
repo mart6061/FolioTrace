@@ -16,15 +16,131 @@
     expandedId = expandedId === id ? '' : id;
   }
 
-  function bodyPreview(message: ApiHttpMessage) {
-    if (!message.body)
-      return '-';
-
-    return message.body.length > 180 ? `${message.body.slice(0, 180)}...` : message.body;
-  }
-
   function headers(message: ApiHttpMessage) {
     return Object.entries(message.headers ?? {}).sort(([left], [right]) => left.localeCompare(right));
+  }
+
+  function bodyMarkup(message: ApiHttpMessage) {
+    const body = message.body ?? '-';
+    const suffix = message.bodyTruncated ? '\n\n[truncated]' : '';
+    const jsonMarkup = jsonBodyMarkup(body, message.contentType);
+
+    return jsonMarkup
+      ? `${jsonMarkup}${escapeHtml(suffix)}`
+      : escapeHtml(`${body}${suffix}`);
+  }
+
+  function jsonBodyMarkup(body: string, contentType: string | null) {
+    if (!isJsonLikeBody(body, contentType))
+      return '';
+
+    const json = parseJsonBody(body, contentType);
+    const formatted = json === null
+      ? formatJsonLikeBody(body)
+      : JSON.stringify(json, null, 2);
+
+    return escapeHtml(formatted).replace(
+        /(&quot;(?:\\.|[^\\])*?&quot;)(\s*:)?|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\btrue\b|\bfalse\b|\bnull\b/g,
+        (match, stringValue: string | undefined, colon: string | undefined) => {
+          if (stringValue)
+            return colon
+              ? `<span class="json-key">${stringValue}</span>${colon}`
+              : `<span class="json-string">${stringValue}</span>`;
+
+          if (match === 'true' || match === 'false')
+            return `<span class="json-boolean">${match}</span>`;
+
+          if (match === 'null')
+            return `<span class="json-null">${match}</span>`;
+
+          return `<span class="json-number">${match}</span>`;
+        }
+      );
+  }
+
+  function parseJsonBody(body: string, contentType: string | null) {
+    if (!isJsonLikeBody(body, contentType))
+      return null;
+
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed !== 'string')
+        return parsed;
+
+      const nested = parsed.trim();
+      return nested && ['{', '['].includes(nested[0]) ? JSON.parse(nested) : parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function isJsonLikeBody(body: string, contentType: string | null) {
+    const trimmed = body.trim();
+    const looksLikeJson = trimmed && ['{', '['].includes(trimmed[0]);
+    const hasJsonContentType = contentType?.toLocaleLowerCase().includes('json') ?? false;
+
+    return Boolean(looksLikeJson || hasJsonContentType);
+  }
+
+  function formatJsonLikeBody(body: string) {
+    let result = '';
+    let indent = 0;
+    let inString = false;
+    let escaping = false;
+
+    for (const character of body.trim()) {
+      if (inString) {
+        result += character;
+
+        if (escaping) {
+          escaping = false;
+        } else if (character === '\\') {
+          escaping = true;
+        } else if (character === '"') {
+          inString = false;
+        }
+
+        continue;
+      }
+
+      switch (character) {
+        case '"':
+          inString = true;
+          result += character;
+          break;
+        case '{':
+        case '[':
+          result += `${character}\n${'  '.repeat(++indent)}`;
+          break;
+        case '}':
+        case ']':
+          indent = Math.max(0, indent - 1);
+          result = result.trimEnd();
+          result += `\n${'  '.repeat(indent)}${character}`;
+          break;
+        case ',':
+          result += `,\n${'  '.repeat(indent)}`;
+          break;
+        case ':':
+          result += ': ';
+          break;
+        default:
+          if (!/\s/.test(character))
+            result += character;
+          break;
+      }
+    }
+
+    return result;
+  }
+
+  function escapeHtml(value: string) {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
   }
 
   function statusClass(statusCode: number | null) {
@@ -177,9 +293,7 @@
                 <th class="px-3 py-2">Path</th>
                 <th class="px-3 py-2">Status</th>
                 <th class="px-3 py-2 text-right">Duration</th>
-                <th class="px-3 py-2">Request</th>
-                <th class="px-3 py-2">Response</th>
-                <th class="w-24 px-3 py-2 text-right">Actions</th>
+                <th class="sticky right-0 z-10 w-24 bg-slate-50 px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -203,13 +317,7 @@
                     </span>
                   </td>
                   <td class="px-3 py-2 text-right font-mono text-slate-700">{exchange.durationMilliseconds} ms</td>
-                  <td class="max-w-72 px-3 py-2">
-                    <code class="line-clamp-2 whitespace-pre-wrap text-xs text-slate-600">{bodyPreview(exchange.request)}</code>
-                  </td>
-                  <td class="max-w-72 px-3 py-2">
-                    <code class="line-clamp-2 whitespace-pre-wrap text-xs text-slate-600">{bodyPreview(exchange.response)}</code>
-                  </td>
-                  <td class="px-3 py-2 text-right">
+                  <td class="sticky right-0 bg-white px-3 py-2 text-right shadow-[-8px_0_12px_-12px_rgb(15_23_42_/_0.45)]">
                     <button
                       class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
                       onclick={() => toggleExpanded(exchange.id)}
@@ -222,7 +330,7 @@
 
                 {#if expandedId === exchange.id}
                   <tr>
-                    <td class="bg-slate-50 px-3 py-3" colspan="8">
+                    <td class="bg-slate-50 px-3 py-3" colspan="6">
                       {@render ExchangeDetail(exchange)}
                     </td>
                   </tr>
@@ -255,16 +363,26 @@
 </main>
 
 {#snippet ExchangeDetail(exchange: ApiExchange)}
-  <div class="grid gap-3 lg:grid-cols-2">
-    <section class="grid gap-2">
+  <div class="grid gap-3">
+    <div class="grid gap-3 lg:grid-cols-2">
       <h2 class="text-sm font-semibold text-slate-950">Request</h2>
-      {@render MessageDetail(exchange.request)}
-    </section>
-
-    <section class="grid gap-2">
       <h2 class="text-sm font-semibold text-slate-950">Response</h2>
-      {@render MessageDetail(exchange.response)}
-    </section>
+    </div>
+
+    <div class="grid gap-3 lg:grid-cols-2">
+      {@render MessageMeta(exchange.request)}
+      {@render MessageMeta(exchange.response)}
+    </div>
+
+    <div class="grid gap-3 lg:grid-cols-2">
+      {@render HeadersDetail(exchange.request)}
+      {@render HeadersDetail(exchange.response)}
+    </div>
+
+    <div class="grid gap-3 lg:grid-cols-2">
+      {@render BodyDetail(exchange.request)}
+      {@render BodyDetail(exchange.response)}
+    </div>
 
     {#if exchange.exceptionMessage}
       <section class="lg:col-span-2">
@@ -275,25 +393,27 @@
   </div>
 {/snippet}
 
-{#snippet MessageDetail(message: ApiHttpMessage)}
-  <div class="grid gap-2">
-    <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
-      <span>Content type: {message.contentType ?? '-'}</span>
-      <span>Length: {message.contentLength ?? '-'}</span>
-    </div>
-
-    <details class="rounded-md border border-slate-200 bg-white">
-      <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-700">Headers</summary>
-      <dl class="divide-y divide-slate-100 border-t border-slate-200 text-xs">
-        {#each headers(message) as [name, values]}
-          <div class="grid gap-1 px-3 py-2 sm:grid-cols-[180px_1fr]">
-            <dt class="font-medium text-slate-700">{name}</dt>
-            <dd class="break-all font-mono text-slate-600">{values.join(', ')}</dd>
-          </div>
-        {/each}
-      </dl>
-    </details>
-
-    <pre class="max-h-96 overflow-auto rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-800">{message.body ?? '-'}{message.bodyTruncated ? '\n\n[truncated]' : ''}</pre>
+{#snippet MessageMeta(message: ApiHttpMessage)}
+  <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+    <span>Content type: {message.contentType ?? '-'}</span>
+    <span>Length: {message.contentLength ?? '-'}</span>
   </div>
+{/snippet}
+
+{#snippet HeadersDetail(message: ApiHttpMessage)}
+  <details class="rounded-md border border-slate-200 bg-white">
+    <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-700">Headers</summary>
+    <dl class="divide-y divide-slate-100 border-t border-slate-200 text-xs">
+      {#each headers(message) as [name, values]}
+        <div class="grid gap-1 px-3 py-2 sm:grid-cols-[180px_1fr]">
+          <dt class="font-medium text-slate-700">{name}</dt>
+          <dd class="break-all font-mono text-slate-600">{values.join(', ')}</dd>
+        </div>
+      {/each}
+    </dl>
+  </details>
+{/snippet}
+
+{#snippet BodyDetail(message: ApiHttpMessage)}
+  <pre class="json-body min-h-64 max-h-[42rem] overflow-auto whitespace-pre-wrap break-words rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-800">{@html bodyMarkup(message)}</pre>
 {/snippet}

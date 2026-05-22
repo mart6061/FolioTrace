@@ -1,6 +1,6 @@
 namespace API;
 
-public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService);
+public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService, InstrumentServiceDiagnosticsResponse InstrumentService, InstrumentValueServiceDiagnosticsResponse InstrumentValueService, SseDiagnosticsResponse Sse, AggregateMaintenanceDiagnosticsResponse AggregateMaintenance);
 
 public sealed record EventCacheDiagnosticsResponse(bool IsLoaded, int StreamCount, int EventCount);
 
@@ -11,6 +11,55 @@ public sealed record CurrencyServiceDiagnosticsResponse(int CacheEntryCount, int
 public sealed record FXServiceDiagnosticsResponse(int CacheEntryCount, int FXCount);
 
 public sealed record FXRateServiceDiagnosticsResponse(int CacheEntryCount, int FXRateCount);
+
+public sealed record InstrumentServiceDiagnosticsResponse(int CacheEntryCount, int InstrumentCount);
+
+public sealed record InstrumentValueServiceDiagnosticsResponse(int CacheEntryCount, int InstrumentValueCount);
+
+public sealed record SseDiagnosticsResponse(
+    int ActiveSubscriberCount,
+    long PublishedNotificationCount,
+    string? LastNotificationType,
+    string? LastKind,
+    Guid? LastEventID,
+    DateTime? LastEventDateTime,
+    DateTime? LastAuditDateTime,
+    string? LastReason,
+    Guid? CurrentBuildID,
+    string? LastBuildStatus,
+    string? LastBuildStage,
+    DateTime? LastBuildUpdatedAtUtc);
+
+public sealed record AggregateMaintenanceDiagnosticsResponse(
+    bool Enabled,
+    TimeSpan PeriodicDelay,
+    int EventTriggerCount,
+    TimeSpan EventTriggerDelay,
+    int DaysFromToday,
+    int EndOfWeeksFromToday,
+    int EndOfMonthsFromToday,
+    string Status,
+    Guid? ActiveRunID,
+    Guid? LastRunID,
+    string? LastTrigger,
+    DateTime? LastStartedAtUtc,
+    DateTime? LastCompletedAtUtc,
+    int LastScannedAggregates,
+    int LastMissingAggregates,
+    int LastFixedAggregates,
+    int LastFailedAggregates,
+    long TotalScannedAggregates,
+    long TotalMissingAggregates,
+    long TotalFixedAggregates,
+    long TotalFailedAggregates,
+    int SkippedRunCount,
+    int PendingEventCount,
+    bool IsSuspended,
+    string? SuspensionReason,
+    DateTime? SuspendedAtUtc,
+    int SuspendedRunCount,
+    string? LastError,
+    IReadOnlyList<string> RecentErrors);
 
 public sealed record ApiExchangeSearchResponse(
     IReadOnlyList<ApiExchangeResponse> Items,

@@ -5,6 +5,10 @@ namespace Repository.Seed;
 
 internal static class SeedFXData
 {
+    private const int SeedCalendarDays = 90;
+
+    public static DateTime RateStartDate => DateTime.UtcNow.Date.AddDays(-(SeedCalendarDays - 1));
+
     private static readonly string[] SeedCurrencies =
     [
         "EUR",
@@ -102,8 +106,9 @@ internal static class SeedFXData
         if (pairSeeds is null)
             throw new ArgumentNullException(nameof(pairSeeds));
 
-        var startDate = DateTime.Today.AddYears(-10);
-        var endDate = DateTime.Today;
+        var startDate = RateStartDate;
+        var endDate = DateTime.UtcNow.Date;
+        var latestAuditDateTime = DateTime.UtcNow.AddMinutes(-1);
         var observationTimes = new[]
         {
             new TimeSpan(9, 0, 0),
@@ -122,6 +127,8 @@ internal static class SeedFXData
             {
                 var observationIndex = Array.IndexOf(observationTimes, observationTime);
                 var timestamp = date.Date.Add(observationTime);
+                if (timestamp.AddMinutes(1) > latestAuditDateTime)
+                    continue;
 
                 foreach (var pairSeed in pairSeeds)
                     yield return new FXRateSeed(
