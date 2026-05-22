@@ -29,6 +29,29 @@ main {
     #eef3f7;
 }
 
+.json-body .json-key {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.json-body .json-string {
+  color: #047857;
+}
+
+.json-body .json-number {
+  color: #b45309;
+}
+
+.json-body .json-boolean {
+  color: #7e22ce;
+  font-weight: 600;
+}
+
+.json-body .json-null {
+  color: #64748b;
+  font-style: italic;
+}
+
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -277,6 +300,44 @@ main {
   gap: 24px;
 }
 
+.dashboard-intro {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.06);
+}
+
+.dashboard-intro h2,
+.dashboard-intro h3,
+.dashboard-intro p {
+  margin: 0;
+}
+
+.dashboard-intro h2 {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dashboard-intro h3 {
+  margin-top: 4px;
+  color: var(--accent-strong);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dashboard-intro p {
+  max-width: 78ch;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
 .dashboard-section {
   display: grid;
   gap: 12px;
@@ -377,6 +438,54 @@ main {
   border-color: #b91c1c;
   background: #b91c1c;
   color: #fff;
+}
+
+.danger-confirmation {
+  display: grid;
+  gap: 8px;
+}
+
+.danger-confirmation label {
+  display: grid;
+  gap: 5px;
+  color: #7f1d1d;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.danger-confirmation input {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f172a;
+  outline: none;
+  padding: 0 10px;
+}
+
+.danger-confirmation input:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 0.14);
+}
+
+.danger-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metric-card-danger .danger-confirmation-actions button[type="button"] {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.metric-card-danger .danger-confirmation-actions button[type="button"]:hover,
+.metric-card-danger .danger-confirmation-actions button[type="button"]:focus-visible {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .dashboard-alert {

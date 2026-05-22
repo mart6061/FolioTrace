@@ -1,0 +1,6 @@
+namespace FolioTrace.Types;
+
+public static class CFIBuilder
+{
+    public static CFI Create(string value) => new(value);
+}

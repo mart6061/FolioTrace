@@ -1,20 +1,24 @@
-using System.Diagnostics;
-using System.Reflection;
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
 using Repository;
 using Services;
+using System.Text.Json;
 
 namespace API;
 
 public static class ApiEndpointRegistration
 {
+    private static readonly JsonSerializerOptions NotificationJsonOptions = new(JsonSerializerDefaults.Web);
+
     private const string CountryEventsRoute = "/API/Events/Country";
     private const string CurrencyEventsRoute = "/API/Events/Currency";
     private const string FXEventsRoute = "/API/Events/FX";
     private const string FXRateEventsRoute = "/API/Events/FXRate";
+    private const string InstrumentEventsRoute = "/API/Events/Instrument";
+    private const string InstrumentPriceEventsRoute = "/API/Events/InstrumentPrice";
+    private const string InstrumentIncomeEventsRoute = "/API/Events/InstrumentIncome";
     private const string UserEventsRoute = "/API/Events/User";
 
     public static WebApplication MapFolioTraceApi(this WebApplication app)
@@ -23,31 +27,104 @@ public static class ApiEndpointRegistration
 
         api.MapGet("/HelloWorld", () => "Hello World!");
         api.MapDiagnosticsEndpoints();
+        api.MapNotificationEndpoints();
         api.MapSystemEndpoints();
         api.MapCountryEndpoints();
         api.MapCurrencyEndpoints();
         api.MapFXEndpoints();
         api.MapFXRateEndpoints();
+        api.MapInstrumentEndpoints();
+        api.MapInstrumentValueEndpoints();
         api.MapCountryEventEndpoints();
         api.MapCurrencyEventEndpoints();
         api.MapFXEventEndpoints();
         api.MapFXRateEventEndpoints();
+        api.MapInstrumentEventEndpoints();
+        api.MapInstrumentPriceEventEndpoints();
+        api.MapInstrumentIncomeEventEndpoints();
         api.MapUserEventEndpoints();
 
         return app;
+    }
+
+    private static void MapNotificationEndpoints(this RouteGroupBuilder api)
+    {
+        var notifications = api.MapGroup("/Notifications");
+
+        notifications.MapGet("/Aggregates", async (HttpContext context, AggregateUpdateNotificationService notificationService) =>
+        {
+            context.Response.Headers.CacheControl = "no-cache";
+            context.Response.Headers.Connection = "keep-alive";
+            context.Response.ContentType = "text/event-stream";
+
+            await context.Response.WriteAsync(": connected\n\n", context.RequestAborted);
+            await context.Response.Body.FlushAsync(context.RequestAborted);
+
+            await using var subscription = notificationService.Subscribe();
+
+            try
+            {
+                while (!context.RequestAborted.IsCancellationRequested)
+                {
+                    var readTask = subscription.Reader.WaitToReadAsync(context.RequestAborted).AsTask();
+                    var heartbeatTask = Task.Delay(TimeSpan.FromSeconds(20), context.RequestAborted);
+                    var completedTask = await Task.WhenAny(readTask, heartbeatTask);
+
+                    if (completedTask == heartbeatTask)
+                    {
+                        await context.Response.WriteAsync(": heartbeat\n\n", context.RequestAborted);
+                        await context.Response.Body.FlushAsync(context.RequestAborted);
+
+                        continue;
+                    }
+
+                    if (!await readTask)
+                        break;
+
+                    while (subscription.Reader.TryRead(out var notification))
+                    {
+                        await WriteSseNotification(context, notification);
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+            }
+        });
+    }
+
+    private static async Task WriteSseNotification(HttpContext context, object notification)
+    {
+        var eventName = notification switch
+        {
+            BuildProgressNotification => "build-progress",
+            AggregateMaintenanceNotification => "aggregate-maintenance",
+            AggregateUpdateNotification aggregateNotification when aggregateNotification.NotificationType == "AggregatesInvalidated" => "aggregates-invalidated",
+            AggregateUpdateNotification => "aggregate-updated",
+            _ => "message"
+        };
+
+        var payload = JsonSerializer.Serialize(notification, NotificationJsonOptions);
+        await context.Response.WriteAsync($"event: {eventName}\n", context.RequestAborted);
+        await context.Response.WriteAsync($"data: {payload}\n\n", context.RequestAborted);
+        await context.Response.Body.FlushAsync(context.RequestAborted);
     }
 
     private static void MapDiagnosticsEndpoints(this RouteGroupBuilder api)
     {
         var diagnostics = api.MapGroup("/Diagnostics");
 
-        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService) =>
+        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
         {
             var repositoryDiagnostics = eventRepository.GetCacheDiagnostics();
             var countryDiagnostics = countryService.GetDiagnostics();
             var currencyDiagnostics = currencyService.GetDiagnostics();
             var fxDiagnostics = fxService.GetDiagnostics();
             var fxRateDiagnostics = fxRateService.GetDiagnostics();
+            var instrumentDiagnostics = instrumentService.GetDiagnostics();
+            var instrumentValueDiagnostics = instrumentValueService.GetDiagnostics();
+            var sseDiagnostics = notificationService.GetDiagnostics();
+            var aggregateMaintenanceDiagnostics = aggregateMaintenanceCoordinator.GetDiagnostics();
 
             return Results.Ok(new MemoryDiagnosticsResponse(
                 new EventCacheDiagnosticsResponse(
@@ -65,7 +142,92 @@ public static class ApiEndpointRegistration
                     fxDiagnostics.FXCount),
                 new FXRateServiceDiagnosticsResponse(
                     fxRateDiagnostics.CacheEntryCount,
-                    fxRateDiagnostics.FXRateCount)));
+                    fxRateDiagnostics.FXRateCount),
+                new InstrumentServiceDiagnosticsResponse(
+                    instrumentDiagnostics.CacheEntryCount,
+                    instrumentDiagnostics.InstrumentCount),
+                new InstrumentValueServiceDiagnosticsResponse(
+                    instrumentValueDiagnostics.CacheEntryCount,
+                    instrumentValueDiagnostics.InstrumentValueCount),
+                new SseDiagnosticsResponse(
+                    sseDiagnostics.ActiveSubscriberCount,
+                    sseDiagnostics.PublishedNotificationCount,
+                    sseDiagnostics.LastNotificationType,
+                    sseDiagnostics.LastKind,
+                    sseDiagnostics.LastEventID,
+                    sseDiagnostics.LastEventDateTime,
+                    sseDiagnostics.LastAuditDateTime,
+                    sseDiagnostics.LastReason,
+                    sseDiagnostics.CurrentBuildID,
+                    sseDiagnostics.LastBuildStatus,
+                    sseDiagnostics.LastBuildStage,
+                    sseDiagnostics.LastBuildUpdatedAtUtc),
+                new AggregateMaintenanceDiagnosticsResponse(
+                    aggregateMaintenanceDiagnostics.Enabled,
+                    aggregateMaintenanceDiagnostics.PeriodicDelay,
+                    aggregateMaintenanceDiagnostics.EventTriggerCount,
+                    aggregateMaintenanceDiagnostics.EventTriggerDelay,
+                    aggregateMaintenanceDiagnostics.DaysFromToday,
+                    aggregateMaintenanceDiagnostics.EndOfWeeksFromToday,
+                    aggregateMaintenanceDiagnostics.EndOfMonthsFromToday,
+                    aggregateMaintenanceDiagnostics.Status,
+                    aggregateMaintenanceDiagnostics.ActiveRunID,
+                    aggregateMaintenanceDiagnostics.LastRunID,
+                    aggregateMaintenanceDiagnostics.LastTrigger,
+                    aggregateMaintenanceDiagnostics.LastStartedAtUtc,
+                    aggregateMaintenanceDiagnostics.LastCompletedAtUtc,
+                    aggregateMaintenanceDiagnostics.LastScannedAggregates,
+                    aggregateMaintenanceDiagnostics.LastMissingAggregates,
+                    aggregateMaintenanceDiagnostics.LastFixedAggregates,
+                    aggregateMaintenanceDiagnostics.LastFailedAggregates,
+                    aggregateMaintenanceDiagnostics.TotalScannedAggregates,
+                    aggregateMaintenanceDiagnostics.TotalMissingAggregates,
+                    aggregateMaintenanceDiagnostics.TotalFixedAggregates,
+                    aggregateMaintenanceDiagnostics.TotalFailedAggregates,
+                    aggregateMaintenanceDiagnostics.SkippedRunCount,
+                    aggregateMaintenanceDiagnostics.PendingEventCount,
+                    aggregateMaintenanceDiagnostics.IsSuspended,
+                    aggregateMaintenanceDiagnostics.SuspensionReason,
+                    aggregateMaintenanceDiagnostics.SuspendedAtUtc,
+                    aggregateMaintenanceDiagnostics.SuspendedRunCount,
+                    aggregateMaintenanceDiagnostics.LastError,
+                    aggregateMaintenanceDiagnostics.RecentErrors)));
+        });
+
+        diagnostics.MapGet("/AggregateMaintenance", (AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
+        {
+            var aggregateMaintenanceDiagnostics = aggregateMaintenanceCoordinator.GetDiagnostics();
+
+            return Results.Ok(new AggregateMaintenanceDiagnosticsResponse(
+                aggregateMaintenanceDiagnostics.Enabled,
+                aggregateMaintenanceDiagnostics.PeriodicDelay,
+                aggregateMaintenanceDiagnostics.EventTriggerCount,
+                aggregateMaintenanceDiagnostics.EventTriggerDelay,
+                aggregateMaintenanceDiagnostics.DaysFromToday,
+                aggregateMaintenanceDiagnostics.EndOfWeeksFromToday,
+                aggregateMaintenanceDiagnostics.EndOfMonthsFromToday,
+                aggregateMaintenanceDiagnostics.Status,
+                aggregateMaintenanceDiagnostics.ActiveRunID,
+                aggregateMaintenanceDiagnostics.LastRunID,
+                aggregateMaintenanceDiagnostics.LastTrigger,
+                aggregateMaintenanceDiagnostics.LastStartedAtUtc,
+                aggregateMaintenanceDiagnostics.LastCompletedAtUtc,
+                aggregateMaintenanceDiagnostics.LastScannedAggregates,
+                aggregateMaintenanceDiagnostics.LastMissingAggregates,
+                aggregateMaintenanceDiagnostics.LastFixedAggregates,
+                aggregateMaintenanceDiagnostics.LastFailedAggregates,
+                aggregateMaintenanceDiagnostics.TotalScannedAggregates,
+                aggregateMaintenanceDiagnostics.TotalMissingAggregates,
+                aggregateMaintenanceDiagnostics.TotalFixedAggregates,
+                aggregateMaintenanceDiagnostics.TotalFailedAggregates,
+                aggregateMaintenanceDiagnostics.SkippedRunCount,
+                aggregateMaintenanceDiagnostics.PendingEventCount,
+                aggregateMaintenanceDiagnostics.IsSuspended,
+                aggregateMaintenanceDiagnostics.SuspensionReason,
+                aggregateMaintenanceDiagnostics.SuspendedAtUtc,
+                aggregateMaintenanceDiagnostics.SuspendedRunCount,
+                aggregateMaintenanceDiagnostics.LastError,
+                aggregateMaintenanceDiagnostics.RecentErrors));
         });
 
         diagnostics.MapGet("/RequestTrace", async (
@@ -117,39 +279,67 @@ public static class ApiEndpointRegistration
     {
         var system = api.MapGroup("/System");
 
-        system.MapGet("/Version", () =>
+        system.MapGet("/Version", (ApiVersionInfo versionInfo) =>
         {
             return Results.Ok(new
             {
-                ApiVersion = CreateDisplayVersion(typeof(ApiEndpointRegistration).Assembly)
+                versionInfo.ApiVersion
             });
         });
 
         system.MapPost("/Build", async (
-            ISeedRepository seedRepository,
-            CountryService countryService,
-            CurrencyService currencyService,
-            FXService fxService,
-            FXRateService fxRateService,
+            BuildCoordinator buildCoordinator,
             CancellationToken cancellationToken) =>
         {
-            await seedRepository.Build(cancellationToken);
+            var result = await buildCoordinator.BuildAsync(cancellationToken);
 
-            var removedCountryViews = countryService.InvalidateAll();
-            var removedCurrencyViews = currencyService.InvalidateAll();
-            var removedFXViews = fxService.InvalidateAll();
-            var removedFXRateViews = fxRateService.InvalidateAll();
+            if (!result.Accepted)
+                return Results.Conflict(new
+                {
+                    Status = result.Progress.Status,
+                    Message = result.Progress.Message,
+                    Progress = result.Progress
+                });
+
+            if (!result.Succeeded)
+                return Results.Problem(result.Progress.Error ?? result.Progress.Message, statusCode: StatusCodes.Status500InternalServerError);
 
             return Results.Ok(new
             {
                 Status = "Complete",
                 Message = "Database rebuild complete.",
-                RemovedCacheViews = new
+                RemovedCacheViews = result.RemovedCacheViews,
+                Progress = result.Progress
+            });
+        });
+
+        system.MapPost("/ClearCacheAndProjections", async (
+            AggregateCacheClearService cacheClearService,
+            AggregateUpdateNotificationService notificationService,
+            AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator,
+            IFXRateReadModelRepository fxRateReadModelRepository,
+            IInstrumentValueReadModelRepository instrumentValueReadModelRepository,
+            CancellationToken cancellationToken) =>
+        {
+            await using var maintenanceSuspension = await aggregateMaintenanceCoordinator.SuspendAsync("Clearing caches and projections.", cancellationToken);
+
+            var removedCacheViews = cacheClearService.ClearAll();
+            await fxRateReadModelRepository.ClearAsync(cancellationToken);
+            await instrumentValueReadModelRepository.ClearAsync(cancellationToken);
+            notificationService.PublishAggregatesInvalidated("Caches and projections cleared.");
+
+            return Results.Ok(new
+            {
+                Status = "Complete",
+                Message = "Caches and projections cleared.",
+                RemovedCacheViews = removedCacheViews,
+                ClearedProjections = new[]
                 {
-                    Countries = removedCountryViews,
-                    Currencies = removedCurrencyViews,
-                    FXs = removedFXViews,
-                    FXRates = removedFXRateViews
+                    nameof(FXDefinitionReadModel),
+                    nameof(FXRatePointReadModel),
+                    nameof(InstrumentDefinitionReadModel),
+                    nameof(InstrumentPricePointReadModel),
+                    nameof(InstrumentIncomePointReadModel)
                 }
             });
         });
@@ -208,6 +398,34 @@ public static class ApiEndpointRegistration
             return auditDateTime.HasValue
                 ? Results.Ok(await fxRateService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await fxRateService.Get(valuationDate));
+        });
+    }
+
+    private static void MapInstrumentEndpoints(this RouteGroupBuilder api)
+    {
+        var instruments = api.MapGroup("/Instruments");
+
+        instruments.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, InstrumentService instrumentService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await instrumentService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await instrumentService.Get(valuationDate));
+        });
+    }
+
+    private static void MapInstrumentValueEndpoints(this RouteGroupBuilder api)
+    {
+        var instrumentValues = api.MapGroup("/InstrumentValues");
+
+        instrumentValues.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, InstrumentValueService instrumentValueService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await instrumentValueService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await instrumentValueService.Get(valuationDate));
         });
     }
 
@@ -326,23 +544,25 @@ public static class ApiEndpointRegistration
                 : Results.NotFound();
         });
 
-        fxEvents.MapPost($"/{nameof(FXCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, FXCreatedRequest request, CancellationToken cancellationToken) =>
+        fxEvents.MapPost($"/{nameof(FXCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IFXRateReadModelRepository fxRateReadModelRepository, FXCreatedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.FXsStreamId,
                 FXEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
                 () => FXCreatedEventBuilder.Create(request),
-                cancellationToken));
+                cancellationToken,
+                (_, token) => fxRateReadModelRepository.ClearAsync(token)));
 
-        fxEvents.MapPost($"/{nameof(FXActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, FXActiveModifiedRequest request, CancellationToken cancellationToken) =>
+        fxEvents.MapPost($"/{nameof(FXActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IFXRateReadModelRepository fxRateReadModelRepository, FXActiveModifiedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.FXsStreamId,
                 FXEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
                 () => FXActiveModifiedEventBuilder.Create(request),
-                cancellationToken));
+                cancellationToken,
+                (_, token) => fxRateReadModelRepository.ClearAsync(token)));
     }
 
     private static void MapFXRateEventEndpoints(this RouteGroupBuilder api)
@@ -363,14 +583,140 @@ public static class ApiEndpointRegistration
                 : Results.NotFound();
         });
 
-        fxRateEvents.MapPost($"/{nameof(FXRateSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, FXRateSetRequest request, CancellationToken cancellationToken) =>
+        fxRateEvents.MapPost($"/{nameof(FXRateSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IFXRateReadModelRepository fxRateReadModelRepository, FXRateSetRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.FXRatesStreamId,
                 FXRateEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
                 () => FXRateSetEventBuilder.Create(request),
+                cancellationToken,
+                (_, token) => fxRateReadModelRepository.ClearAsync(token)));
+    }
+
+    private static void MapInstrumentEventEndpoints(this RouteGroupBuilder api)
+    {
+        var instrumentEvents = api.MapGroup("/Events/Instrument");
+
+        instrumentEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
+            return Results.Ok(events.Select(ToInstrumentEventResponse).ToList());
+        });
+
+        instrumentEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IInstrumentEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
+        instrumentEvents.MapPost($"/{nameof(InstrumentCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentCreatedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InstrumentsStreamId,
+                InstrumentEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InstrumentCreatedEventBuilder.Create(request),
                 cancellationToken));
+
+        instrumentEvents.MapPost($"/{nameof(InstrumentModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentModifiedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InstrumentsStreamId,
+                InstrumentEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InstrumentModifiedEventBuilder.Create(request),
+                cancellationToken));
+
+        instrumentEvents.MapPost($"/{nameof(InstrumentActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentActiveModifiedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InstrumentsStreamId,
+                InstrumentEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InstrumentActiveModifiedEventBuilder.Create(request),
+                cancellationToken));
+
+        instrumentEvents.MapPost($"/{nameof(InstrumentIdentifierSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentIdentifierSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InstrumentsStreamId,
+                InstrumentEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InstrumentIdentifierSetEventBuilder.Create(request),
+                cancellationToken));
+
+        instrumentEvents.MapPost($"/{nameof(InstrumentIdentifierUnsetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentIdentifierUnsetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InstrumentsStreamId,
+                InstrumentEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InstrumentIdentifierUnsetEventBuilder.Create(request),
+                cancellationToken));
+
+        instrumentEvents.MapPost($"/{nameof(InstrumentTermsSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentTermsSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InstrumentsStreamId,
+                InstrumentEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InstrumentTermsSetEventBuilder.Create(request),
+                cancellationToken));
+    }
+
+    private static void MapInstrumentPriceEventEndpoints(this RouteGroupBuilder api)
+    {
+        var priceEvents = api.MapGroup("/Events/InstrumentPrice");
+
+        priceEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IInstrumentPriceEvent>(Constants.Initialisation.InstrumentPricesStreamId, cancellationToken);
+            return Results.Ok(events.Select(ToInstrumentPriceEventResponse).ToList());
+        });
+
+        priceEvents.MapPost($"/{nameof(InstrumentPriceSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentPriceSetRequest request, CancellationToken cancellationToken) =>
+        {
+            var result = InstrumentPriceSetEventBuilder.Create(request);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            var validationErrors = await ValidateInstrumentValueEvent(result.Value.InstrumentID, result.Value.EventDateTime, result.Value.AuditDateTime, eventRepository, cancellationToken);
+            if (validationErrors.Count > 0)
+                return Results.BadRequest(Result<InstrumentPriceSetEvent>.Invalid(validationErrors));
+
+            await eventRepository.AppendAsync(Constants.Initialisation.InstrumentPricesStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(InstrumentPriceEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(InstrumentPriceEventsRoute, result.Value));
+        });
+    }
+
+    private static void MapInstrumentIncomeEventEndpoints(this RouteGroupBuilder api)
+    {
+        var incomeEvents = api.MapGroup("/Events/InstrumentIncome");
+
+        incomeEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IInstrumentIncomeEvent>(Constants.Initialisation.InstrumentIncomesStreamId, cancellationToken);
+            return Results.Ok(events.Select(ToInstrumentIncomeEventResponse).ToList());
+        });
+
+        incomeEvents.MapPost($"/{nameof(InstrumentIncomeSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentIncomeSetRequest request, CancellationToken cancellationToken) =>
+        {
+            var result = InstrumentIncomeSetEventBuilder.Create(request);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            var validationErrors = await ValidateInstrumentValueEvent(result.Value.InstrumentID, result.Value.EventDateTime, result.Value.AuditDateTime, eventRepository, cancellationToken);
+            if (validationErrors.Count > 0)
+                return Results.BadRequest(Result<InstrumentIncomeSetEvent>.Invalid(validationErrors));
+
+            await eventRepository.AppendAsync(Constants.Initialisation.InstrumentIncomesStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(InstrumentIncomeEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(InstrumentIncomeEventsRoute, result.Value));
+        });
     }
 
     private static void MapUserEventEndpoints(this RouteGroupBuilder api)
@@ -411,76 +757,24 @@ public static class ApiEndpointRegistration
     private static UserDisplayPreferences CreateUserDisplayPreferences(UserEventRequest request) =>
         new(request.DisplayPreferences.DarkMode, request.DisplayPreferences.RememberTraceDate);
 
-    private static string CreateDisplayVersion(Assembly assembly)
-    {
-        var baseVersion = GetBaseVersion(assembly);
-        var buildNumber = TryRunGit("rev-list", "--count", "HEAD");
-        var revisionHash = TryRunGit("rev-parse", "--short=4", "HEAD");
-        var build = int.TryParse(buildNumber, out var parsedBuild)
-            ? parsedBuild
-            : baseVersion.Build < 0 ? 0 : baseVersion.Build;
-        var revision = TryParseHexRevision(revisionHash, out var parsedRevision)
-            ? parsedRevision
-            : baseVersion.Revision < 0 ? 0 : baseVersion.Revision;
-
-        return $"{baseVersion.Major}.{baseVersion.Minor}.{build}.{revision}";
-    }
-
-    private static Version GetBaseVersion(Assembly assembly)
-    {
-        var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        var versionText = informationalVersion?.Split('+')[0].Split('-')[0];
-
-        return Version.TryParse(versionText, out var version)
-            ? version
-            : assembly.GetName().Version ?? new Version(0, 0, 0, 0);
-    }
-
-    private static bool TryParseHexRevision(string? value, out int revision)
-    {
-        revision = 0;
-        return !string.IsNullOrWhiteSpace(value)
-            && int.TryParse(value, System.Globalization.NumberStyles.HexNumber, null, out revision);
-    }
-
-    private static string? TryRunGit(params string[] arguments)
-    {
-        try
-        {
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = string.Join(' ', arguments),
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                WorkingDirectory = Directory.GetCurrentDirectory()
-            });
-
-            if (process is null)
-                return null;
-
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            if (!process.WaitForExit(1_000))
-            {
-                process.Kill(true);
-                return null;
-            }
-
-            return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) ? output : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private static UserValuationPreferences CreateUserValuationPreferences(UserEventRequest request) =>
         new(
             EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate),
             request.ValuationPreferences.ShowIncome,
             request.ValuationPreferences.ShowBook);
+
+    private static async Task<IReadOnlyList<string>> ValidateInstrumentValueEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
+    {
+        var instrumentEvents = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
+        var instruments = new Instruments(eventDateTime, auditDateTime, instrumentEvents.ToList());
+        var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == instrumentID);
+        if (instrument is null)
+            return [$"No matching Instrument found for InstrumentID '{instrumentID}'."];
+
+        return instrument.CFI.IsEquity
+            ? []
+            : [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}'. Only equity instruments support v1 price and income events."];
+    }
 
     private static ApiExchangeResponse ToResponse(ApiExchange exchange) =>
         new(
@@ -652,6 +946,149 @@ public static class ApiEndpointRegistration
                 Pair = setEvent.Pair.Value,
                 DisplayPair = setEvent.Pair.DisplayValue,
                 setEvent.Price
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        };
+
+    private static object ToInstrumentEventResponse(IInstrumentEvent @event) =>
+        @event switch
+        {
+            InstrumentCreatedEvent createdEvent => new
+            {
+                Type = createdEvent.Type,
+                EventID = createdEvent.EventID.Value,
+                UserID = createdEvent.UserID.Value,
+                EventDateTime = createdEvent.EventDateTime.Value,
+                AuditDateTime = createdEvent.AuditDateTime.Value,
+                createdEvent.Reason,
+                InstrumentID = createdEvent.InstrumentID.Value,
+                createdEvent.Name,
+                createdEvent.FormalName,
+                Exchange = createdEvent.Exchange.Value,
+                CFI = createdEvent.CFI.Value,
+                createdEvent.Logo,
+                createdEvent.Active,
+                IncomeCountry = createdEvent.IncomeCountry.Value,
+                PriceCountry = createdEvent.PriceCountry.Value
+            },
+            InstrumentModifiedEvent modifiedEvent => new
+            {
+                Type = modifiedEvent.Type,
+                EventID = modifiedEvent.EventID.Value,
+                UserID = modifiedEvent.UserID.Value,
+                EventDateTime = modifiedEvent.EventDateTime.Value,
+                AuditDateTime = modifiedEvent.AuditDateTime.Value,
+                modifiedEvent.Reason,
+                InstrumentID = modifiedEvent.InstrumentID.Value,
+                modifiedEvent.Name,
+                modifiedEvent.FormalName,
+                Exchange = modifiedEvent.Exchange.Value,
+                CFI = modifiedEvent.CFI.Value,
+                modifiedEvent.Logo,
+                IncomeCountry = modifiedEvent.IncomeCountry.Value,
+                PriceCountry = modifiedEvent.PriceCountry.Value
+            },
+            InstrumentActiveModifiedEvent activeEvent => new
+            {
+                Type = activeEvent.Type,
+                EventID = activeEvent.EventID.Value,
+                UserID = activeEvent.UserID.Value,
+                EventDateTime = activeEvent.EventDateTime.Value,
+                AuditDateTime = activeEvent.AuditDateTime.Value,
+                activeEvent.Reason,
+                InstrumentID = activeEvent.InstrumentID.Value,
+                activeEvent.Active
+            },
+            InstrumentIdentifierSetEvent setEvent => new
+            {
+                Type = setEvent.Type,
+                EventID = setEvent.EventID.Value,
+                UserID = setEvent.UserID.Value,
+                EventDateTime = setEvent.EventDateTime.Value,
+                AuditDateTime = setEvent.AuditDateTime.Value,
+                setEvent.Reason,
+                InstrumentID = setEvent.InstrumentID.Value,
+                setEvent.Identifier
+            },
+            InstrumentIdentifierUnsetEvent unsetEvent => new
+            {
+                Type = unsetEvent.Type,
+                EventID = unsetEvent.EventID.Value,
+                UserID = unsetEvent.UserID.Value,
+                EventDateTime = unsetEvent.EventDateTime.Value,
+                AuditDateTime = unsetEvent.AuditDateTime.Value,
+                unsetEvent.Reason,
+                InstrumentID = unsetEvent.InstrumentID.Value,
+                unsetEvent.IdentifierType
+            },
+            InstrumentTermsSetEvent termsEvent => new
+            {
+                Type = termsEvent.Type,
+                EventID = termsEvent.EventID.Value,
+                UserID = termsEvent.UserID.Value,
+                EventDateTime = termsEvent.EventDateTime.Value,
+                AuditDateTime = termsEvent.AuditDateTime.Value,
+                termsEvent.Reason,
+                InstrumentID = termsEvent.InstrumentID.Value,
+                termsEvent.Terms
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        };
+
+    private static object ToInstrumentPriceEventResponse(IInstrumentPriceEvent @event) =>
+        @event switch
+        {
+            InstrumentPriceSetEvent setEvent => new
+            {
+                Type = setEvent.Type,
+                EventID = setEvent.EventID.Value,
+                UserID = setEvent.UserID.Value,
+                EventDateTime = setEvent.EventDateTime.Value,
+                AuditDateTime = setEvent.AuditDateTime.Value,
+                setEvent.Reason,
+                InstrumentID = setEvent.InstrumentID.Value,
+                setEvent.Price
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        };
+
+    private static object ToInstrumentIncomeEventResponse(IInstrumentIncomeEvent @event) =>
+        @event switch
+        {
+            InstrumentIncomeSetEvent setEvent => new
+            {
+                Type = setEvent.Type,
+                EventID = setEvent.EventID.Value,
+                UserID = setEvent.UserID.Value,
+                EventDateTime = setEvent.EventDateTime.Value,
+                AuditDateTime = setEvent.AuditDateTime.Value,
+                setEvent.Reason,
+                InstrumentID = setEvent.InstrumentID.Value,
+                setEvent.Income
             },
             _ => new
             {

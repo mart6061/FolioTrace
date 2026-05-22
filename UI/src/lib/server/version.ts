@@ -1,7 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import packageJson from '../../../package.json';
 
+const uiVersion = createUiVersion();
+
 export function getUiVersion() {
+  return uiVersion;
+}
+
+function createUiVersion() {
   const baseVersion = parseBaseVersion(packageJson.version);
   const build = parseInteger(runGit('rev-list', '--count', 'HEAD')) ?? 0;
   const revision = parseHexRevision(runGit('rev-parse', '--short=4', 'HEAD')) ?? 0;

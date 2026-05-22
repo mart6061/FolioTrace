@@ -70,13 +70,17 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             if (!streams.TryGetValue(streamId, out var events))
                 return null;
 
-            return events
-                .Where(@event => @event.EventDateTime.Value <= valuationDateTime && (!asOfDateTime.HasValue || @event.AuditDateTime.Value <= asOfDateTime.Value))
-                .OrderBy(@event => @event.EventDateTime.Value)
-                .ThenBy(@event => @event.AuditDateTime.Value)
-                .ThenBy(@event => @event.EventID.Value)
-                .LastOrDefault()
-                ?.EventID;
+            IEventBase? latest = null;
+            foreach (var @event in events)
+            {
+                if (@event.EventDateTime.Value > valuationDateTime || (asOfDateTime.HasValue && @event.AuditDateTime.Value > asOfDateTime.Value))
+                    continue;
+
+                if (latest is null || CompareEventOrder(@event, latest) > 0)
+                    latest = @event;
+            }
+
+            return latest?.EventID;
         }
     }
 
@@ -191,5 +195,18 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
 
         events.Add(@event);
         eventsById[@event.EventID.Value] = @event;
+    }
+
+    private static int CompareEventOrder(IEventBase left, IEventBase right)
+    {
+        var eventDateComparison = left.EventDateTime.Value.CompareTo(right.EventDateTime.Value);
+        if (eventDateComparison != 0)
+            return eventDateComparison;
+
+        var auditDateComparison = left.AuditDateTime.Value.CompareTo(right.AuditDateTime.Value);
+        if (auditDateComparison != 0)
+            return auditDateComparison;
+
+        return left.EventID.Value.CompareTo(right.EventID.Value);
     }
 }

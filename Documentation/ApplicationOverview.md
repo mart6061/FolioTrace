@@ -6,14 +6,17 @@ The core idea is that domain facts are captured as immutable events. Aggregates 
 
 ## Current Shape
 
-The solution is split into a few early layers:
+The solution is split into a few layers:
 
-- `Shared` contains domain types, value objects, events, aggregates, builders, and common contracts.
+- `Common` contains shared contracts, event base types, result handling, and small reusable attributes.
+- `Types` contains explicit value objects such as identifiers, timestamps, and code types.
+- `Features` contains feature-organised domain code for countries, currencies, FX, FX rates, and users.
 - `Repository` owns persistence and event access.
-- `Services` is intended to become the application-facing source for aggregates and entities.
+- `API` is the HTTP entry point.
 - `UIConsole` is currently a simple operational entry point for running initialization.
-- `API` is scaffolded as a future HTTP entry point.
 - `Test` is present for automated tests.
+
+Feature folders keep related code together. For example, country and currency code is grouped into `Aggregates`, `Events`, `Requests`, and `Services` folders inside each feature.
 
 ## Domain Model
 
@@ -25,6 +28,9 @@ Events implement `IEventBase` through `EventBase`. Examples include:
 - `CountryModifiedEvent`
 - `CurrencyCreatedEvent`
 - `CurrencyModifiedEvent`
+- `FXCreatedEvent`
+- `FXActiveModifiedEvent`
+- `FXRateSetEvent`
 
 Aggregates such as `Countries` are rebuilt by applying the relevant event stream. The aggregate constructor currently filters events by valuation date and audit/as-at date, then applies creation and modification events in order.
 
@@ -45,20 +51,20 @@ This keeps Marten as the source of durable truth while allowing the app to explo
 
 ## Initialization
 
-`SeedRepository` currently clears existing event data and creates setup events for country reference data. These country setup events are written to a deterministic countries stream using `Constants.Initialisation.CountriesStreamId`.
+`SeedRepository` currently clears existing event data and creates setup events for sample countries, currencies, FX definitions, and FX rates. These setup events are written to deterministic streams using values under `Constants.Initialisation`.
 
 The setup reason and setup timestamps live under `Constants.Initialisation`.
 
 ## Services Layer
 
-The `Services` project is intended to become the application-facing layer for aggregate and entity access.
+Application-facing services now live inside the relevant feature folders in the `Features` project. Shared service infrastructure, such as aggregate cache invalidation and repository-facing abstractions, lives under `Features/Services`.
 
-`CountryService` currently exposes `Get` methods that rebuild the `Countries` aggregate from country events:
+Feature services expose `Get` methods that rebuild aggregates from events. For example, `CountryService` rebuilds the `Countries` aggregate from country events:
 
 - `Get(EventDateTime valuationDate)` uses all audit history known for that valuation date and sets the aggregate as-of date from the latest included audit timestamp.
 - `Get(EventDateTime valuationDate, AuditDateTime asAt)` rebuilds the aggregate for explicit valuation and audit/as-at dates.
 
-Over time, this layer can become the main source for application use cases, hiding event storage and aggregate rebuild mechanics from UI and API code.
+This layer is the main source for application use cases, hiding event storage and aggregate rebuild mechanics from UI and API code.
 
 ## Current Direction
 
@@ -67,7 +73,7 @@ The architecture is moving toward:
 1. Domain events as the durable record of truth.
 2. Marten for persistence.
 3. In-memory event access for runtime simplicity and performance exploration.
-4. Services as the app-facing source for aggregates/entities.
+4. Feature services as the app-facing source for aggregates/entities.
 5. Console/API projects as thin entry points over the service layer.
 
 The application is still early, but the emerging design is a clean event-sourced core with explicit domain types and a pragmatic in-memory read path.

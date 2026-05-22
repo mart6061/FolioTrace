@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
+  import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
   import type { CurrencyReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
@@ -17,6 +18,7 @@
   let submittingCreate = $state(false);
   let openHistoryCode = $state('');
   let historyByCode = $state<Record<string, { events: CurrencyReferenceEvent[]; error: string; loading: boolean }>>({});
+  let loadedHistoryContextKey = $state('');
 
   const currencyCount = $derived(data.currencies?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.currencies ? formatDisplayDateTime(data.currencies.asOfDateTime) : 'now');
@@ -57,6 +59,21 @@
       }
     })
   );
+
+  $effect(() => {
+    const nextHistoryContextKey = createHistoryContextKey();
+    if (!loadedHistoryContextKey) {
+      loadedHistoryContextKey = nextHistoryContextKey;
+      return;
+    }
+
+    if (nextHistoryContextKey === loadedHistoryContextKey)
+      return;
+
+    loadedHistoryContextKey = nextHistoryContextKey;
+    if (openHistoryCode)
+      void loadHistory(openHistoryCode);
+  });
 
   function setSort(nextSortKey: SortKey) {
     if (sortKey === nextSortKey) {
@@ -217,10 +234,21 @@
     if (historyByCode[alphabeticCode])
       return;
 
+    await loadHistory(alphabeticCode);
+  }
+
+  async function loadHistory(alphabeticCode: string) {
     historyByCode[alphabeticCode] = { events: [], error: '', loading: true };
 
     try {
-      const response = await fetch(`/Data/Reference/Currencies/History?alphabeticCode=${encodeURIComponent(alphabeticCode)}`);
+      const historyUrl = new URL('/Data/Reference/Currencies/History', window.location.origin);
+      historyUrl.searchParams.set('alphabeticCode', alphabeticCode);
+      historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
+
+      if (data.auditDateTime)
+        historyUrl.searchParams.set('auditDateTime', toApiDateTime(data.auditDateTime));
+
+      const response = await fetch(`${historyUrl.pathname}${historyUrl.search}`);
 
       if (!response.ok)
         throw new Error(`History request returned ${response.status} ${response.statusText}`);
@@ -237,6 +265,15 @@
         loading: false
       };
     }
+  }
+
+  function createHistoryContextKey() {
+    return [
+      data.valuationDate,
+      data.auditDateTime ?? '',
+      data.currencies?.lastEventID ?? '',
+      form?.status === 'success' ? form.eventID ?? '' : ''
+    ].join('|');
   }
 
   function currencyEventSummary(event: CurrencyReferenceEvent) {
@@ -303,6 +340,8 @@
           {/if}
         </div>
       {/if}
+
+      <AggregateUpdateWatcher aggregateKind="Currencies" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.currencies.lastEventID} />
 
       <div class="data-summary">
         <div>
@@ -480,7 +519,12 @@
                         <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
                           <div class="flex items-center justify-between gap-3">
                             <h2 class="text-sm font-semibold text-slate-950">{currency.alphabeticCode} history</h2>
-                            <span class="text-xs text-slate-500">{history?.events.length ?? 0} events</span>
+                            <span class="text-xs text-slate-500">
+                              {history?.events.length ?? 0} events
+                              {#if data.auditDateTime && history?.events.length}
+                                Â· {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
+                              {/if}
+                            </span>
                           </div>
 
                           {#if history?.loading}
@@ -490,7 +534,11 @@
                           {:else if history?.events.length}
                             <ol class="grid gap-2">
                               {#each history.events as event}
-                                <li class="grid gap-2 rounded-md border border-slate-200 px-3 py-2 md:grid-cols-[180px_1fr]">
+                                <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
+                                  event.applicationStatus === 'omitted'
+                                    ? 'border-amber-200 bg-amber-50/70'
+                                    : 'border-slate-200'
+                                }`}>
                                   <div class="text-xs text-slate-500">
                                     <div>{formatTableDateTime(event.eventDateTime)}</div>
                                     <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
@@ -498,9 +546,19 @@
                                   <div class="grid gap-1">
                                     <div class="flex flex-wrap items-center gap-2">
                                       <span class="font-medium text-slate-950">{event.$type}</span>
+                                      {#if event.applicationStatus === 'omitted'}
+                                        <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
+                                      {:else if data.auditDateTime}
+                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
+                                      {/if}
                                       <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
                                     </div>
                                     <div class="text-sm text-slate-700">{currencyEventSummary(event)}</div>
+                                    {#if event.applicationStatus === 'omitted'}
+                                      <div class="text-xs font-medium text-amber-900">
+                                        Omitted from this view because its audit time is after the selected as-at date.
+                                      </div>
+                                    {/if}
                                     <div class="text-xs text-slate-500">{event.reason}</div>
                                   </div>
                                 </li>

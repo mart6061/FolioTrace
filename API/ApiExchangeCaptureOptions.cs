@@ -14,6 +14,7 @@ public sealed class ApiExchangeCaptureOptions
     public string[] ExcludedPathPrefixes { get; init; } =
     [
         "/Diagnostics/RequestTrace",
+        "/Notifications",
         "/openapi",
         "/scalar"
     ];

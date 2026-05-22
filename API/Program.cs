@@ -6,8 +6,15 @@ using Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<ApiVersionInfo>();
+builder.Services.AddSingleton<BuildCoordinator>();
+builder.Services.AddSingleton(
+    builder.Configuration
+        .GetSection(AggregateMaintenanceOptions.SectionName)
+        .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
+builder.Services.AddHostedService<AggregateMaintenanceHostedService>();
 
 var app = builder.Build();
 
