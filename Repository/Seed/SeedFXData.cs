@@ -5,9 +5,9 @@ namespace Repository.Seed;
 
 internal static class SeedFXData
 {
-    private const int SeedCalendarDays = 90;
+    private const int SeedYears = 5;
 
-    public static DateTime RateStartDate => DateTime.UtcNow.Date.AddDays(-(SeedCalendarDays - 1));
+    public static DateTime RateStartDate => DateTime.UtcNow.Date.AddYears(-SeedYears);
 
     private static readonly string[] SeedCurrencies =
     [

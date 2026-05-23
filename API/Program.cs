@@ -24,9 +24,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.UseApiExchangeCapture();
 app.UseApiUnhandledExceptionLogging();

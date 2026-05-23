@@ -5,9 +5,9 @@ namespace Repository.Seed;
 
 internal static class SeedInstrumentData
 {
-    private const int SeedCalendarDays = 90;
+    private const int SeedYears = 5;
 
-    public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddDays(-(SeedCalendarDays - 1));
+    public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddYears(-SeedYears);
 
     private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency, decimal BasePrice)[] Seeds =
     [
