@@ -279,6 +279,13 @@ public static class ApiEndpointRegistration
     {
         var system = api.MapGroup("/System");
 
+        system.MapGet("/Health", () => Results.Ok(new
+        {
+            Status = "Healthy",
+            Service = "FolioTrace API",
+            CheckedAtUtc = DateTime.UtcNow
+        }));
+
         system.MapGet("/Version", (ApiVersionInfo versionInfo) =>
         {
             return Results.Ok(new
