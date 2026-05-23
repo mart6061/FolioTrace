@@ -10,7 +10,17 @@ Local development remains unchanged. The API launch profile still uses `https://
 
 ## API Service
 
-Configure the Railway API service to build from the repository root with `API/Dockerfile`.
+Configure the Railway API service with:
+
+```text
+Root Directory: /
+Config File Path: /API/railway.json
+Dockerfile Path: API/Dockerfile
+Start Command: dotnet API.dll --urls http://0.0.0.0:${PORT:-8080}
+Healthcheck Path: /API/System/Health
+```
+
+The root directory must stay as `/` because `API/Dockerfile` builds from the repository root and needs the sibling `Features` and `Repository` projects. If Railway shows `Railpack could not determine how to build the app` or `Script start.sh not found`, it is not using this service config and is falling back to auto-detection or an old dashboard start command.
 
 Required variables:
 
@@ -40,7 +50,17 @@ Health check:
 
 ## UI Service
 
-Configure the Railway UI service to build from the repository root with `UI/Dockerfile`.
+Configure the Railway UI service with:
+
+```text
+Root Directory: /
+Config File Path: /UI/railway.json
+Dockerfile Path: UI/Dockerfile
+Start Command: node build/index.js
+Healthcheck Path: /
+```
+
+The root directory should also stay as `/` for the UI service so the Dockerfile path is resolved from the repository root. The service config file pins Dockerfile builds and overrides any stale dashboard start command such as `start.sh`.
 
 Required variables:
 
