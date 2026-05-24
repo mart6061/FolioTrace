@@ -244,7 +244,7 @@
           <input
             class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             name="fromUtc"
-            type="datetime-local"
+            step="1" type="datetime-local"
             value={data.filters.fromUtc}
           />
         </label>

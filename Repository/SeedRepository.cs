@@ -304,7 +304,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 seed.Name,
                 seed.FormalName,
                 ExchangeBuilder.Create(seed.Exchange),
-                CFIBuilder.Create("ESVUFR"),
+                CFIBuilder.Create(seed.Cfi),
                 seed.Logo,
                 active: true,
                 seed.Country,
@@ -347,6 +347,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var auditDateTime = AuditDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(11));
 
         return instrumentSeeds
+            .Where(seed => seed.Terms is not null)
             .Select(seed => InstrumentTermsSetEventBuilder.CreateSeed(
                 Guid.NewGuid(),
                 Constants.Initialisation.UserID,
@@ -354,7 +355,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 auditDateTime,
                 Constants.Initialisation.Reason,
                 seed.InstrumentID,
-                new InstrumentTermsEquity()).Value!)
+                seed.Terms!).Value!)
             .ToList();
     }
 

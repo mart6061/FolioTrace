@@ -6,9 +6,11 @@ import type {
   Currencies,
   CurrencyReferenceEvent,
   FXRates,
+  FXRateHistoryEvent,
   FXs,
   InstrumentLogo,
   InstrumentValues,
+  InstrumentValueHistoryEvent,
   Instruments,
   MemoryDiagnostics,
   BuildProgressNotification
@@ -67,10 +69,12 @@ export type InstrumentPriceSetRequest = {
   reason: string;
   instrumentID: string;
   currency: string;
-  bid: number;
-  mid: number;
-  ask: number;
-  nav: number;
+  priceType: 'InstrumentPriceEquity' | 'InstrumentPriceFixedIncome';
+  bid?: number;
+  mid?: number;
+  ask?: number;
+  nav?: number;
+  cleanPrice?: number;
 };
 
 export type InstrumentCreatedRequest = {
@@ -178,6 +182,43 @@ export async function getCurrencyEvents(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as CurrencyReferenceEvent[];
+}
+
+export async function getInstrumentPriceEvents(fetchApi: typeof fetch, instrumentID?: string) {
+  const url = new URL(`${getApiBaseUrl()}/Events/InstrumentPrice/`);
+
+  if (instrumentID)
+    url.searchParams.set('instrumentID', instrumentID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentValueHistoryEvent[];
+}
+
+export async function getInstrumentIncomeEvents(fetchApi: typeof fetch, instrumentID?: string) {
+  const url = new URL(`${getApiBaseUrl()}/Events/InstrumentIncome/`);
+
+  if (instrumentID)
+    url.searchParams.set('instrumentID', instrumentID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentValueHistoryEvent[];
+}
+
+export async function getFXRateEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/FXRate/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as FXRateHistoryEvent[];
 }
 
 export async function getFXs(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -413,7 +454,19 @@ export async function postFXRateSetEvent(fetchApi: typeof fetch, request: FXRate
 }
 
 export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, request: InstrumentPriceSetRequest, userID: string) {
-  const money = (amount: number) => ({ Amount: amount, Currency: request.currency });
+  const price = (amount: number) => ({ Amount: amount });
+  const eventPrice = request.priceType === 'InstrumentPriceFixedIncome'
+    ? {
+        $type: 'InstrumentPriceFixedIncome',
+        CleanPrice: { Amount: request.cleanPrice }
+      }
+    : {
+        $type: 'InstrumentPriceEquity',
+        Bid: price(request.bid ?? 0),
+        Mid: price(request.mid ?? 0),
+        Ask: price(request.ask ?? 0),
+        Nav: price(request.nav ?? 0)
+      };
   const response = await fetchApi(`${getApiBaseUrl()}/Events/InstrumentPrice/InstrumentPriceSetEvent`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -422,13 +475,7 @@ export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, reques
       EventDateTime: request.eventDateTime,
       Reason: request.reason,
       InstrumentID: request.instrumentID,
-      Price: {
-        $type: 'InstrumentPriceEquity',
-        Bid: money(request.bid),
-        Mid: money(request.mid),
-        Ask: money(request.ask),
-        Nav: money(request.nav)
-      }
+      Price: eventPrice
     })
   });
 

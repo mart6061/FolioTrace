@@ -19,7 +19,7 @@ public sealed class CurrencyService(IEventRepository eventRepository)
                 .FirstOrDefault()
                 ?.Items.Count ?? 0;
 
-            return new CurrencyServiceDiagnostics(cache.Count, currencyCount);
+            return new CurrencyServiceDiagnostics(cache.Count, currencyCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
         }
     }
 

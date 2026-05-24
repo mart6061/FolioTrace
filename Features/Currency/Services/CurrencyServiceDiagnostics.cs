@@ -2,4 +2,5 @@ namespace Services;
 
 public sealed record CurrencyServiceDiagnostics(
     int CacheEntryCount,
-    int CurrencyCount);
+    int CurrencyCount,
+    long EstimatedMemoryBytes);

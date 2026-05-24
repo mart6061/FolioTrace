@@ -42,32 +42,47 @@ async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request) 
   const instrumentID = getFormString(formData, 'instrumentID');
   const eventDateTime = getFormString(formData, 'eventDateTime');
   const currency = getFormString(formData, 'currency').toUpperCase();
+  const priceType = getFormString(formData, 'priceType');
   const bidText = getFormString(formData, 'bid');
   const midText = getFormString(formData, 'mid');
   const askText = getFormString(formData, 'ask');
   const navText = getFormString(formData, 'nav');
+  const cleanPriceText = getFormString(formData, 'cleanPrice');
   const bid = Number.parseFloat(bidText);
   const mid = Number.parseFloat(midText);
   const ask = Number.parseFloat(askText);
   const nav = Number.parseFloat(navText);
+  const cleanPrice = Number.parseFloat(cleanPriceText);
 
-  if (!instrumentID || !eventDateTime || !currency || !bidText || !midText || !askText || !navText)
-    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Instrument, currency, bid, mid, ask, nav, and event date are required.', status: 'failure' });
+  if (!instrumentID || !eventDateTime || !currency || !priceType)
+    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Instrument, currency, price type, and event date are required.', status: 'failure' });
 
-  if (![bid, mid, ask, nav].every(Number.isFinite) || bid > mid || mid > ask)
+  if (priceType === 'InstrumentPriceEquity' && (!bidText || !midText || !askText || !navText || ![bid, mid, ask, nav].every(Number.isFinite) || bid > mid || mid > ask))
     return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Bid, mid, ask, and nav must be valid numbers ordered bid <= mid <= ask.', status: 'failure' });
+
+  if (priceType === 'InstrumentPriceFixedIncome' && (!cleanPriceText || !Number.isFinite(cleanPrice)))
+    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Clean price must be a valid number.', status: 'failure' });
+
+  if (priceType !== 'InstrumentPriceEquity' && priceType !== 'InstrumentPriceFixedIncome')
+    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Only equity and fixed income price edits are supported.', status: 'failure' });
 
   try {
     const priceRequest: InstrumentPriceSetRequest = {
-      ask,
-      bid,
       currency,
       eventDateTime: toApiDateTime(eventDateTime),
       instrumentID,
-      mid,
-      nav,
+      priceType,
       reason: `Set instrument price ${instrumentID}`
     };
+
+    if (priceType === 'InstrumentPriceEquity') {
+      priceRequest.ask = ask;
+      priceRequest.bid = bid;
+      priceRequest.mid = mid;
+      priceRequest.nav = nav;
+    } else {
+      priceRequest.cleanPrice = cleanPrice;
+    }
 
     const result = await postInstrumentPriceSetEvent(fetch, priceRequest, systemUserID);
 

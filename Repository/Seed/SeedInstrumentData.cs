@@ -9,7 +9,7 @@ internal static class SeedInstrumentData
 
     public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddYears(-SeedYears);
 
-    private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency, decimal BasePrice)[] Seeds =
+    private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency, decimal BasePrice)[] EquitySeeds =
     [
         ("AZN", "AstraZeneca", "XLON", "GB", "GBP", 122.40m), ("SHEL", "Shell", "XLON", "GB", "GBP", 28.10m), ("HSBA", "HSBC Holdings", "XLON", "GB", "GBP", 7.15m), ("ULVR", "Unilever", "XLON", "GB", "GBP", 44.20m), ("BP", "BP", "XLON", "GB", "GBP", 4.80m),
         ("GSK", "GSK", "XLON", "GB", "GBP", 17.10m), ("RIO", "Rio Tinto", "XLON", "GB", "GBP", 54.00m), ("BATS", "British American Tobacco", "XLON", "GB", "GBP", 31.20m), ("DGE", "Diageo", "XLON", "GB", "GBP", 27.80m), ("LSEG", "London Stock Exchange Group", "XLON", "GB", "GBP", 92.00m),
@@ -35,18 +35,66 @@ internal static class SeedInstrumentData
         ("7203", "Toyota Motor", "XTKS", "JP", "JPY", 3600m), ("6758", "Sony Group", "XTKS", "JP", "JPY", 13000m), ("8306", "Mitsubishi UFJ Financial Group", "XTKS", "JP", "JPY", 1500m), ("6861", "Keyence", "XTKS", "JP", "JPY", 69000m), ("9984", "SoftBank Group", "XTKS", "JP", "JPY", 8200m)
     ];
 
+    private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency, decimal CleanPrice, decimal CouponRate, DateTime IssueDate, DateTime MaturityDate, string DayCount)[] BondSeeds =
+    [
+        ("UKT-2029", "UK Treasury 0.875% 2029", "XLON", "GB", "GBP", 96.42m, 0.00875m, new DateTime(2019, 1, 31), new DateTime(2029, 1, 31), "ACT/ACT"),
+        ("UKT-2034", "UK Treasury 4.25% 2034", "XLON", "GB", "GBP", 101.18m, 0.0425m, new DateTime(2023, 9, 7), new DateTime(2034, 9, 7), "ACT/ACT"),
+        ("UKT-2045", "UK Treasury 3.50% 2045", "XLON", "GB", "GBP", 94.76m, 0.035m, new DateTime(2014, 1, 22), new DateTime(2045, 1, 22), "ACT/ACT"),
+        ("TSCO-2035", "Tesco 5.50% 2035", "XLON", "GB", "GBP", 103.64m, 0.055m, new DateTime(2024, 2, 27), new DateTime(2035, 2, 27), "30/360"),
+        ("VOD-2056", "Vodafone 3.00% 2056", "XLON", "GB", "GBP", 82.35m, 0.03m, new DateTime(2016, 8, 12), new DateTime(2056, 8, 12), "30/360"),
+        ("NG-2030", "National Grid 4.25% 2030", "XLON", "GB", "GBP", 99.88m, 0.0425m, new DateTime(2022, 4, 5), new DateTime(2030, 4, 5), "30/360")
+    ];
+
+    private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency)[] CashSeeds =
+    [
+        ("GBP-CASH", "British Pound Cash", "CASH", "GB", "GBP")
+    ];
+
     public static IReadOnlyList<InstrumentSeed> CreateInstrumentSeeds() =>
-        Seeds.Select((seed, index) => new InstrumentSeed(
-            InstrumentIDBuilder.Restore(CreateDeterministicGuid($"instrument-{seed.Ticker}-{index}")),
-            seed.Ticker,
-            seed.Name,
-            $"{seed.Name} plc",
-            seed.Exchange,
-            seed.Country,
-            seed.Currency,
-            seed.BasePrice,
-            CreateLogo(seed.Ticker, index),
-            CreateSedol(index))).ToList();
+        EquitySeeds
+            .Select((seed, index) => new InstrumentSeed(
+                InstrumentIDBuilder.Restore(CreateDeterministicGuid($"instrument-equity-{seed.Ticker}-{index}")),
+                InstrumentSeedKind.Equity,
+                seed.Ticker,
+                seed.Name,
+                $"{seed.Name} plc",
+                seed.Exchange,
+                seed.Country,
+                seed.Currency,
+                "ESVUFR",
+                seed.BasePrice,
+                new InstrumentTermsEquity(),
+                CreateLogo(seed.Ticker, index),
+                CreateSedol(index)))
+            .Concat(BondSeeds.Select((seed, index) => new InstrumentSeed(
+                InstrumentIDBuilder.Restore(CreateDeterministicGuid($"instrument-bond-{seed.Ticker}-{index}")),
+                InstrumentSeedKind.FixedIncome,
+                seed.Ticker,
+                seed.Name,
+                seed.Name,
+                seed.Exchange,
+                seed.Country,
+                seed.Currency,
+                "DBFUFR",
+                seed.CleanPrice,
+                CreateBondTerms(seed.Currency, seed.CouponRate, seed.IssueDate, seed.MaturityDate, seed.DayCount),
+                CreateLogo(seed.Ticker, EquitySeeds.Length + index),
+                CreateSedol(EquitySeeds.Length + index))))
+            .Concat(CashSeeds.Select((seed, index) => new InstrumentSeed(
+                InstrumentIDBuilder.Restore(CreateDeterministicGuid($"instrument-cash-{seed.Ticker}-{index}")),
+                InstrumentSeedKind.Cash,
+                seed.Ticker,
+                seed.Name,
+                seed.Name,
+                seed.Exchange,
+                seed.Country,
+                seed.Currency,
+                "MRCXXX",
+                1m,
+                null,
+                CreateLogo(seed.Ticker, EquitySeeds.Length + BondSeeds.Length + index),
+                CreateSedol(EquitySeeds.Length + BondSeeds.Length + index))))
+            .ToList();
 
     public static IEnumerable<InstrumentPriceSeed> CreatePriceSeeds(IReadOnlyList<InstrumentSeed> instruments)
     {
@@ -70,18 +118,17 @@ internal static class SeedInstrumentData
                 for (var index = 0; index < instruments.Count; index++)
                 {
                     var seed = instruments[index];
-                    var wave = (decimal)Math.Sin((day + index) / 5.0) * 0.015m;
-                    var intraday = (observationHour - 12) * 0.001m;
+                    var wave = seed.Kind == InstrumentSeedKind.FixedIncome
+                        ? (decimal)Math.Sin((day + index) / 13.0) * 0.004m
+                        : (decimal)Math.Sin((day + index) / 5.0) * 0.015m;
+                    var intraday = seed.Kind == InstrumentSeedKind.FixedIncome
+                        ? (observationHour - 12) * 0.0002m
+                        : (observationHour - 12) * 0.001m;
                     var mid = Round(seed.BasePrice * (1 + wave + intraday));
                     var spread = Math.Max(mid * 0.001m, 0.01m);
-                    var currency = Alpha3Builder.Create(seed.Currency);
                     yield return new InstrumentPriceSeed(
                         seed.InstrumentID,
-                        new InstrumentPriceEquity(
-                            new Money(Round(mid - spread), currency),
-                            new Money(mid, currency),
-                            new Money(Round(mid + spread), currency),
-                            new Money(mid, currency)),
+                        CreatePrice(seed, mid, spread),
                         timestamp);
                 }
             }
@@ -91,8 +138,64 @@ internal static class SeedInstrumentData
     public static IEnumerable<InstrumentIncomeSeed> CreateIncomeSeeds(IReadOnlyList<InstrumentSeed> instruments) =>
         instruments.Select((seed, index) => new InstrumentIncomeSeed(
             seed.InstrumentID,
-            new InstrumentIncomeEquity(new Money(Round(seed.BasePrice * (0.01m + (index % 5) * 0.002m)), Alpha3Builder.Create(seed.Currency))),
+            CreateIncome(seed, index),
             ValueStartDate.Date.AddDays(14).AddHours(17)));
+
+    private static IInstrumentPrice CreatePrice(InstrumentSeed seed, decimal mid, decimal spread) =>
+        seed.Kind switch
+        {
+            InstrumentSeedKind.Equity => new InstrumentPriceEquity(
+                new InstrumentPrice(Round(mid - spread)),
+                new InstrumentPrice(mid),
+                new InstrumentPrice(Round(mid + spread)),
+                new InstrumentPrice(mid)),
+            InstrumentSeedKind.FixedIncome => new InstrumentPriceFixedIncome(new ValuationPrice(mid)),
+            InstrumentSeedKind.Cash => new InstrumentPriceCash(),
+            _ => throw new InvalidOperationException($"Unsupported instrument seed kind '{seed.Kind}'.")
+        };
+
+    private static IInstrumentIncome CreateIncome(InstrumentSeed seed, int index) =>
+        seed.Kind switch
+        {
+            InstrumentSeedKind.Equity => CreateEquityIncome(seed, index),
+            InstrumentSeedKind.FixedIncome => CreateFixedIncomeIncome(seed, index),
+            InstrumentSeedKind.Cash => new InstrumentIncomeCash(),
+            _ => throw new InvalidOperationException($"Unsupported instrument seed kind '{seed.Kind}'.")
+        };
+
+    private static InstrumentIncomeEquity CreateEquityIncome(InstrumentSeed seed, int index)
+    {
+        var declaration = DateOnly.FromDateTime(ValueStartDate.Date.AddDays(1 + index % 5));
+        var exDividend = declaration.AddDays(14);
+        var record = exDividend.AddDays(1);
+        var payable = record.AddDays(21);
+
+        return new InstrumentIncomeEquity(
+            new InstrumentPrice(Round(seed.BasePrice * (0.01m + (index % 5) * 0.002m))),
+            index % 4 == 0 ? "Special" : "Regular",
+            InstrumentDateBuilder.Create(exDividend),
+            InstrumentDateBuilder.Create(declaration),
+            InstrumentDateBuilder.Create(record),
+            InstrumentDateBuilder.Create(payable));
+    }
+
+    private static InstrumentIncomeFixedIncome CreateFixedIncomeIncome(InstrumentSeed seed, int index)
+    {
+        var couponRate = seed.Terms is InstrumentTermsBond bondTerms ? bondTerms.CouponRate.Value : 0m;
+        var accruedDays = 15 + index % 45;
+        var accruedInterest = Round(100m * couponRate * accruedDays / 365m);
+
+        return new InstrumentIncomeFixedIncome(new ValuationPrice(accruedInterest));
+    }
+
+    private static InstrumentTermsBond CreateBondTerms(string currency, decimal couponRate, DateTime issueDate, DateTime maturityDate, string dayCount) =>
+        new(
+            new Money(100m, Alpha3Builder.Create(currency)),
+            new CouponRate(couponRate),
+            CouponFrequency.SemiAnnual,
+            maturityDate,
+            issueDate,
+            dayCount);
 
     private static decimal Round(decimal value) => decimal.Round(value, 4);
 
@@ -114,8 +217,15 @@ internal static class SeedInstrumentData
     }
 }
 
-internal sealed record InstrumentSeed(InstrumentID InstrumentID, string Ticker, string Name, string FormalName, string Exchange, string Country, string Currency, decimal BasePrice, InstrumentLogo Logo, string Sedol);
+internal enum InstrumentSeedKind
+{
+    Equity,
+    FixedIncome,
+    Cash
+}
 
-internal sealed record InstrumentPriceSeed(InstrumentID InstrumentID, InstrumentPriceEquity Price, DateTime Timestamp);
+internal sealed record InstrumentSeed(InstrumentID InstrumentID, InstrumentSeedKind Kind, string Ticker, string Name, string FormalName, string Exchange, string Country, string Currency, string Cfi, decimal BasePrice, IInstrumentTerms? Terms, InstrumentLogo Logo, string Sedol);
 
-internal sealed record InstrumentIncomeSeed(InstrumentID InstrumentID, InstrumentIncomeEquity Income, DateTime Timestamp);
+internal sealed record InstrumentPriceSeed(InstrumentID InstrumentID, IInstrumentPrice Price, DateTime Timestamp);
+
+internal sealed record InstrumentIncomeSeed(InstrumentID InstrumentID, IInstrumentIncome Income, DateTime Timestamp);

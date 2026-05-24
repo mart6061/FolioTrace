@@ -93,18 +93,57 @@ export type Money = {
   currency: string;
 };
 
+export type InstrumentPrice = {
+  amount?: number | null;
+};
+
 export type InstrumentPriceEquity = {
   $type?: 'InstrumentPriceEquity';
-  bid: Money;
-  mid: Money;
-  ask: Money;
-  nav: Money;
+  bid: InstrumentPrice;
+  mid: InstrumentPrice;
+  ask: InstrumentPrice;
+  nav: InstrumentPrice;
+  priceType?: string;
+};
+
+export type ValuationPrice = {
+  amount?: number | null;
+};
+
+export type InstrumentPriceFixedIncome = {
+  $type?: 'InstrumentPriceFixedIncome';
+  cleanPrice: ValuationPrice;
+  priceType?: string;
+};
+
+export type InstrumentPriceCash = {
+  $type?: 'InstrumentPriceCash';
+  price: InstrumentPrice;
   priceType?: string;
 };
 
 export type InstrumentIncomeEquity = {
   $type?: 'InstrumentIncomeEquity';
-  income: Money;
+  dividendAmount: InstrumentPrice;
+  dividendType: string;
+  exDividend: string | null;
+  declaration: string | null;
+  record: string | null;
+  payable: string | null;
+  incomeType?: string;
+};
+
+export type InstrumentIncomeFixedIncome = {
+  $type?: 'InstrumentIncomeFixedIncome';
+  accruedInterest: ValuationPrice;
+  incomeType?: string;
+};
+
+export type InstrumentIncomeCash = {
+  $type?: 'InstrumentIncomeCash';
+  income: {
+    value?: number | null;
+  };
   incomeType?: string;
 };
 
@@ -135,8 +174,9 @@ export type Instruments = {
 };
 
 export type InstrumentValue = Instrument & {
-  price?: InstrumentPriceEquity | null;
-  income?: InstrumentIncomeEquity | null;
+  price?: InstrumentPriceEquity | InstrumentPriceFixedIncome | InstrumentPriceCash | null;
+  priceValuationDateTime?: string | null;
+  income?: InstrumentIncomeEquity | InstrumentIncomeFixedIncome | InstrumentIncomeCash | null;
 };
 
 export type InstrumentValues = {
@@ -172,35 +212,62 @@ export type CurrencyReferenceEvent = ReferenceEventBase & {
   name: string;
 };
 
+export type InstrumentValueHistoryEvent = ReferenceEventBase & {
+  instrumentID: string;
+  valueKind: 'Price' | 'Income';
+  summary: string;
+};
+
+export type FXRateHistoryEvent = ReferenceEventBase & {
+  pair: string;
+  displayPair: string;
+  summary: string;
+};
+
 export type MemoryDiagnostics = {
   eventCache: {
     isLoaded: boolean;
     streamCount: number;
     eventCount: number;
+    estimatedMemoryBytes: number;
+    unprocessedEventCount: number;
+    recentUnprocessedEvents: {
+      streamId: string | null;
+      eventId: string | null;
+      eventType: string;
+      reason: string;
+      recordedAtUtc: string;
+    }[];
   };
   countryService: {
     cacheEntryCount: number;
     countryCount: number;
+    estimatedMemoryBytes: number;
   };
   currencyService: {
     cacheEntryCount: number;
     currencyCount: number;
+    estimatedMemoryBytes: number;
   };
   fxService: {
     cacheEntryCount: number;
     fxCount: number;
+    estimatedMemoryBytes: number;
   };
   fxRateService: {
     cacheEntryCount: number;
     fxRateCount: number;
+    estimatedMemoryBytes: number;
   };
   instrumentService?: {
     cacheEntryCount: number;
     instrumentCount: number;
+    estimatedMemoryBytes: number;
   };
   instrumentValueService?: {
     cacheEntryCount: number;
     instrumentValueCount: number;
+    estimatedMemoryBytes: number;
   };
   sse?: {
     activeSubscriberCount: number;

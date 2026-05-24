@@ -130,25 +130,36 @@ public static class ApiEndpointRegistration
                 new EventCacheDiagnosticsResponse(
                     repositoryDiagnostics.IsLoaded,
                     repositoryDiagnostics.StreamCount,
-                    repositoryDiagnostics.EventCount),
+                    repositoryDiagnostics.EventCount,
+                    repositoryDiagnostics.EstimatedMemoryBytes,
+                    repositoryDiagnostics.UnprocessedEventCount,
+                    repositoryDiagnostics.RecentUnprocessedEvents
+                        .Select(@event => new UnprocessedEventDiagnosticsResponse(@event.StreamId, @event.EventId, @event.EventType, @event.Reason, @event.RecordedAtUtc))
+                        .ToList()),
                 new CountryServiceDiagnosticsResponse(
                     countryDiagnostics.CacheEntryCount,
-                    countryDiagnostics.CountryCount),
+                    countryDiagnostics.CountryCount,
+                    countryDiagnostics.EstimatedMemoryBytes),
                 new CurrencyServiceDiagnosticsResponse(
                     currencyDiagnostics.CacheEntryCount,
-                    currencyDiagnostics.CurrencyCount),
+                    currencyDiagnostics.CurrencyCount,
+                    currencyDiagnostics.EstimatedMemoryBytes),
                 new FXServiceDiagnosticsResponse(
                     fxDiagnostics.CacheEntryCount,
-                    fxDiagnostics.FXCount),
+                    fxDiagnostics.FXCount,
+                    fxDiagnostics.EstimatedMemoryBytes),
                 new FXRateServiceDiagnosticsResponse(
                     fxRateDiagnostics.CacheEntryCount,
-                    fxRateDiagnostics.FXRateCount),
+                    fxRateDiagnostics.FXRateCount,
+                    fxRateDiagnostics.EstimatedMemoryBytes),
                 new InstrumentServiceDiagnosticsResponse(
                     instrumentDiagnostics.CacheEntryCount,
-                    instrumentDiagnostics.InstrumentCount),
+                    instrumentDiagnostics.InstrumentCount,
+                    instrumentDiagnostics.EstimatedMemoryBytes),
                 new InstrumentValueServiceDiagnosticsResponse(
                     instrumentValueDiagnostics.CacheEntryCount,
-                    instrumentValueDiagnostics.InstrumentValueCount),
+                    instrumentValueDiagnostics.InstrumentValueCount,
+                    instrumentValueDiagnostics.EstimatedMemoryBytes),
                 new SseDiagnosticsResponse(
                     sseDiagnostics.ActiveSubscriberCount,
                     sseDiagnostics.PublishedNotificationCount,
@@ -244,30 +255,46 @@ public static class ApiEndpointRegistration
             IApiExchangeRepository repository,
             CancellationToken cancellationToken) =>
         {
-            var result = await repository.SearchAsync(
-                new ApiExchangeSearchCriteria(
-                    fromUtc,
-                    toUtc,
-                    method,
-                    path,
-                    statusCode,
-                    minimumDurationMilliseconds,
-                    maximumDurationMilliseconds,
-                    text,
-                    page ?? 1,
-                    pageSize ?? 50),
-                cancellationToken);
+            try
+            {
+                var result = await repository.SearchAsync(
+                    new ApiExchangeSearchCriteria(
+                        fromUtc,
+                        toUtc,
+                        method,
+                        path,
+                        statusCode,
+                        minimumDurationMilliseconds,
+                        maximumDurationMilliseconds,
+                        text,
+                        page ?? 1,
+                        pageSize ?? 50),
+                    cancellationToken);
 
-            return Results.Ok(new ApiExchangeSearchResponse(
-                result.Items.Select(ToResponse).ToList(),
-                result.TotalCount,
-                result.Page,
-                result.PageSize));
+                return Results.Ok(new ApiExchangeSearchResponse(
+                    result.Items.Select(ToResponse).ToList(),
+                    result.TotalCount,
+                    result.Page,
+                    result.PageSize));
+            }
+            catch (Exception exception) when (IsApiExchangeStoreUnavailable(exception))
+            {
+                return RequestTraceUnavailable();
+            }
         });
 
         diagnostics.MapGet("/RequestTrace/{id:guid}", async (Guid id, IApiExchangeRepository repository, CancellationToken cancellationToken) =>
         {
-            var exchange = await repository.LoadAsync(id, cancellationToken);
+            ApiExchange? exchange;
+
+            try
+            {
+                exchange = await repository.LoadAsync(id, cancellationToken);
+            }
+            catch (Exception exception) when (IsApiExchangeStoreUnavailable(exception))
+            {
+                return RequestTraceUnavailable();
+            }
 
             return exchange is null
                 ? Results.NotFound()
@@ -678,9 +705,14 @@ public static class ApiEndpointRegistration
     {
         var priceEvents = api.MapGroup("/Events/InstrumentPrice");
 
-        priceEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        priceEvents.MapGet("/", async (Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IInstrumentPriceEvent>(Constants.Initialisation.InstrumentPricesStreamId, cancellationToken);
+            if (instrumentID.HasValue)
+                events = events
+                    .Where(@event => @event is InstrumentPriceSetEvent setEvent && setEvent.InstrumentID.Value == instrumentID.Value)
+                    .ToList();
+
             return Results.Ok(events.Select(ToInstrumentPriceEventResponse).ToList());
         });
 
@@ -704,9 +736,14 @@ public static class ApiEndpointRegistration
     {
         var incomeEvents = api.MapGroup("/Events/InstrumentIncome");
 
-        incomeEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        incomeEvents.MapGet("/", async (Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IInstrumentIncomeEvent>(Constants.Initialisation.InstrumentIncomesStreamId, cancellationToken);
+            if (instrumentID.HasValue)
+                events = events
+                    .Where(@event => @event is InstrumentIncomeSetEvent setEvent && setEvent.InstrumentID.Value == instrumentID.Value)
+                    .ToList();
+
             return Results.Ok(events.Select(ToInstrumentIncomeEventResponse).ToList());
         });
 
@@ -778,9 +815,9 @@ public static class ApiEndpointRegistration
         if (instrument is null)
             return [$"No matching Instrument found for InstrumentID '{instrumentID}'."];
 
-        return instrument.CFI.IsEquity
+        return instrument.CFI.IsEquity || instrument.CFI.IsDebt
             ? []
-            : [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}'. Only equity instruments support v1 price and income events."];
+            : [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}'. Only equity and fixed income instruments support editable v1 price and income events."];
     }
 
     private static ApiExchangeResponse ToResponse(ApiExchange exchange) =>
@@ -800,6 +837,17 @@ public static class ApiEndpointRegistration
 
     private static ApiHttpMessageResponse ToResponse(ApiHttpMessage message) =>
         new(message.Headers, message.Body, message.ContentType, message.ContentLength, message.BodyTruncated);
+
+    private static bool IsApiExchangeStoreUnavailable(Exception exception) =>
+        exception is TimeoutException ||
+        exception.GetType().FullName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true ||
+        exception.InnerException is not null && IsApiExchangeStoreUnavailable(exception.InnerException);
+
+    private static IResult RequestTraceUnavailable() =>
+        Results.Problem(
+            title: "Request trace store is unavailable.",
+            detail: "The API exchange capture database cannot be reached. Start the configured Postgres instance or update ConnectionStrings:FolioTrace.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
 
     private static object ToCountryEventResponse(ICountryEvent @event) =>
         @event switch

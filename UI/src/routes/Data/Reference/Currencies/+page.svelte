@@ -300,7 +300,7 @@
           <input
             class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             name="valuationDate"
-            type="datetime-local"
+            step="1" type="datetime-local"
             value={data.valuationDate}
           />
         </label>
@@ -433,7 +433,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="currency-create">
                       <span>Event date</span>
-                      <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" name="eventDateTime" required type="datetime-local" value={form?.intent === 'createCurrency' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                      <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" name="eventDateTime" required step="1" type="datetime-local" value={form?.intent === 'createCurrency' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -481,7 +481,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`currency-edit-${currency.alphabeticCode}`}>
                         <span>Event date</span>
-                        <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} name="eventDateTime" required type="datetime-local" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                        <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} name="eventDateTime" required step="1" type="datetime-local" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
                       </label>
                     </td>
                     <td class="px-3 py-2">

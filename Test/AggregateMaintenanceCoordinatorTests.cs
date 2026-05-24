@@ -186,7 +186,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         private readonly Dictionary<Guid, List<IEventBase>> streams = [];
         private readonly Dictionary<Guid, IEventBase> eventsById = [];
 
-        public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, streams.Count, eventsById.Count);
+        public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, streams.Count, eventsById.Count, 0, 0, []);
 
         public Task InitializeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 

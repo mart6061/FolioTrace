@@ -248,6 +248,62 @@ public sealed class TypeValidationTests
     public void InstrumentId_RejectsEmptyGuid() =>
         Assert.Throws<ArgumentException>(() => new InstrumentID(Guid.Empty));
 
+    [Fact]
+    public void Yield_AcceptsZeroAndPositiveValues()
+    {
+        Assert.Equal(0m, new Yield(0m).Value);
+        Assert.Equal(1.23456789m, new Yield(1.23456789m).Value);
+    }
+
+    [Theory]
+    [InlineData(-0.00000001)]
+    [InlineData(1.123456789)]
+    public void Yield_RejectsInvalidValues(decimal value) =>
+        Assert.Throws<ArgumentException>(() => new Yield(value));
+
+    [Fact]
+    public void InstrumentIncomeCash_FixesIncomeAtZero()
+    {
+        var income = new InstrumentIncomeCash();
+
+        Assert.Equal(0m, income.Income.Value);
+        Assert.Throws<ArgumentException>(() => new InstrumentIncomeCash(new Yield(0.01m)));
+    }
+
+    [Fact]
+    public void InstrumentPriceCash_FixesPriceAtOne()
+    {
+        var price = new InstrumentPriceCash();
+
+        Assert.Equal(1m, price.Price.Amount);
+        Assert.Throws<ArgumentException>(() => new InstrumentPriceCash(new InstrumentPrice(0.99m)));
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidInstrumentValuePairs))]
+    public void InstrumentValue_AcceptsMatchingPriceAndIncomePairs(IInstrumentPrice price, IInstrumentIncome income)
+    {
+        var value = CreateInstrumentValue(price, income);
+
+        Assert.Same(price, value.Price);
+        Assert.Same(income, value.Income);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidInstrumentValuePairs))]
+    public void InstrumentValue_RejectsMismatchedPriceAndIncomePairs(IInstrumentPrice price, IInstrumentIncome income) =>
+        Assert.Throws<ArgumentException>(() => CreateInstrumentValue(price, income));
+
+    [Fact]
+    public void InstrumentValue_RejectsHalfPresentPriceAndIncomePairs()
+    {
+        var price = new InstrumentPriceCash();
+        var income = new InstrumentIncomeCash();
+
+        Assert.Throws<ArgumentException>(() => CreateInstrumentValue(price, null));
+        Assert.Throws<ArgumentException>(() => CreateInstrumentValue(null, income));
+    }
+
     [Theory]
     [MemberData(nameof(ValidExchangeValues))]
     public void Exchange_AcceptsValidValues(string value)
@@ -363,4 +419,61 @@ public sealed class TypeValidationTests
     [Fact]
     public void UserId_RejectsEmptyGuid() =>
         Assert.Throws<ArgumentException>(() => new UserID(Guid.Empty));
+
+    public static TheoryData<IInstrumentPrice, IInstrumentIncome> ValidInstrumentValuePairs => new()
+    {
+        { new InstrumentPriceCash(), new InstrumentIncomeCash() },
+        { new InstrumentPriceFixedIncome(new ValuationPrice(100m)), new InstrumentIncomeFixedIncome(new ValuationPrice(1.25m)) },
+        {
+            new InstrumentPriceEquity(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m), new InstrumentPrice(100m)),
+            new InstrumentIncomeEquity(
+                new InstrumentPrice(1m),
+                "Regular",
+                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 1)),
+                InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)),
+                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)),
+                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31)))
+        }
+    };
+
+    public static TheoryData<IInstrumentPrice, IInstrumentIncome> InvalidInstrumentValuePairs => new()
+    {
+        { new InstrumentPriceCash(), new InstrumentIncomeEquity(new InstrumentPrice(1m), "Regular", InstrumentDateBuilder.Create(new DateOnly(2026, 1, 1)), InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)), InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)), InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31))) },
+        { new InstrumentPriceFixedIncome(new ValuationPrice(100m)), new InstrumentIncomeCash() },
+        { new InstrumentPriceEquity(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m), new InstrumentPrice(100m)), new InstrumentIncomeFixedIncome(new ValuationPrice(1.25m)) }
+    };
+
+    private static InstrumentValue CreateInstrumentValue(IInstrumentPrice? price, IInstrumentIncome? income)
+    {
+        var now = DateTime.UtcNow.AddSeconds(-1);
+        var eventDateTime = EventDateTimeBuilder.Create(now);
+        var auditDateTime = AuditDateTimeBuilder.Create(now);
+        var lastAuditDateTime = LastAuditDateTimeBuilder.Create(now);
+        var instrument = new Instrument(
+            InstrumentIDBuilder.Create(),
+            "Test Instrument",
+            "Test Instrument plc",
+            ExchangeBuilder.Create("XLON"),
+            CFIBuilder.Create("ESVUFR"),
+            null,
+            true,
+            Alpha2Builder.Create("GB"),
+            Alpha2Builder.Create("GB"),
+            [],
+            null,
+            eventDateTime,
+            auditDateTime,
+            new EventID(Guid.NewGuid()),
+            lastAuditDateTime);
+
+        return new InstrumentValue(
+            instrument,
+            price,
+            price is null ? null : eventDateTime,
+            income,
+            eventDateTime,
+            auditDateTime,
+            new EventID(Guid.NewGuid()),
+            lastAuditDateTime);
+    }
 }

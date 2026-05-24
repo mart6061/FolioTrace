@@ -1,5 +1,6 @@
 using FolioTrace.Common;
 using FolioTrace.Types;
+using Services;
 
 namespace Repository;
 
@@ -9,6 +10,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
     private readonly Lock sync = new();
     private readonly Dictionary<Guid, List<IEventBase>> streams = [];
     private readonly Dictionary<Guid, IEventBase> eventsById = [];
+    private readonly List<UnprocessedEventDiagnostic> unprocessedEvents = [];
     private bool isLoaded;
 
     public EventRepositoryCacheDiagnostics GetCacheDiagnostics()
@@ -18,7 +20,10 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             return new EventRepositoryCacheDiagnostics(
                 isLoaded,
                 streams.Count,
-                eventsById.Count);
+                eventsById.Count,
+                CacheMemoryEstimator.EstimateBytes(eventsById.Values),
+                unprocessedEvents.Count,
+                unprocessedEvents.OrderByDescending(@event => @event.RecordedAtUtc).Take(10).ToList());
         }
     }
 
@@ -32,6 +37,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         {
             streams.Clear();
             eventsById.Clear();
+            unprocessedEvents.Clear();
             isLoaded = true;
         }
     }
@@ -166,7 +172,20 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             if (isLoaded)
                 return;
 
-            var storedEvents = await durableRepository.LoadAllAsync(cancellationToken);
+            IReadOnlyList<StoredEvent> storedEvents;
+            try
+            {
+                storedEvents = await durableRepository.LoadAllAsync(cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                storedEvents = [];
+
+                lock (sync)
+                {
+                    RecordUnprocessedEvent(null, null, "Unknown", $"Unable to load stored events: {exception.Message}");
+                }
+            }
 
             lock (sync)
             {
@@ -174,7 +193,21 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
                 eventsById.Clear();
 
                 foreach (var storedEvent in storedEvents)
-                    AddEvent(storedEvent.StreamId, storedEvent.Event);
+                {
+                    try
+                    {
+                        var eventData = storedEvent.Event ?? throw new InvalidOperationException("Stored event data is required.");
+                        AddEvent(storedEvent.StreamId, eventData);
+                    }
+                    catch (Exception exception)
+                    {
+                        RecordUnprocessedEvent(
+                            storedEvent.StreamId,
+                            TryGetEventId(storedEvent.Event),
+                            storedEvent.Event?.GetType().Name ?? "Unknown",
+                            exception.Message);
+                    }
+                }
 
                 isLoaded = true;
             }
@@ -187,6 +220,18 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
 
     private void AddEvent(Guid streamId, IEventBase @event)
     {
+        if (@event is null)
+            throw new ArgumentNullException(nameof(@event));
+
+        if (@event.EventID is null)
+            throw new InvalidOperationException("EventID is required.");
+
+        if (@event.EventDateTime is null)
+            throw new InvalidOperationException("EventDateTime is required.");
+
+        if (@event.AuditDateTime is null)
+            throw new InvalidOperationException("AuditDateTime is required.");
+
         if (!streams.TryGetValue(streamId, out var events))
         {
             events = [];
@@ -196,6 +241,18 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         events.Add(@event);
         eventsById[@event.EventID.Value] = @event;
     }
+
+    private void RecordUnprocessedEvent(Guid? streamId, Guid? eventId, string eventType, string reason)
+    {
+        unprocessedEvents.Add(new UnprocessedEventDiagnostic(
+            streamId,
+            eventId,
+            string.IsNullOrWhiteSpace(eventType) ? "Unknown" : eventType,
+            reason,
+            DateTime.UtcNow));
+    }
+
+    private static Guid? TryGetEventId(IEventBase? @event) => @event?.EventID?.Value;
 
     private static int CompareEventOrder(IEventBase left, IEventBase right)
     {
