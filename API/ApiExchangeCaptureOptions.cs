@@ -16,7 +16,7 @@ public sealed class ApiExchangeCaptureOptions
         "/Diagnostics/RequestTrace",
         "/Notifications",
         "/openapi",
-        "/scalar"
+        "/swagger"
     ];
 
     public string[] RedactedHeaders { get; init; } =

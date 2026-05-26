@@ -1,11 +1,19 @@
 using API;
 using Repository;
-using Scalar.AspNetCore;
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "FolioTrace API",
+        Version = "v1"
+    });
+    options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
+});
 builder.Services.AddSingleton<ApiVersionInfo>();
 builder.Services.AddSingleton<BuildCoordinator>();
 builder.Services.AddSingleton(
@@ -22,8 +30,12 @@ app.UsePathBase("/API");
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("v1/swagger.json", "FolioTrace API v1");
+        options.RoutePrefix = "swagger";
+    });
     app.UseHttpsRedirection();
 }
 
