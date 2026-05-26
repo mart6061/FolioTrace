@@ -301,6 +301,21 @@ export type HoldingReferenceEvent = ReferenceEventBase & {
   default?: boolean;
 };
 
+export type InstrumentReferenceEvent = ReferenceEventBase & {
+  instrumentID: string;
+  name?: string;
+  formalName?: string;
+  exchange?: string;
+  cfi?: string;
+  logo?: InstrumentLogo | null;
+  active?: boolean;
+  incomeCountry?: string;
+  priceCountry?: string;
+  identifier?: InstrumentIdentifier | null;
+  identifierType?: string | number;
+  terms?: unknown;
+};
+
 export type InstrumentValueHistoryEvent = ReferenceEventBase & {
   instrumentID: string;
   valueKind: 'Price' | 'Income';

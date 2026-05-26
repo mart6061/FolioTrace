@@ -13,6 +13,7 @@ import type {
   Holdings,
   HoldingReferenceEvent,
   InstrumentLogo,
+  InstrumentReferenceEvent,
   InstrumentValues,
   InstrumentValueHistoryEvent,
   Instruments,
@@ -318,6 +319,15 @@ export async function getHoldingEvents(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as HoldingReferenceEvent[];
+}
+
+export async function getInstrumentEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentReferenceEvent[];
 }
 
 export async function getInstrumentPriceEvents(fetchApi: typeof fetch, instrumentID?: string) {
