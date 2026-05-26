@@ -62,6 +62,7 @@
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
+    { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'data', label: 'Data', tone: menuTones.value },
     { id: 'system', label: 'System', tone: menuTones.logs }
   ];
@@ -74,7 +75,6 @@
     { id: 'value-instruments', label: 'Instruments', path: '/Value/InstrumentValues', tone: menuTones.value }
   ];
   const referenceItems: MenuItem[] = [
-    { id: 'reference-account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'reference-country', label: 'Country', path: '/Data/Reference/Countries', tone: menuTones.reference },
     { id: 'reference-currency', label: 'Currency', path: '/Data/Reference/Currencies', tone: menuTones.reference },
     { id: 'reference-fx', label: 'FX', path: '/Value/FXs', tone: menuTones.reference },
@@ -83,11 +83,12 @@
   ];
   const systemItems: MenuItem[] = [
     { id: 'system-logs', label: 'Logs', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },
-    { hash: '#stats-heading', id: 'system-stats', label: 'Stats for Nerds', path: '/', tone: menuTones.logs },
-    { hash: '#system-heading', id: 'system-clear-cache', label: 'Clear Cache', path: '/', tone: menuTones.danger },
-    { hash: '#system-heading', id: 'system-rebuild-database', label: 'Rebuild Database', path: '/', tone: menuTones.danger }
+    { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs },
+    { hash: '#system-heading', id: 'system-clear-cache', label: 'Clear Cache', path: '/StatsForNerds', tone: menuTones.danger },
+    { hash: '#system-heading', id: 'system-rebuild-database', label: 'Rebuild Database', path: '/StatsForNerds', tone: menuTones.danger }
   ];
-  const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, topMenuItems[0], topMenuItems[1]];
+  const topLeafItems = topMenuItems.filter((item) => item.path);
+  const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, ...topLeafItems];
 
   let traceMode = $state(false);
   let auditDateTime = $state('');

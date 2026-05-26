@@ -171,6 +171,31 @@ export type EventSubmissionResponse = {
   }[];
 };
 
+export type TransactionRequest = {
+  holdingID: string;
+  instrumentID: string;
+  accountID: string;
+  quantity: number;
+  bookCost: number;
+};
+
+export type TransactionSetRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  credits: TransactionRequest[];
+  debits: TransactionRequest[];
+};
+
+export type TransactionSetSubmissionResponse = {
+  eventIDs: string[];
+  links: {
+    rel: string;
+    href: string;
+    method: string;
+  }[];
+};
+
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
     super(message);
@@ -767,6 +792,39 @@ export async function postInstrumentTermsEquitySetEvent(fetchApi: typeof fetch, 
   }
 
   return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postTransactionSet(fetchApi: typeof fetch, request: TransactionSetRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Transaction/TransactionSet`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      Credits: request.credits.map((credit) => ({
+        HoldingID: credit.holdingID,
+        InstrumentID: credit.instrumentID,
+        AccountID: credit.accountID,
+        Quantity: credit.quantity,
+        BookCost: credit.bookCost
+      })),
+      Debits: request.debits.map((debit) => ({
+        HoldingID: debit.holdingID,
+        InstrumentID: debit.instrumentID,
+        AccountID: debit.accountID,
+        Quantity: debit.quantity,
+        BookCost: debit.bookCost
+      }))
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as TransactionSetSubmissionResponse;
 }
 
 async function postCountryEvent(

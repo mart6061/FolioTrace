@@ -11,7 +11,7 @@ export const load = async ({ fetch }) => {
   } catch (error) {
     return {
       apiBaseUrl: getApiBaseUrl(),
-      error: error instanceof Error ? error.message : 'Unable to load dashboard analytics.',
+      error: error instanceof Error ? error.message : 'Unable to load stats.',
       memoryDiagnostics: null
     };
   }

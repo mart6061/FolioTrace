@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
-  import type { AccountReferenceEvent } from '$lib/types';
+  import type { AccountReferenceEvent, Holding } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -11,6 +11,20 @@
   const asOfSummary = $derived(data.auditDateTime && data.accounts ? formatDisplayDateTime(data.accounts.asOfDateTime) : 'now');
 
   type SortKey = 'name' | 'formalName' | 'bookCurrency' | 'status' | 'lastAudit';
+  type AccountFormValues = {
+    accountID: string;
+    active: boolean;
+    bookCurrency: string;
+    eventDateTime: string;
+    formalName: string;
+    name: string;
+  };
+  type CashInFormValues = {
+    accountID: string;
+    amount: string;
+    eventDateTime: string;
+    holdingID: string;
+  };
 
   let sortKey = $state<SortKey>('name');
   let sortDirection = $state<1 | -1>(1);
@@ -19,9 +33,32 @@
   let editingAccountID = $state('');
   let submittingAccountID = $state('');
   let submittingCreate = $state(false);
+  let cashInAccountID = $state('');
+  let submittingCashIn = $state(false);
   let openHistoryAccountID = $state('');
   let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
+  const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
+  const accountFormValues = $derived(
+    (form?.intent === 'createAccount' || form?.intent === 'modifyAccount') && form.values
+      ? form.values as AccountFormValues
+      : null
+  );
+  const cashInFormValues = $derived(
+    form?.intent === 'cashIn' && form.values
+      ? form.values as CashInFormValues
+      : null
+  );
+  const capitalHoldings = $derived(
+    (data.holdings?.items ?? [])
+      .filter((holding) =>
+        holding.active &&
+        holding.holdingType === 'CashOnHand' &&
+        holding.default &&
+        holding.name === 'Capital'
+      )
+      .sort((left, right) => capitalHoldingLabel(left).localeCompare(capitalHoldingLabel(right)))
+  );
 
   const filteredAccounts = $derived(
     (data.accounts?.items ?? []).filter((account) => {
@@ -73,6 +110,11 @@
     loadedHistoryContextKey = nextHistoryContextKey;
     if (openHistoryAccountID)
       void loadHistory(openHistoryAccountID);
+  });
+
+  $effect(() => {
+    if (form?.intent === 'cashIn' && form.status === 'failure')
+      cashInAccountID = cashInFormValues?.accountID ?? '';
   });
 
   function setSort(nextSortKey: SortKey) {
@@ -196,6 +238,16 @@
     addingAccount = false;
   }
 
+  function startCashIn(accountID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    cashInAccountID = accountID;
+  }
+
+  function cancelCashIn() {
+    cashInAccountID = '';
+  }
+
   const enhanceAccountCreate: SubmitFunction = () => {
     submittingCreate = true;
 
@@ -230,6 +282,18 @@
     return async ({ update }) => {
       await update({ reset: false });
       submittingAccountID = '';
+    };
+  };
+
+  const enhanceCashIn: SubmitFunction = () => {
+    submittingCashIn = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingCashIn = false;
+
+      if (result.type === 'success')
+        cashInAccountID = '';
     };
   };
 
@@ -298,6 +362,21 @@
       typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
     ].filter(Boolean).join(' · ');
   }
+  function capitalHoldingLabel(holding: Holding) {
+    const account = accountByID.get(holding.accountID);
+    return `${account?.name ?? holding.accountID} (${account?.bookCurrency ?? 'cash'})`;
+  }
+
+  function capitalHoldingsForAccount(accountID: string) {
+    return capitalHoldings.filter((holding) => holding.accountID === accountID);
+  }
+
+  function selectedCashInHoldingID(accountID: string) {
+    if (cashInFormValues?.accountID === accountID && cashInFormValues.holdingID)
+      return cashInFormValues.holdingID;
+
+    return capitalHoldingsForAccount(accountID)[0]?.holdingID ?? '';
+  }
 </script>
 
 <svelte:head>
@@ -359,6 +438,9 @@
           {form.message}
           {#if form.status === 'success' && form.eventID}
             <span class="ml-2 text-emerald-700">Event {form.eventID}</span>
+          {/if}
+          {#if form.status === 'success' && form.eventIDs?.length}
+            <span class="ml-2 text-emerald-700">Events {form.eventIDs.join(', ')}</span>
           {/if}
         </div>
       {/if}
@@ -464,7 +546,7 @@
                           name="name"
                           required
                           type="text"
-                          value={form?.intent === 'createAccount' ? (form.values?.name ?? '') : ''}
+                          value={form?.intent === 'createAccount' ? (accountFormValues?.name ?? '') : ''}
                         />
                       </label>
                     </form>
@@ -478,7 +560,7 @@
                         name="formalName"
                         required
                         type="text"
-                        value={form?.intent === 'createAccount' ? (form.values?.formalName ?? '') : ''}
+                        value={form?.intent === 'createAccount' ? (accountFormValues?.formalName ?? '') : ''}
                       />
                     </label>
                   </td>
@@ -493,7 +575,7 @@
                         name="bookCurrency"
                         required
                         type="text"
-                        value={form?.intent === 'createAccount' ? (form.values?.bookCurrency ?? '') : ''}
+                        value={form?.intent === 'createAccount' ? (accountFormValues?.bookCurrency ?? '') : ''}
                       />
                     </label>
                   </td>
@@ -503,7 +585,7 @@
                       <span class="flex h-8 items-center gap-2">
                         <input
                           class="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
-                          checked={form?.intent === 'createAccount' ? (form.values?.active ?? true) : true}
+                          checked={form?.intent === 'createAccount' ? (accountFormValues?.active ?? true) : true}
                           form="account-create"
                           name="active"
                           type="checkbox"
@@ -522,7 +604,7 @@
                         name="eventDateTime"
                         required
                         step="1" type="datetime-local"
-                        value={form?.intent === 'createAccount' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                        value={form?.intent === 'createAccount' ? (accountFormValues?.eventDateTime ?? data.valuationDate) : data.valuationDate}
                       />
                     </label>
                   </td>
@@ -569,7 +651,7 @@
                             name="name"
                             required
                             type="text"
-                            value={form?.accountID === account.accountID ? (form.values?.name ?? account.name) : account.name}
+                            value={form?.accountID === account.accountID ? (accountFormValues?.name ?? account.name) : account.name}
                           />
                         </label>
                       </form>
@@ -583,7 +665,7 @@
                           name="formalName"
                           required
                           type="text"
-                          value={form?.accountID === account.accountID ? (form.values?.formalName ?? account.formalName) : account.formalName}
+                          value={form?.accountID === account.accountID ? (accountFormValues?.formalName ?? account.formalName) : account.formalName}
                         />
                       </label>
                     </td>
@@ -616,7 +698,7 @@
                           name="eventDateTime"
                           required
                           step="1" type="datetime-local"
-                          value={form?.accountID === account.accountID ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                          value={form?.accountID === account.accountID ? (accountFormValues?.eventDateTime ?? data.valuationDate) : data.valuationDate}
                         />
                       </label>
                     </td>
@@ -688,6 +770,94 @@
                           </button>
                         </form>
                       </div>
+                    </td>
+                  </tr>
+                  {@const rowCapitalHoldings = capitalHoldingsForAccount(account.accountID)}
+                  <tr class="bg-slate-50/40">
+                    <td class="px-3 py-2" colspan="6">
+                      {#if cashInAccountID === account.accountID}
+                        <form
+                          action="?/cashIn"
+                          class="grid gap-3 rounded-md border border-teal-100 bg-white p-3 md:grid-cols-[minmax(180px,220px)_minmax(260px,1fr)_minmax(140px,180px)_auto] md:items-end"
+                          method="POST"
+                          use:enhance={enhanceCashIn}
+                        >
+                          <input name="accountID" type="hidden" value={account.accountID} />
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Event date</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                              name="eventDateTime"
+                              required
+                              step="1" type="datetime-local"
+                              value={cashInFormValues?.accountID === account.accountID ? (cashInFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                            />
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Capital holding</span>
+                            <select
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                              name="holdingID"
+                              required
+                            >
+                              <option disabled selected={!selectedCashInHoldingID(account.accountID)} value="">Select Capital holding</option>
+                              {#each rowCapitalHoldings as holding}
+                                <option
+                                  selected={selectedCashInHoldingID(account.accountID) === holding.holdingID}
+                                  value={holding.holdingID}
+                                >
+                                  {capitalHoldingLabel(holding)}
+                                </option>
+                              {/each}
+                            </select>
+                            {#if !rowCapitalHoldings.length}
+                              <span class="text-xs font-normal text-amber-700">No active Capital holding is available for this account.</span>
+                            {/if}
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Amount</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                              min="0.00000001"
+                              name="amount"
+                              required
+                              step="0.00000001"
+                              type="number"
+                              value={cashInFormValues?.accountID === account.accountID ? (cashInFormValues.amount ?? '') : ''}
+                            />
+                          </label>
+
+                          <div class="flex justify-end gap-2">
+                            <button
+                              class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                              onclick={cancelCashIn}
+                              type="button"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                              disabled={submittingCashIn || !rowCapitalHoldings.length}
+                              type="submit"
+                            >
+                              {submittingCashIn ? 'Saving' : 'Save'}
+                            </button>
+                          </div>
+                        </form>
+                      {:else}
+                        <button
+                          class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          disabled={!account.active}
+                          onclick={() => startCashIn(account.accountID)}
+                          title={!account.active ? 'Account is inactive' : `Create a cash-in transaction for ${account.name}`}
+                          type="button"
+                        >
+                          Cash In
+                        </button>
+                      {/if}
                     </td>
                   </tr>
                   {#if openHistoryAccountID === account.accountID}
