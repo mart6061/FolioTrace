@@ -2,4 +2,5 @@ namespace Services;
 
 public sealed record CountryServiceDiagnostics(
     int CacheEntryCount,
-    int CountryCount);
+    int CountryCount,
+    long EstimatedMemoryBytes);

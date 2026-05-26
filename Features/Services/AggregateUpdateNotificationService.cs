@@ -106,13 +106,16 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
     private static IEnumerable<string> AggregateKindsFor(IEventBase @event) =>
         @event switch
         {
+            IAccountEvent => ["Accounts"],
             ICountryEvent => ["Countries"],
             ICurrencyEvent => ["Currencies"],
             IFXEvent => ["FXs", "FXRates"],
             IFXRateEvent => ["FXRates"],
+            IHoldingEvent => ["Holdings", "HoldingPositions"],
             IInstrumentEvent => ["Instruments", "InstrumentValues"],
             IInstrumentPriceEvent => ["InstrumentValues"],
             IInstrumentIncomeEvent => ["InstrumentValues"],
+            ITransactionEvent => ["Transactions", "HoldingPositions"],
             _ => []
         };
 }

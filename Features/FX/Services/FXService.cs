@@ -19,7 +19,7 @@ public sealed class FXService(IEventRepository eventRepository)
                 .FirstOrDefault()
                 ?.Items.Count ?? 0;
 
-            return new FXServiceDiagnostics(cache.Count, fxCount);
+            return new FXServiceDiagnostics(cache.Count, fxCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
         }
     }
 

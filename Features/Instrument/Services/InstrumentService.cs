@@ -19,7 +19,7 @@ public sealed class InstrumentService(IEventRepository eventRepository)
                 .FirstOrDefault()
                 ?.Items.Count ?? 0;
 
-            return new InstrumentServiceDiagnostics(cache.Count, instrumentCount);
+            return new InstrumentServiceDiagnostics(cache.Count, instrumentCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
         }
     }
 
@@ -120,4 +120,4 @@ public sealed class InstrumentService(IEventRepository eventRepository)
     }
 }
 
-public sealed record InstrumentServiceDiagnostics(int CacheEntryCount, int InstrumentCount);
+public sealed record InstrumentServiceDiagnostics(int CacheEntryCount, int InstrumentCount, long EstimatedMemoryBytes);

@@ -22,6 +22,25 @@
     return value ? formatTableDateTime(value) : '-';
   }
 
+  function formatBytes(value: number | null | undefined) {
+    if (typeof value !== 'number')
+      return '-';
+
+    if (value < 1024)
+      return `${value.toLocaleString()} B`;
+
+    const units = ['KB', 'MB', 'GB'];
+    let size = value / 1024;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return `${size.toLocaleString(undefined, { maximumFractionDigits: size >= 10 ? 1 : 2 })} ${units[unitIndex]}`;
+  }
+
   const buildPercent = $derived(calculateBuildPercent(buildProgress));
   const canConfirmBuild = $derived(buildConfirmationInput === 'Build');
   const canConfirmClear = $derived(clearConfirmationInput === 'Clear');
@@ -139,6 +158,13 @@
       </div>
     {/if}
 
+    {#if data.memoryDiagnostics?.eventCache.unprocessedEventCount}
+      <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+        <strong>{formatCount(data.memoryDiagnostics.eventCache.unprocessedEventCount)} unprocessed events</strong>
+        <span class="ml-2">Some stored events could not be loaded and were skipped. Review the dashboard diagnostics below.</span>
+      </div>
+    {/if}
+
     <div class="dashboard-sections">
       <section class="dashboard-intro" aria-labelledby="what-am-i-heading">
         <h2 id="what-am-i-heading">What am I?</h2>
@@ -172,6 +198,12 @@
 
         <div class="dashboard-grid">
           <article class="metric-card">
+            <span class="metric-label">Accounts</span>
+            <strong>Accounts</strong>
+            <a href="/Data/Reference/Accounts">Open account data</a>
+          </article>
+
+          <article class="metric-card">
             <span class="metric-label">Countries</span>
             <strong>Countries</strong>
             <a href="/Data/Reference/Countries">Open country data</a>
@@ -187,6 +219,12 @@
             <span class="metric-label">FX</span>
             <strong>FXs</strong>
             <a href="/Value/FXs">Open FX data</a>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Holdings</span>
+            <strong>Holdings</strong>
+            <a href="/Data/Reference/Holdings">Open holding data</a>
           </article>
 
           <article class="metric-card">
@@ -329,42 +367,75 @@
               {formatCount(data.memoryDiagnostics?.eventCache.streamCount)} streams
               {data.memoryDiagnostics?.eventCache.isLoaded ? 'loaded' : 'not loaded'}
             </span>
+            <span>{formatBytes(data.memoryDiagnostics?.eventCache.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class={`metric-card ${data.memoryDiagnostics?.eventCache.unprocessedEventCount ? 'metric-card-danger' : ''}`}>
+            <span class="metric-label">Unprocessed Events</span>
+            <strong>{formatCount(data.memoryDiagnostics?.eventCache.unprocessedEventCount)}</strong>
+            {#if data.memoryDiagnostics?.eventCache.recentUnprocessedEvents?.length}
+              {#each data.memoryDiagnostics.eventCache.recentUnprocessedEvents.slice(0, 3) as event}
+                <span>{event.eventType}: {event.reason}</span>
+              {/each}
+            {:else}
+              <span>No event load failures recorded</span>
+            {/if}
           </article>
 
           <article class="metric-card">
             <span class="metric-label">Country Service</span>
             <strong>{formatCount(data.memoryDiagnostics?.countryService.countryCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.countryService.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.countryService.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">
             <span class="metric-label">Currency Service</span>
             <strong>{formatCount(data.memoryDiagnostics?.currencyService.currencyCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.currencyService.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.currencyService.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">
             <span class="metric-label">FX Service</span>
             <strong>{formatCount(data.memoryDiagnostics?.fxService?.fxCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.fxService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.fxService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">
             <span class="metric-label">FX Rate Service</span>
             <strong>{formatCount(data.memoryDiagnostics?.fxRateService?.fxRateCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.fxRateService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.fxRateService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">
             <span class="metric-label">Instrument Service</span>
             <strong>{formatCount(data.memoryDiagnostics?.instrumentService?.instrumentCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.instrumentService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.instrumentService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">
             <span class="metric-label">Instrument Value Service</span>
             <strong>{formatCount(data.memoryDiagnostics?.instrumentValueService?.instrumentValueCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.instrumentValueService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.instrumentValueService?.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Holding Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.holdingService?.holdingCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.holdingService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.holdingService?.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Holding Position Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.holdingPositionService?.positionCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.holdingPositionService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.holdingPositionService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">

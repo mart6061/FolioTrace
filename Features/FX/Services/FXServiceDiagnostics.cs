@@ -2,4 +2,5 @@ namespace Services;
 
 public sealed record FXServiceDiagnostics(
     int CacheEntryCount,
-    int FXCount);
+    int FXCount,
+    long EstimatedMemoryBytes);

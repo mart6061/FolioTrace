@@ -303,7 +303,7 @@
           <input
             class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             name="valuationDate"
-            type="datetime-local"
+            step="1" type="datetime-local"
             value={data.valuationDate}
           />
         </label>
@@ -509,7 +509,7 @@
                         form="country-create"
                         name="eventDateTime"
                         required
-                        type="datetime-local"
+                        step="1" type="datetime-local"
                         value={form?.intent === 'createCountry' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
                       />
                     </label>
@@ -613,7 +613,7 @@
                           form={`country-edit-${country.alpha2}`}
                           name="eventDateTime"
                           required
-                          type="datetime-local"
+                          step="1" type="datetime-local"
                           value={form?.alpha2 === country.alpha2 ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
                         />
                       </label>

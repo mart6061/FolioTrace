@@ -5,6 +5,9 @@ using FolioTrace.Types;
 namespace FolioTrace.Common;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(AccountCreatedEvent), nameof(AccountCreatedEvent))]
+[JsonDerivedType(typeof(AccountModifiedEvent), nameof(AccountModifiedEvent))]
+[JsonDerivedType(typeof(AccountActiveModifiedEvent), nameof(AccountActiveModifiedEvent))]
 [JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
 [JsonDerivedType(typeof(CountryModifiedEvent), nameof(CountryModifiedEvent))]
 [JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
@@ -13,6 +16,9 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(FXCreatedEvent), nameof(FXCreatedEvent))]
 [JsonDerivedType(typeof(FXActiveModifiedEvent), nameof(FXActiveModifiedEvent))]
 [JsonDerivedType(typeof(FXRateSetEvent), nameof(FXRateSetEvent))]
+[JsonDerivedType(typeof(HoldingCreatedEvent), nameof(HoldingCreatedEvent))]
+[JsonDerivedType(typeof(HoldingModifiedEvent), nameof(HoldingModifiedEvent))]
+[JsonDerivedType(typeof(HoldingActiveModifiedEvent), nameof(HoldingActiveModifiedEvent))]
 [JsonDerivedType(typeof(InstrumentCreatedEvent), nameof(InstrumentCreatedEvent))]
 [JsonDerivedType(typeof(InstrumentModifiedEvent), nameof(InstrumentModifiedEvent))]
 [JsonDerivedType(typeof(InstrumentActiveModifiedEvent), nameof(InstrumentActiveModifiedEvent))]
@@ -21,6 +27,9 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(InstrumentTermsSetEvent), nameof(InstrumentTermsSetEvent))]
 [JsonDerivedType(typeof(InstrumentPriceSetEvent), nameof(InstrumentPriceSetEvent))]
 [JsonDerivedType(typeof(InstrumentIncomeSetEvent), nameof(InstrumentIncomeSetEvent))]
+[JsonDerivedType(typeof(TransactionCreditEvent), nameof(TransactionCreditEvent))]
+[JsonDerivedType(typeof(TransactionDebitEvent), nameof(TransactionDebitEvent))]
+[JsonDerivedType(typeof(TransactionCancellationEvent), nameof(TransactionCancellationEvent))]
 [JsonDerivedType(typeof(UserCreatedEvent), nameof(UserCreatedEvent))]
 [JsonDerivedType(typeof(UserModifiedEvent), nameof(UserModifiedEvent))]
 public interface IEventBase : IType

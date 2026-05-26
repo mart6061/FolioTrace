@@ -19,7 +19,7 @@ public sealed class CountryService(IEventRepository eventRepository)
                 .FirstOrDefault()
                 ?.Items.Count ?? 0;
 
-            return new CountryServiceDiagnostics(cache.Count, countryCount);
+            return new CountryServiceDiagnostics(cache.Count, countryCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
         }
     }
 

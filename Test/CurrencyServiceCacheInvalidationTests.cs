@@ -63,7 +63,7 @@ public sealed class CurrencyServiceCacheInvalidationTests
     {
         private readonly List<IEventBase> events = [.. events];
 
-        public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, 1, events.Count);
+        public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, 1, events.Count, 0, 0, []);
 
         public Task InitializeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 

@@ -19,7 +19,7 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
                 .FirstOrDefault()
                 ?.Items.Count ?? 0;
 
-            return new FXRateServiceDiagnostics(cache.Count, rateCount);
+            return new FXRateServiceDiagnostics(cache.Count, rateCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
         }
     }
 

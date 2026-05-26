@@ -21,6 +21,4 @@ npm run build
 
 Use `npm run check` after Svelte, TypeScript, or route changes. Use `npm run build` before considering larger UI changes complete.
 
-Official reference:
-
-https://svelte.dev/docs/ai/instructions
+Official reference: <https://svelte.dev/docs/ai/instructions>

@@ -1,14 +1,20 @@
 import { env } from '$env/dynamic/private';
 import type {
+  Accounts,
+  AccountReferenceEvent,
   ApiExchangeSearchResponse,
   Countries,
   CountryReferenceEvent,
   Currencies,
   CurrencyReferenceEvent,
   FXRates,
+  FXRateHistoryEvent,
   FXs,
+  Holdings,
+  HoldingReferenceEvent,
   InstrumentLogo,
   InstrumentValues,
+  InstrumentValueHistoryEvent,
   Instruments,
   MemoryDiagnostics,
   BuildProgressNotification
@@ -26,6 +32,55 @@ export type CountryModifiedRequest = {
 };
 
 export type CountryCreatedRequest = CountryModifiedRequest;
+
+export type AccountModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  accountID: string;
+  name: string;
+  formalName: string;
+};
+
+export type AccountCreatedRequest = AccountModifiedRequest & {
+  bookCurrency: string;
+  active: boolean;
+};
+
+export type AccountActiveModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  accountID: string;
+  active: boolean;
+};
+
+export type HoldingCreatedRequest = {
+  eventDateTime: string;
+  reason: string;
+  holdingID?: string;
+  accountID: string;
+  instrumentID: string;
+  holdingType: string;
+  nominalType?: string | null;
+  name: string;
+  active: boolean;
+  default: boolean;
+};
+
+export type HoldingModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  holdingID: string;
+  nominalType?: string | null;
+  name: string;
+  default: boolean;
+};
+
+export type HoldingActiveModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  holdingID: string;
+  active: boolean;
+};
 
 export type CurrencyModifiedRequest = {
   eventDateTime: string;
@@ -67,10 +122,12 @@ export type InstrumentPriceSetRequest = {
   reason: string;
   instrumentID: string;
   currency: string;
-  bid: number;
-  mid: number;
-  ask: number;
-  nav: number;
+  priceType: 'InstrumentPriceEquity' | 'InstrumentPriceFixedIncome';
+  bid?: number;
+  mid?: number;
+  ask?: number;
+  nav?: number;
+  cleanPrice?: number;
 };
 
 export type InstrumentCreatedRequest = {
@@ -143,6 +200,46 @@ export async function getCountries(
   return (await response.json()) as Countries;
 }
 
+export async function getAccounts(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/Accounts/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Accounts;
+}
+
+export async function getHoldings(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  includeInactive = true
+) {
+  const url = new URL(`${getApiBaseUrl()}/Holdings/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  url.searchParams.set('includeInactive', String(includeInactive));
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Holdings;
+}
+
 export async function getCurrencies(
   fetchApi: typeof fetch,
   eventDateTime: string,
@@ -178,6 +275,61 @@ export async function getCurrencyEvents(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as CurrencyReferenceEvent[];
+}
+
+export async function getAccountEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Account/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as AccountReferenceEvent[];
+}
+
+export async function getHoldingEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Holding/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as HoldingReferenceEvent[];
+}
+
+export async function getInstrumentPriceEvents(fetchApi: typeof fetch, instrumentID?: string) {
+  const url = new URL(`${getApiBaseUrl()}/Events/InstrumentPrice/`);
+
+  if (instrumentID)
+    url.searchParams.set('instrumentID', instrumentID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentValueHistoryEvent[];
+}
+
+export async function getInstrumentIncomeEvents(fetchApi: typeof fetch, instrumentID?: string) {
+  const url = new URL(`${getApiBaseUrl()}/Events/InstrumentIncome/`);
+
+  if (instrumentID)
+    url.searchParams.set('instrumentID', instrumentID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentValueHistoryEvent[];
+}
+
+export async function getFXRateEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/FXRate/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as FXRateHistoryEvent[];
 }
 
 export async function getFXs(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -349,6 +501,54 @@ export async function postCountryModifiedEvent(
   return postCountryEvent(fetchApi, 'CountryModifiedEvent', request, userID);
 }
 
+export async function postAccountCreatedEvent(
+  fetchApi: typeof fetch,
+  request: AccountCreatedRequest,
+  userID: string
+) {
+  return postAccountEvent(fetchApi, 'AccountCreatedEvent', request, userID);
+}
+
+export async function postAccountModifiedEvent(
+  fetchApi: typeof fetch,
+  request: AccountModifiedRequest,
+  userID: string
+) {
+  return postAccountEvent(fetchApi, 'AccountModifiedEvent', request, userID);
+}
+
+export async function postAccountActiveModifiedEvent(
+  fetchApi: typeof fetch,
+  request: AccountActiveModifiedRequest,
+  userID: string
+) {
+  return postAccountEvent(fetchApi, 'AccountActiveModifiedEvent', request, userID);
+}
+
+export async function postHoldingCreatedEvent(
+  fetchApi: typeof fetch,
+  request: HoldingCreatedRequest,
+  userID: string
+) {
+  return postHoldingEvent(fetchApi, 'HoldingCreatedEvent', request, userID);
+}
+
+export async function postHoldingModifiedEvent(
+  fetchApi: typeof fetch,
+  request: HoldingModifiedRequest,
+  userID: string
+) {
+  return postHoldingEvent(fetchApi, 'HoldingModifiedEvent', request, userID);
+}
+
+export async function postHoldingActiveModifiedEvent(
+  fetchApi: typeof fetch,
+  request: HoldingActiveModifiedRequest,
+  userID: string
+) {
+  return postHoldingEvent(fetchApi, 'HoldingActiveModifiedEvent', request, userID);
+}
+
 export async function postCurrencyCreatedEvent(
   fetchApi: typeof fetch,
   request: CurrencyCreatedRequest,
@@ -413,7 +613,19 @@ export async function postFXRateSetEvent(fetchApi: typeof fetch, request: FXRate
 }
 
 export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, request: InstrumentPriceSetRequest, userID: string) {
-  const money = (amount: number) => ({ Amount: amount, Currency: request.currency });
+  const price = (amount: number) => ({ Amount: amount });
+  const eventPrice = request.priceType === 'InstrumentPriceFixedIncome'
+    ? {
+        $type: 'InstrumentPriceFixedIncome',
+        CleanPrice: { Amount: request.cleanPrice }
+      }
+    : {
+        $type: 'InstrumentPriceEquity',
+        Bid: price(request.bid ?? 0),
+        Mid: price(request.mid ?? 0),
+        Ask: price(request.ask ?? 0),
+        Nav: price(request.nav ?? 0)
+      };
   const response = await fetchApi(`${getApiBaseUrl()}/Events/InstrumentPrice/InstrumentPriceSetEvent`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -422,13 +634,7 @@ export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, reques
       EventDateTime: request.eventDateTime,
       Reason: request.reason,
       InstrumentID: request.instrumentID,
-      Price: {
-        $type: 'InstrumentPriceEquity',
-        Bid: money(request.bid),
-        Mid: money(request.mid),
-        Ask: money(request.ask),
-        Nav: money(request.nav)
-      }
+      Price: eventPrice
     })
   });
 
@@ -583,6 +789,97 @@ async function postCountryEvent(
       Numeric: request.numeric,
       Name: request.name
     })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postAccountEvent(
+  fetchApi: typeof fetch,
+  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveModifiedEvent',
+  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest,
+  userID: string
+) {
+  const body: Record<string, unknown> = {
+    UserID: userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason
+  };
+
+  if (request.accountID)
+    body.AccountID = request.accountID;
+
+  if ('name' in request) {
+    body.Name = request.name;
+    body.FormalName = request.formalName;
+  }
+
+  if (eventType === 'AccountCreatedEvent')
+    body.BookCurrency = (request as AccountCreatedRequest).bookCurrency;
+
+  if ('active' in request)
+    body.Active = request.active;
+
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Account/${eventType}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postHoldingEvent(
+  fetchApi: typeof fetch,
+  eventType: 'HoldingCreatedEvent' | 'HoldingModifiedEvent' | 'HoldingActiveModifiedEvent',
+  request: HoldingCreatedRequest | HoldingModifiedRequest | HoldingActiveModifiedRequest,
+  userID: string
+) {
+  const body: Record<string, unknown> = {
+    UserID: userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    HoldingID: request.holdingID
+  };
+
+  if (eventType === 'HoldingCreatedEvent') {
+    const created = request as HoldingCreatedRequest;
+    if (!created.holdingID)
+      delete body.HoldingID;
+    body.AccountID = created.accountID;
+    body.InstrumentID = created.instrumentID;
+    body.HoldingType = created.holdingType;
+    body.NominalType = created.nominalType || null;
+    body.Name = created.name;
+    body.Active = created.active;
+    body.Default = created.default;
+  } else if (eventType === 'HoldingModifiedEvent') {
+    const modified = request as HoldingModifiedRequest;
+    body.NominalType = modified.nominalType || null;
+    body.Name = modified.name;
+    body.Default = modified.default;
+  } else if ('active' in request) {
+    body.Active = request.active;
+  }
+
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Holding/${eventType}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {

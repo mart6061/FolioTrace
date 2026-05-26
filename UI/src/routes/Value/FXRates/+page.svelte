@@ -1,8 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
-  import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
-  import type { FXRate } from '$lib/types';
+  import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, toApiDateTime } from '$lib/dates';
+  import type { FXRate, FXRateHistoryEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -10,7 +10,10 @@
   let filterText = $state('');
   let addingPair = $state('');
   let editingPair = $state('');
+  let openHistoryPair = $state('');
   let submittingPair = $state('');
+  let historyByPair = $state<Record<string, { events: FXRateHistoryEvent[]; error: string; loading: boolean }>>({});
+  let loadedHistoryContextKey = $state('');
 
   const asOfSummary = $derived(data.auditDateTime && data.fxRates ? formatDisplayDateTime(data.fxRates.asOfDateTime) : 'now');
   const ratesByPair = $derived(new Map((data.fxRates?.items ?? []).map((rate) => [rate.pair, rate])));
@@ -25,12 +28,33 @@
     })
   );
 
+  $effect(() => {
+    const nextHistoryContextKey = createHistoryContextKey();
+    if (!loadedHistoryContextKey) {
+      loadedHistoryContextKey = nextHistoryContextKey;
+      return;
+    }
+
+    if (nextHistoryContextKey === loadedHistoryContextKey)
+      return;
+
+    loadedHistoryContextKey = nextHistoryContextKey;
+    if (openHistoryPair)
+      void loadHistory(openHistoryPair, ratesByPair.get(openHistoryPair)?.valuationDateTime ?? null);
+  });
+
   function priceValue(rate: FXRate | undefined, key: 'bid' | 'mid' | 'ask') {
     return rate ? rate.price[key].toString() : '';
   }
 
   function formatPrice(value: number) {
     return value.toLocaleString(undefined, { maximumFractionDigits: 8, minimumFractionDigits: 0 });
+  }
+
+  function staleDataLine(valueDateTime: string | undefined) {
+    return valueDateTime && !isSameInputDateTime(valueDateTime, data.valuationDate)
+      ? `most recent available: ${formatShortDate(valueDateTime)}`
+      : '';
   }
 
   function rateExportRows() {
@@ -131,6 +155,63 @@
     window.print();
   }
 
+  async function toggleHistory(pair: string, rate: FXRate | undefined) {
+    if (openHistoryPair === pair) {
+      openHistoryPair = '';
+      delete historyByPair[pair];
+      return;
+    }
+
+    openHistoryPair = pair;
+
+    if (historyByPair[pair])
+      return;
+
+    await loadHistory(pair, rate?.valuationDateTime ?? null);
+  }
+
+  async function loadHistory(pair: string, rateValuationDateTime: string | null = null) {
+    historyByPair[pair] = { events: [], error: '', loading: true };
+
+    try {
+      const historyUrl = new URL('/Value/FXRates/History', window.location.origin);
+      historyUrl.searchParams.set('pair', pair);
+      historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
+
+      if (data.auditDateTime)
+        historyUrl.searchParams.set('auditDateTime', toApiDateTime(data.auditDateTime));
+
+      if (rateValuationDateTime)
+        historyUrl.searchParams.set('rateValuationDateTime', rateValuationDateTime);
+
+      const response = await fetch(`${historyUrl.pathname}${historyUrl.search}`);
+
+      if (!response.ok)
+        throw new Error(`History request returned ${response.status} ${response.statusText}`);
+
+      historyByPair[pair] = {
+        events: await response.json() as FXRateHistoryEvent[],
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      historyByPair[pair] = {
+        events: [],
+        error: error instanceof Error ? error.message : 'Unable to load history.',
+        loading: false
+      };
+    }
+  }
+
+  function createHistoryContextKey() {
+    return [
+      data.valuationDate,
+      data.auditDateTime ?? '',
+      data.fxRates?.lastEventID ?? '',
+      form?.status === 'success' ? form.eventID ?? '' : ''
+    ].join('|');
+  }
+
   function closeEditor() {
     addingPair = '';
     editingPair = '';
@@ -161,7 +242,7 @@
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" type="datetime-local" value={data.valuationDate} />
+          <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" type="datetime-local" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
@@ -265,7 +346,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Event date</span>
-                        <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required type="datetime-local" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                        <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" type="datetime-local" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
@@ -283,6 +364,9 @@
                     <td class="px-3 py-2">
                       <div class="font-medium text-slate-950">{fx.displayPair}</div>
                       <div class="font-mono text-xs text-slate-500">{fx.pair}</div>
+                      {#if staleDataLine(rate?.valuationDateTime)}
+                        <div class="mt-1 text-xs text-slate-400">{staleDataLine(rate?.valuationDateTime)}</div>
+                      {/if}
                     </td>
                     <td class="px-3 py-2">
                       <span class={`rounded px-2 py-1 text-xs font-semibold ${fx.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>{fx.active ? 'Active' : 'Inactive'}</span>
@@ -292,11 +376,75 @@
                     <td class="px-3 py-2 text-right font-mono text-slate-700">{rate ? formatPrice(rate.price.ask) : '-'}</td>
                     <td class="px-3 py-2 text-slate-600">{rate ? formatTableDateTime(rate.lastAuditDateTime) : '-'}</td>
                     <td class="px-3 py-2 text-right">
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => rate ? editingPair = fx.pair : addingPair = fx.pair} type="button">
-                        {rate ? 'Edit' : 'Add'}
-                      </button>
+                      <div class="flex justify-end gap-2">
+                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(fx.pair, rate)} type="button">
+                          {openHistoryPair === fx.pair ? 'Hide' : 'History'}
+                        </button>
+                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => rate ? editingPair = fx.pair : addingPair = fx.pair} type="button">
+                          {rate ? 'Edit' : 'Add'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
+                  {#if openHistoryPair === fx.pair}
+                    {@const history = historyByPair[fx.pair]}
+                    <tr class="bg-slate-50/80">
+                      <td class="px-3 py-3" colspan="7">
+                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
+                          <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-sm font-semibold text-slate-950">{fx.displayPair} history</h2>
+                            <span class="text-xs text-slate-500">
+                              {history?.events.length ?? 0} events
+                              {#if data.auditDateTime && history?.events.length}
+                                | {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
+                              {/if}
+                            </span>
+                          </div>
+
+                          {#if history?.loading}
+                            <div class="text-sm text-slate-600">Loading history...</div>
+                          {:else if history?.error}
+                            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                          {:else if history?.events.length}
+                            <ol class="grid gap-2">
+                              {#each history.events as event}
+                                <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
+                                  event.applicationStatus === 'omitted'
+                                    ? 'border-amber-200 bg-amber-50/70'
+                                    : 'border-slate-200'
+                                }`}>
+                                  <div class="text-xs text-slate-500">
+                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
+                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
+                                  </div>
+                                  <div class="grid gap-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <span class="font-medium text-slate-950">{event.$type}</span>
+                                      {#if event.applicationStatus === 'omitted'}
+                                        <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
+                                      {:else if data.auditDateTime}
+                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
+                                      {/if}
+                                      <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
+                                    </div>
+                                    <div class="text-sm text-slate-700">{event.summary}</div>
+                                    {#if event.applicationStatus === 'omitted'}
+                                      <div class="text-xs font-medium text-amber-900">
+                                        Omitted from this view because its audit time is after the selected as-at date.
+                                      </div>
+                                    {/if}
+                                    <div class="text-xs text-slate-500">{event.reason}</div>
+                                  </div>
+                                </li>
+                              {/each}
+                            </ol>
+                          {:else}
+                            <div class="text-sm text-slate-600">No history found for this FX rate.</div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
                 {/if}
               {/each}
             </tbody>

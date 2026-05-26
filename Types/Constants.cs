@@ -11,6 +11,8 @@ public static class Constants
 
         public static readonly UserID UserID = Guid.Parse("334f6bb3-762d-4d10-9752-f913d75f7c6c");
 
+        public static readonly Guid AccountsStreamId = Guid.Parse("425f51c3-6886-4bfe-a7a9-f34de60bd916");
+
         public static readonly Guid CountriesStreamId = Guid.Parse("6b9326f8-5d39-4f56-9817-b86cf8ed1e5a");
 
         public static readonly Guid CurrenciesStreamId = Guid.Parse("dc34cb31-f7f8-4c0d-88b1-f6f60413bc55");
@@ -19,11 +21,15 @@ public static class Constants
 
         public static readonly Guid FXRatesStreamId = Guid.Parse("f7a242f1-96ad-4328-a903-670a78c8b2f4");
 
+        public static readonly Guid HoldingsStreamId = Guid.Parse("44a970fc-bd46-4cd8-96a2-6eb023b0e5c6");
+
         public static readonly Guid InstrumentsStreamId = Guid.Parse("ba970d3e-fad9-4fc6-9d42-432630f3dcb0");
 
         public static readonly Guid InstrumentPricesStreamId = Guid.Parse("d8612e8c-e954-4a95-a8d3-7fd85d4a4d20");
 
         public static readonly Guid InstrumentIncomesStreamId = Guid.Parse("af774bcb-5e34-4b4c-87a5-ecf0ba14e783");
+
+        public static readonly Guid TransactionsStreamId = Guid.Parse("9e6cc40d-df4f-4e6a-aa0e-d624635bcf68");
 
         public static readonly Guid UsersStreamId = Guid.Parse("02ff99c6-dfe9-4e61-aa02-bd1ca3a540a2");
 
