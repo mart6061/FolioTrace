@@ -164,18 +164,24 @@ public sealed class AggregateMaintenanceCoordinatorTests
         await seedRepository.Build();
 
         var countryService = new CountryService(eventRepository);
+        var accountService = new AccountService(eventRepository);
         var currencyService = new CurrencyService(eventRepository);
         var fxService = new FXService(eventRepository);
         var fxRateService = new FXRateService(eventRepository, new NullFXRateReadModelRepository());
+        var holdingService = new HoldingService(eventRepository);
         var instrumentService = new InstrumentService(eventRepository);
         var instrumentValueService = new InstrumentValueService(eventRepository);
+        var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService);
 
         return new AggregateMaintenanceCoordinator(
             options,
+            accountService,
             countryService,
             currencyService,
             fxService,
             fxRateService,
+            holdingService,
+            holdingPositionService,
             instrumentService,
             instrumentValueService,
             new AggregateUpdateNotificationService());

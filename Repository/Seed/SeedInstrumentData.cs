@@ -5,9 +5,9 @@ namespace Repository.Seed;
 
 internal static class SeedInstrumentData
 {
-    private const int SeedYears = 5;
+    private const int SeedMonths = 3;
 
-    public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddYears(-SeedYears);
+    public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddMonths(-SeedMonths);
 
     private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency, decimal BasePrice)[] EquitySeeds =
     [
@@ -47,7 +47,11 @@ internal static class SeedInstrumentData
 
     private static readonly (string Ticker, string Name, string Exchange, string Country, string Currency)[] CashSeeds =
     [
-        ("GBP-CASH", "British Pound Cash", "CASH", "GB", "GBP")
+        ("GBP-CASH", "British Pound Cash", "CASH", "GB", "GBP"),
+        ("USD-CASH", "US Dollar Cash", "CASH", "US", "USD"),
+        ("EUR-CASH", "Euro Cash", "CASH", "DE", "EUR"),
+        ("CHF-CASH", "Swiss Franc Cash", "CASH", "CH", "CHF"),
+        ("JPY-CASH", "Japanese Yen Cash", "CASH", "JP", "JPY")
     ];
 
     public static IReadOnlyList<InstrumentSeed> CreateInstrumentSeeds() =>

@@ -12,13 +12,16 @@ public static class ApiEndpointRegistration
 {
     private static readonly JsonSerializerOptions NotificationJsonOptions = new(JsonSerializerDefaults.Web);
 
+    private const string AccountEventsRoute = "/API/Events/Account";
     private const string CountryEventsRoute = "/API/Events/Country";
     private const string CurrencyEventsRoute = "/API/Events/Currency";
     private const string FXEventsRoute = "/API/Events/FX";
     private const string FXRateEventsRoute = "/API/Events/FXRate";
+    private const string HoldingEventsRoute = "/API/Events/Holding";
     private const string InstrumentEventsRoute = "/API/Events/Instrument";
     private const string InstrumentPriceEventsRoute = "/API/Events/InstrumentPrice";
     private const string InstrumentIncomeEventsRoute = "/API/Events/InstrumentIncome";
+    private const string TransactionEventsRoute = "/API/Events/Transaction";
     private const string UserEventsRoute = "/API/Events/User";
 
     public static WebApplication MapFolioTraceApi(this WebApplication app)
@@ -29,19 +32,24 @@ public static class ApiEndpointRegistration
         api.MapDiagnosticsEndpoints();
         api.MapNotificationEndpoints();
         api.MapSystemEndpoints();
+        api.MapAccountEndpoints();
         api.MapCountryEndpoints();
         api.MapCurrencyEndpoints();
         api.MapFXEndpoints();
         api.MapFXRateEndpoints();
+        api.MapHoldingEndpoints();
         api.MapInstrumentEndpoints();
         api.MapInstrumentValueEndpoints();
+        api.MapAccountEventEndpoints();
         api.MapCountryEventEndpoints();
         api.MapCurrencyEventEndpoints();
         api.MapFXEventEndpoints();
         api.MapFXRateEventEndpoints();
+        api.MapHoldingEventEndpoints();
         api.MapInstrumentEventEndpoints();
         api.MapInstrumentPriceEventEndpoints();
         api.MapInstrumentIncomeEventEndpoints();
+        api.MapTransactionEventEndpoints();
         api.MapUserEventEndpoints();
 
         return app;
@@ -114,13 +122,16 @@ public static class ApiEndpointRegistration
     {
         var diagnostics = api.MapGroup("/Diagnostics");
 
-        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
+        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, AccountService accountService, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, HoldingService holdingService, HoldingPositionService holdingPositionService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
         {
             var repositoryDiagnostics = eventRepository.GetCacheDiagnostics();
+            var accountDiagnostics = accountService.GetDiagnostics();
             var countryDiagnostics = countryService.GetDiagnostics();
             var currencyDiagnostics = currencyService.GetDiagnostics();
             var fxDiagnostics = fxService.GetDiagnostics();
             var fxRateDiagnostics = fxRateService.GetDiagnostics();
+            var holdingDiagnostics = holdingService.GetDiagnostics();
+            var holdingPositionDiagnostics = holdingPositionService.GetDiagnostics();
             var instrumentDiagnostics = instrumentService.GetDiagnostics();
             var instrumentValueDiagnostics = instrumentValueService.GetDiagnostics();
             var sseDiagnostics = notificationService.GetDiagnostics();
@@ -136,6 +147,10 @@ public static class ApiEndpointRegistration
                     repositoryDiagnostics.RecentUnprocessedEvents
                         .Select(@event => new UnprocessedEventDiagnosticsResponse(@event.StreamId, @event.EventId, @event.EventType, @event.Reason, @event.RecordedAtUtc))
                         .ToList()),
+                new AccountServiceDiagnosticsResponse(
+                    accountDiagnostics.CacheEntryCount,
+                    accountDiagnostics.AccountCount,
+                    accountDiagnostics.EstimatedMemoryBytes),
                 new CountryServiceDiagnosticsResponse(
                     countryDiagnostics.CacheEntryCount,
                     countryDiagnostics.CountryCount,
@@ -152,6 +167,14 @@ public static class ApiEndpointRegistration
                     fxRateDiagnostics.CacheEntryCount,
                     fxRateDiagnostics.FXRateCount,
                     fxRateDiagnostics.EstimatedMemoryBytes),
+                new HoldingServiceDiagnosticsResponse(
+                    holdingDiagnostics.CacheEntryCount,
+                    holdingDiagnostics.HoldingCount,
+                    holdingDiagnostics.EstimatedMemoryBytes),
+                new HoldingPositionServiceDiagnosticsResponse(
+                    holdingPositionDiagnostics.CacheEntryCount,
+                    holdingPositionDiagnostics.PositionCount,
+                    holdingPositionDiagnostics.EstimatedMemoryBytes),
                 new InstrumentServiceDiagnosticsResponse(
                     instrumentDiagnostics.CacheEntryCount,
                     instrumentDiagnostics.InstrumentCount,
@@ -379,6 +402,59 @@ public static class ApiEndpointRegistration
         });
     }
 
+    private static void MapAccountEndpoints(this RouteGroupBuilder api)
+    {
+        var accounts = api.MapGroup("/Accounts");
+
+        accounts.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, AccountService accountService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await accountService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await accountService.Get(valuationDate));
+        });
+    }
+
+    private static void MapHoldingEndpoints(this RouteGroupBuilder api)
+    {
+        var holdings = api.MapGroup("/Holdings");
+
+        holdings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, HoldingType? holdingType, bool? includeInactive, HoldingService holdingService) =>
+        {
+            var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
+            var aggregate = auditDateTime.HasValue
+                ? await holdingService.Get(valuationDateTime, AuditDateTimeBuilder.Create(auditDateTime.Value))
+                : await holdingService.Get(valuationDateTime);
+
+            var items = aggregate.Items
+                .Where(holding => includeInactive == true || holding.Active)
+                .Where(holding => !holdingID.HasValue || holding.HoldingID.Value == holdingID.Value)
+                .Where(holding => !accountID.HasValue || holding.AccountID.Value == accountID.Value)
+                .Where(holding => !instrumentID.HasValue || holding.InstrumentID.Value == instrumentID.Value)
+                .Where(holding => !holdingType.HasValue || holding.HoldingType == holdingType.Value)
+                .ToList();
+
+            return Results.Ok(aggregate with { Items = items });
+        });
+
+        api.MapGet("/HoldingPositions", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, bool? includeExcluded, bool? includeZero, HoldingPositionService holdingPositionService) =>
+        {
+            var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
+            var asAt = auditDateTime.HasValue
+                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
+                : AuditDateTimeBuilder.Create();
+            var filter = new HoldingPositionFilter(
+                holdingID.HasValue ? HoldingIDBuilder.Create(holdingID.Value) : null,
+                accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null,
+                instrumentID.HasValue ? InstrumentIDBuilder.Restore(instrumentID.Value) : null,
+                includeExcluded == true,
+                includeZero == true);
+
+            return Results.Ok(await holdingPositionService.Get(valuationDateTime, asAt, filter));
+        });
+    }
+
     private static void MapCountryEndpoints(this RouteGroupBuilder api)
     {
         var countries = api.MapGroup("/Countries");
@@ -460,6 +536,70 @@ public static class ApiEndpointRegistration
             return auditDateTime.HasValue
                 ? Results.Ok(await instrumentValueService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await instrumentValueService.Get(valuationDate));
+        });
+    }
+
+    private static void MapAccountEventEndpoints(this RouteGroupBuilder api)
+    {
+        var accountEvents = api.MapGroup("/Events/Account");
+
+        accountEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IAccountEvent>(Constants.Initialisation.AccountsStreamId, cancellationToken);
+            return Results.Ok(events.Select(ToAccountEventResponse).ToList());
+        });
+
+        accountEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IAccountEvent accountEvent
+                ? Results.Ok(ToAccountEventResponse(accountEvent))
+                : Results.NotFound();
+        });
+
+        accountEvents.MapPost($"/{nameof(AccountCreatedEvent)}", async (IEventRepository eventRepository, CurrencyService currencyService, AggregateCacheInvalidationService cacheInvalidationService, AccountCreatedRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var currencies = await currencyService.Get(request.EventDateTime, asAt);
+            var accounts = await TryGetAccounts(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var result = AccountCreatedEventBuilder.Create(request, currencies, accounts);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.AccountsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
+        });
+
+        accountEvents.MapPost($"/{nameof(AccountModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountModifiedRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var accounts = await TryGetAccounts(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            if (accounts is null)
+                return Results.BadRequest(Result<AccountModifiedEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
+
+            var result = AccountModifiedEventBuilder.Create(request, accounts);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.AccountsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
+        });
+
+        accountEvents.MapPost($"/{nameof(AccountActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountActiveModifiedRequest request, CancellationToken cancellationToken) =>
+        {
+            var accounts = await TryGetAccounts(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            if (accounts is null)
+                return Results.BadRequest(Result<AccountActiveModifiedEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
+
+            var result = AccountActiveModifiedEventBuilder.Create(request, accounts);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.AccountsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
         });
     }
 
@@ -628,6 +768,92 @@ public static class ApiEndpointRegistration
                 (_, token) => fxRateReadModelRepository.ClearAsync(token)));
     }
 
+    private static void MapHoldingEventEndpoints(this RouteGroupBuilder api)
+    {
+        var holdingEvents = api.MapGroup("/Events/Holding");
+
+        holdingEvents.MapGet("/", async (Guid? holdingID, Guid? accountID, Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IHoldingEvent>(Constants.Initialisation.HoldingsStreamId, cancellationToken);
+
+            if (holdingID.HasValue)
+                events = events
+                    .Where(@event => @event switch
+                    {
+                        HoldingCreatedEvent createdEvent => createdEvent.HoldingID.Value == holdingID.Value,
+                        HoldingModifiedEvent modifiedEvent => modifiedEvent.HoldingID.Value == holdingID.Value,
+                        HoldingActiveModifiedEvent activeEvent => activeEvent.HoldingID.Value == holdingID.Value,
+                        _ => false
+                    })
+                    .ToList();
+
+            if (accountID.HasValue)
+                events = events
+                    .Where(@event => @event is HoldingCreatedEvent createdEvent && createdEvent.AccountID.Value == accountID.Value)
+                    .ToList();
+
+            if (instrumentID.HasValue)
+                events = events
+                    .Where(@event => @event is HoldingCreatedEvent createdEvent && createdEvent.InstrumentID.Value == instrumentID.Value)
+                    .ToList();
+
+            return Results.Ok(events.Select(ToHoldingEventResponse).ToList());
+        });
+
+        holdingEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IHoldingEvent holdingEvent
+                ? Results.Ok(ToHoldingEventResponse(holdingEvent))
+                : Results.NotFound();
+        });
+
+        holdingEvents.MapPost($"/{nameof(HoldingCreatedEvent)}", async (IEventRepository eventRepository, AccountService accountService, InstrumentService instrumentService, AggregateCacheInvalidationService cacheInvalidationService, HoldingCreatedRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var accounts = await accountService.Get(request.EventDateTime, asAt);
+            var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+            var holdings = await TryGetHoldings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var result = HoldingCreatedEventBuilder.Create(request, accounts, instruments, holdings);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
+        });
+
+        holdingEvents.MapPost($"/{nameof(HoldingModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, HoldingModifiedRequest request, CancellationToken cancellationToken) =>
+        {
+            var holdings = await TryGetHoldings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            if (holdings is null)
+                return Results.BadRequest(Result<HoldingModifiedEvent>.Invalid([$"No matching Holding found for HoldingID '{request.HoldingID}'."]));
+
+            var result = HoldingModifiedEventBuilder.Create(request, holdings);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
+        });
+
+        holdingEvents.MapPost($"/{nameof(HoldingActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, HoldingActiveModifiedRequest request, CancellationToken cancellationToken) =>
+        {
+            var holdings = await TryGetHoldings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            if (holdings is null)
+                return Results.BadRequest(Result<HoldingActiveModifiedEvent>.Invalid([$"No matching Holding found for HoldingID '{request.HoldingID}'."]));
+
+            var result = HoldingActiveModifiedEventBuilder.Create(request, holdings);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
+        });
+    }
+
     private static void MapInstrumentEventEndpoints(this RouteGroupBuilder api)
     {
         var instrumentEvents = api.MapGroup("/Events/Instrument");
@@ -763,6 +989,95 @@ public static class ApiEndpointRegistration
         });
     }
 
+    private static void MapTransactionEventEndpoints(this RouteGroupBuilder api)
+    {
+        var transactionEvents = api.MapGroup("/Events/Transaction");
+
+        transactionEvents.MapGet("/", async (Guid? eventSetID, Guid? holdingID, Guid? accountID, Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId, cancellationToken);
+
+            if (eventSetID.HasValue)
+                events = events
+                    .Where(@event => @event switch
+                    {
+                        ITransactionMovementEvent movementEvent => movementEvent.EventSetID.Value == eventSetID.Value,
+                        TransactionCancellationEvent cancellationEvent => cancellationEvent.EventSetID.Value == eventSetID.Value,
+                        _ => false
+                    })
+                    .ToList();
+
+            if (holdingID.HasValue)
+                events = events
+                    .OfType<ITransactionMovementEvent>()
+                    .Where(@event => @event.HoldingID?.Value == holdingID.Value)
+                    .Cast<ITransactionEvent>()
+                    .ToList();
+
+            if (accountID.HasValue)
+                events = events
+                    .OfType<ITransactionMovementEvent>()
+                    .Where(@event => @event.AccountID.Value == accountID.Value)
+                    .Cast<ITransactionEvent>()
+                    .ToList();
+
+            if (instrumentID.HasValue)
+                events = events
+                    .OfType<ITransactionMovementEvent>()
+                    .Where(@event => @event.InstrumentID.Value == instrumentID.Value)
+                    .Cast<ITransactionEvent>()
+                    .ToList();
+
+            return Results.Ok(events.Select(ToTransactionEventResponse).ToList());
+        });
+
+        transactionEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is ITransactionEvent transactionEvent
+                ? Results.Ok(ToTransactionEventResponse(transactionEvent))
+                : Results.NotFound();
+        });
+
+        transactionEvents.MapPost("/TransactionSet", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TransactionSetRequest request, CancellationToken cancellationToken) =>
+        {
+            var holdings = await TryGetHoldings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            var result = TransactionBuilder.Create(request, holdings);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            var events = result.Value.Cast<IEventBase>().ToList();
+            await eventRepository.AppendAsync(Constants.Initialisation.TransactionsStreamId, events, cancellationToken);
+            cacheInvalidationService.Invalidate(events);
+
+            return Results.Accepted(TransactionEventsRoute, CreateAcceptedEventsResponse(TransactionEventsRoute, events));
+        });
+
+        transactionEvents.MapPost("/Cancel", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TransactionCancellationRequest request, CancellationToken cancellationToken) =>
+        {
+            var existingEvents = await eventRepository.LoadStreamAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId, cancellationToken);
+
+            Result<IReadOnlyList<TransactionCancellationEvent>> result;
+            try
+            {
+                result = TransactionCancellationEventBuilder.Create(request, existingEvents);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.Conflict(Result<IReadOnlyList<TransactionCancellationEvent>>.Invalid([exception.Message]));
+            }
+
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            var events = result.Value.Cast<IEventBase>().ToList();
+            await eventRepository.AppendAsync(Constants.Initialisation.TransactionsStreamId, events, cancellationToken);
+            cacheInvalidationService.Invalidate(events);
+
+            return Results.Accepted(TransactionEventsRoute, CreateAcceptedEventsResponse(TransactionEventsRoute, events));
+        });
+    }
+
     private static void MapUserEventEndpoints(this RouteGroupBuilder api)
     {
         var userEvents = api.MapGroup("/Events/User");
@@ -807,6 +1122,20 @@ public static class ApiEndpointRegistration
             request.ValuationPreferences.ShowIncome,
             request.ValuationPreferences.ShowBook);
 
+    private static object CreateAcceptedEventsResponse(string eventRoute, IReadOnlyList<IEventBase> events) =>
+        new
+        {
+            EventIDs = events.Select(@event => @event.EventID.Value).ToList(),
+            Links = events
+                .Select(@event => new
+                {
+                    Rel = "self",
+                    Href = $"{eventRoute}/{@event.EventID.Value}",
+                    Method = "GET"
+                })
+                .ToList()
+        };
+
     private static async Task<IReadOnlyList<string>> ValidateInstrumentValueEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
     {
         var instrumentEvents = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
@@ -818,6 +1147,18 @@ public static class ApiEndpointRegistration
         return instrument.CFI.IsEquity || instrument.CFI.IsDebt
             ? []
             : [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}'. Only equity and fixed income instruments support editable v1 price and income events."];
+    }
+
+    private static async Task<Accounts?> TryGetAccounts(EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
+    {
+        var accountEvents = await eventRepository.LoadStreamAsync<IAccountEvent>(Constants.Initialisation.AccountsStreamId, cancellationToken);
+        return accountEvents.Count == 0 ? null : new Accounts(eventDateTime, auditDateTime, accountEvents.ToList());
+    }
+
+    private static async Task<Holdings?> TryGetHoldings(EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
+    {
+        var holdingEvents = await eventRepository.LoadStreamAsync<IHoldingEvent>(Constants.Initialisation.HoldingsStreamId, cancellationToken);
+        return holdingEvents.Count == 0 ? null : new Holdings(eventDateTime, auditDateTime, holdingEvents.ToList());
     }
 
     private static ApiExchangeResponse ToResponse(ApiExchange exchange) =>
@@ -848,6 +1189,57 @@ public static class ApiEndpointRegistration
             title: "Request trace store is unavailable.",
             detail: "The API exchange capture database cannot be reached. Start the configured Postgres instance or update ConnectionStrings:FolioTrace.",
             statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    private static object ToAccountEventResponse(IAccountEvent @event) =>
+        @event switch
+        {
+            AccountCreatedEvent createdEvent => new
+            {
+                Type = createdEvent.Type,
+                EventID = createdEvent.EventID.Value,
+                UserID = createdEvent.UserID.Value,
+                EventDateTime = createdEvent.EventDateTime.Value,
+                AuditDateTime = createdEvent.AuditDateTime.Value,
+                createdEvent.Reason,
+                AccountID = createdEvent.AccountID.Value,
+                createdEvent.Name,
+                createdEvent.FormalName,
+                BookCurrency = createdEvent.BookCurrency.Value,
+                createdEvent.Active
+            },
+            AccountModifiedEvent modifiedEvent => new
+            {
+                Type = modifiedEvent.Type,
+                EventID = modifiedEvent.EventID.Value,
+                UserID = modifiedEvent.UserID.Value,
+                EventDateTime = modifiedEvent.EventDateTime.Value,
+                AuditDateTime = modifiedEvent.AuditDateTime.Value,
+                modifiedEvent.Reason,
+                AccountID = modifiedEvent.AccountID.Value,
+                modifiedEvent.Name,
+                modifiedEvent.FormalName
+            },
+            AccountActiveModifiedEvent activeEvent => new
+            {
+                Type = activeEvent.Type,
+                EventID = activeEvent.EventID.Value,
+                UserID = activeEvent.UserID.Value,
+                EventDateTime = activeEvent.EventDateTime.Value,
+                AuditDateTime = activeEvent.AuditDateTime.Value,
+                activeEvent.Reason,
+                AccountID = activeEvent.AccountID.Value,
+                activeEvent.Active
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        };
 
     private static object ToCountryEventResponse(ICountryEvent @event) =>
         @event switch
@@ -933,6 +1325,61 @@ public static class ApiEndpointRegistration
                 modifiedEvent.NumericCode,
                 modifiedEvent.DecimalPlace,
                 modifiedEvent.Name
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        };
+
+    private static object ToHoldingEventResponse(IHoldingEvent @event) =>
+        @event switch
+        {
+            HoldingCreatedEvent createdEvent => new
+            {
+                Type = createdEvent.Type,
+                EventID = createdEvent.EventID.Value,
+                UserID = createdEvent.UserID.Value,
+                EventDateTime = createdEvent.EventDateTime.Value,
+                AuditDateTime = createdEvent.AuditDateTime.Value,
+                createdEvent.Reason,
+                HoldingID = createdEvent.HoldingID.Value,
+                AccountID = createdEvent.AccountID.Value,
+                InstrumentID = createdEvent.InstrumentID.Value,
+                HoldingType = createdEvent.HoldingType.ToString(),
+                NominalType = createdEvent.NominalType?.ToString(),
+                createdEvent.Name,
+                createdEvent.Active,
+                createdEvent.Default
+            },
+            HoldingModifiedEvent modifiedEvent => new
+            {
+                Type = modifiedEvent.Type,
+                EventID = modifiedEvent.EventID.Value,
+                UserID = modifiedEvent.UserID.Value,
+                EventDateTime = modifiedEvent.EventDateTime.Value,
+                AuditDateTime = modifiedEvent.AuditDateTime.Value,
+                modifiedEvent.Reason,
+                HoldingID = modifiedEvent.HoldingID.Value,
+                NominalType = modifiedEvent.NominalType?.ToString(),
+                modifiedEvent.Name,
+                modifiedEvent.Default
+            },
+            HoldingActiveModifiedEvent activeEvent => new
+            {
+                Type = activeEvent.Type,
+                EventID = activeEvent.EventID.Value,
+                UserID = activeEvent.UserID.Value,
+                EventDateTime = activeEvent.EventDateTime.Value,
+                AuditDateTime = activeEvent.AuditDateTime.Value,
+                activeEvent.Reason,
+                HoldingID = activeEvent.HoldingID.Value,
+                activeEvent.Active
             },
             _ => new
             {
@@ -1144,6 +1591,65 @@ public static class ApiEndpointRegistration
                 setEvent.Reason,
                 InstrumentID = setEvent.InstrumentID.Value,
                 setEvent.Income
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        };
+
+    private static object ToTransactionEventResponse(ITransactionEvent @event) =>
+        @event switch
+        {
+            TransactionCreditEvent creditEvent => new
+            {
+                Type = creditEvent.Type,
+                EventID = creditEvent.EventID.Value,
+                UserID = creditEvent.UserID.Value,
+                EventDateTime = creditEvent.EventDateTime.Value,
+                AuditDateTime = creditEvent.AuditDateTime.Value,
+                creditEvent.Reason,
+                EventSetID = creditEvent.EventSetID.Value,
+                EventIDGroup = creditEvent.EventIDGroup.Select(eventId => eventId.Value).ToList(),
+                HoldingID = creditEvent.HoldingID?.Value,
+                InstrumentID = creditEvent.InstrumentID.Value,
+                AccountID = creditEvent.AccountID.Value,
+                Quantity = creditEvent.Quantity.Value,
+                BookCost = creditEvent.BookCost.Value
+            },
+            TransactionDebitEvent debitEvent => new
+            {
+                Type = debitEvent.Type,
+                EventID = debitEvent.EventID.Value,
+                UserID = debitEvent.UserID.Value,
+                EventDateTime = debitEvent.EventDateTime.Value,
+                AuditDateTime = debitEvent.AuditDateTime.Value,
+                debitEvent.Reason,
+                EventSetID = debitEvent.EventSetID.Value,
+                EventIDGroup = debitEvent.EventIDGroup.Select(eventId => eventId.Value).ToList(),
+                HoldingID = debitEvent.HoldingID?.Value,
+                InstrumentID = debitEvent.InstrumentID.Value,
+                AccountID = debitEvent.AccountID.Value,
+                Quantity = debitEvent.Quantity.Value,
+                BookCost = debitEvent.BookCost.Value
+            },
+            TransactionCancellationEvent cancellationEvent => new
+            {
+                Type = cancellationEvent.Type,
+                EventID = cancellationEvent.EventID.Value,
+                UserID = cancellationEvent.UserID.Value,
+                EventDateTime = cancellationEvent.EventDateTime.Value,
+                AuditDateTime = cancellationEvent.AuditDateTime.Value,
+                cancellationEvent.Reason,
+                EventSetID = cancellationEvent.EventSetID.Value,
+                EventIDGroup = cancellationEvent.EventIDGroup.Select(eventId => eventId.Value).ToList(),
+                CancelledEventID = cancellationEvent.CancelledEventID.Value,
+                CancelledIDGroup = cancellationEvent.CancelledIDGroup.Select(eventId => eventId.Value).ToList()
             },
             _ => new
             {

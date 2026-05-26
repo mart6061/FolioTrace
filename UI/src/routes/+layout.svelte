@@ -74,9 +74,11 @@
     { id: 'value-instruments', label: 'Instruments', path: '/Value/InstrumentValues', tone: menuTones.value }
   ];
   const referenceItems: MenuItem[] = [
+    { id: 'reference-account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'reference-country', label: 'Country', path: '/Data/Reference/Countries', tone: menuTones.reference },
     { id: 'reference-currency', label: 'Currency', path: '/Data/Reference/Currencies', tone: menuTones.reference },
     { id: 'reference-fx', label: 'FX', path: '/Value/FXs', tone: menuTones.reference },
+    { id: 'reference-holding', label: 'Holding', path: '/Data/Reference/Holdings', tone: menuTones.reference },
     { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference }
   ];
   const systemItems: MenuItem[] = [

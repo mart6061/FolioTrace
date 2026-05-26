@@ -198,6 +198,12 @@
 
         <div class="dashboard-grid">
           <article class="metric-card">
+            <span class="metric-label">Accounts</span>
+            <strong>Accounts</strong>
+            <a href="/Data/Reference/Accounts">Open account data</a>
+          </article>
+
+          <article class="metric-card">
             <span class="metric-label">Countries</span>
             <strong>Countries</strong>
             <a href="/Data/Reference/Countries">Open country data</a>
@@ -213,6 +219,12 @@
             <span class="metric-label">FX</span>
             <strong>FXs</strong>
             <a href="/Value/FXs">Open FX data</a>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Holdings</span>
+            <strong>Holdings</strong>
+            <a href="/Data/Reference/Holdings">Open holding data</a>
           </article>
 
           <article class="metric-card">
@@ -410,6 +422,20 @@
             <strong>{formatCount(data.memoryDiagnostics?.instrumentValueService?.instrumentValueCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.instrumentValueService?.cacheEntryCount)} cached views</span>
             <span>{formatBytes(data.memoryDiagnostics?.instrumentValueService?.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Holding Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.holdingService?.holdingCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.holdingService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.holdingService?.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Holding Position Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.holdingPositionService?.positionCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.holdingPositionService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.holdingPositionService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">

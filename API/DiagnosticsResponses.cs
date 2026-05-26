@@ -1,6 +1,6 @@
 namespace API;
 
-public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService, InstrumentServiceDiagnosticsResponse InstrumentService, InstrumentValueServiceDiagnosticsResponse InstrumentValueService, SseDiagnosticsResponse Sse, AggregateMaintenanceDiagnosticsResponse AggregateMaintenance);
+public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, AccountServiceDiagnosticsResponse AccountService, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService, HoldingServiceDiagnosticsResponse HoldingService, HoldingPositionServiceDiagnosticsResponse HoldingPositionService, InstrumentServiceDiagnosticsResponse InstrumentService, InstrumentValueServiceDiagnosticsResponse InstrumentValueService, SseDiagnosticsResponse Sse, AggregateMaintenanceDiagnosticsResponse AggregateMaintenance);
 
 public sealed record EventCacheDiagnosticsResponse(bool IsLoaded, int StreamCount, int EventCount, long EstimatedMemoryBytes, int UnprocessedEventCount, IReadOnlyList<UnprocessedEventDiagnosticsResponse> RecentUnprocessedEvents);
 
@@ -8,11 +8,17 @@ public sealed record UnprocessedEventDiagnosticsResponse(Guid? StreamId, Guid? E
 
 public sealed record CountryServiceDiagnosticsResponse(int CacheEntryCount, int CountryCount, long EstimatedMemoryBytes);
 
+public sealed record AccountServiceDiagnosticsResponse(int CacheEntryCount, int AccountCount, long EstimatedMemoryBytes);
+
 public sealed record CurrencyServiceDiagnosticsResponse(int CacheEntryCount, int CurrencyCount, long EstimatedMemoryBytes);
 
 public sealed record FXServiceDiagnosticsResponse(int CacheEntryCount, int FXCount, long EstimatedMemoryBytes);
 
 public sealed record FXRateServiceDiagnosticsResponse(int CacheEntryCount, int FXRateCount, long EstimatedMemoryBytes);
+
+public sealed record HoldingServiceDiagnosticsResponse(int CacheEntryCount, int HoldingCount, long EstimatedMemoryBytes);
+
+public sealed record HoldingPositionServiceDiagnosticsResponse(int CacheEntryCount, int PositionCount, long EstimatedMemoryBytes);
 
 public sealed record InstrumentServiceDiagnosticsResponse(int CacheEntryCount, int InstrumentCount, long EstimatedMemoryBytes);
 

@@ -22,6 +22,76 @@ export type Countries = {
   items: Country[];
 };
 
+export type Account = {
+  accountID: string;
+  name: string;
+  formalName: string;
+  bookCurrency: string;
+  active: boolean;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type Accounts = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: Account[];
+};
+
+export type HoldingType = 'Position' | 'Nominal' | 'CashOnHand' | 'CashDebt';
+
+export type HoldingNominalType =
+  | 'Inflow'
+  | 'Outflow'
+  | 'FeesCustodian'
+  | 'FeesAdministrator'
+  | 'FeesBank'
+  | 'Income'
+  | 'Interest';
+
+export type Holding = {
+  holdingID: string;
+  accountID: string;
+  instrumentID: string;
+  holdingType: HoldingType;
+  nominalType?: HoldingNominalType | null;
+  name: string;
+  active: boolean;
+  default: boolean;
+  includeInValuation: boolean;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type Holdings = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: Holding[];
+};
+
+export type HoldingPosition = Holding & {
+  accountName: string;
+  instrumentName: string;
+  quantity: number;
+  bookCost: number;
+};
+
+export type HoldingPositions = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: HoldingPosition[];
+};
+
 export type Currency = {
   alphabeticCode: string;
   numericCode: number;
@@ -212,6 +282,25 @@ export type CurrencyReferenceEvent = ReferenceEventBase & {
   name: string;
 };
 
+export type AccountReferenceEvent = ReferenceEventBase & {
+  accountID: string;
+  name?: string;
+  formalName?: string;
+  bookCurrency?: string;
+  active?: boolean;
+};
+
+export type HoldingReferenceEvent = ReferenceEventBase & {
+  holdingID: string;
+  accountID?: string;
+  instrumentID?: string;
+  holdingType?: HoldingType;
+  nominalType?: HoldingNominalType | null;
+  name?: string;
+  active?: boolean;
+  default?: boolean;
+};
+
 export type InstrumentValueHistoryEvent = ReferenceEventBase & {
   instrumentID: string;
   valueKind: 'Price' | 'Income';
@@ -239,6 +328,11 @@ export type MemoryDiagnostics = {
       recordedAtUtc: string;
     }[];
   };
+  accountService?: {
+    cacheEntryCount: number;
+    accountCount: number;
+    estimatedMemoryBytes: number;
+  };
   countryService: {
     cacheEntryCount: number;
     countryCount: number;
@@ -257,6 +351,16 @@ export type MemoryDiagnostics = {
   fxRateService: {
     cacheEntryCount: number;
     fxRateCount: number;
+    estimatedMemoryBytes: number;
+  };
+  holdingService?: {
+    cacheEntryCount: number;
+    holdingCount: number;
+    estimatedMemoryBytes: number;
+  };
+  holdingPositionService?: {
+    cacheEntryCount: number;
+    positionCount: number;
     estimatedMemoryBytes: number;
   };
   instrumentService?: {
@@ -347,10 +451,13 @@ export type ApiExchangeSearchResponse = {
 };
 
 export type AggregateKind =
+  | 'Accounts'
   | 'Countries'
   | 'Currencies'
   | 'FXs'
   | 'FXRates'
+  | 'Holdings'
+  | 'HoldingPositions'
   | 'Instruments'
   | 'InstrumentValues';
 

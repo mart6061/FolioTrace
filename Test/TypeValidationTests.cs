@@ -237,6 +237,30 @@ public sealed class TypeValidationTests
         Assert.Throws<ArgumentException>(() => new EventID(Guid.Empty));
 
     [Fact]
+    public void EventSetId_AcceptsNonEmptyGuid()
+    {
+        var eventSetId = EventSetIDBuilder.Create();
+
+        Assert.NotEqual(Guid.Empty, eventSetId.Value);
+    }
+
+    [Fact]
+    public void EventSetId_RejectsEmptyGuid() =>
+        Assert.Throws<ArgumentException>(() => new EventSetID(Guid.Empty));
+
+    [Fact]
+    public void AccountId_AcceptsNonEmptyGuid()
+    {
+        var accountId = AccountIDBuilder.Create();
+
+        Assert.NotEqual(Guid.Empty, accountId.Value);
+    }
+
+    [Fact]
+    public void AccountId_RejectsEmptyGuid() =>
+        Assert.Throws<ArgumentException>(() => new AccountID(Guid.Empty));
+
+    [Fact]
     public void InstrumentId_AcceptsNonEmptyGuid()
     {
         var instrumentId = InstrumentIDBuilder.Create();
@@ -247,6 +271,34 @@ public sealed class TypeValidationTests
     [Fact]
     public void InstrumentId_RejectsEmptyGuid() =>
         Assert.Throws<ArgumentException>(() => new InstrumentID(Guid.Empty));
+
+    [Fact]
+    public void TransactionQuantity_AcceptsPositiveValues()
+    {
+        var quantity = new TransactionQuantity(123.12345678m);
+
+        Assert.Equal(123.12345678m, quantity.Value);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(1.123456789)]
+    public void TransactionQuantity_RejectsInvalidValues(decimal value) =>
+        Assert.Throws<ArgumentException>(() => new TransactionQuantity(value));
+
+    [Fact]
+    public void TransactionBookCost_AcceptsZeroAndPositiveValues()
+    {
+        Assert.Equal(0m, new TransactionBookCost(0m).Value);
+        Assert.Equal(123.12345678m, new TransactionBookCost(123.12345678m).Value);
+    }
+
+    [Theory]
+    [InlineData(-0.00000001)]
+    [InlineData(1.123456789)]
+    public void TransactionBookCost_RejectsInvalidValues(decimal value) =>
+        Assert.Throws<ArgumentException>(() => new TransactionBookCost(value));
 
     [Fact]
     public void Yield_AcceptsZeroAndPositiveValues()

@@ -4,10 +4,13 @@ namespace Services;
 
 public sealed class AggregateMaintenanceCoordinator(
     AggregateMaintenanceOptions options,
+    AccountService accountService,
     CountryService countryService,
     CurrencyService currencyService,
     FXService fxService,
     FXRateService fxRateService,
+    HoldingService holdingService,
+    HoldingPositionService holdingPositionService,
     InstrumentService instrumentService,
     InstrumentValueService instrumentValueService,
     AggregateUpdateNotificationService notificationService)
@@ -105,12 +108,15 @@ public sealed class AggregateMaintenanceCoordinator(
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                await WarmAggregate("Accounts", valuationDate, accountService.IsCached, accountService.Get, result);
                 await WarmAggregate("Countries", valuationDate, countryService.IsCached, countryService.Get, result);
                 await WarmAggregate("Currencies", valuationDate, currencyService.IsCached, currencyService.Get, result);
                 await WarmAggregate("FXs", valuationDate, fxService.IsCached, fxService.Get, result);
                 await WarmAggregate("FXRates", valuationDate, fxRateService.IsCached, fxRateService.Get, result);
+                await WarmAggregate("Holdings", valuationDate, holdingService.IsCached, holdingService.Get, result);
                 await WarmAggregate("Instruments", valuationDate, instrumentService.IsCached, instrumentService.Get, result);
                 await WarmAggregate("InstrumentValues", valuationDate, instrumentValueService.IsCached, instrumentValueService.Get, result);
+                await WarmAggregate("HoldingPositions", valuationDate, holdingPositionService.IsCached, holdingPositionService.Get, result);
             }
 
             SetCompleted(runID, trigger, startedAtUtc, result);

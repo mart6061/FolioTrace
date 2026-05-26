@@ -1,0 +1,760 @@
+<script lang="ts">
+  import { enhance } from '$app/forms';
+  import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import type { AccountReferenceEvent } from '$lib/types';
+  import type { SubmitFunction } from './$types';
+
+  let { data, form } = $props();
+
+  const accountCount = $derived(data.accounts?.items.length ?? 0);
+  const asOfSummary = $derived(data.auditDateTime && data.accounts ? formatDisplayDateTime(data.accounts.asOfDateTime) : 'now');
+
+  type SortKey = 'name' | 'formalName' | 'bookCurrency' | 'status' | 'lastAudit';
+
+  let sortKey = $state<SortKey>('name');
+  let sortDirection = $state<1 | -1>(1);
+  let filterText = $state('');
+  let addingAccount = $state(false);
+  let editingAccountID = $state('');
+  let submittingAccountID = $state('');
+  let submittingCreate = $state(false);
+  let openHistoryAccountID = $state('');
+  let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
+  let loadedHistoryContextKey = $state('');
+
+  const filteredAccounts = $derived(
+    (data.accounts?.items ?? []).filter((account) => {
+      const filter = filterText.trim().toLocaleLowerCase();
+
+      if (!filter)
+        return true;
+
+      return [
+        account.name,
+        account.formalName,
+        account.bookCurrency,
+        account.active ? 'active' : 'inactive',
+        account.lastAuditDateTime
+      ].some((value) => value.toLocaleLowerCase().includes(filter));
+    })
+  );
+
+  const sortedAccounts = $derived(
+    [...filteredAccounts].sort((left, right) => {
+      const direction = sortDirection;
+
+      switch (sortKey) {
+        case 'formalName':
+          return direction * left.formalName.localeCompare(right.formalName);
+        case 'bookCurrency':
+          return direction * left.bookCurrency.localeCompare(right.bookCurrency);
+        case 'status':
+          return direction * Number(left.active === right.active ? 0 : left.active ? -1 : 1);
+        case 'lastAudit':
+          return direction * (new Date(left.lastAuditDateTime).getTime() - new Date(right.lastAuditDateTime).getTime());
+        case 'name':
+        default:
+          return direction * left.name.localeCompare(right.name);
+      }
+    })
+  );
+
+  $effect(() => {
+    const nextHistoryContextKey = createHistoryContextKey();
+    if (!loadedHistoryContextKey) {
+      loadedHistoryContextKey = nextHistoryContextKey;
+      return;
+    }
+
+    if (nextHistoryContextKey === loadedHistoryContextKey)
+      return;
+
+    loadedHistoryContextKey = nextHistoryContextKey;
+    if (openHistoryAccountID)
+      void loadHistory(openHistoryAccountID);
+  });
+
+  function setSort(nextSortKey: SortKey) {
+    if (sortKey === nextSortKey) {
+      sortDirection = sortDirection === 1 ? -1 : 1;
+      return;
+    }
+
+    sortKey = nextSortKey;
+    sortDirection = 1;
+  }
+
+  function sortLabel(nextSortKey: SortKey) {
+    if (sortKey !== nextSortKey)
+      return '';
+
+    return sortDirection === 1 ? ' ↑' : ' ↓';
+  }
+
+  function accountExportRows() {
+    return sortedAccounts.map((account) => ({
+      name: account.name,
+      formalName: account.formalName,
+      bookCurrency: account.bookCurrency,
+      status: account.active ? 'Active' : 'Inactive',
+      lastAuditDateTime: account.lastAuditDateTime
+    }));
+  }
+
+  function downloadFile(fileName: string, content: string, mimeType: string) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  function csvValue(value: string) {
+    return `"${value.replaceAll('"', '""')}"`;
+  }
+
+  function htmlValue(value: string) {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function exportJson() {
+    downloadFile('accounts.json', JSON.stringify(accountExportRows(), null, 2), 'application/json');
+  }
+
+  function exportCsv() {
+    const rows = accountExportRows();
+    const header = ['Name', 'Formal name', 'Book currency', 'Status', 'Last audit'];
+    const lines = [
+      header.map(csvValue).join(','),
+      ...rows.map((row) =>
+        [row.name, row.formalName, row.bookCurrency, row.status, row.lastAuditDateTime].map(csvValue).join(',')
+      )
+    ];
+
+    downloadFile('accounts.csv', lines.join('\r\n'), 'text/csv');
+  }
+
+  function exportXlsx() {
+    const rows = accountExportRows();
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Formal name</th>
+            <th>Book currency</th>
+            <th>Status</th>
+            <th>Last audit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row) => `
+            <tr>
+              <td>${htmlValue(row.name)}</td>
+              <td>${htmlValue(row.formalName)}</td>
+              <td>${htmlValue(row.bookCurrency)}</td>
+              <td>${htmlValue(row.status)}</td>
+              <td>${htmlValue(row.lastAuditDateTime)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    downloadFile('accounts.xls', html, 'application/vnd.ms-excel');
+  }
+
+  function printTable() {
+    window.print();
+  }
+
+  function startEdit(accountID: string) {
+    addingAccount = false;
+    editingAccountID = accountID;
+  }
+
+  function cancelEdit() {
+    editingAccountID = '';
+  }
+
+  function startAdd() {
+    editingAccountID = '';
+    addingAccount = true;
+  }
+
+  function cancelAdd() {
+    addingAccount = false;
+  }
+
+  const enhanceAccountCreate: SubmitFunction = () => {
+    submittingCreate = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingCreate = false;
+
+      if (result.type === 'success')
+        addingAccount = false;
+    };
+  };
+
+  const enhanceAccountEdit: SubmitFunction = ({ formData }) => {
+    const accountID = formData.get('accountID');
+
+    submittingAccountID = typeof accountID === 'string' ? accountID : '';
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingAccountID = '';
+
+      if (result.type === 'success')
+        editingAccountID = '';
+    };
+  };
+
+  const enhanceAccountActive: SubmitFunction = ({ formData }) => {
+    const accountID = formData.get('accountID');
+
+    submittingAccountID = typeof accountID === 'string' ? accountID : '';
+
+    return async ({ update }) => {
+      await update({ reset: false });
+      submittingAccountID = '';
+    };
+  };
+
+  async function toggleHistory(accountID: string) {
+    if (openHistoryAccountID === accountID) {
+      openHistoryAccountID = '';
+      delete historyByAccountID[accountID];
+      return;
+    }
+
+    openHistoryAccountID = accountID;
+
+    if (historyByAccountID[accountID])
+      return;
+
+    await loadHistory(accountID);
+  }
+
+  async function loadHistory(accountID: string) {
+    historyByAccountID[accountID] = { events: [], error: '', loading: true };
+
+    try {
+      const historyUrl = new URL('/Data/Reference/Accounts/History', window.location.origin);
+      historyUrl.searchParams.set('accountID', accountID);
+      historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
+
+      if (data.auditDateTime)
+        historyUrl.searchParams.set('auditDateTime', toApiDateTime(data.auditDateTime));
+
+      const response = await fetch(`${historyUrl.pathname}${historyUrl.search}`);
+
+      if (!response.ok)
+        throw new Error(`History request returned ${response.status} ${response.statusText}`);
+
+      historyByAccountID[accountID] = {
+        events: await response.json() as AccountReferenceEvent[],
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      historyByAccountID[accountID] = {
+        events: [],
+        error: error instanceof Error ? error.message : 'Unable to load history.',
+        loading: false
+      };
+    }
+  }
+
+  function createHistoryContextKey() {
+    return [
+      data.valuationDate,
+      data.auditDateTime ?? '',
+      data.accounts?.lastEventID ?? '',
+      form?.status === 'success' ? form.eventID ?? '' : ''
+    ].join('|');
+  }
+
+  function accountEventSummary(event: AccountReferenceEvent) {
+    if (event.$type === 'AccountActiveModifiedEvent')
+      return event.active ? 'Activated' : 'Deactivated';
+
+    return [
+      event.name,
+      event.formalName,
+      event.bookCurrency,
+      typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
+    ].filter(Boolean).join(' · ');
+  }
+</script>
+
+<svelte:head>
+  <title>Accounts - FolioTrace</title>
+</svelte:head>
+
+<main class="min-h-screen">
+  <section class="page-header">
+    <div class="page-container flex flex-col gap-5">
+      <div class="flex flex-col gap-1">
+        <p class="page-kicker">Reference Data</p>
+        <h1 class="page-title">Accounts</h1>
+      </div>
+
+      <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+        <label class="grid gap-1 text-sm font-medium text-slate-700">
+          Valuation date
+          <input
+            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            name="valuationDate"
+            step="1" type="datetime-local"
+            value={data.valuationDate}
+          />
+        </label>
+
+        {#if data.auditDateTime}
+          <input
+            name="auditDateTime"
+            type="hidden"
+            value={data.auditDateTime}
+          />
+        {/if}
+
+        <button
+          class="h-10 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+          type="submit"
+        >
+          Apply
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section class="page-container page-section">
+    {#if data.error}
+      <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        {data.error}
+      </div>
+    {:else if data.accounts}
+      {#if form?.message}
+        <div
+          class={`mb-4 rounded-md border px-4 py-3 text-sm ${
+            form.status === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}
+          role="status"
+        >
+          {form.message}
+          {#if form.status === 'success' && form.eventID}
+            <span class="ml-2 text-emerald-700">Event {form.eventID}</span>
+          {/if}
+        </div>
+      {/if}
+
+      <AggregateUpdateWatcher aggregateKind="Accounts" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.accounts.lastEventID} />
+
+      <div class="data-summary">
+        <div>
+          <span class="font-semibold text-slate-950">{accountCount}</span>
+          accounts
+        </div>
+        <div>
+          Valuation {formatDisplayDateTime(data.accounts.valuationDateTime)} · As-of {asOfSummary}
+        </div>
+      </div>
+
+      <div class="data-panel">
+        <div class="table-toolbar">
+          <label class="table-filter">
+            <span class="sr-only">Filter accounts</span>
+            <input
+              bind:value={filterText}
+              placeholder="Filter accounts..."
+              type="search"
+            />
+          </label>
+
+          <div class="table-actions" aria-label="Table actions">
+            <button aria-label="Add account" onclick={startAdd} title="Add account" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            <button aria-label="Export accounts to JSON" onclick={exportJson} title="Export JSON" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" />
+              </svg>
+            </button>
+            <button aria-label="Export accounts to CSV" onclick={exportCsv} title="Export CSV" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 4h16v16H4zM4 10h16M10 4v16" />
+              </svg>
+            </button>
+            <button aria-label="Export accounts to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" />
+              </svg>
+            </button>
+            <button aria-label="Print accounts" onclick={printTable} title="Print" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <tr>
+                <th class="px-3 py-2">
+                  <button class="table-sort-button" onclick={() => setSort('name')} type="button">
+                    Name{sortLabel('name')}
+                  </button>
+                </th>
+                <th class="px-3 py-2">
+                  <button class="table-sort-button" onclick={() => setSort('formalName')} type="button">
+                    Formal name{sortLabel('formalName')}
+                  </button>
+                </th>
+                <th class="px-3 py-2">
+                  <button class="table-sort-button" onclick={() => setSort('bookCurrency')} type="button">
+                    Book currency{sortLabel('bookCurrency')}
+                  </button>
+                </th>
+                <th class="px-3 py-2">
+                  <button class="table-sort-button" onclick={() => setSort('status')} type="button">
+                    Status{sortLabel('status')}
+                  </button>
+                </th>
+                <th class="px-3 py-2">
+                  <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">
+                    Last audit{sortLabel('lastAudit')}
+                  </button>
+                </th>
+                <th class="w-56 px-3 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              {#if addingAccount}
+                <tr class="bg-teal-50/30 align-top">
+                  <td class="px-3 py-2">
+                    <form
+                      id="account-create"
+                      action="?/createAccount"
+                      method="POST"
+                      use:enhance={enhanceAccountCreate}
+                    >
+                      <label class="grid gap-1 text-xs font-medium text-slate-600">
+                        <span>Name</span>
+                        <input
+                          class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          name="name"
+                          required
+                          type="text"
+                          value={form?.intent === 'createAccount' ? (form.values?.name ?? '') : ''}
+                        />
+                      </label>
+                    </form>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
+                      <span>Formal name</span>
+                      <input
+                        class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="account-create"
+                        name="formalName"
+                        required
+                        type="text"
+                        value={form?.intent === 'createAccount' ? (form.values?.formalName ?? '') : ''}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
+                      <span>Book currency</span>
+                      <input
+                        class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="account-create"
+                        maxlength="3"
+                        minlength="3"
+                        name="bookCurrency"
+                        required
+                        type="text"
+                        value={form?.intent === 'createAccount' ? (form.values?.bookCurrency ?? '') : ''}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
+                      <span>Status</span>
+                      <span class="flex h-8 items-center gap-2">
+                        <input
+                          class="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                          checked={form?.intent === 'createAccount' ? (form.values?.active ?? true) : true}
+                          form="account-create"
+                          name="active"
+                          type="checkbox"
+                          value="true"
+                        />
+                        Active
+                      </span>
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
+                      <span>Event date</span>
+                      <input
+                        class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        form="account-create"
+                        name="eventDateTime"
+                        required
+                        step="1" type="datetime-local"
+                        value={form?.intent === 'createAccount' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                      />
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
+                      <span>Actions</span>
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                          onclick={cancelAdd}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                          disabled={submittingCreate}
+                          form="account-create"
+                          type="submit"
+                        >
+                          {submittingCreate ? 'Adding' : 'Add'}
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              {/if}
+
+              {#each sortedAccounts as account}
+                {#if editingAccountID === account.accountID}
+                  <tr class="bg-teal-50/30 align-top">
+                    <td class="px-3 py-2">
+                      <form
+                        id={`account-edit-${account.accountID}`}
+                        action="?/modifyAccount"
+                        method="POST"
+                        use:enhance={enhanceAccountEdit}
+                      >
+                        <input name="accountID" type="hidden" value={account.accountID} />
+                        <label class="grid gap-1 text-xs font-medium text-slate-600">
+                          <span>Name</span>
+                          <input
+                            class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                            name="name"
+                            required
+                            type="text"
+                            value={form?.accountID === account.accountID ? (form.values?.name ?? account.name) : account.name}
+                          />
+                        </label>
+                      </form>
+                    </td>
+                    <td class="px-3 py-2">
+                      <label class="grid gap-1 text-xs font-medium text-slate-600" form={`account-edit-${account.accountID}`}>
+                        <span>Formal name</span>
+                        <input
+                          class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          form={`account-edit-${account.accountID}`}
+                          name="formalName"
+                          required
+                          type="text"
+                          value={form?.accountID === account.accountID ? (form.values?.formalName ?? account.formalName) : account.formalName}
+                        />
+                      </label>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="grid gap-1 text-xs font-medium text-slate-600">
+                        <span>Book currency</span>
+                        <span class="h-8 py-1.5 font-mono text-sm font-normal text-slate-700">
+                          {account.bookCurrency}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="grid gap-1 text-xs font-medium text-slate-600">
+                        <span>Status</span>
+                        <span class={`inline-flex h-8 w-fit items-center rounded-full px-3 text-xs font-semibold ${
+                          account.active
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {account.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <label class="grid gap-1 text-xs font-medium text-slate-600" form={`account-edit-${account.accountID}`}>
+                        <span>Event date</span>
+                        <input
+                          class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          form={`account-edit-${account.accountID}`}
+                          name="eventDateTime"
+                          required
+                          step="1" type="datetime-local"
+                          value={form?.accountID === account.accountID ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                        />
+                      </label>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
+                        <span>Actions</span>
+                        <div class="flex justify-end gap-2">
+                          <button
+                            class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                            onclick={cancelEdit}
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                            disabled={submittingAccountID === account.accountID}
+                            form={`account-edit-${account.accountID}`}
+                            type="submit"
+                          >
+                            {submittingAccountID === account.accountID ? 'Saving' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                {:else}
+                  <tr class="hover:bg-slate-50">
+                    <td class="px-3 py-2 font-medium text-slate-950">{account.name}</td>
+                    <td class="px-3 py-2 text-slate-700">{account.formalName}</td>
+                    <td class="px-3 py-2 font-mono text-slate-700">{account.bookCurrency}</td>
+                    <td class="px-3 py-2">
+                      <span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                        account.active
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {account.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2 text-slate-600">{formatTableDateTime(account.lastAuditDateTime)}</td>
+                    <td class="px-3 py-2">
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          onclick={() => toggleHistory(account.accountID)}
+                          type="button"
+                        >
+                          {openHistoryAccountID === account.accountID ? 'Hide' : 'History'}
+                        </button>
+                        <button
+                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          onclick={() => startEdit(account.accountID)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                        <form action="?/modifyAccountActive" method="POST" use:enhance={enhanceAccountActive}>
+                          <input name="accountID" type="hidden" value={account.accountID} />
+                          <input name="name" type="hidden" value={account.name} />
+                          <input name="eventDateTime" type="hidden" value={data.valuationDate} />
+                          <input name="active" type="hidden" value={account.active ? 'false' : 'true'} />
+                          <button
+                            class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70"
+                            disabled={submittingAccountID === account.accountID}
+                            type="submit"
+                          >
+                            {account.active ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  {#if openHistoryAccountID === account.accountID}
+                    {@const history = historyByAccountID[account.accountID]}
+                    <tr class="bg-slate-50/80">
+                      <td class="px-3 py-3" colspan="6">
+                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
+                          <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-sm font-semibold text-slate-950">{account.name} history</h2>
+                            <span class="text-xs text-slate-500">
+                              {history?.events.length ?? 0} events
+                              {#if data.auditDateTime && history?.events.length}
+                                · {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
+                              {/if}
+                            </span>
+                          </div>
+
+                          {#if history?.loading}
+                            <div class="text-sm text-slate-600">Loading history...</div>
+                          {:else if history?.error}
+                            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                          {:else if history?.events.length}
+                            <ol class="grid gap-2">
+                              {#each history.events as event}
+                                <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
+                                  event.applicationStatus === 'omitted'
+                                    ? 'border-amber-200 bg-amber-50/70'
+                                    : 'border-slate-200'
+                                }`}>
+                                  <div class="text-xs text-slate-500">
+                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
+                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
+                                  </div>
+                                  <div class="grid gap-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <span class="font-medium text-slate-950">{event.$type}</span>
+                                      {#if event.applicationStatus === 'omitted'}
+                                        <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
+                                      {:else if data.auditDateTime}
+                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
+                                      {/if}
+                                      <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
+                                    </div>
+                                    <div class="text-sm text-slate-700">{accountEventSummary(event)}</div>
+                                    {#if event.applicationStatus === 'omitted'}
+                                      <div class="text-xs font-medium text-amber-900">
+                                        Omitted from this view because its audit time is after the selected as-at date.
+                                      </div>
+                                    {/if}
+                                    <div class="text-xs text-slate-500">{event.reason}</div>
+                                  </div>
+                                </li>
+                              {/each}
+                            </ol>
+                          {:else}
+                            <div class="text-sm text-slate-600">No history found for this account.</div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
+                {/if}
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {/if}
+  </section>
+</main>
