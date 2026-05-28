@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build, Test, and Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: UI/package-lock.json
+
+      - name: Restore .NET
+        run: dotnet restore FolioTrace.slnx
+
+      - name: Build .NET
+        run: dotnet build FolioTrace.slnx --configuration Release --no-restore
+
+      - name: Test .NET
+        run: dotnet test Test/Test.csproj --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Install UI dependencies
+        working-directory: UI
+        run: npm ci
+
+      - name: Check UI
+        working-directory: UI
+        run: npm run check
+
+      - name: Build UI
+        working-directory: UI
+        run: npm run build
+
+      - name: Build API Railway image
+        run: docker build --file API/Dockerfile --tag foliotrace-api:ci .
+
+      - name: Build UI Railway image
+        run: docker build --file UI/Dockerfile --tag foliotrace-ui:ci .

@@ -5,6 +5,7 @@ FolioTrace is prepared for Railway as three services:
 - Railway Postgres.
 - FolioTrace API, using `API/Dockerfile`.
 - FolioTrace UI, using `UI/Dockerfile`.
+- GitHub Actions CI, using `.github/workflows/ci.yml`, to validate the .NET solution, Svelte UI, and both Railway Docker images before changes are merged.
 
 Local development remains unchanged. The API launch profile still uses `https://localhost:7058`, the UI dev server still uses the local HTTPS certificate scripts, and the UI still falls back to `https://localhost:7058/API` when `API_BASE_URL` is not set.
 
@@ -21,6 +22,8 @@ Healthcheck Path: /API/System/Health
 ```
 
 The root directory must stay as `/` because `API/Dockerfile` builds from the repository root and needs the sibling `Features` and `Repository` projects. If Railway shows `Railpack could not determine how to build the app` or `Script start.sh not found`, it is not using this service config and is falling back to auto-detection or an old dashboard start command.
+
+The API service config includes watch patterns for `API/**`, `Features/**`, `Repository/**`, `FolioTrace.slnx`, and `.dockerignore`. Changes outside those paths should not trigger an API deployment.
 
 Required variables:
 
@@ -62,6 +65,8 @@ Healthcheck Path: /
 
 The root directory should also stay as `/` for the UI service so the Dockerfile path is resolved from the repository root. The service config file pins Dockerfile builds and overrides any stale dashboard start command such as `start.sh`.
 
+The UI service config includes watch patterns for `UI/**` and `.dockerignore`. Changes outside those paths should not trigger a UI deployment.
+
 Required variables:
 
 ```text
@@ -80,3 +85,14 @@ After deployment:
 - Confirm dashboard stats load.
 - Confirm Build and Clear typed confirmation actions submit.
 - Confirm build or aggregate maintenance SSE updates refresh Stats for nerds.
+
+## CI/CD Flow
+
+Recommended flow:
+
+- Open PRs against `main`. GitHub Actions runs .NET restore/build/test, `npm run check`, `npm run build`, and Docker builds for both Railway services.
+- Connect the API and UI Railway services to this GitHub repo and deploy from `main`.
+- Keep both Railway services on root directory `/`, with config file paths `/API/railway.json` and `/UI/railway.json`.
+- Enable Railway auto-deploys from `main`. Railway will use the per-service config files and watch patterns to decide which service deploys.
+
+If you prefer GitHub Actions to trigger deployments directly, create a Railway project token and store it as a GitHub secret named `RAILWAY_TOKEN`, then run `railway up --ci --service <service-name> --environment <environment-name>` from a workflow after the CI job succeeds.
