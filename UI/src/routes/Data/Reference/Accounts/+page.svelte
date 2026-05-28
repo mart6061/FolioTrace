@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
-  import type { AccountReferenceEvent, Holding, HoldingKind } from '$lib/types';
+  import type { AccountReferenceEvent, Holding, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -19,11 +19,18 @@
     formalName: string;
     name: string;
   };
-  type CashInFormValues = {
+  type CashMovementFormValues = {
     accountID: string;
     amount: string;
     eventDateTime: string;
     holdingID: string;
+  };
+  type InspecieMovementFormValues = {
+    accountID: string;
+    bookCost: string;
+    eventDateTime: string;
+    instrumentID: string;
+    quantity: string;
   };
 
   let sortKey = $state<SortKey>('name');
@@ -34,13 +41,20 @@
   let submittingAccountID = $state('');
   let submittingCreate = $state(false);
   let cashInAccountID = $state('');
+  let cashOutAccountID = $state('');
+  let inspecieInAccountID = $state('');
+  let inspecieOutAccountID = $state('');
   let submittingCashIn = $state(false);
+  let submittingCashOut = $state(false);
+  let submittingInspecieIn = $state(false);
+  let submittingInspecieOut = $state(false);
   let openHistoryAccountID = $state('');
   let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
   const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
-  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const holdingByID = $derived(new Map((data.holdings?.items ?? []).map((holding) => [holding.holdingID, holding])));
+  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InspecieIn', 'InspecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
   const accountFormValues = $derived(
     (form?.intent === 'createAccount' || form?.intent === 'modifyAccount') && form.values
       ? form.values as AccountFormValues
@@ -48,18 +62,34 @@
   );
   const cashInFormValues = $derived(
     form?.intent === 'cashIn' && form.values
-      ? form.values as CashInFormValues
+      ? form.values as CashMovementFormValues
       : null
   );
-  const capitalHoldings = $derived(
+  const cashOutFormValues = $derived(
+    form?.intent === 'cashOut' && form.values
+      ? form.values as CashMovementFormValues
+      : null
+  );
+  const inspecieInFormValues = $derived(
+    form?.intent === 'inspecieIn' && form.values
+      ? form.values as InspecieMovementFormValues
+      : null
+  );
+  const inspecieOutFormValues = $derived(
+    form?.intent === 'inspecieOut' && form.values
+      ? form.values as InspecieMovementFormValues
+      : null
+  );
+  const cashInHoldings = $derived(
     (data.holdings?.items ?? [])
       .filter((holding) =>
         holding.active &&
-        holding.holdingKind === 'PositionCash' &&
-        holding.default &&
-        holding.name === 'Capital'
+        holding.holdingKind === 'CashInvestable'
       )
-      .sort((left, right) => capitalHoldingLabel(left).localeCompare(capitalHoldingLabel(right)))
+      .sort((left, right) => cashInHoldingLabel(left).localeCompare(cashInHoldingLabel(right)))
+  );
+  const sortedInstruments = $derived(
+    [...(data.instruments?.items ?? [])].sort((left, right) => instrumentLabel(left).localeCompare(instrumentLabel(right)))
   );
 
   const filteredAccounts = $derived(
@@ -115,8 +145,30 @@
   });
 
   $effect(() => {
-    if (form?.intent === 'cashIn' && form.status === 'failure')
+    if (form?.intent === 'cashIn' && form.status === 'failure') {
+      cashOutAccountID = '';
+      inspecieInAccountID = '';
+      inspecieOutAccountID = '';
       cashInAccountID = cashInFormValues?.accountID ?? '';
+    }
+    if (form?.intent === 'cashOut' && form.status === 'failure') {
+      cashInAccountID = '';
+      inspecieInAccountID = '';
+      inspecieOutAccountID = '';
+      cashOutAccountID = cashOutFormValues?.accountID ?? '';
+    }
+    if (form?.intent === 'inspecieIn' && form.status === 'failure') {
+      cashInAccountID = '';
+      cashOutAccountID = '';
+      inspecieOutAccountID = '';
+      inspecieInAccountID = inspecieInFormValues?.accountID ?? '';
+    }
+    if (form?.intent === 'inspecieOut' && form.status === 'failure') {
+      cashInAccountID = '';
+      cashOutAccountID = '';
+      inspecieInAccountID = '';
+      inspecieOutAccountID = inspecieOutFormValues?.accountID ?? '';
+    }
   });
 
   function setSort(nextSortKey: SortKey) {
@@ -243,11 +295,53 @@
   function startCashIn(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
+    cashOutAccountID = '';
+    inspecieInAccountID = '';
+    inspecieOutAccountID = '';
     cashInAccountID = accountID;
   }
 
   function cancelCashIn() {
     cashInAccountID = '';
+  }
+
+  function startCashOut(accountID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    cashInAccountID = '';
+    inspecieInAccountID = '';
+    inspecieOutAccountID = '';
+    cashOutAccountID = accountID;
+  }
+
+  function cancelCashOut() {
+    cashOutAccountID = '';
+  }
+
+  function startInspecieIn(accountID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    cashInAccountID = '';
+    cashOutAccountID = '';
+    inspecieOutAccountID = '';
+    inspecieInAccountID = accountID;
+  }
+
+  function cancelInspecieIn() {
+    inspecieInAccountID = '';
+  }
+
+  function startInspecieOut(accountID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    cashInAccountID = '';
+    cashOutAccountID = '';
+    inspecieInAccountID = '';
+    inspecieOutAccountID = accountID;
+  }
+
+  function cancelInspecieOut() {
+    inspecieOutAccountID = '';
   }
 
   const enhanceAccountCreate: SubmitFunction = () => {
@@ -296,6 +390,42 @@
 
       if (result.type === 'success')
         cashInAccountID = '';
+    };
+  };
+
+  const enhanceCashOut: SubmitFunction = () => {
+    submittingCashOut = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingCashOut = false;
+
+      if (result.type === 'success')
+        cashOutAccountID = '';
+    };
+  };
+
+  const enhanceInspecieIn: SubmitFunction = () => {
+    submittingInspecieIn = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingInspecieIn = false;
+
+      if (result.type === 'success')
+        inspecieInAccountID = '';
+    };
+  };
+
+  const enhanceInspecieOut: SubmitFunction = () => {
+    submittingInspecieOut = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingInspecieOut = false;
+
+      if (result.type === 'success')
+        inspecieOutAccountID = '';
     };
   };
 
@@ -364,19 +494,25 @@
       typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
     ].filter(Boolean).join(' · ');
   }
-  function capitalHoldingLabel(holding: Holding) {
+  function cashInHoldingLabel(holding: Holding) {
     const account = accountByID.get(holding.accountID);
-    return `${account?.name ?? holding.accountID} (${account?.bookCurrency ?? 'cash'})`;
+    return `${account?.name ?? holding.accountID} ${holdingDisplayName(holding)}`;
   }
 
-  function capitalHoldingsForAccount(accountID: string) {
-    return capitalHoldings.filter((holding) => holding.accountID === accountID);
+  function instrumentLabel(instrument: Instrument) {
+    const ticker = instrument.identifiers.find((identifier) => identifier.type === 'Ticker' || identifier.type === 0)?.value ?? '';
+    return [ticker, instrument.name, instrument.exchange].filter(Boolean).join(' - ');
+  }
+
+  function cashInHoldingsForAccount(accountID: string) {
+    return cashInHoldings.filter((holding) => holding.accountID === accountID);
   }
 
   function holdingsForAccount(accountID: string) {
     return (data.holdings?.items ?? [])
       .filter((holding) => holding.accountID === accountID)
       .sort((left, right) =>
+        Number(!left.includeInValuation) - Number(!right.includeInValuation) ||
         holdingKindOrder.indexOf(left.holdingKind) - holdingKindOrder.indexOf(right.holdingKind) ||
         holdingDisplayName(left).localeCompare(holdingDisplayName(right))
       );
@@ -384,10 +520,10 @@
 
   function groupedHoldingsForAccount(accountID: string) {
     const accountHoldings = holdingsForAccount(accountID);
-    return holdingKindOrder
-      .map((holdingKind) => ({
-        holdingKind,
-        holdings: accountHoldings.filter((holding) => holding.holdingKind === holdingKind)
+    return [false, true]
+      .map((excluded) => ({
+        excluded,
+        holdings: accountHoldings.filter((holding) => !holding.includeInValuation === excluded)
       }))
       .filter((group) => group.holdings.length > 0);
   }
@@ -411,11 +547,122 @@
     return instrumentByID.get(holding.instrumentID)?.name ?? holding.instrumentID;
   }
 
+  function transactionEventsForAccount(accountID: string) {
+    const valuationTime = new Date(toApiDateTime(data.valuationDate)).getTime();
+    const auditTime = data.auditDateTime ? new Date(toApiDateTime(data.auditDateTime)).getTime() : null;
+
+    return (data.transactionEvents ?? [])
+      .filter((event) =>
+        event.accountID === accountID &&
+        new Date(event.eventDateTime).getTime() <= valuationTime &&
+        (auditTime === null || new Date(event.auditDateTime).getTime() <= auditTime)
+      )
+      .sort((left, right) =>
+        new Date(right.eventDateTime).getTime() - new Date(left.eventDateTime).getTime() ||
+        new Date(right.auditDateTime).getTime() - new Date(left.auditDateTime).getTime() ||
+        right.eventID.localeCompare(left.eventID)
+      );
+  }
+
+  function transactionEventLabel(event: TransactionReferenceEvent) {
+    if (event.$type === 'TransactionCreditEvent')
+      return 'Credit';
+    if (event.$type === 'TransactionDebitEvent')
+      return 'Debit';
+
+    return event.$type || 'Transaction';
+  }
+
+  function transactionHoldingName(event: TransactionReferenceEvent) {
+    const holding = event.holdingID ? holdingByID.get(event.holdingID) : null;
+    return holding ? `${holdingDisplayName(holding)} (${holding.holdingKind})` : event.holdingID ?? '';
+  }
+
+  function investableTransactionSubtotals(events: TransactionReferenceEvent[]) {
+    const groups = new Map<string, {
+      creditTotal: number;
+      debitTotal: number;
+      investible: boolean;
+      setIDs: Set<string>;
+    }>();
+
+    for (const event of events) {
+      if (!event.holdingID)
+        continue;
+
+      const holding = holdingByID.get(event.holdingID);
+      if (!holding)
+        continue;
+
+      const investible = holding.holdingKind === 'CashInvestable';
+      const key = String(investible);
+      const group = groups.get(key) ?? {
+        creditTotal: 0,
+        debitTotal: 0,
+        investible,
+        setIDs: new Set<string>()
+      };
+      const bookCost = event.bookCost ?? 0;
+
+      if (event.eventSetID)
+        group.setIDs.add(event.eventSetID);
+      if (event.$type === 'TransactionCreditEvent')
+        group.creditTotal += bookCost;
+      if (event.$type === 'TransactionDebitEvent')
+        group.debitTotal += bookCost;
+
+      groups.set(key, group);
+    }
+
+    return [...groups.values()]
+      .map((group) => ({
+        creditTotal: group.creditTotal,
+        debitTotal: group.debitTotal,
+        investible: group.investible,
+        netTotal: group.creditTotal - group.debitTotal,
+        setCount: group.setIDs.size
+      }))
+      .sort((left, right) => Number(right.investible) - Number(left.investible));
+  }
+
+  function formatTransactionTotal(value: number) {
+    return value.toLocaleString(undefined, {
+      maximumFractionDigits: 8,
+      minimumFractionDigits: 0
+    });
+  }
+
   function selectedCashInHoldingID(accountID: string) {
     if (cashInFormValues?.accountID === accountID && cashInFormValues.holdingID)
       return cashInFormValues.holdingID;
 
-    return capitalHoldingsForAccount(accountID)[0]?.holdingID ?? '';
+    return cashInHoldingsForAccount(accountID)[0]?.holdingID ?? '';
+  }
+
+  function selectedCashOutHoldingID(accountID: string) {
+    if (cashOutFormValues?.accountID === accountID && cashOutFormValues.holdingID)
+      return cashOutFormValues.holdingID;
+
+    return cashInHoldingsForAccount(accountID)[0]?.holdingID ?? '';
+  }
+
+  function selectedInspecieInInstrumentID(accountID: string) {
+    if (inspecieInFormValues?.accountID === accountID && inspecieInFormValues.instrumentID)
+      return instrumentInputValue(inspecieInFormValues.instrumentID);
+
+    return '';
+  }
+
+  function selectedInspecieOutInstrumentID(accountID: string) {
+    if (inspecieOutFormValues?.accountID === accountID && inspecieOutFormValues.instrumentID)
+      return instrumentInputValue(inspecieOutFormValues.instrumentID);
+
+    return '';
+  }
+
+  function instrumentInputValue(value: string) {
+    const instrument = instrumentByID.get(value);
+    return instrument ? instrumentLabel(instrument) : value;
   }
 </script>
 
@@ -461,6 +708,10 @@
   </section>
 
   <section class="page-container page-section">
+    <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="alert">
+      Work in progress
+    </div>
+
     {#if data.error}
       <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
         {data.error}
@@ -826,7 +1077,7 @@
                             {#each holdingGroups as group}
                               <section class="rounded-md border border-slate-200 bg-white">
                                 <div class="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-                                  <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-600">{holdingKindLabel(group.holdingKind)}</h3>
+                                  <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-600">Excluded = {group.excluded ? 'true' : 'false'}</h3>
                                   <span class="text-xs text-slate-500">{group.holdings.length}</span>
                                 </div>
                                 <ul class="divide-y divide-slate-100">
@@ -860,15 +1111,115 @@
                       </div>
                     </td>
                   </tr>
-                  {@const rowCapitalHoldings = capitalHoldingsForAccount(account.accountID)}
+                  {@const rowTransactionEvents = transactionEventsForAccount(account.accountID)}
+                  {@const rowInvestableSubtotals = investableTransactionSubtotals(rowTransactionEvents)}
+                  <tr class="bg-slate-50/50">
+                    <td class="px-3 py-3" colspan="6">
+                      <div class="grid gap-3">
+                        <div class="flex items-center justify-between gap-3">
+                          <h2 class="text-sm font-semibold text-slate-950">Transactions</h2>
+                          <span class="text-xs text-slate-500">{rowTransactionEvents.length} movements</span>
+                        </div>
+
+                        {#if rowTransactionEvents.length}
+                          {#if rowInvestableSubtotals.length}
+                            <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
+                              <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500">
+                                  <tr>
+                                    <th class="px-3 py-2 font-semibold">Investible</th>
+                                    <th class="px-3 py-2 text-right font-semibold">Distinct sets</th>
+                                    <th class="px-3 py-2 text-right font-semibold">Credit</th>
+                                    <th class="px-3 py-2 text-right font-semibold">Debit</th>
+                                    <th class="px-3 py-2 text-right font-semibold">Credit - Debit</th>
+                                  </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                  {#each rowInvestableSubtotals as subtotal}
+                                    <tr>
+                                      <td class="px-3 py-2 text-slate-700">
+                                        <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                          subtotal.investible
+                                            ? 'bg-teal-50 text-teal-700'
+                                            : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                          Investible = {subtotal.investible ? 'true' : 'false'}
+                                        </span>
+                                      </td>
+                                      <td class="px-3 py-2 text-right font-mono text-slate-700">{subtotal.setCount}</td>
+                                      <td class="px-3 py-2 text-right font-mono text-emerald-700">{formatTransactionTotal(subtotal.creditTotal)}</td>
+                                      <td class="px-3 py-2 text-right font-mono text-sky-700">{formatTransactionTotal(subtotal.debitTotal)}</td>
+                                      <td class={`px-3 py-2 text-right font-mono ${subtotal.netTotal < 0 ? 'text-red-700' : 'text-slate-700'}`}>{formatTransactionTotal(subtotal.netTotal)}</td>
+                                    </tr>
+                                  {/each}
+                                </tbody>
+                              </table>
+                            </div>
+                          {/if}
+
+                          <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                              <thead class="bg-slate-50 text-slate-500">
+                                <tr>
+                                  <th class="px-3 py-2 font-semibold">Type</th>
+                                  <th class="px-3 py-2 font-semibold">Event</th>
+                                  <th class="px-3 py-2 font-semibold">Settlement</th>
+                                  <th class="px-3 py-2 font-semibold">Holding</th>
+                                  <th class="px-3 py-2 text-right font-semibold">Quantity</th>
+                                  <th class="px-3 py-2 text-right font-semibold">Book cost</th>
+                                  <th class="px-3 py-2 font-semibold">Set</th>
+                                </tr>
+                              </thead>
+                              <tbody class="divide-y divide-slate-100">
+                                {#each rowTransactionEvents as transaction}
+                                  <tr>
+                                    <td class="px-3 py-2">
+                                      <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                        transaction.$type === 'TransactionCreditEvent'
+                                          ? 'bg-emerald-50 text-emerald-700'
+                                          : 'bg-sky-50 text-sky-700'
+                                      }`}>
+                                        {transactionEventLabel(transaction)}
+                                      </span>
+                                    </td>
+                                    <td class="px-3 py-2 text-slate-700">
+                                      <div>{formatTableDateTime(transaction.eventDateTime)}</div>
+                                      <div class="font-mono text-[11px] text-slate-400">{transaction.eventID}</div>
+                                    </td>
+                                    <td class="px-3 py-2 text-slate-600">{formatTableDateTime(transaction.settlementDateTime)}</td>
+                                    <td class="px-3 py-2 text-slate-700">
+                                      <div>{transactionHoldingName(transaction)}</div>
+                                      <div class="font-mono text-[11px] text-slate-400">{transaction.holdingID}</div>
+                                    </td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-700">{transaction.quantity ?? ''}</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-700">{transaction.bookCost ?? ''}</td>
+                                    <td class="px-3 py-2 font-mono text-[11px] text-slate-500">{transaction.eventSetID}</td>
+                                  </tr>
+                                {/each}
+                              </tbody>
+                            </table>
+                          </div>
+                        {:else}
+                          <div class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">No transactions found for this account.</div>
+                        {/if}
+                      </div>
+                    </td>
+                  </tr>
+                  {@const rowCashInHoldings = cashInHoldingsForAccount(account.accountID)}
+                  {@const cashMovementMode = cashInAccountID === account.accountID ? 'in' : cashOutAccountID === account.accountID ? 'out' : ''}
+                  {@const inspecieMovementMode = inspecieInAccountID === account.accountID ? 'in' : inspecieOutAccountID === account.accountID ? 'out' : ''}
+                  {@const rowCashMovementFormValues = cashMovementMode === 'out' ? cashOutFormValues : cashInFormValues}
+                  {@const selectedCashMovementHoldingID = cashMovementMode === 'out' ? selectedCashOutHoldingID(account.accountID) : selectedCashInHoldingID(account.accountID)}
+                  {@const rowInspecieFormValues = inspecieMovementMode === 'out' ? inspecieOutFormValues : inspecieInFormValues}
+                  {@const selectedInspecieInstrumentID = inspecieMovementMode === 'out' ? selectedInspecieOutInstrumentID(account.accountID) : selectedInspecieInInstrumentID(account.accountID)}
                   <tr class="bg-slate-50/40">
                     <td class="px-3 py-2" colspan="6">
-                      {#if cashInAccountID === account.accountID}
+                      {#if cashMovementMode}
                         <form
-                          action="?/cashIn"
+                          action={cashMovementMode === 'out' ? '?/cashOut' : '?/cashIn'}
                           class="grid gap-3 rounded-md border border-teal-100 bg-white p-3 md:grid-cols-[minmax(180px,220px)_minmax(260px,1fr)_minmax(140px,180px)_auto] md:items-end"
                           method="POST"
-                          use:enhance={enhanceCashIn}
+                          use:enhance={cashMovementMode === 'out' ? enhanceCashOut : enhanceCashIn}
                         >
                           <input name="accountID" type="hidden" value={account.accountID} />
 
@@ -879,29 +1230,29 @@
                               name="eventDateTime"
                               required
                               step="1" type="datetime-local"
-                              value={cashInFormValues?.accountID === account.accountID ? (cashInFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                              value={rowCashMovementFormValues?.accountID === account.accountID ? (rowCashMovementFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
                             />
                           </label>
 
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
-                            <span>Capital holding</span>
+                            <span>Investable holding</span>
                             <select
                               class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
                               name="holdingID"
                               required
                             >
-                              <option disabled selected={!selectedCashInHoldingID(account.accountID)} value="">Select Capital holding</option>
-                              {#each rowCapitalHoldings as holding}
+                              <option disabled selected={!selectedCashMovementHoldingID} value="">Select Investable holding</option>
+                              {#each rowCashInHoldings as holding}
                                 <option
-                                  selected={selectedCashInHoldingID(account.accountID) === holding.holdingID}
+                                  selected={selectedCashMovementHoldingID === holding.holdingID}
                                   value={holding.holdingID}
                                 >
-                                  {capitalHoldingLabel(holding)}
+                                  {cashInHoldingLabel(holding)}
                                 </option>
                               {/each}
                             </select>
-                            {#if !rowCapitalHoldings.length}
-                              <span class="text-xs font-normal text-amber-700">No active Capital holding is available for this account.</span>
+                            {#if !rowCashInHoldings.length}
+                              <span class="text-xs font-normal text-amber-700">No active Investable holding is available for this account.</span>
                             {/if}
                           </label>
 
@@ -914,37 +1265,148 @@
                               required
                               step="0.00000001"
                               type="number"
-                              value={cashInFormValues?.accountID === account.accountID ? (cashInFormValues.amount ?? '') : ''}
+                              value={rowCashMovementFormValues?.accountID === account.accountID ? (rowCashMovementFormValues.amount ?? '') : ''}
                             />
                           </label>
 
                           <div class="flex justify-end gap-2">
                             <button
                               class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
-                              onclick={cancelCashIn}
+                              onclick={cashMovementMode === 'out' ? cancelCashOut : cancelCashIn}
                               type="button"
                             >
                               Cancel
                             </button>
                             <button
                               class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
-                              disabled={submittingCashIn || !rowCapitalHoldings.length}
+                              disabled={(cashMovementMode === 'out' ? submittingCashOut : submittingCashIn) || !rowCashInHoldings.length}
                               type="submit"
                             >
-                              {submittingCashIn ? 'Saving' : 'Save'}
+                              {(cashMovementMode === 'out' ? submittingCashOut : submittingCashIn) ? 'Saving' : 'Save'}
+                            </button>
+                          </div>
+                        </form>
+                      {:else if inspecieMovementMode}
+                        <form
+                          action={inspecieMovementMode === 'out' ? '?/inspecieOut' : '?/inspecieIn'}
+                          class="grid gap-3 rounded-md border border-indigo-100 bg-white p-3 md:grid-cols-[minmax(180px,220px)_minmax(260px,1fr)_minmax(130px,160px)_minmax(130px,160px)_auto] md:items-end"
+                          method="POST"
+                          use:enhance={inspecieMovementMode === 'out' ? enhanceInspecieOut : enhanceInspecieIn}
+                        >
+                          <input name="accountID" type="hidden" value={account.accountID} />
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Event date</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              name="eventDateTime"
+                              required
+                              step="1" type="datetime-local"
+                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                            />
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Instrument</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              list={`instrument-options-${account.accountID}`}
+                              name="instrumentID"
+                              placeholder="Search instruments"
+                              required
+                              value={selectedInspecieInstrumentID}
+                            />
+                            <datalist id={`instrument-options-${account.accountID}`}>
+                              {#each sortedInstruments as instrument}
+                                <option
+                                  label={instrumentLabel(instrument)}
+                                  value={instrumentLabel(instrument)}
+                                ></option>
+                              {/each}
+                            </datalist>
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Quantity</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              min="0.00000001"
+                              name="quantity"
+                              required
+                              step="0.00000001"
+                              type="number"
+                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.quantity ?? '') : ''}
+                            />
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Book cost</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              min="0"
+                              name="bookCost"
+                              step="0.00000001"
+                              type="number"
+                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.bookCost ?? '') : ''}
+                            />
+                          </label>
+
+                          <div class="flex justify-end gap-2">
+                            <button
+                              class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                              onclick={inspecieMovementMode === 'out' ? cancelInspecieOut : cancelInspecieIn}
+                              type="button"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              class="h-9 rounded-md bg-indigo-700 px-3 text-sm font-medium text-white hover:bg-indigo-800 disabled:cursor-wait disabled:opacity-70"
+                              disabled={(inspecieMovementMode === 'out' ? submittingInspecieOut : submittingInspecieIn) || !sortedInstruments.length}
+                              type="submit"
+                            >
+                              {(inspecieMovementMode === 'out' ? submittingInspecieOut : submittingInspecieIn) ? 'Saving' : 'Save'}
                             </button>
                           </div>
                         </form>
                       {:else}
-                        <button
-                          class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-                          disabled={!account.active}
-                          onclick={() => startCashIn(account.accountID)}
-                          title={!account.active ? 'Account is inactive' : `Create a cash-in transaction for ${account.name}`}
-                          type="button"
-                        >
-                          Cash In
-                        </button>
+                        <div class="flex flex-wrap gap-2">
+                          <button
+                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            disabled={!account.active}
+                            onclick={() => startCashIn(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create a cash-in transaction for ${account.name}`}
+                            type="button"
+                          >
+                            Cash In
+                          </button>
+                          <button
+                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            disabled={!account.active}
+                            onclick={() => startCashOut(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create a cash-out transaction for ${account.name}`}
+                            type="button"
+                          >
+                            Cash Out
+                          </button>
+                          <button
+                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            disabled={!account.active}
+                            onclick={() => startInspecieIn(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create an inspecie-in transaction for ${account.name}`}
+                            type="button"
+                          >
+                            Inspecie In
+                          </button>
+                          <button
+                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            disabled={!account.active}
+                            onclick={() => startInspecieOut(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create an inspecie-out transaction for ${account.name}`}
+                            type="button"
+                          >
+                            Inspecie Out
+                          </button>
+                        </div>
                       {/if}
                     </td>
                   </tr>

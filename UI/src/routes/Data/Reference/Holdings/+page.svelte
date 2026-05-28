@@ -9,7 +9,7 @@
 
   type SortKey = 'name' | 'type' | 'account' | 'instrument' | 'status' | 'lastAudit';
 
-  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InspecieIn', 'InspecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
   const holdingCount = $derived(data.holdings?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.holdings ? formatDisplayDateTime(data.holdings.asOfDateTime) : 'now');
   const accountsByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account.name])));

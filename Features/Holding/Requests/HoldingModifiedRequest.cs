@@ -94,6 +94,22 @@ public sealed record HoldingOutflowModifiedRequest(
     string Name,
     bool Default) : IHoldingModifiedRequest;
 
+public sealed record HoldingInspecieInModifiedRequest(
+    UserID UserID,
+    EventDateTime EventDateTime,
+    string Reason,
+    HoldingID HoldingID,
+    string Name,
+    bool Default) : IHoldingModifiedRequest;
+
+public sealed record HoldingInspecieOutModifiedRequest(
+    UserID UserID,
+    EventDateTime EventDateTime,
+    string Reason,
+    HoldingID HoldingID,
+    string Name,
+    bool Default) : IHoldingModifiedRequest;
+
 public sealed record HoldingFeesCustodianModifiedRequest(
     UserID UserID,
     EventDateTime EventDateTime,

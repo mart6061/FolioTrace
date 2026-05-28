@@ -12,6 +12,8 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(HoldingCashNonInvestable), nameof(HoldingCashNonInvestable))]
 [JsonDerivedType(typeof(HoldingInflow), nameof(HoldingInflow))]
 [JsonDerivedType(typeof(HoldingOutflow), nameof(HoldingOutflow))]
+[JsonDerivedType(typeof(HoldingInspecieIn), nameof(HoldingInspecieIn))]
+[JsonDerivedType(typeof(HoldingInspecieOut), nameof(HoldingInspecieOut))]
 [JsonDerivedType(typeof(HoldingFeesCustodian), nameof(HoldingFeesCustodian))]
 [JsonDerivedType(typeof(HoldingFeesAdministrator), nameof(HoldingFeesAdministrator))]
 [JsonDerivedType(typeof(HoldingFeesBank), nameof(HoldingFeesBank))]
@@ -182,6 +184,26 @@ public sealed record HoldingOutflow : Holding, IHoldingNominal
     [JsonConstructor]
     [SetsRequiredMembers]
     public HoldingOutflow(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+        : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
+    {
+    }
+}
+
+public sealed record HoldingInspecieIn : Holding, IHoldingNominal
+{
+    [JsonConstructor]
+    [SetsRequiredMembers]
+    public HoldingInspecieIn(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+        : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
+    {
+    }
+}
+
+public sealed record HoldingInspecieOut : Holding, IHoldingNominal
+{
+    [JsonConstructor]
+    [SetsRequiredMembers]
+    public HoldingInspecieOut(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }

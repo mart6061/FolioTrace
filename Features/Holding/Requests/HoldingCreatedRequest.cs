@@ -118,6 +118,28 @@ public sealed record HoldingOutflowCreatedRequest(
     bool Active,
     bool Default) : IHoldingCreatedRequest;
 
+public sealed record HoldingInspecieInCreatedRequest(
+    UserID UserID,
+    EventDateTime EventDateTime,
+    string Reason,
+    HoldingID? HoldingID,
+    AccountID AccountID,
+    InstrumentID InstrumentID,
+    string Name,
+    bool Active,
+    bool Default) : IHoldingCreatedRequest;
+
+public sealed record HoldingInspecieOutCreatedRequest(
+    UserID UserID,
+    EventDateTime EventDateTime,
+    string Reason,
+    HoldingID? HoldingID,
+    AccountID AccountID,
+    InstrumentID InstrumentID,
+    string Name,
+    bool Active,
+    bool Default) : IHoldingCreatedRequest;
+
 public sealed record HoldingFeesCustodianCreatedRequest(
     UserID UserID,
     EventDateTime EventDateTime,

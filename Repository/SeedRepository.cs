@@ -197,6 +197,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         (AccountIDBuilder.Create(Guid.Parse("38b8fdcb-b95e-4a44-a6cf-8bed4b9dbd52")), "Model Portfolio", "Model Portfolio Account", "GBP", true)
     ];
 
+    private static readonly string[] SeedInvestableCashCurrencies = ["GBP", "EUR", "USD", "JPY"];
+
     private async Task CreateAccountSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
         var createdEvents = CreateInitialAccountCreatedEvents();
@@ -313,10 +315,16 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
             events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingPositionCash), "Capital", true, true));
             events.Add(CreateSeedBankHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashDebt), "Debt", true, false, account, accountIndex));
-            events.Add(CreateSeedBankHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashInvestable), "Investable", true, false, account, accountIndex));
             events.Add(CreateSeedBankHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashNonInvestable), "Income", true, false, account, accountIndex));
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingInflow), "Inflow", true, false));
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingOutflow), "Outflow", true, false));
+
+            foreach (var investableCashInstrument in SeedInvestableCashCurrencies
+                .Select(currency => instrumentSeeds.Single(seed => seed.Kind is InstrumentSeedKind.Cash && seed.Currency == currency)))
+            {
+                events.Add(CreateSeedBankHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingCashInvestable), $"Investable {investableCashInstrument.Currency}", true, false, account, accountIndex));
+                events.Add(CreateSeedHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingInflow), $"Inflow {investableCashInstrument.Currency}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingOutflow), $"Outflow {investableCashInstrument.Currency}", true, false));
+            }
+
             AddNonValuationSeedHoldings(events, ref index, account, cashInstrument.InstrumentID);
         }
 
@@ -355,6 +363,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             nameof(HoldingPositionCash) => HoldingPositionCashCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingInspecieIn) => HoldingInspecieInCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingInspecieOut) => HoldingInspecieOutCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
