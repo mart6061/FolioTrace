@@ -8,7 +8,10 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(TransactionCreditEvent), nameof(TransactionCreditEvent))]
 [JsonDerivedType(typeof(TransactionDebitEvent), nameof(TransactionDebitEvent))]
 [JsonDerivedType(typeof(TransactionCancellationEvent), nameof(TransactionCancellationEvent))]
-public interface ITransactionEvent : IEventBase;
+public interface ITransactionEvent : IEventBase
+{
+    SettlementDateTime SettlementDateTime { get; }
+}
 
 public interface ITransactionMovementEvent : ITransactionEvent
 {

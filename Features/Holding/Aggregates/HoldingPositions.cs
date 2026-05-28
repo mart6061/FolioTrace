@@ -8,6 +8,7 @@ namespace FolioTrace.Aggregates;
 public sealed record HoldingPositions : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }
+    public required ValuationDateBasis ValuationDateBasis { get; init; }
     public required AuditDateTime AsOfDateTime { get; init; }
     public EventID LastEventID { get; private set; }
     public LastAuditDateTime LastAuditDateTime { get; private set; }
@@ -15,7 +16,7 @@ public sealed record HoldingPositions : IAggregate
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingPositions(EventDateTime valuationDateTime, AuditDateTime asOfDateTime, Holdings holdings, Accounts accounts, Instruments instruments, IReadOnlyList<ITransactionEvent> transactionEvents, HoldingPositionFilter? filter = null)
+    public HoldingPositions(EventDateTime valuationDateTime, AuditDateTime asOfDateTime, Holdings holdings, Accounts accounts, Instruments instruments, IReadOnlyList<ITransactionEvent> transactionEvents, HoldingPositionFilter? filter = null, ValuationDateBasis valuationDateBasis = ValuationDateBasis.EventDateTime)
     {
         if (valuationDateTime is null)
             throw new ArgumentNullException(nameof(valuationDateTime));
@@ -33,6 +34,7 @@ public sealed record HoldingPositions : IAggregate
         filter ??= HoldingPositionFilter.Default;
 
         ValuationDateTime = valuationDateTime;
+        ValuationDateBasis = valuationDateBasis;
         AsOfDateTime = asOfDateTime;
 
         var accountById = accounts.Items.ToDictionary(account => account.AccountID.Value);
@@ -46,7 +48,7 @@ public sealed record HoldingPositions : IAggregate
             .ToDictionary(holding => holding.HoldingID.Value);
 
         var scopedTransactionEvents = transactionEvents
-            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
+            .Where(@event => GetValuationDate(@event, valuationDateBasis) <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
             .ToList();
         var activeMovements = TransactionEventSelector.GetActiveMovements(scopedTransactionEvents, asOfDateTime)
             .Where(movement => movement.HoldingID is not null && selectedHoldings.ContainsKey(movement.HoldingID.Value))
@@ -84,6 +86,7 @@ public sealed record HoldingPositions : IAggregate
                 quantity,
                 bookCost,
                 valuationDateTime,
+                valuationDateBasis,
                 asOfDateTime,
                 totals?.LastEventID ?? holding.LastEventID,
                 new LastAuditDateTime((totals?.LastAuditDateTime ?? holding.LastAuditDateTime).Value)));
@@ -102,9 +105,16 @@ public sealed record HoldingPositions : IAggregate
         }
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{ValuationDateTime.ToData()}|{ValuationDateBasis}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(HoldingPositions)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
+    public string ToDetail() => $"{nameof(HoldingPositions)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, ValuationDateBasis: {ValuationDateBasis}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
+
+    private static DateTime GetValuationDate(ITransactionEvent @event, ValuationDateBasis valuationDateBasis) =>
+        valuationDateBasis switch
+        {
+            ValuationDateBasis.SettlementDateTime => @event.SettlementDateTime.Value,
+            _ => @event.EventDateTime.Value
+        };
 
     private static decimal GetSignedQuantity(ITransactionMovementEvent movement) =>
         movement switch

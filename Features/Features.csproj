@@ -10,9 +10,4 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\Common\**\*.cs" LinkBase="Common" />
-    <Compile Include="..\Types\**\*.cs" LinkBase="Types" />
-  </ItemGroup>
-
 </Project>

@@ -62,6 +62,7 @@
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
+    { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'data', label: 'Data', tone: menuTones.value },
     { id: 'system', label: 'System', tone: menuTones.logs }
   ];
@@ -74,7 +75,6 @@
     { id: 'value-instruments', label: 'Instruments', path: '/Value/InstrumentValues', tone: menuTones.value }
   ];
   const referenceItems: MenuItem[] = [
-    { id: 'reference-account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'reference-country', label: 'Country', path: '/Data/Reference/Countries', tone: menuTones.reference },
     { id: 'reference-currency', label: 'Currency', path: '/Data/Reference/Currencies', tone: menuTones.reference },
     { id: 'reference-fx', label: 'FX', path: '/Value/FXs', tone: menuTones.reference },
@@ -83,11 +83,12 @@
   ];
   const systemItems: MenuItem[] = [
     { id: 'system-logs', label: 'Logs', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },
-    { hash: '#stats-heading', id: 'system-stats', label: 'Stats for Nerds', path: '/', tone: menuTones.logs },
-    { hash: '#system-heading', id: 'system-clear-cache', label: 'Clear Cache', path: '/', tone: menuTones.danger },
-    { hash: '#system-heading', id: 'system-rebuild-database', label: 'Rebuild Database', path: '/', tone: menuTones.danger }
+    { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs },
+    { hash: '#system-heading', id: 'system-clear-cache', label: 'Clear Cache', path: '/StatsForNerds', tone: menuTones.danger },
+    { hash: '#system-heading', id: 'system-rebuild-database', label: 'Rebuild Database', path: '/StatsForNerds', tone: menuTones.danger }
   ];
-  const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, topMenuItems[0], topMenuItems[1]];
+  const topLeafItems = topMenuItems.filter((item) => item.path);
+  const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, ...topLeafItems];
 
   let traceMode = $state(false);
   let auditDateTime = $state('');
@@ -219,16 +220,27 @@
 
   function toggleTopMenu(id: TopMenuID) {
     if (openTopMenu === id) {
+      if (openDataBranch || selectedMenuItemID) {
+        selectedMenuItemID = '';
+        openDataBranch = '';
+        return;
+      }
+
       openTopMenu = '';
-      openDataBranch = '';
       return;
     }
 
+    selectedMenuItemID = '';
     openTopMenu = id;
     openDataBranch = '';
   }
 
   function toggleDataBranch(id: DataBranchID) {
+    if (openDataBranch === id && selectedMenuItemID) {
+      selectedMenuItemID = '';
+      return;
+    }
+
     openDataBranch = openDataBranch === id ? '' : id;
   }
 
@@ -293,6 +305,11 @@
 
   function routeActiveItem() {
     return leafMenuItems.find((item) => matchesCurrentRoute(item)) ?? null;
+  }
+
+  function visibleSubmenuItems(items: MenuItem[]) {
+    const activeItem = items.find((item) => item.id === selectedMenuItemID && matchesCurrentRoute(item));
+    return activeItem ? [activeItem] : items;
   }
 
   function menuStyle(tone: MenuTone, stack = 10) {
@@ -375,10 +392,10 @@
                 >
                   {valueItem.label}
                 </button>
-                {#each valueItems as valueLeaf, valueIndex}
+                {#each visibleSubmenuItems(valueItems) as valueLeaf, valueIndex}
                   <a
                     aria-current={isActiveMenuItem(valueLeaf) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
+                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
                     href={menuHref(valueLeaf)}
                     onclick={() => handleLeafClick(valueLeaf)}
                     style={menuStyle(valueLeaf.tone, 38 - topIndex - valueIndex)}
@@ -397,10 +414,10 @@
                 >
                   {referenceItem.label}
                 </button>
-                {#each referenceItems as referenceLeaf, referenceIndex}
+                {#each visibleSubmenuItems(referenceItems) as referenceLeaf, referenceIndex}
                   <a
                     aria-current={isActiveMenuItem(referenceLeaf) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
+                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
                     href={menuHref(referenceLeaf)}
                     onclick={() => handleLeafClick(referenceLeaf)}
                     style={menuStyle(referenceLeaf.tone, 38 - topIndex - referenceIndex)}
@@ -422,10 +439,10 @@
                 {/each}
             {/if}
           {:else if item.id === 'system' && openTopMenu === 'system'}
-              {#each systemItems as systemItem, systemIndex}
+              {#each visibleSubmenuItems(systemItems) as systemItem, systemIndex}
                 <a
                   aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(systemItem)}
                   onclick={() => handleLeafClick(systemItem)}
                   style={menuStyle(systemItem.tone, 39 - topIndex - systemIndex)}

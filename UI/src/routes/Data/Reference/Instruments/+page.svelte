@@ -1,7 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
-  import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import type { InstrumentReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -11,6 +12,9 @@
   let submittingIdentifierKey = $state('');
   let submittingInstrumentID = $state('');
   let submittingCreate = $state(false);
+  let openHistoryInstrumentID = $state('');
+  let historyByInstrumentID = $state<Record<string, { events: InstrumentReferenceEvent[]; error: string; loading: boolean }>>({});
+  let loadedHistoryContextKey = $state('');
   const identifierTypeOptions = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'];
 
   const asOfSummary = $derived(data.auditDateTime && data.instruments ? formatDisplayDateTime(data.instruments.asOfDateTime) : 'now');
@@ -29,6 +33,21 @@
       ].some((value) => value.toLocaleLowerCase().includes(filter));
     })
   );
+
+  $effect(() => {
+    const nextHistoryContextKey = createHistoryContextKey();
+    if (!loadedHistoryContextKey) {
+      loadedHistoryContextKey = nextHistoryContextKey;
+      return;
+    }
+
+    if (nextHistoryContextKey === loadedHistoryContextKey)
+      return;
+
+    loadedHistoryContextKey = nextHistoryContextKey;
+    if (openHistoryInstrumentID)
+      void loadHistory(openHistoryInstrumentID);
+  });
 
   function ticker(instrument: { identifiers: { type: string | number; value: string }[] }) {
     return instrument.identifiers.find((identifier) => String(identifier.type).toLocaleLowerCase() === 'ticker' || identifier.type === 2)?.value ?? '-';
@@ -206,6 +225,84 @@
       submittingIdentifierKey = '';
     };
   };
+
+  async function toggleHistory(instrumentID: string) {
+    if (openHistoryInstrumentID === instrumentID) {
+      openHistoryInstrumentID = '';
+      delete historyByInstrumentID[instrumentID];
+      return;
+    }
+
+    openHistoryInstrumentID = instrumentID;
+
+    if (historyByInstrumentID[instrumentID])
+      return;
+
+    await loadHistory(instrumentID);
+  }
+
+  async function loadHistory(instrumentID: string) {
+    historyByInstrumentID[instrumentID] = { events: [], error: '', loading: true };
+
+    try {
+      const historyUrl = new URL('/Data/Reference/Instruments/History', window.location.origin);
+      historyUrl.searchParams.set('instrumentID', instrumentID);
+      historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
+
+      if (data.auditDateTime)
+        historyUrl.searchParams.set('auditDateTime', toApiDateTime(data.auditDateTime));
+
+      const response = await fetch(`${historyUrl.pathname}${historyUrl.search}`);
+
+      if (!response.ok)
+        throw new Error(`History request returned ${response.status} ${response.statusText}`);
+
+      historyByInstrumentID[instrumentID] = {
+        events: await response.json() as InstrumentReferenceEvent[],
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      historyByInstrumentID[instrumentID] = {
+        events: [],
+        error: error instanceof Error ? error.message : 'Unable to load history.',
+        loading: false
+      };
+    }
+  }
+
+  function createHistoryContextKey() {
+    return [
+      data.valuationDate,
+      data.auditDateTime ?? '',
+      data.instruments?.lastEventID ?? '',
+      form?.status === 'success' ? form.eventID ?? '' : ''
+    ].join('|');
+  }
+
+  function instrumentEventSummary(event: InstrumentReferenceEvent) {
+    if (event.$type === 'InstrumentActiveModifiedEvent')
+      return event.active ? 'Activated' : 'Deactivated';
+
+    if (event.$type === 'InstrumentIdentifierSetEvent' && event.identifier)
+      return `Set ${identifierTypeName(event.identifier.type)}: ${event.identifier.value}`;
+
+    if (event.$type === 'InstrumentIdentifierUnsetEvent')
+      return `Unset ${identifierTypeName(event.identifierType ?? '')}`;
+
+    if (event.$type === 'InstrumentTermsSetEvent')
+      return 'Terms updated';
+
+    return [
+      event.name,
+      event.formalName,
+      event.exchange,
+      event.cfi,
+      event.priceCountry,
+      event.incomeCountry,
+      typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
+    ].filter(Boolean).join(' | ');
+  }
 </script>
 
 <main class="min-h-screen">
@@ -488,12 +585,74 @@
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(instrument.lastAuditDateTime)}</td>
                     <td class="sticky right-0 bg-white px-3 py-2 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.6)] group-hover:bg-slate-50">
                       <div class="flex justify-end gap-2">
+                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(instrument.instrumentID)} type="button">
+                          {openHistoryInstrumentID === instrument.instrumentID ? 'Hide' : 'History'}
+                        </button>
                         <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(instrument.instrumentID)} type="button">
                           Edit
                         </button>
                       </div>
                     </td>
                   </tr>
+                  {#if openHistoryInstrumentID === instrument.instrumentID}
+                    {@const history = historyByInstrumentID[instrument.instrumentID]}
+                    <tr class="bg-slate-50/80">
+                      <td class="px-3 py-3" colspan="9">
+                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
+                          <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-sm font-semibold text-slate-950">{instrument.name} history</h2>
+                            <span class="text-xs text-slate-500">
+                              {history?.events.length ?? 0} events
+                              {#if data.auditDateTime && history?.events.length}
+                                - {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
+                              {/if}
+                            </span>
+                          </div>
+
+                          {#if history?.loading}
+                            <div class="text-sm text-slate-600">Loading history...</div>
+                          {:else if history?.error}
+                            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                          {:else if history?.events.length}
+                            <ol class="grid gap-2">
+                              {#each history.events as event}
+                                <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
+                                  event.applicationStatus === 'omitted'
+                                    ? 'border-amber-200 bg-amber-50/70'
+                                    : 'border-slate-200'
+                                }`}>
+                                  <div class="text-xs text-slate-500">
+                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
+                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
+                                  </div>
+                                  <div class="grid gap-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <span class="font-medium text-slate-950">{event.$type}</span>
+                                      {#if event.applicationStatus === 'omitted'}
+                                        <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
+                                      {:else if data.auditDateTime}
+                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
+                                      {/if}
+                                      <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
+                                    </div>
+                                    <div class="text-sm text-slate-700">{instrumentEventSummary(event)}</div>
+                                    {#if event.applicationStatus === 'omitted'}
+                                      <div class="text-xs font-medium text-amber-900">
+                                        Omitted from this view because its audit time is after the selected as-at date.
+                                      </div>
+                                    {/if}
+                                    <div class="text-xs text-slate-500">{event.reason}</div>
+                                  </div>
+                                </li>
+                              {/each}
+                            </ol>
+                          {:else}
+                            <div class="text-sm text-slate-600">No history found for this instrument.</div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
                 {/if}
               {/each}
             </tbody>

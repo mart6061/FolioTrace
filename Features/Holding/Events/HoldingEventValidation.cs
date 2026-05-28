@@ -16,23 +16,24 @@ internal static class HoldingEventValidation
         return messages;
     }
 
-    public static void ValidateDefinition(List<string> messages, HoldingType holdingType, HoldingNominalType? nominalType, string? name, bool isDefault)
+    public static void ValidateDefinition<TExpectedHolding>(List<string> messages, string? name, bool isDefault)
+        where TExpectedHolding : Holding
     {
-        if (holdingType is HoldingType.Nominal)
-        {
-            if (nominalType is null)
-                messages.Add("NominalType is required for Nominal holdings.");
-        }
-        else if (nominalType is not null)
-        {
-            messages.Add("NominalType can only be set for Nominal holdings.");
-        }
+        if (!HoldingKindRuntime.IsPositionCash<TExpectedHolding>() && isDefault)
+            messages.Add("Default can only be set for PositionCash holdings.");
 
-        if (holdingType is not HoldingType.CashOnHand && isDefault)
-            messages.Add("Default can only be set for CashOnHand holdings.");
+        if (!HoldingKindRuntime.IsPositionMemo<TExpectedHolding>() && string.IsNullOrWhiteSpace(name))
+            messages.Add("Name is required for all holding kinds except PositionMemo.");
+    }
 
-        if (holdingType is not HoldingType.Position && string.IsNullOrWhiteSpace(name))
-            messages.Add("Name is required for Nominal, CashOnHand, and CashDebt holdings.");
+    public static void ValidateBankDetails(List<string> messages, string? bankName, string? accountName, SortCode? sortCode, BankAccountNumber? accountNumber, BIC? bic, IBAN? iban)
+    {
+        if (string.IsNullOrWhiteSpace(bankName)) messages.Add("BankName is required.");
+        if (string.IsNullOrWhiteSpace(accountName)) messages.Add("AccountName is required.");
+        if (sortCode is null) messages.Add("SortCode is required.");
+        if (accountNumber is null) messages.Add("AccountNumber is required.");
+        if (bic is null) messages.Add("BIC is required.");
+        if (iban is null) messages.Add("IBAN is required.");
     }
 
     public static void ValidateReferences(List<string> messages, AccountID? accountID, InstrumentID? instrumentID, Accounts? accounts, Instruments? instruments)
@@ -48,7 +49,8 @@ internal static class HoldingEventValidation
             messages.Add($"No matching Instrument found for InstrumentID '{instrumentID}'.");
     }
 
-    public static void ValidateCreatedHolding(List<string> messages, HoldingID? holdingID, AccountID? accountID, InstrumentID? instrumentID, HoldingType holdingType, bool isDefault, Holdings? holdings)
+    public static void ValidateCreatedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings? holdings)
+        where TExpectedHolding : Holding
     {
         if (holdingID is null || holdings is null)
             return;
@@ -56,22 +58,27 @@ internal static class HoldingEventValidation
         if (holdings.Items.Any(holding => holding.HoldingID == holdingID))
             messages.Add($"HoldingID '{holdingID}' already exists.");
 
-        ValidateDefaultCashOnHand(messages, holdingID, accountID, instrumentID, holdingType, isDefault, holdings);
+        ValidateDefaultPositionCash<TExpectedHolding>(messages, holdingID, accountID, instrumentID, isDefault, holdings);
     }
 
-    public static void ValidateModifiedHolding(List<string> messages, HoldingID? holdingID, bool isDefault, Holdings? holdings)
+    public static Holding? ValidateModifiedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, bool isDefault, Holdings? holdings)
+        where TExpectedHolding : Holding
     {
         if (holdingID is null || holdings is null)
-            return;
+            return null;
 
         var holding = holdings.Items.SingleOrDefault(item => item.HoldingID == holdingID);
         if (holding is null)
         {
             messages.Add($"No matching Holding found for HoldingID '{holdingID}'.");
-            return;
+            return null;
         }
 
-        ValidateDefaultCashOnHand(messages, holdingID, holding.AccountID, holding.InstrumentID, holding.HoldingType, isDefault, holdings);
+        if (holding is not TExpectedHolding)
+            messages.Add($"HoldingID '{holdingID}' is a {holding.GetHoldingKindName()} holding, not a {HoldingKindRuntime.GetKindName<TExpectedHolding>()} holding.");
+
+        ValidateDefaultPositionCash<TExpectedHolding>(messages, holdingID, holding.AccountID, holding.InstrumentID, isDefault, holdings);
+        return holding;
     }
 
     public static void ValidateActiveHolding(List<string> messages, HoldingID? holdingID, Holdings? holdings)
@@ -83,19 +90,20 @@ internal static class HoldingEventValidation
             messages.Add($"No matching Holding found for HoldingID '{holdingID}'.");
     }
 
-    private static void ValidateDefaultCashOnHand(List<string> messages, HoldingID holdingID, AccountID? accountID, InstrumentID? instrumentID, HoldingType holdingType, bool isDefault, Holdings holdings)
+    private static void ValidateDefaultPositionCash<TExpectedHolding>(List<string> messages, HoldingID holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings holdings)
+        where TExpectedHolding : Holding
     {
-        if (!isDefault || holdingType is not HoldingType.CashOnHand || accountID is null || instrumentID is null)
+        if (!isDefault || !HoldingKindRuntime.IsPositionCash<TExpectedHolding>() || accountID is null || instrumentID is null)
             return;
 
         if (holdings.Items.Any(holding =>
             holding.HoldingID != holdingID &&
             holding.AccountID == accountID &&
             holding.InstrumentID == instrumentID &&
-            holding.HoldingType is HoldingType.CashOnHand &&
+            holding is HoldingPositionCash &&
             holding.Default))
         {
-            messages.Add($"A default CashOnHand holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.");
+            messages.Add($"A default PositionCash holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.");
         }
     }
 }

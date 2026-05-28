@@ -3,12 +3,16 @@ import { fail } from '@sveltejs/kit';
 import {
   getAccounts,
   getApiBaseUrl,
+  getHoldings,
+  getInstruments,
   postAccountActiveModifiedEvent,
   postAccountCreatedEvent,
   postAccountModifiedEvent,
+  postTransactionSet,
   type AccountActiveModifiedRequest,
   type AccountCreatedRequest,
-  type AccountModifiedRequest
+  type AccountModifiedRequest,
+  type TransactionSetRequest
 } from '$lib/server/api';
 
 const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
@@ -18,17 +22,21 @@ export const load = async ({ fetch, url }) => {
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
 
   try {
-    const accounts = await getAccounts(
-      fetch,
-      toApiDateTime(valuationDate),
-      auditDateTime ? toApiDateTime(auditDateTime) : null
-    );
+    const valuationDateTime = toApiDateTime(valuationDate);
+    const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+    const [accounts, holdings, instruments] = await Promise.all([
+      getAccounts(fetch, valuationDateTime, asAtDateTime),
+      getHoldings(fetch, valuationDateTime, asAtDateTime, false),
+      getInstruments(fetch, valuationDateTime, asAtDateTime)
+    ]);
 
     return {
       accounts,
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       error: '',
+      holdings,
+      instruments,
       valuationDate
     };
   } catch (error) {
@@ -37,6 +45,8 @@ export const load = async ({ fetch, url }) => {
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load accounts.',
+      holdings: null,
+      instruments: null,
       valuationDate
     };
   }
@@ -114,6 +124,86 @@ export const actions = {
     } catch (error) {
       return fail(502, { accountID, intent: 'modifyAccountActive', message: error instanceof Error ? error.message : 'Unable to update account status.', status: 'failure' });
     }
+  },
+
+  cashIn: async ({ fetch, request }) => {
+    const formData = await request.formData();
+    const values = readCashInForm(formData);
+
+    if (!values.accountID || !values.holdingID || !values.eventDateTime || !values.amount)
+      return fail(400, cashInFailure('Account, holding, event date, and amount are required.', values));
+
+    const amountResult = parseCashAmount(values.amount);
+    if (!amountResult.valid)
+      return fail(400, cashInFailure(amountResult.message, values));
+
+    try {
+      const eventDateTime = toApiDateTime(values.eventDateTime);
+      const settlementDateTime = toApiDateTime(nextWorkingDayForInput(values.eventDateTime));
+      const [holdings, accounts] = await Promise.all([
+        getHoldings(fetch, eventDateTime, null, false),
+        getAccounts(fetch, eventDateTime, null)
+      ]);
+      const capitalHolding = holdings.items.find((holding) =>
+        holding.holdingID === values.holdingID &&
+        holding.accountID === values.accountID &&
+        holding.holdingKind === 'PositionCash' &&
+        holding.name === 'Capital' &&
+        holding.default &&
+        holding.active
+      );
+
+      if (!capitalHolding)
+        return fail(400, cashInFailure('Select an active Capital cash holding.', values));
+
+      const inflowHolding = holdings.items.find((holding) =>
+        holding.accountID === capitalHolding.accountID &&
+        holding.instrumentID === capitalHolding.instrumentID &&
+        holding.holdingKind === 'Inflow' &&
+        holding.active
+      );
+
+      if (!inflowHolding)
+        return fail(400, cashInFailure('No active Inflow holding was found for the selected Capital holding.', values));
+
+      const account = accounts.items.find((item) => item.accountID === capitalHolding.accountID);
+      const amount = amountResult.amount;
+      const amountLabel = `${formatAmount(amount)} ${account?.bookCurrency ?? ''}`.trim();
+      const transactionSetRequest: TransactionSetRequest = {
+        userID: systemUserID,
+        eventDateTime,
+        settlementDateTime,
+        reason: `Cash in ${amountLabel} to ${account?.name ?? 'Capital'}`,
+        credits: [
+          {
+            accountID: capitalHolding.accountID,
+            bookCost: amount,
+            holdingID: capitalHolding.holdingID,
+            instrumentID: capitalHolding.instrumentID,
+            quantity: amount
+          }
+        ],
+        debits: [
+          {
+            accountID: inflowHolding.accountID,
+            bookCost: amount,
+            holdingID: inflowHolding.holdingID,
+            instrumentID: inflowHolding.instrumentID,
+            quantity: amount
+          }
+        ]
+      };
+
+      const result = await postTransactionSet(fetch, transactionSetRequest);
+      return {
+        eventIDs: result.eventIDs,
+        intent: 'cashIn',
+        message: `Cash in ${amountLabel} was created successfully.`,
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, cashInFailure(error instanceof Error ? error.message : 'Unable to create cash-in transaction.', values));
+    }
   }
 };
 
@@ -132,7 +222,55 @@ function failure(intent: string, message: string, values: ReturnType<typeof read
   return { accountID: values.accountID, intent, message, status: 'failure', values };
 }
 
+function readCashInForm(formData: FormData) {
+  return {
+    accountID: getFormString(formData, 'accountID'),
+    amount: getFormString(formData, 'amount'),
+    eventDateTime: getFormString(formData, 'eventDateTime'),
+    holdingID: getFormString(formData, 'holdingID')
+  };
+}
+
+function cashInFailure(message: string, values: ReturnType<typeof readCashInForm>) {
+  return { intent: 'cashIn', message, status: 'failure', values };
+}
+
+function parseCashAmount(value: string) {
+  const normalizedValue = value.trim();
+  const amount = Number(normalizedValue);
+
+  if (!Number.isFinite(amount) || amount <= 0)
+    return { amount: 0, message: 'Amount must be greater than zero.', valid: false as const };
+
+  const decimalPart = normalizedValue.includes('.') ? normalizedValue.split('.')[1] : '';
+  if (decimalPart.length > 8)
+    return { amount: 0, message: 'Amount can have at most 8 decimal places.', valid: false as const };
+
+  return { amount, message: '', valid: true as const };
+}
+
+function formatAmount(value: number) {
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: 8,
+    minimumFractionDigits: 0
+  });
+}
+
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function nextWorkingDayForInput(value: string) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + 1);
+
+  while (date.getDay() === 0 || date.getDay() === 6)
+    date.setDate(date.getDate() + 1);
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function pad(value: number) {
+  return value.toString().padStart(2, '0');
 }

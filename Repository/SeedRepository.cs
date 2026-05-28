@@ -309,31 +309,84 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         foreach (var account in SeedAccounts)
         {
             var cashInstrument = instrumentSeeds.Single(seed => seed.Kind is InstrumentSeedKind.Cash && seed.Currency == account.BookCurrency);
+            var accountIndex = Array.FindIndex(SeedAccounts, seed => seed.AccountID == account.AccountID);
 
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, HoldingType.CashOnHand, null, "Capital", true, true));
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, HoldingType.CashOnHand, null, "Income", true, false));
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, HoldingType.Nominal, HoldingNominalType.Inflow, "Inflow", true, false));
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, HoldingType.Nominal, HoldingNominalType.Outflow, "Outflow", true, false));
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingPositionCash), "Capital", true, true));
+            events.Add(CreateSeedBankHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashDebt), "Debt", true, false, account, accountIndex));
+            events.Add(CreateSeedBankHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashInvestable), "Investable", true, false, account, accountIndex));
+            events.Add(CreateSeedBankHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashNonInvestable), "Income", true, false, account, accountIndex));
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingInflow), "Inflow", true, false));
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingOutflow), "Outflow", true, false));
+            AddNonValuationSeedHoldings(events, ref index, account, cashInstrument.InstrumentID);
         }
 
         return events;
     }
 
-    private static HoldingCreatedEvent CreateSeedHolding(int index, AccountID accountID, InstrumentID instrumentID, HoldingType holdingType, HoldingNominalType? nominalType, string name, bool active, bool isDefault) =>
-        HoldingCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
-            Constants.Initialisation.UserID,
-            EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(50 + index)),
-            AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(50 + index)),
-            Constants.Initialisation.Reason,
-            HoldingIDBuilder.Create(CreateDeterministicGuid($"holding-{accountID}-{instrumentID}-{holdingType}-{nominalType}-{name}")),
-            accountID,
-            instrumentID,
-            holdingType,
-            nominalType,
-            name,
-            active,
-            isDefault).Value!;
+    private static void AddNonValuationSeedHoldings(List<HoldingCreatedEvent> events, ref int index, (AccountID AccountID, string Name, string FormalName, string BookCurrency, bool Active) account, InstrumentID cashInstrumentID)
+    {
+        var accountIndex = Array.FindIndex(SeedAccounts, seed => seed.AccountID == account.AccountID);
+        var custodianNames = new[] { "Bank of New Year", "Royal Bank of Canada", "Bank of America" };
+        var administratorNames = new[] { "Capita", "Fundrock", "Gallium tailors" };
+        var bankNames = new[] { "HSBC", "Barclays" };
+
+        foreach (var name in custodianNames.Take(1 + accountIndex % custodianNames.Length))
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingFeesCustodian), name, true, false));
+
+        foreach (var name in administratorNames.Take(accountIndex % administratorNames.Length))
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingFeesAdministrator), name, true, false));
+
+        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingFeesBank), bankNames[accountIndex % bankNames.Length], true, false));
+        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingIncome), bankNames[(accountIndex + 1) % bankNames.Length], true, false));
+        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingInterest), bankNames[accountIndex % bankNames.Length], true, false));
+    }
+
+    private static HoldingCreatedEvent CreateSeedHolding(int index, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name, bool active, bool isDefault)
+    {
+        var eventId = new EventID(Guid.NewGuid());
+        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(50 + index));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(50 + index));
+        var holdingKind = HoldingKindRuntime.GetKindName(holdingType);
+        var holdingID = HoldingIDBuilder.Create(CreateDeterministicGuid($"holding-{accountID}-{instrumentID}-{holdingKind}-{name}"));
+
+        return holdingType.Name switch
+        {
+            nameof(HoldingPositionMemo) => HoldingPositionMemoCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingPositionCash) => HoldingPositionCashCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingIncome) => HoldingIncomeCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingInterest) => HoldingInterestCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            _ => throw new InvalidOperationException($"Unsupported seed holding kind '{holdingKind}'.")
+        };
+    }
+
+    private static HoldingCreatedEvent CreateSeedBankHolding(int index, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name, bool active, bool isDefault, (AccountID AccountID, string Name, string FormalName, string BookCurrency, bool Active) account, int accountIndex)
+    {
+        var eventId = new EventID(Guid.NewGuid());
+        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(50 + index));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(50 + index));
+        var holdingKind = HoldingKindRuntime.GetKindName(holdingType);
+        var holdingID = HoldingIDBuilder.Create(CreateDeterministicGuid($"holding-{accountID}-{instrumentID}-{holdingKind}-{name}"));
+        var bankNames = new[] { "HSBC", "Barclays" };
+        var bankName = bankNames[(accountIndex + name.Length) % bankNames.Length];
+        var accountName = $"{account.Name} {name}";
+        var sortCode = SortCodeBuilder.Create($"{accountIndex + 10:00}-{index % 100:00}-{name.Length % 100:00}");
+        var accountNumber = BankAccountNumberBuilder.Create($"{10000000 + index:00000000}");
+        var bic = BICBuilder.Create(bankName == "Barclays" ? "BARCGB22" : "HBUKGB4B");
+        var iban = IBANBuilder.Create("GB82WEST12345698765432");
+
+        return holdingType.Name switch
+        {
+            nameof(HoldingCashDebt) => HoldingCashDebtCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault, bankName, accountName, sortCode, accountNumber, bic, iban).Value!,
+            nameof(HoldingCashInvestable) => HoldingCashInvestableCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault, bankName, accountName, sortCode, accountNumber, bic, iban).Value!,
+            nameof(HoldingCashNonInvestable) => HoldingCashNonInvestableCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault, bankName, accountName, sortCode, accountNumber, bic, iban).Value!,
+            _ => throw new InvalidOperationException($"Unsupported seed bank holding kind '{holdingKind}'.")
+        };
+    }
 
     private async Task CreateFXSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {

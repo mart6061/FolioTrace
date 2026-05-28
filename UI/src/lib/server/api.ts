@@ -11,13 +11,17 @@ import type {
   FXRateHistoryEvent,
   FXs,
   Holdings,
+  HoldingPositions,
+  HoldingKind,
   HoldingReferenceEvent,
   InstrumentLogo,
+  InstrumentReferenceEvent,
   InstrumentValues,
   InstrumentValueHistoryEvent,
   Instruments,
   MemoryDiagnostics,
-  BuildProgressNotification
+  BuildProgressNotification,
+  ValuationDateBasis
 } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
@@ -59,20 +63,27 @@ export type HoldingCreatedRequest = {
   holdingID?: string;
   accountID: string;
   instrumentID: string;
-  holdingType: string;
-  nominalType?: string | null;
+  holdingKind: HoldingKind;
   name: string;
   active: boolean;
   default: boolean;
+  bankName?: string;
+  accountName?: string;
+  sortCode?: string;
+  accountNumber?: string;
 };
 
 export type HoldingModifiedRequest = {
   eventDateTime: string;
   reason: string;
   holdingID: string;
-  nominalType?: string | null;
+  holdingKind: HoldingKind;
   name: string;
   default: boolean;
+  bankName?: string;
+  accountName?: string;
+  sortCode?: string;
+  accountNumber?: string;
 };
 
 export type HoldingActiveModifiedRequest = {
@@ -171,6 +182,32 @@ export type EventSubmissionResponse = {
   }[];
 };
 
+export type TransactionRequest = {
+  holdingID: string;
+  instrumentID: string;
+  accountID: string;
+  quantity: number;
+  bookCost: number;
+};
+
+export type TransactionSetRequest = {
+  userID: string;
+  eventDateTime: string;
+  settlementDateTime: string;
+  reason: string;
+  credits: TransactionRequest[];
+  debits: TransactionRequest[];
+};
+
+export type TransactionSetSubmissionResponse = {
+  eventIDs: string[];
+  links: {
+    rel: string;
+    href: string;
+    method: string;
+  }[];
+};
+
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
     super(message);
@@ -240,6 +277,27 @@ export async function getHoldings(
   return (await response.json()) as Holdings;
 }
 
+export async function getHoldingPositions(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  valuationDateBasis: ValuationDateBasis = 'EventDateTime'
+) {
+  const url = new URL(`${getApiBaseUrl()}/HoldingPositions`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  url.searchParams.set('valuationDateBasis', valuationDateBasis);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as HoldingPositions;
+}
+
 export async function getCurrencies(
   fetchApi: typeof fetch,
   eventDateTime: string,
@@ -293,6 +351,15 @@ export async function getHoldingEvents(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as HoldingReferenceEvent[];
+}
+
+export async function getInstrumentEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InstrumentReferenceEvent[];
 }
 
 export async function getInstrumentPriceEvents(fetchApi: typeof fetch, instrumentID?: string) {
@@ -530,7 +597,7 @@ export async function postHoldingCreatedEvent(
   request: HoldingCreatedRequest,
   userID: string
 ) {
-  return postHoldingEvent(fetchApi, 'HoldingCreatedEvent', request, userID);
+  return postHoldingEvent(fetchApi, `${holdingEventPrefix(request.holdingKind)}CreatedEvent`, request, userID);
 }
 
 export async function postHoldingModifiedEvent(
@@ -538,7 +605,7 @@ export async function postHoldingModifiedEvent(
   request: HoldingModifiedRequest,
   userID: string
 ) {
-  return postHoldingEvent(fetchApi, 'HoldingModifiedEvent', request, userID);
+  return postHoldingEvent(fetchApi, `${holdingEventPrefix(request.holdingKind)}ModifiedEvent`, request, userID);
 }
 
 export async function postHoldingActiveModifiedEvent(
@@ -769,6 +836,40 @@ export async function postInstrumentTermsEquitySetEvent(fetchApi: typeof fetch, 
   return (await response.json()) as EventSubmissionResponse;
 }
 
+export async function postTransactionSet(fetchApi: typeof fetch, request: TransactionSetRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Transaction/TransactionSet`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      SettlementDateTime: request.settlementDateTime,
+      Reason: request.reason,
+      Credits: request.credits.map((credit) => ({
+        HoldingID: credit.holdingID,
+        InstrumentID: credit.instrumentID,
+        AccountID: credit.accountID,
+        Quantity: credit.quantity,
+        BookCost: credit.bookCost
+      })),
+      Debits: request.debits.map((debit) => ({
+        HoldingID: debit.holdingID,
+        InstrumentID: debit.instrumentID,
+        AccountID: debit.accountID,
+        Quantity: debit.quantity,
+        BookCost: debit.bookCost
+      }))
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as TransactionSetSubmissionResponse;
+}
+
 async function postCountryEvent(
   fetchApi: typeof fetch,
   eventType: 'CountryCreatedEvent' | 'CountryModifiedEvent',
@@ -843,7 +944,7 @@ async function postAccountEvent(
 
 async function postHoldingEvent(
   fetchApi: typeof fetch,
-  eventType: 'HoldingCreatedEvent' | 'HoldingModifiedEvent' | 'HoldingActiveModifiedEvent',
+  eventType: string,
   request: HoldingCreatedRequest | HoldingModifiedRequest | HoldingActiveModifiedRequest,
   userID: string
 ) {
@@ -854,22 +955,21 @@ async function postHoldingEvent(
     HoldingID: request.holdingID
   };
 
-  if (eventType === 'HoldingCreatedEvent') {
+  if ('accountID' in request) {
     const created = request as HoldingCreatedRequest;
     if (!created.holdingID)
       delete body.HoldingID;
     body.AccountID = created.accountID;
     body.InstrumentID = created.instrumentID;
-    body.HoldingType = created.holdingType;
-    body.NominalType = created.nominalType || null;
     body.Name = created.name;
     body.Active = created.active;
     body.Default = created.default;
-  } else if (eventType === 'HoldingModifiedEvent') {
+    addBankFields(body, created);
+  } else if ('name' in request) {
     const modified = request as HoldingModifiedRequest;
-    body.NominalType = modified.nominalType || null;
     body.Name = modified.name;
     body.Default = modified.default;
+    addBankFields(body, modified);
   } else if ('active' in request) {
     body.Active = request.active;
   }
@@ -888,6 +988,49 @@ async function postHoldingEvent(
   }
 
   return (await response.json()) as EventSubmissionResponse;
+}
+
+function holdingEventPrefix(holdingKind: HoldingKind) {
+  switch (holdingKind) {
+    case 'PositionMemo':
+      return 'HoldingPositionMemo';
+    case 'PositionCash':
+      return 'HoldingPositionCash';
+    case 'CashDebt':
+      return 'HoldingCashDebt';
+    case 'CashInvestable':
+      return 'HoldingCashInvestable';
+    case 'CashNonInvestable':
+      return 'HoldingCashNonInvestable';
+    case 'Inflow':
+      return 'HoldingInflow';
+    case 'Outflow':
+      return 'HoldingOutflow';
+    case 'FeesCustodian':
+      return 'HoldingFeesCustodian';
+    case 'FeesAdministrator':
+      return 'HoldingFeesAdministrator';
+    case 'FeesBank':
+      return 'HoldingFeesBank';
+    case 'Income':
+      return 'HoldingIncome';
+    case 'Interest':
+      return 'HoldingInterest';
+  }
+}
+
+function isBankHoldingKind(holdingKind: HoldingKind) {
+  return holdingKind === 'CashDebt' || holdingKind === 'CashInvestable' || holdingKind === 'CashNonInvestable';
+}
+
+function addBankFields(body: Record<string, unknown>, request: HoldingCreatedRequest | HoldingModifiedRequest) {
+  if (!isBankHoldingKind(request.holdingKind))
+    return;
+
+  body.BankName = request.bankName ?? '';
+  body.AccountName = request.accountName ?? '';
+  body.SortCode = request.sortCode ?? '';
+  body.AccountNumber = request.accountNumber ?? '';
 }
 
 async function postCurrencyEvent(

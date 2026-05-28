@@ -11,8 +11,7 @@ public sealed record HoldingPosition : IModel
     public required string AccountName { get; init; }
     public required InstrumentID InstrumentID { get; init; }
     public required string InstrumentName { get; init; }
-    public required HoldingType HoldingType { get; init; }
-    public HoldingNominalType? NominalType { get; init; }
+    public required string HoldingKind { get; init; }
     public required string Name { get; init; }
     public required bool Active { get; init; }
     public required bool Default { get; init; }
@@ -20,13 +19,14 @@ public sealed record HoldingPosition : IModel
     public required decimal Quantity { get; init; }
     public required decimal BookCost { get; init; }
     public required EventDateTime ValuationDateTime { get; init; }
+    public required ValuationDateBasis ValuationDateBasis { get; init; }
     public required AuditDateTime AsOfDateTime { get; init; }
     public required EventID LastEventID { get; init; }
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingPosition(Holding holding, string accountName, string instrumentName, decimal quantity, decimal bookCost, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingPosition(Holding holding, string accountName, string instrumentName, decimal quantity, decimal bookCost, EventDateTime valuationDateTime, ValuationDateBasis valuationDateBasis, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         if (holding is null)
             throw new ArgumentNullException(nameof(holding));
@@ -36,8 +36,7 @@ public sealed record HoldingPosition : IModel
         AccountName = accountName;
         InstrumentID = holding.InstrumentID;
         InstrumentName = instrumentName;
-        HoldingType = holding.HoldingType;
-        NominalType = holding.NominalType;
+        HoldingKind = holding.GetHoldingKindName();
         Name = holding.Name;
         Active = holding.Active;
         Default = holding.Default;
@@ -45,12 +44,13 @@ public sealed record HoldingPosition : IModel
         Quantity = quantity;
         BookCost = bookCost;
         ValuationDateTime = valuationDateTime;
+        ValuationDateBasis = valuationDateBasis;
         AsOfDateTime = asOfDateTime;
         LastEventID = lastEventID;
         LastAuditDateTime = lastAuditDateTime;
     }
 
-    public string ToData() => $"{HoldingID.ToData()}|{AccountID.ToData()}|{InstrumentID.ToData()}|{HoldingType}|{NominalType}|{Name}|{Quantity:0.########}|{BookCost:0.########}|{IncludeInValuation}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{HoldingID.ToData()}|{AccountID.ToData()}|{InstrumentID.ToData()}|{HoldingKind}|{Name}|{Quantity:0.########}|{BookCost:0.########}|{IncludeInValuation}|{ValuationDateTime.ToData()}|{ValuationDateBasis}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
     public string ToDetail() => $"{nameof(HoldingPosition)}: {Name} ({HoldingID}, Quantity: {Quantity:0.########}, BookCost: {BookCost:0.########}, IncludeInValuation: {IncludeInValuation})";
 }

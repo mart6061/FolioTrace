@@ -1,0 +1,15 @@
+<svg width="640" height="180" viewBox="0 0 640 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">foleo logo</title>
+  <desc id="desc">Lowercase foleo wordmark with an events of time mark.</desc>
+  <rect x="18" y="24" width="132" height="132" rx="30" fill="#17362F"/>
+  <circle cx="84" cy="90" r="39" stroke="#F7F8F4" stroke-width="9"/>
+  <path d="M84 58v32l24 17" stroke="#F7F8F4" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M59 109c14 14 40 14 53-5" stroke="#D9EDE7" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="84" cy="58" r="6" fill="#2F80ED"/>
+  <circle cx="112" cy="104" r="6" fill="#C7923E"/>
+  <text x="184" y="116" fill="#17362F" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="92" font-weight="760" letter-spacing="0">fol</text>
+  <text x="308" y="116" fill="#146C5C" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="92" font-weight="760" letter-spacing="0">e</text>
+  <text x="360" y="116" fill="#17362F" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="92" font-weight="760" letter-spacing="0">o</text>
+  <circle cx="336" cy="128" r="5.5" fill="#2F80ED"/>
+  <path d="M320 128h32" stroke="#2F80ED" stroke-width="4" stroke-linecap="round"/>
+</svg>

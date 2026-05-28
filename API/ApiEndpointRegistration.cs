@@ -420,7 +420,7 @@ public static class ApiEndpointRegistration
     {
         var holdings = api.MapGroup("/Holdings");
 
-        holdings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, HoldingType? holdingType, bool? includeInactive, HoldingService holdingService) =>
+        holdings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, string? holdingKind, bool? includeInactive, HoldingService holdingService) =>
         {
             var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
             var aggregate = auditDateTime.HasValue
@@ -432,15 +432,16 @@ public static class ApiEndpointRegistration
                 .Where(holding => !holdingID.HasValue || holding.HoldingID.Value == holdingID.Value)
                 .Where(holding => !accountID.HasValue || holding.AccountID.Value == accountID.Value)
                 .Where(holding => !instrumentID.HasValue || holding.InstrumentID.Value == instrumentID.Value)
-                .Where(holding => !holdingType.HasValue || holding.HoldingType == holdingType.Value)
+                .Where(holding => string.IsNullOrWhiteSpace(holdingKind) || string.Equals(holding.GetHoldingKindName(), holdingKind, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             return Results.Ok(aggregate with { Items = items });
         });
 
-        api.MapGet("/HoldingPositions", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, bool? includeExcluded, bool? includeZero, HoldingPositionService holdingPositionService) =>
+        api.MapGet("/HoldingPositions", async (DateTime eventDateTime, DateTime? auditDateTime, ValuationDateBasis? valuationDateBasis, Guid? holdingID, Guid? accountID, Guid? instrumentID, bool? includeExcluded, bool? includeZero, HoldingPositionService holdingPositionService) =>
         {
             var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
+            var basis = valuationDateBasis ?? ValuationDateBasis.EventDateTime;
             var asAt = auditDateTime.HasValue
                 ? AuditDateTimeBuilder.Create(auditDateTime.Value)
                 : AuditDateTimeBuilder.Create();
@@ -451,7 +452,7 @@ public static class ApiEndpointRegistration
                 includeExcluded == true,
                 includeZero == true);
 
-            return Results.Ok(await holdingPositionService.Get(valuationDateTime, asAt, filter));
+            return Results.Ok(await holdingPositionService.Get(valuationDateTime, asAt, filter, basis));
         });
     }
 
@@ -778,13 +779,7 @@ public static class ApiEndpointRegistration
 
             if (holdingID.HasValue)
                 events = events
-                    .Where(@event => @event switch
-                    {
-                        HoldingCreatedEvent createdEvent => createdEvent.HoldingID.Value == holdingID.Value,
-                        HoldingModifiedEvent modifiedEvent => modifiedEvent.HoldingID.Value == holdingID.Value,
-                        HoldingActiveModifiedEvent activeEvent => activeEvent.HoldingID.Value == holdingID.Value,
-                        _ => false
-                    })
+                    .Where(@event => @event.HoldingID.Value == holdingID.Value)
                     .ToList();
 
             if (accountID.HasValue)
@@ -808,35 +803,31 @@ public static class ApiEndpointRegistration
                 : Results.NotFound();
         });
 
-        holdingEvents.MapPost($"/{nameof(HoldingCreatedEvent)}", async (IEventRepository eventRepository, AccountService accountService, InstrumentService instrumentService, AggregateCacheInvalidationService cacheInvalidationService, HoldingCreatedRequest request, CancellationToken cancellationToken) =>
-        {
-            var asAt = AuditDateTimeBuilder.Create();
-            var accounts = await accountService.Get(request.EventDateTime, asAt);
-            var instruments = await instrumentService.Get(request.EventDateTime, asAt);
-            var holdings = await TryGetHoldings(request.EventDateTime, asAt, eventRepository, cancellationToken);
-            var result = HoldingCreatedEventBuilder.Create(request, accounts, instruments, holdings);
-            if (!result.IsValid || result.Value is null)
-                return Results.BadRequest(result);
+        MapHoldingCreatedEndpoint<HoldingPositionMemoCreatedRequest, HoldingPositionMemoCreatedEvent>(holdingEvents, nameof(HoldingPositionMemoCreatedEvent), HoldingPositionMemoCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingPositionCashCreatedRequest, HoldingPositionCashCreatedEvent>(holdingEvents, nameof(HoldingPositionCashCreatedEvent), HoldingPositionCashCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingCashDebtCreatedRequest, HoldingCashDebtCreatedEvent>(holdingEvents, nameof(HoldingCashDebtCreatedEvent), HoldingCashDebtCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingCashInvestableCreatedRequest, HoldingCashInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashInvestableCreatedEvent), HoldingCashInvestableCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingCashNonInvestableCreatedRequest, HoldingCashNonInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashNonInvestableCreatedEvent), HoldingCashNonInvestableCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingInflowCreatedRequest, HoldingInflowCreatedEvent>(holdingEvents, nameof(HoldingInflowCreatedEvent), HoldingInflowCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingOutflowCreatedRequest, HoldingOutflowCreatedEvent>(holdingEvents, nameof(HoldingOutflowCreatedEvent), HoldingOutflowCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingFeesCustodianCreatedRequest, HoldingFeesCustodianCreatedEvent>(holdingEvents, nameof(HoldingFeesCustodianCreatedEvent), HoldingFeesCustodianCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingFeesAdministratorCreatedRequest, HoldingFeesAdministratorCreatedEvent>(holdingEvents, nameof(HoldingFeesAdministratorCreatedEvent), HoldingFeesAdministratorCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingFeesBankCreatedRequest, HoldingFeesBankCreatedEvent>(holdingEvents, nameof(HoldingFeesBankCreatedEvent), HoldingFeesBankCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingIncomeCreatedRequest, HoldingIncomeCreatedEvent>(holdingEvents, nameof(HoldingIncomeCreatedEvent), HoldingIncomeCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingInterestCreatedRequest, HoldingInterestCreatedEvent>(holdingEvents, nameof(HoldingInterestCreatedEvent), HoldingInterestCreatedEventBuilder.Create);
 
-            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
-            cacheInvalidationService.Invalidate(result.Value);
-            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
-        });
-
-        holdingEvents.MapPost($"/{nameof(HoldingModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, HoldingModifiedRequest request, CancellationToken cancellationToken) =>
-        {
-            var holdings = await TryGetHoldings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
-            if (holdings is null)
-                return Results.BadRequest(Result<HoldingModifiedEvent>.Invalid([$"No matching Holding found for HoldingID '{request.HoldingID}'."]));
-
-            var result = HoldingModifiedEventBuilder.Create(request, holdings);
-            if (!result.IsValid || result.Value is null)
-                return Results.BadRequest(result);
-
-            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
-            cacheInvalidationService.Invalidate(result.Value);
-            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
-        });
+        MapHoldingModifiedEndpoint<HoldingPositionMemoModifiedRequest, HoldingPositionMemoModifiedEvent>(holdingEvents, nameof(HoldingPositionMemoModifiedEvent), HoldingPositionMemoModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingPositionCashModifiedRequest, HoldingPositionCashModifiedEvent>(holdingEvents, nameof(HoldingPositionCashModifiedEvent), HoldingPositionCashModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingCashDebtModifiedRequest, HoldingCashDebtModifiedEvent>(holdingEvents, nameof(HoldingCashDebtModifiedEvent), HoldingCashDebtModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingCashInvestableModifiedRequest, HoldingCashInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashInvestableModifiedEvent), HoldingCashInvestableModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingCashNonInvestableModifiedRequest, HoldingCashNonInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashNonInvestableModifiedEvent), HoldingCashNonInvestableModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingInflowModifiedRequest, HoldingInflowModifiedEvent>(holdingEvents, nameof(HoldingInflowModifiedEvent), HoldingInflowModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingOutflowModifiedRequest, HoldingOutflowModifiedEvent>(holdingEvents, nameof(HoldingOutflowModifiedEvent), HoldingOutflowModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingFeesCustodianModifiedRequest, HoldingFeesCustodianModifiedEvent>(holdingEvents, nameof(HoldingFeesCustodianModifiedEvent), HoldingFeesCustodianModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingFeesAdministratorModifiedRequest, HoldingFeesAdministratorModifiedEvent>(holdingEvents, nameof(HoldingFeesAdministratorModifiedEvent), HoldingFeesAdministratorModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingFeesBankModifiedRequest, HoldingFeesBankModifiedEvent>(holdingEvents, nameof(HoldingFeesBankModifiedEvent), HoldingFeesBankModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingIncomeModifiedRequest, HoldingIncomeModifiedEvent>(holdingEvents, nameof(HoldingIncomeModifiedEvent), HoldingIncomeModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingInterestModifiedRequest, HoldingInterestModifiedEvent>(holdingEvents, nameof(HoldingInterestModifiedEvent), HoldingInterestModifiedEventBuilder.Create);
 
         holdingEvents.MapPost($"/{nameof(HoldingActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, HoldingActiveModifiedRequest request, CancellationToken cancellationToken) =>
         {
@@ -845,6 +836,52 @@ public static class ApiEndpointRegistration
                 return Results.BadRequest(Result<HoldingActiveModifiedEvent>.Invalid([$"No matching Holding found for HoldingID '{request.HoldingID}'."]));
 
             var result = HoldingActiveModifiedEventBuilder.Create(request, holdings);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
+        });
+    }
+
+    private static void MapHoldingCreatedEndpoint<TRequest, TEvent>(
+        RouteGroupBuilder holdingEvents,
+        string eventName,
+        Func<TRequest, Accounts?, Instruments?, Holdings?, Result<TEvent>> createEvent)
+        where TRequest : IHoldingCreatedRequest
+        where TEvent : HoldingCreatedEvent
+    {
+        holdingEvents.MapPost($"/{eventName}", async (IEventRepository eventRepository, AccountService accountService, InstrumentService instrumentService, AggregateCacheInvalidationService cacheInvalidationService, TRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var accounts = await accountService.Get(request.EventDateTime, asAt);
+            var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+            var holdings = await TryGetHoldings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var result = createEvent(request, accounts, instruments, holdings);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(HoldingEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(HoldingEventsRoute, result.Value));
+        });
+    }
+
+    private static void MapHoldingModifiedEndpoint<TRequest, TEvent>(
+        RouteGroupBuilder holdingEvents,
+        string eventName,
+        Func<TRequest, Holdings?, Result<TEvent>> createEvent)
+        where TRequest : IHoldingModifiedRequest
+        where TEvent : HoldingModifiedEvent
+    {
+        holdingEvents.MapPost($"/{eventName}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TRequest request, CancellationToken cancellationToken) =>
+        {
+            var holdings = await TryGetHoldings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            if (holdings is null)
+                return Results.BadRequest(Result<TEvent>.Invalid([$"No matching Holding found for HoldingID '{request.HoldingID}'."]));
+
+            var result = createEvent(request, holdings);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
@@ -1351,11 +1388,16 @@ public static class ApiEndpointRegistration
                 HoldingID = createdEvent.HoldingID.Value,
                 AccountID = createdEvent.AccountID.Value,
                 InstrumentID = createdEvent.InstrumentID.Value,
-                HoldingType = createdEvent.HoldingType.ToString(),
-                NominalType = createdEvent.NominalType?.ToString(),
+                HoldingKind = createdEvent.GetHoldingKindName(),
                 createdEvent.Name,
                 createdEvent.Active,
-                createdEvent.Default
+                createdEvent.Default,
+                BankName = createdEvent is HoldingBankCreatedEvent bankEvent ? bankEvent.BankName : null,
+                AccountName = createdEvent is HoldingBankCreatedEvent accountEvent ? accountEvent.AccountName : null,
+                SortCode = createdEvent is HoldingBankCreatedEvent sortEvent ? sortEvent.SortCode.Value : null,
+                AccountNumber = createdEvent is HoldingBankCreatedEvent numberEvent ? numberEvent.AccountNumber.Value : null,
+                BIC = createdEvent is HoldingBankCreatedEvent bicEvent ? bicEvent.BIC.Value : null,
+                IBAN = createdEvent is HoldingBankCreatedEvent ibanEvent ? ibanEvent.IBAN.Value : null
             },
             HoldingModifiedEvent modifiedEvent => new
             {
@@ -1366,9 +1408,15 @@ public static class ApiEndpointRegistration
                 AuditDateTime = modifiedEvent.AuditDateTime.Value,
                 modifiedEvent.Reason,
                 HoldingID = modifiedEvent.HoldingID.Value,
-                NominalType = modifiedEvent.NominalType?.ToString(),
+                HoldingKind = modifiedEvent.GetHoldingKindName(),
                 modifiedEvent.Name,
-                modifiedEvent.Default
+                modifiedEvent.Default,
+                BankName = modifiedEvent is HoldingBankModifiedEvent bankEvent ? bankEvent.BankName : null,
+                AccountName = modifiedEvent is HoldingBankModifiedEvent accountEvent ? accountEvent.AccountName : null,
+                SortCode = modifiedEvent is HoldingBankModifiedEvent sortEvent ? sortEvent.SortCode.Value : null,
+                AccountNumber = modifiedEvent is HoldingBankModifiedEvent numberEvent ? numberEvent.AccountNumber.Value : null,
+                BIC = modifiedEvent is HoldingBankModifiedEvent bicEvent ? bicEvent.BIC.Value : null,
+                IBAN = modifiedEvent is HoldingBankModifiedEvent ibanEvent ? ibanEvent.IBAN.Value : null
             },
             HoldingActiveModifiedEvent activeEvent => new
             {
@@ -1612,6 +1660,7 @@ public static class ApiEndpointRegistration
                 EventID = creditEvent.EventID.Value,
                 UserID = creditEvent.UserID.Value,
                 EventDateTime = creditEvent.EventDateTime.Value,
+                SettlementDateTime = creditEvent.SettlementDateTime.Value,
                 AuditDateTime = creditEvent.AuditDateTime.Value,
                 creditEvent.Reason,
                 EventSetID = creditEvent.EventSetID.Value,
@@ -1628,6 +1677,7 @@ public static class ApiEndpointRegistration
                 EventID = debitEvent.EventID.Value,
                 UserID = debitEvent.UserID.Value,
                 EventDateTime = debitEvent.EventDateTime.Value,
+                SettlementDateTime = debitEvent.SettlementDateTime.Value,
                 AuditDateTime = debitEvent.AuditDateTime.Value,
                 debitEvent.Reason,
                 EventSetID = debitEvent.EventSetID.Value,
@@ -1644,6 +1694,7 @@ public static class ApiEndpointRegistration
                 EventID = cancellationEvent.EventID.Value,
                 UserID = cancellationEvent.UserID.Value,
                 EventDateTime = cancellationEvent.EventDateTime.Value,
+                SettlementDateTime = cancellationEvent.SettlementDateTime.Value,
                 AuditDateTime = cancellationEvent.AuditDateTime.Value,
                 cancellationEvent.Reason,
                 EventSetID = cancellationEvent.EventSetID.Value,

@@ -13,6 +13,7 @@ public sealed record TransactionCreditEvent : EventBase, ITransactionMovementEve
     public AccountID AccountID { get; init; } = null!;
     public TransactionQuantity Quantity { get; init; } = null!;
     public TransactionBookCost BookCost { get; init; } = null!;
+    public SettlementDateTime SettlementDateTime { get; init; } = null!;
 
     [JsonConstructor]
     private TransactionCreditEvent() : base(null!, null!, null!, null!, string.Empty) { }
@@ -21,6 +22,7 @@ public sealed record TransactionCreditEvent : EventBase, ITransactionMovementEve
         EventID eventId,
         UserID userId,
         EventDateTime eventDateTime,
+        SettlementDateTime settlementDateTime,
         AuditDateTime auditDateTime,
         string reason,
         EventSetID eventSetID,
@@ -32,6 +34,7 @@ public sealed record TransactionCreditEvent : EventBase, ITransactionMovementEve
         TransactionBookCost bookCost)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
+        SettlementDateTime = settlementDateTime;
         EventSetID = eventSetID;
         EventIDGroup = eventIDGroup.ToList();
         HoldingID = holdingID;

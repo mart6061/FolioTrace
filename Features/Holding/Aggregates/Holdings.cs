@@ -77,8 +77,8 @@ public sealed record Holdings : IAggregate
     {
         if (Items.Any(holding => holding.HoldingID == createdEvent.HoldingID))
             throw new InvalidOperationException($"Holding already exists for HoldingID '{createdEvent.HoldingID}'.");
-        if (createdEvent.Default && Items.Any(holding => holding.AccountID == createdEvent.AccountID && holding.InstrumentID == createdEvent.InstrumentID && holding.HoldingType is HoldingType.CashOnHand && holding.Default))
-            throw new InvalidOperationException($"A default CashOnHand holding already exists for AccountID '{createdEvent.AccountID}' and InstrumentID '{createdEvent.InstrumentID}'.");
+        if (createdEvent.Default && Items.Any(holding => holding.AccountID == createdEvent.AccountID && holding.InstrumentID == createdEvent.InstrumentID && holding is HoldingPositionCash && holding.Default))
+            throw new InvalidOperationException($"A default PositionCash holding already exists for AccountID '{createdEvent.AccountID}' and InstrumentID '{createdEvent.InstrumentID}'.");
 
         Items.Add(HoldingBuilder.Create(createdEvent));
         LastEventID = createdEvent.EventID;
@@ -92,8 +92,8 @@ public sealed record Holdings : IAggregate
             throw new InvalidOperationException($"No matching holding found for HoldingID '{modifiedEvent.HoldingID}'.");
 
         var existing = Items[index];
-        if (modifiedEvent.Default && Items.Where((_, itemIndex) => itemIndex != index).Any(holding => holding.AccountID == existing.AccountID && holding.InstrumentID == existing.InstrumentID && holding.HoldingType is HoldingType.CashOnHand && holding.Default))
-            throw new InvalidOperationException($"A default CashOnHand holding already exists for AccountID '{existing.AccountID}' and InstrumentID '{existing.InstrumentID}'.");
+        if (modifiedEvent.Default && Items.Where((_, itemIndex) => itemIndex != index).Any(holding => holding.AccountID == existing.AccountID && holding.InstrumentID == existing.InstrumentID && holding is HoldingPositionCash && holding.Default))
+            throw new InvalidOperationException($"A default PositionCash holding already exists for AccountID '{existing.AccountID}' and InstrumentID '{existing.InstrumentID}'.");
 
         Items[index] = existing.Apply(modifiedEvent);
         LastEventID = modifiedEvent.EventID;

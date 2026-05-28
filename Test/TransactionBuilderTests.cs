@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
 
@@ -24,6 +25,7 @@ public sealed class TransactionBuilderTests
         Assert.Single(events.Select(@event => @event.EventSetID.Value).Distinct());
         Assert.All(events, @event => Assert.Equal(expectedEventIds, EventIds(@event.EventIDGroup)));
         Assert.All(events, @event => Assert.Equal(request.EventDateTime, @event.EventDateTime));
+        Assert.All(events, @event => Assert.Equal(request.SettlementDateTime, @event.SettlementDateTime));
     }
 
     [Fact]
@@ -78,6 +80,37 @@ public sealed class TransactionBuilderTests
     }
 
     [Fact]
+    public void Create_RejectsMissingSettlementDate()
+    {
+        var request = CreateRequest(
+            credits: [CreateLeg(10m)],
+            debits: [CreateLeg(10m)]) with
+        {
+            SettlementDateTime = null!
+        };
+
+        var result = TransactionBuilder.Create(request, CreateHoldings());
+
+        Assert.False(result.IsValid);
+        Assert.Contains("SettlementDateTime is required.", result.ValidationErrors);
+    }
+
+    [Fact]
+    public void Create_RejectsSettlementDateBeforeEventDate()
+    {
+        var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10));
+        var request = CreateRequest(eventDateTime, credits: [CreateLeg(10m)], debits: [CreateLeg(10m)]) with
+        {
+            SettlementDateTime = SettlementDateTimeBuilder.Create(eventDateTime.Value.AddTicks(-1))
+        };
+
+        var result = TransactionBuilder.Create(request, CreateHoldings());
+
+        Assert.False(result.IsValid);
+        Assert.Contains("SettlementDateTime must be equal to or greater than EventDateTime.", result.ValidationErrors);
+    }
+
+    [Fact]
     public void CreateCancellation_EmitsOneCancellationPerOriginalEvent()
     {
         var originalEvents = CreateBalancedSet();
@@ -90,6 +123,7 @@ public sealed class TransactionBuilderTests
         Assert.Equal(originalEvents.Count, cancellationEvents.Count);
         Assert.Single(cancellationEvents.Select(@event => @event.EventSetID.Value).Distinct());
         Assert.All(cancellationEvents, @event => Assert.Equal(originalEvents[0].EventDateTime, @event.EventDateTime));
+        Assert.All(cancellationEvents, @event => Assert.Equal(originalEvents[0].SettlementDateTime, @event.SettlementDateTime));
 
         var cancellationEventIds = EventIds(cancellationEvents);
         var originalEventIds = EventIds(originalEvents);
@@ -131,6 +165,36 @@ public sealed class TransactionBuilderTests
     }
 
     [Fact]
+    public void CreateCancellation_RejectsMixedOriginalSettlementDates()
+    {
+        var originalEvents = CreateBalancedSet();
+        var changedDebit = Assert.IsType<TransactionDebitEvent>(originalEvents[1]) with
+        {
+            SettlementDateTime = SettlementDateTimeBuilder.Create(originalEvents[1].SettlementDateTime.Value.AddDays(1))
+        };
+        var mixedEvents = new List<ITransactionEvent> { originalEvents[0], changedDebit };
+        var request = new TransactionCancellationRequest(UserID, "Cancel trade", originalEvents[0].EventSetID);
+
+        var result = TransactionCancellationEventBuilder.Create(request, mixedEvents);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("All original transaction events must have the same SettlementDateTime.", result.ValidationErrors);
+    }
+
+    [Fact]
+    public void SettlementDateTime_SerializesAsRoundTripString()
+    {
+        var settlementDateTime = SettlementDateTimeBuilder.Create(new DateTime(2026, 5, 28, 13, 45, 0, DateTimeKind.Utc));
+
+        var json = JsonSerializer.Serialize(settlementDateTime);
+        var restored = JsonSerializer.Deserialize<SettlementDateTime>(json);
+
+        Assert.Equal("\"2026-05-28T13:45:00.0000000Z\"", json);
+        Assert.Equal(settlementDateTime, restored);
+        Assert.Throws<ArgumentException>(() => SettlementDateTimeBuilder.Create(default));
+    }
+
+    [Fact]
     public void CreateCancellation_ThrowsWhenSetAlreadyCancelled()
     {
         var originalEvents = CreateBalancedSet();
@@ -163,9 +227,13 @@ public sealed class TransactionBuilderTests
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
 
     private static TransactionSetRequest CreateRequest(IReadOnlyList<TransactionRequest> credits, IReadOnlyList<TransactionRequest> debits) =>
+        CreateRequest(EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10)), credits, debits);
+
+    private static TransactionSetRequest CreateRequest(EventDateTime eventDateTime, IReadOnlyList<TransactionRequest> credits, IReadOnlyList<TransactionRequest> debits) =>
         new(
             UserID,
-            EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10)),
+            eventDateTime,
+            SettlementDateTimeBuilder.Create(eventDateTime.Value.AddDays(1)),
             "Book transaction",
             credits,
             debits);
@@ -180,7 +248,7 @@ public sealed class TransactionBuilderTests
 
     private static Holdings CreateHoldings()
     {
-        var holdingCreated = HoldingCreatedEventBuilder.CreateSeed(
+        var holdingCreated = HoldingPositionMemoCreatedEventBuilder.CreateSeed(
             new EventID(Guid.NewGuid()),
             UserID,
             HoldingEventDate,
@@ -189,8 +257,6 @@ public sealed class TransactionBuilderTests
             HoldingID,
             AccountID,
             InstrumentID,
-            HoldingType.Position,
-            null,
             string.Empty,
             true,
             false).Value!;
