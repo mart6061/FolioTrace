@@ -10,6 +10,7 @@ import type {
   FXRates,
   FXRateHistoryEvent,
   FXs,
+  Holding,
   Holdings,
   HoldingPositions,
   HoldingKind,
@@ -20,6 +21,7 @@ import type {
   InstrumentValueHistoryEvent,
   Instruments,
   MemoryDiagnostics,
+  TransactionReferenceEvent,
   BuildProgressNotification,
   ValuationDateBasis
 } from '$lib/types';
@@ -274,7 +276,14 @@ export async function getHoldings(
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
-  return (await response.json()) as Holdings;
+  const holdings = (await response.json()) as Holdings;
+  return {
+    ...holdings,
+    items: holdings.items.map((holding) => ({
+      ...holding,
+      holdingKind: holding.holdingKind ?? holdingKindFromDiscriminator(holding)
+    }))
+  };
 }
 
 export async function getHoldingPositions(
@@ -351,6 +360,20 @@ export async function getHoldingEvents(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as HoldingReferenceEvent[];
+}
+
+export async function getTransactionEvents(fetchApi: typeof fetch, accountID?: string) {
+  const url = new URL(`${getApiBaseUrl()}/Events/Transaction/`);
+
+  if (accountID)
+    url.searchParams.set('accountID', accountID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return ((await response.json()) as Record<string, unknown>[]).map(normalizeTransactionEvent);
 }
 
 export async function getInstrumentEvents(fetchApi: typeof fetch) {
@@ -1006,6 +1029,10 @@ function holdingEventPrefix(holdingKind: HoldingKind) {
       return 'HoldingInflow';
     case 'Outflow':
       return 'HoldingOutflow';
+    case 'InspecieIn':
+      return 'HoldingInspecieIn';
+    case 'InspecieOut':
+      return 'HoldingInspecieOut';
     case 'FeesCustodian':
       return 'HoldingFeesCustodian';
     case 'FeesAdministrator':
@@ -1019,8 +1046,91 @@ function holdingEventPrefix(holdingKind: HoldingKind) {
   }
 }
 
+function holdingKindFromDiscriminator(holding: Holding): HoldingKind {
+  const type = (holding as Holding & { $type?: string }).$type ?? '';
+  const kind = type.startsWith('Holding') ? type.slice('Holding'.length) : type;
+
+  if (isHoldingKind(kind))
+    return kind;
+
+  throw new Error(`Unknown holding discriminator '${type || '(missing)'}'.`);
+}
+
+function isHoldingKind(value: string): value is HoldingKind {
+  return [
+    'PositionMemo',
+    'PositionCash',
+    'CashDebt',
+    'CashInvestable',
+    'CashNonInvestable',
+    'Inflow',
+    'Outflow',
+    'InspecieIn',
+    'InspecieOut',
+    'FeesCustodian',
+    'FeesAdministrator',
+    'FeesBank',
+    'Income',
+    'Interest'
+  ].includes(value);
+}
+
 function isBankHoldingKind(holdingKind: HoldingKind) {
   return holdingKind === 'CashDebt' || holdingKind === 'CashInvestable' || holdingKind === 'CashNonInvestable';
+}
+
+function normalizeTransactionEvent(event: Record<string, unknown>): TransactionReferenceEvent {
+  return {
+    $type: readString(event, '$type', 'type', 'Type'),
+    auditDateTime: readString(event, 'auditDateTime', 'AuditDateTime'),
+    bookCost: readOptionalNumber(event, 'bookCost', 'BookCost'),
+    cancelledEventID: readString(event, 'cancelledEventID', 'cancelledEventId', 'CancelledEventID') || undefined,
+    cancelledIDGroup: readStringArray(event, 'cancelledIDGroup', 'cancelledIdGroup', 'CancelledIDGroup'),
+    eventDateTime: readString(event, 'eventDateTime', 'EventDateTime'),
+    eventID: readString(event, 'eventID', 'eventId', 'EventID'),
+    eventIDGroup: readStringArray(event, 'eventIDGroup', 'eventIdGroup', 'EventIDGroup'),
+    eventSetID: readString(event, 'eventSetID', 'eventSetId', 'EventSetID'),
+    holdingID: readString(event, 'holdingID', 'holdingId', 'HoldingID') || undefined,
+    accountID: readString(event, 'accountID', 'accountId', 'AccountID') || undefined,
+    instrumentID: readString(event, 'instrumentID', 'instrumentId', 'InstrumentID') || undefined,
+    quantity: readOptionalNumber(event, 'quantity', 'Quantity'),
+    reason: readString(event, 'reason', 'Reason'),
+    settlementDateTime: readString(event, 'settlementDateTime', 'SettlementDateTime'),
+    userID: readString(event, 'userID', 'userId', 'UserID')
+  };
+}
+
+function readString(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (typeof value === 'string')
+      return value;
+  }
+
+  return '';
+}
+
+function readOptionalNumber(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (typeof value === 'number')
+      return value;
+  }
+
+  return undefined;
+}
+
+function readStringArray(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (Array.isArray(value))
+      return value.filter((item): item is string => typeof item === 'string');
+  }
+
+  return [];
 }
 
 function addBankFields(body: Record<string, unknown>, request: HoldingCreatedRequest | HoldingModifiedRequest) {

@@ -77,8 +77,9 @@ public sealed record Holdings : IAggregate
     {
         if (Items.Any(holding => holding.HoldingID == createdEvent.HoldingID))
             throw new InvalidOperationException($"Holding already exists for HoldingID '{createdEvent.HoldingID}'.");
-        if (createdEvent.Default && Items.Any(holding => holding.AccountID == createdEvent.AccountID && holding.InstrumentID == createdEvent.InstrumentID && holding is HoldingPositionCash && holding.Default))
-            throw new InvalidOperationException($"A default PositionCash holding already exists for AccountID '{createdEvent.AccountID}' and InstrumentID '{createdEvent.InstrumentID}'.");
+        var createdKind = createdEvent.GetHoldingKindName();
+        if (createdEvent.Default && Items.Any(holding => holding.AccountID == createdEvent.AccountID && holding.InstrumentID == createdEvent.InstrumentID && holding.GetHoldingKindName() == createdKind && holding.Default))
+            throw new InvalidOperationException($"A default {createdKind} holding already exists for AccountID '{createdEvent.AccountID}' and InstrumentID '{createdEvent.InstrumentID}'.");
 
         Items.Add(HoldingBuilder.Create(createdEvent));
         LastEventID = createdEvent.EventID;
@@ -92,8 +93,9 @@ public sealed record Holdings : IAggregate
             throw new InvalidOperationException($"No matching holding found for HoldingID '{modifiedEvent.HoldingID}'.");
 
         var existing = Items[index];
-        if (modifiedEvent.Default && Items.Where((_, itemIndex) => itemIndex != index).Any(holding => holding.AccountID == existing.AccountID && holding.InstrumentID == existing.InstrumentID && holding is HoldingPositionCash && holding.Default))
-            throw new InvalidOperationException($"A default PositionCash holding already exists for AccountID '{existing.AccountID}' and InstrumentID '{existing.InstrumentID}'.");
+        var modifiedKind = modifiedEvent.GetHoldingKindName();
+        if (modifiedEvent.Default && Items.Where((_, itemIndex) => itemIndex != index).Any(holding => holding.AccountID == existing.AccountID && holding.InstrumentID == existing.InstrumentID && holding.GetHoldingKindName() == modifiedKind && holding.Default))
+            throw new InvalidOperationException($"A default {modifiedKind} holding already exists for AccountID '{existing.AccountID}' and InstrumentID '{existing.InstrumentID}'.");
 
         Items[index] = existing.Apply(modifiedEvent);
         LastEventID = modifiedEvent.EventID;

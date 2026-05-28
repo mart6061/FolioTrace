@@ -810,6 +810,8 @@ public static class ApiEndpointRegistration
         MapHoldingCreatedEndpoint<HoldingCashNonInvestableCreatedRequest, HoldingCashNonInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashNonInvestableCreatedEvent), HoldingCashNonInvestableCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingInflowCreatedRequest, HoldingInflowCreatedEvent>(holdingEvents, nameof(HoldingInflowCreatedEvent), HoldingInflowCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingOutflowCreatedRequest, HoldingOutflowCreatedEvent>(holdingEvents, nameof(HoldingOutflowCreatedEvent), HoldingOutflowCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingInspecieInCreatedRequest, HoldingInspecieInCreatedEvent>(holdingEvents, nameof(HoldingInspecieInCreatedEvent), HoldingInspecieInCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingInspecieOutCreatedRequest, HoldingInspecieOutCreatedEvent>(holdingEvents, nameof(HoldingInspecieOutCreatedEvent), HoldingInspecieOutCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingFeesCustodianCreatedRequest, HoldingFeesCustodianCreatedEvent>(holdingEvents, nameof(HoldingFeesCustodianCreatedEvent), HoldingFeesCustodianCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingFeesAdministratorCreatedRequest, HoldingFeesAdministratorCreatedEvent>(holdingEvents, nameof(HoldingFeesAdministratorCreatedEvent), HoldingFeesAdministratorCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingFeesBankCreatedRequest, HoldingFeesBankCreatedEvent>(holdingEvents, nameof(HoldingFeesBankCreatedEvent), HoldingFeesBankCreatedEventBuilder.Create);
@@ -823,6 +825,8 @@ public static class ApiEndpointRegistration
         MapHoldingModifiedEndpoint<HoldingCashNonInvestableModifiedRequest, HoldingCashNonInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashNonInvestableModifiedEvent), HoldingCashNonInvestableModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingInflowModifiedRequest, HoldingInflowModifiedEvent>(holdingEvents, nameof(HoldingInflowModifiedEvent), HoldingInflowModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingOutflowModifiedRequest, HoldingOutflowModifiedEvent>(holdingEvents, nameof(HoldingOutflowModifiedEvent), HoldingOutflowModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingInspecieInModifiedRequest, HoldingInspecieInModifiedEvent>(holdingEvents, nameof(HoldingInspecieInModifiedEvent), HoldingInspecieInModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingInspecieOutModifiedRequest, HoldingInspecieOutModifiedEvent>(holdingEvents, nameof(HoldingInspecieOutModifiedEvent), HoldingInspecieOutModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingFeesCustodianModifiedRequest, HoldingFeesCustodianModifiedEvent>(holdingEvents, nameof(HoldingFeesCustodianModifiedEvent), HoldingFeesCustodianModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingFeesAdministratorModifiedRequest, HoldingFeesAdministratorModifiedEvent>(holdingEvents, nameof(HoldingFeesAdministratorModifiedEvent), HoldingFeesAdministratorModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingFeesBankModifiedRequest, HoldingFeesBankModifiedEvent>(holdingEvents, nameof(HoldingFeesBankModifiedEvent), HoldingFeesBankModifiedEventBuilder.Create);

@@ -19,9 +19,6 @@ internal static class HoldingEventValidation
     public static void ValidateDefinition<TExpectedHolding>(List<string> messages, string? name, bool isDefault)
         where TExpectedHolding : Holding
     {
-        if (!HoldingKindRuntime.IsPositionCash<TExpectedHolding>() && isDefault)
-            messages.Add("Default can only be set for PositionCash holdings.");
-
         if (!HoldingKindRuntime.IsPositionMemo<TExpectedHolding>() && string.IsNullOrWhiteSpace(name))
             messages.Add("Name is required for all holding kinds except PositionMemo.");
     }
@@ -58,7 +55,7 @@ internal static class HoldingEventValidation
         if (holdings.Items.Any(holding => holding.HoldingID == holdingID))
             messages.Add($"HoldingID '{holdingID}' already exists.");
 
-        ValidateDefaultPositionCash<TExpectedHolding>(messages, holdingID, accountID, instrumentID, isDefault, holdings);
+        ValidateDefaultForKind<TExpectedHolding>(messages, holdingID, accountID, instrumentID, isDefault, holdings);
     }
 
     public static Holding? ValidateModifiedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, bool isDefault, Holdings? holdings)
@@ -77,7 +74,7 @@ internal static class HoldingEventValidation
         if (holding is not TExpectedHolding)
             messages.Add($"HoldingID '{holdingID}' is a {holding.GetHoldingKindName()} holding, not a {HoldingKindRuntime.GetKindName<TExpectedHolding>()} holding.");
 
-        ValidateDefaultPositionCash<TExpectedHolding>(messages, holdingID, holding.AccountID, holding.InstrumentID, isDefault, holdings);
+        ValidateDefaultForKind<TExpectedHolding>(messages, holdingID, holding.AccountID, holding.InstrumentID, isDefault, holdings);
         return holding;
     }
 
@@ -90,20 +87,21 @@ internal static class HoldingEventValidation
             messages.Add($"No matching Holding found for HoldingID '{holdingID}'.");
     }
 
-    private static void ValidateDefaultPositionCash<TExpectedHolding>(List<string> messages, HoldingID holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings holdings)
+    private static void ValidateDefaultForKind<TExpectedHolding>(List<string> messages, HoldingID holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings holdings)
         where TExpectedHolding : Holding
     {
-        if (!isDefault || !HoldingKindRuntime.IsPositionCash<TExpectedHolding>() || accountID is null || instrumentID is null)
+        if (!isDefault || accountID is null || instrumentID is null)
             return;
 
+        var holdingKind = HoldingKindRuntime.GetKindName<TExpectedHolding>();
         if (holdings.Items.Any(holding =>
             holding.HoldingID != holdingID &&
             holding.AccountID == accountID &&
             holding.InstrumentID == instrumentID &&
-            holding is HoldingPositionCash &&
+            holding.GetHoldingKindName() == holdingKind &&
             holding.Default))
         {
-            messages.Add($"A default PositionCash holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.");
+            messages.Add($"A default {holdingKind} holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.");
         }
     }
 }

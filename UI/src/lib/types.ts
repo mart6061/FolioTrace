@@ -50,6 +50,8 @@ export type HoldingKind =
   | 'PositionCash'
   | 'Inflow'
   | 'Outflow'
+  | 'InspecieIn'
+  | 'InspecieOut'
   | 'FeesCustodian'
   | 'FeesAdministrator'
   | 'FeesBank'
@@ -312,6 +314,19 @@ export type HoldingReferenceEvent = ReferenceEventBase & {
   accountName?: string | null;
   sortCode?: string | null;
   accountNumber?: string | null;
+};
+
+export type TransactionReferenceEvent = ReferenceEventBase & {
+  eventSetID: string;
+  eventIDGroup: string[];
+  settlementDateTime: string;
+  holdingID?: string;
+  accountID?: string;
+  instrumentID?: string;
+  quantity?: number;
+  bookCost?: number;
+  cancelledEventID?: string;
+  cancelledIDGroup?: string[];
 };
 
 export type InstrumentReferenceEvent = ReferenceEventBase & {
