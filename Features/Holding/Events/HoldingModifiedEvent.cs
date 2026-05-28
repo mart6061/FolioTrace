@@ -4,24 +4,21 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record HoldingModifiedEvent : EventBase, IHoldingEvent
+public abstract record HoldingModifiedEvent : EventBase, IHoldingEvent
 {
     public HoldingID HoldingID { get; init; } = null!;
-    public HoldingNominalType? NominalType { get; init; }
     public string Name { get; init; } = string.Empty;
     public bool Default { get; init; }
 
-    [JsonConstructor]
-    private HoldingModifiedEvent() : base(null!, null!, null!, null!, string.Empty) { }
+    protected HoldingModifiedEvent() : base(null!, null!, null!, null!, string.Empty) { }
 
-    internal HoldingModifiedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, HoldingID holdingID, HoldingNominalType? nominalType, string name, bool isDefault)
+    internal HoldingModifiedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, HoldingID holdingID, string name, bool isDefault)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         HoldingID = holdingID;
-        NominalType = nominalType;
-        Name = name.Trim();
+        Name = name?.Trim() ?? string.Empty;
         Default = isDefault;
     }
 
-    public override string Type => nameof(HoldingModifiedEvent);
+    internal abstract Holding Apply(Holding holding);
 }

@@ -10,6 +10,7 @@ public sealed record TransactionCancellationEvent : EventBase, ITransactionEvent
     public IReadOnlyList<EventID> EventIDGroup { get; init; } = [];
     public EventID CancelledEventID { get; init; } = null!;
     public IReadOnlyList<EventID> CancelledIDGroup { get; init; } = [];
+    public SettlementDateTime SettlementDateTime { get; init; } = null!;
 
     [JsonConstructor]
     private TransactionCancellationEvent() : base(null!, null!, null!, null!, string.Empty) { }
@@ -18,6 +19,7 @@ public sealed record TransactionCancellationEvent : EventBase, ITransactionEvent
         EventID eventId,
         UserID userId,
         EventDateTime eventDateTime,
+        SettlementDateTime settlementDateTime,
         AuditDateTime auditDateTime,
         string reason,
         EventSetID eventSetID,
@@ -26,6 +28,7 @@ public sealed record TransactionCancellationEvent : EventBase, ITransactionEvent
         IReadOnlyList<EventID> cancelledIDGroup)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
+        SettlementDateTime = settlementDateTime;
         EventSetID = eventSetID;
         EventIDGroup = eventIDGroup.ToList();
         CancelledEventID = cancelledEventID;

@@ -23,8 +23,7 @@ public sealed class HoldingService(IEventRepository eventRepository)
         }
     }
 
-    public int Invalidate(HoldingCreatedEvent @event) => InvalidateFrom(@event.EventDateTime);
-    public int Invalidate(HoldingModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
+    public int Invalidate(IHoldingEvent @event) => InvalidateFrom(@event.EventDateTime);
     public int Invalidate(HoldingActiveModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
 
     public bool IsCached(EventDateTime valuationDate)

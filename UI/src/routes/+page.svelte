@@ -32,6 +32,24 @@
           history that explains how it got there.
         </p>
       </section>
+
+      <section class="dashboard-intro" aria-labelledby="tech-stack-heading">
+        <h2 id="tech-stack-heading">Tech stack</h2>
+        <p>
+          FolioTrace is built as a .NET 10 application with a SvelteKit front end. The API layer exposes the portfolio
+          and reference-data views, while the domain logic sits in the Features project where events, aggregates, and
+          strongly typed values are modelled.
+        </p>
+        <p>
+          The repository layer uses Marten on PostgreSQL to store the append-only event streams that drive the
+          application. Aggregates are rebuilt from those streams, cached for common valuation dates, and invalidated
+          whenever new events arrive.
+        </p>
+        <p>
+          The UI is written with Svelte 5, SvelteKit, TypeScript, Vite, and Tailwind CSS. Tests are handled with xUnit,
+          keeping the event builders, aggregate rules, and valuation behaviour covered as the model evolves.
+        </p>
+      </section>
     </div>
   </section>
 </main>

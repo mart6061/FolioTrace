@@ -220,16 +220,27 @@
 
   function toggleTopMenu(id: TopMenuID) {
     if (openTopMenu === id) {
+      if (openDataBranch || selectedMenuItemID) {
+        selectedMenuItemID = '';
+        openDataBranch = '';
+        return;
+      }
+
       openTopMenu = '';
-      openDataBranch = '';
       return;
     }
 
+    selectedMenuItemID = '';
     openTopMenu = id;
     openDataBranch = '';
   }
 
   function toggleDataBranch(id: DataBranchID) {
+    if (openDataBranch === id && selectedMenuItemID) {
+      selectedMenuItemID = '';
+      return;
+    }
+
     openDataBranch = openDataBranch === id ? '' : id;
   }
 
@@ -294,6 +305,11 @@
 
   function routeActiveItem() {
     return leafMenuItems.find((item) => matchesCurrentRoute(item)) ?? null;
+  }
+
+  function visibleSubmenuItems(items: MenuItem[]) {
+    const activeItem = items.find((item) => item.id === selectedMenuItemID && matchesCurrentRoute(item));
+    return activeItem ? [activeItem] : items;
   }
 
   function menuStyle(tone: MenuTone, stack = 10) {
@@ -376,10 +392,10 @@
                 >
                   {valueItem.label}
                 </button>
-                {#each valueItems as valueLeaf, valueIndex}
+                {#each visibleSubmenuItems(valueItems) as valueLeaf, valueIndex}
                   <a
                     aria-current={isActiveMenuItem(valueLeaf) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
+                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
                     href={menuHref(valueLeaf)}
                     onclick={() => handleLeafClick(valueLeaf)}
                     style={menuStyle(valueLeaf.tone, 38 - topIndex - valueIndex)}
@@ -398,10 +414,10 @@
                 >
                   {referenceItem.label}
                 </button>
-                {#each referenceItems as referenceLeaf, referenceIndex}
+                {#each visibleSubmenuItems(referenceItems) as referenceLeaf, referenceIndex}
                   <a
                     aria-current={isActiveMenuItem(referenceLeaf) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
+                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
                     href={menuHref(referenceLeaf)}
                     onclick={() => handleLeafClick(referenceLeaf)}
                     style={menuStyle(referenceLeaf.tone, 38 - topIndex - referenceIndex)}
@@ -423,10 +439,10 @@
                 {/each}
             {/if}
           {:else if item.id === 'system' && openTopMenu === 'system'}
-              {#each systemItems as systemItem, systemIndex}
+              {#each visibleSubmenuItems(systemItems) as systemItem, systemIndex}
                 <a
                   aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(systemItem)}
                   onclick={() => handleLeafClick(systemItem)}
                   style={menuStyle(systemItem.tone, 39 - topIndex - systemIndex)}

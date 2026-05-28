@@ -1,0 +1,14 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Foleo icon stack option</title>
+  <desc id="desc">Layered folio sheets with a small event marker.</desc>
+  <rect width="512" height="512" rx="108" fill="#17362F"/>
+  <rect x="128" y="142" width="206" height="238" rx="22" fill="#D9EDE7"/>
+  <rect x="166" y="112" width="218" height="258" rx="24" fill="#F7F8F4"/>
+  <path d="M304 112v70h80L304 112Z" fill="#D9EDE7"/>
+  <path d="M212 208h104" stroke="#17362F" stroke-width="26" stroke-linecap="round"/>
+  <path d="M212 270h72" stroke="#17362F" stroke-width="26" stroke-linecap="round"/>
+  <path d="M282 318c20 0 20-36 42-36s22 36 44 36" stroke="#2F80ED" stroke-width="17" stroke-linecap="round"/>
+  <circle cx="282" cy="318" r="14" fill="#C7923E"/>
+  <circle cx="324" cy="282" r="14" fill="#2F80ED"/>
+  <circle cx="368" cy="318" r="14" fill="#C7923E"/>
+</svg>

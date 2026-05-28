@@ -30,6 +30,7 @@ public static class TransactionBuilder
                 eventIDGroup[eventIndex++],
                 request.UserID,
                 request.EventDateTime,
+                request.SettlementDateTime,
                 auditDateTime,
                 request.Reason,
                 eventSetID,
@@ -47,6 +48,7 @@ public static class TransactionBuilder
                 eventIDGroup[eventIndex++],
                 request.UserID,
                 request.EventDateTime,
+                request.SettlementDateTime,
                 auditDateTime,
                 request.Reason,
                 eventSetID,
@@ -66,6 +68,9 @@ public static class TransactionBuilder
         var messages = new List<string>();
         if (request.UserID is null) messages.Add("UserID is required.");
         if (request.EventDateTime is null) messages.Add("EventDateTime is required.");
+        if (request.SettlementDateTime is null) messages.Add("SettlementDateTime is required.");
+        if (request.EventDateTime is not null && request.SettlementDateTime is not null && request.SettlementDateTime.Value < request.EventDateTime.Value)
+            messages.Add("SettlementDateTime must be equal to or greater than EventDateTime.");
         if (string.IsNullOrWhiteSpace(request.Reason)) messages.Add("Reason is required.");
         if (request.Credits is null) messages.Add("Credits are required.");
         if (request.Debits is null) messages.Add("Debits are required.");

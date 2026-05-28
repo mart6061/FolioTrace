@@ -1,0 +1,136 @@
+:root {
+  color-scheme: light;
+
+  --foleo-bg: #f7f8f4;
+  --foleo-bg-muted: #e9f1ed;
+  --foleo-surface: #ffffff;
+  --foleo-surface-muted: #f1f5f2;
+  --foleo-ink: #17201b;
+  --foleo-ink-strong: #0f1814;
+  --foleo-muted: #647067;
+  --foleo-line: #d8ded8;
+
+  --foleo-primary: #146c5c;
+  --foleo-primary-strong: #0f5a4d;
+  --foleo-primary-soft: #dceee9;
+  --foleo-accent: #c7923e;
+  --foleo-accent-soft: #f3e6cc;
+  --foleo-event: #2f80ed;
+  --foleo-event-soft: #dbeafe;
+  --foleo-danger: #b42318;
+  --foleo-success: #177245;
+
+  --foleo-radius-sm: 4px;
+  --foleo-radius-md: 8px;
+  --foleo-shadow-sm: 0 1px 2px rgb(23 32 27 / 0.08);
+  --foleo-shadow-md: 0 8px 24px rgb(23 32 27 / 0.1);
+  --foleo-font:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--foleo-bg);
+  color: var(--foleo-ink);
+  font-family: var(--foleo-font);
+}
+
+.foleo-app-surface {
+  background:
+    linear-gradient(180deg, rgb(20 108 92 / 0.07), transparent 280px),
+    var(--foleo-bg);
+}
+
+.foleo-header {
+  border-bottom: 1px solid var(--foleo-line);
+  background: rgb(247 248 244 / 0.94);
+  box-shadow: var(--foleo-shadow-sm);
+  backdrop-filter: blur(10px);
+}
+
+.foleo-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--foleo-ink-strong);
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.foleo-brand-mark {
+  width: 32px;
+  height: 32px;
+}
+
+.foleo-panel {
+  border: 1px solid var(--foleo-line);
+  border-radius: var(--foleo-radius-md);
+  background: var(--foleo-surface);
+  box-shadow: var(--foleo-shadow-sm);
+}
+
+.foleo-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--foleo-line);
+  border-radius: 6px;
+  background: var(--foleo-surface);
+  color: var(--foleo-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  padding: 0 12px;
+}
+
+.foleo-button:hover,
+.foleo-button:focus-visible {
+  border-color: var(--foleo-primary);
+  color: var(--foleo-primary);
+  outline: none;
+}
+
+.foleo-button-primary {
+  border-color: var(--foleo-primary);
+  background: var(--foleo-primary);
+  color: #ffffff;
+}
+
+.foleo-button-primary:hover,
+.foleo-button-primary:focus-visible {
+  border-color: var(--foleo-primary-strong);
+  background: var(--foleo-primary-strong);
+  color: #ffffff;
+}
+
+.foleo-event-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  background: var(--foleo-event-soft);
+  color: #1e4f91;
+  font-size: 12px;
+  font-weight: 720;
+  padding: 4px 10px;
+}
+
+.foleo-event-pill::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--foleo-event);
+  content: "";
+}
+
+.foleo-table th {
+  background: var(--foleo-surface-muted);
+  color: var(--foleo-muted);
+  font-size: 12px;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+.foleo-table tr:hover {
+  background: rgb(20 108 92 / 0.05);
+}

@@ -34,9 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<FXActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<FXActiveModifiedEvent>(@event =>
             provider.GetRequiredService<FXService>().Invalidate(@event) + provider.GetRequiredService<FXRateService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<FXRateSetEvent>>(provider => new AggregateCacheInvalidator<FXRateSetEvent>(provider.GetRequiredService<FXRateService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<HoldingCreatedEvent>>(provider => new AggregateCacheInvalidator<HoldingCreatedEvent>(@event =>
-            provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
-        services.AddSingleton<IAggregateCacheInvalidator<HoldingModifiedEvent>>(provider => new AggregateCacheInvalidator<HoldingModifiedEvent>(@event =>
+        services.AddSingleton<IAggregateCacheInvalidator<IHoldingEvent>>(provider => new AggregateCacheInvalidator<IHoldingEvent>(@event =>
             provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<HoldingActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<HoldingActiveModifiedEvent>(@event =>
             provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
@@ -68,9 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<FXCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<FXActiveModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<FXRateSetEvent>>());
-        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<HoldingCreatedEvent>>());
-        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<HoldingModifiedEvent>>());
-        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<HoldingActiveModifiedEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IHoldingEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<InstrumentCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<InstrumentModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<InstrumentActiveModifiedEvent>>());

@@ -42,9 +42,12 @@ export type Accounts = {
   items: Account[];
 };
 
-export type HoldingType = 'Position' | 'Nominal' | 'CashOnHand' | 'CashDebt';
-
-export type HoldingNominalType =
+export type HoldingKind =
+  | 'CashDebt'
+  | 'CashInvestable'
+  | 'CashNonInvestable'
+  | 'PositionMemo'
+  | 'PositionCash'
   | 'Inflow'
   | 'Outflow'
   | 'FeesCustodian'
@@ -57,11 +60,14 @@ export type Holding = {
   holdingID: string;
   accountID: string;
   instrumentID: string;
-  holdingType: HoldingType;
-  nominalType?: HoldingNominalType | null;
+  holdingKind: HoldingKind;
   name: string;
   active: boolean;
   default: boolean;
+  bankName?: string | null;
+  accountName?: string | null;
+  sortCode?: string | null;
+  accountNumber?: string | null;
   includeInValuation: boolean;
   valuationDateTime: string;
   asOfDateTime: string;
@@ -82,10 +88,14 @@ export type HoldingPosition = Holding & {
   instrumentName: string;
   quantity: number;
   bookCost: number;
+  valuationDateBasis: ValuationDateBasis;
 };
+
+export type ValuationDateBasis = 'EventDateTime' | 'SettlementDateTime';
 
 export type HoldingPositions = {
   valuationDateTime: string;
+  valuationDateBasis: ValuationDateBasis;
   asOfDateTime: string;
   lastEventID: string;
   lastAuditDateTime: string;
@@ -294,11 +304,14 @@ export type HoldingReferenceEvent = ReferenceEventBase & {
   holdingID: string;
   accountID?: string;
   instrumentID?: string;
-  holdingType?: HoldingType;
-  nominalType?: HoldingNominalType | null;
+  holdingKind?: HoldingKind;
   name?: string;
   active?: boolean;
   default?: boolean;
+  bankName?: string | null;
+  accountName?: string | null;
+  sortCode?: string | null;
+  accountNumber?: string | null;
 };
 
 export type InstrumentReferenceEvent = ReferenceEventBase & {

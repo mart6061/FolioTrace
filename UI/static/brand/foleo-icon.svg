@@ -1,0 +1,11 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">foleo icon</title>
+  <desc id="desc">A circular events of time mark for foleo.</desc>
+  <rect width="512" height="512" rx="112" fill="#17362F"/>
+  <circle cx="256" cy="256" r="132" stroke="#F7F8F4" stroke-width="28"/>
+  <path d="M256 152v104l74 54" stroke="#F7F8F4" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M172 318c42 42 126 42 168-18" stroke="#D9EDE7" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="152" r="18" fill="#2F80ED"/>
+  <circle cx="340" cy="300" r="18" fill="#C7923E"/>
+  <circle cx="172" cy="318" r="14" fill="#D9EDE7"/>
+</svg>

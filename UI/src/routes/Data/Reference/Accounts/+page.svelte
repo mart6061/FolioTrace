@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
-  import type { AccountReferenceEvent, Holding } from '$lib/types';
+  import type { AccountReferenceEvent, Holding, HoldingKind } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -39,6 +39,8 @@
   let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
+  const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
+  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
   const accountFormValues = $derived(
     (form?.intent === 'createAccount' || form?.intent === 'modifyAccount') && form.values
       ? form.values as AccountFormValues
@@ -53,7 +55,7 @@
     (data.holdings?.items ?? [])
       .filter((holding) =>
         holding.active &&
-        holding.holdingType === 'CashOnHand' &&
+        holding.holdingKind === 'PositionCash' &&
         holding.default &&
         holding.name === 'Capital'
       )
@@ -369,6 +371,44 @@
 
   function capitalHoldingsForAccount(accountID: string) {
     return capitalHoldings.filter((holding) => holding.accountID === accountID);
+  }
+
+  function holdingsForAccount(accountID: string) {
+    return (data.holdings?.items ?? [])
+      .filter((holding) => holding.accountID === accountID)
+      .sort((left, right) =>
+        holdingKindOrder.indexOf(left.holdingKind) - holdingKindOrder.indexOf(right.holdingKind) ||
+        holdingDisplayName(left).localeCompare(holdingDisplayName(right))
+      );
+  }
+
+  function groupedHoldingsForAccount(accountID: string) {
+    const accountHoldings = holdingsForAccount(accountID);
+    return holdingKindOrder
+      .map((holdingKind) => ({
+        holdingKind,
+        holdings: accountHoldings.filter((holding) => holding.holdingKind === holdingKind)
+      }))
+      .filter((group) => group.holdings.length > 0);
+  }
+
+  function holdingDisplayName(holding: Holding) {
+    return holding.name || holding.holdingKind;
+  }
+
+  function holdingKindLabel(holdingKind: HoldingKind) {
+    switch (holdingKind) {
+      case 'PositionCash':
+        return 'Position cash';
+      case 'PositionMemo':
+        return 'Position memo';
+      default:
+        return holdingKind;
+    }
+  }
+
+  function holdingInstrumentName(holding: Holding) {
+    return instrumentByID.get(holding.instrumentID)?.name ?? holding.instrumentID;
   }
 
   function selectedCashInHoldingID(accountID: string) {
@@ -769,6 +809,54 @@
                             {account.active ? 'Deactivate' : 'Activate'}
                           </button>
                         </form>
+                      </div>
+                    </td>
+                  </tr>
+                  {@const holdingGroups = groupedHoldingsForAccount(account.accountID)}
+                  <tr class="bg-slate-50/60">
+                    <td class="px-3 py-3" colspan="6">
+                      <div class="grid gap-3">
+                        <div class="flex items-center justify-between gap-3">
+                          <h2 class="text-sm font-semibold text-slate-950">Holdings</h2>
+                          <span class="text-xs text-slate-500">{holdingsForAccount(account.accountID).length} holdings</span>
+                        </div>
+
+                        {#if holdingGroups.length}
+                          <div class="grid gap-3 lg:grid-cols-2">
+                            {#each holdingGroups as group}
+                              <section class="rounded-md border border-slate-200 bg-white">
+                                <div class="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+                                  <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-600">{holdingKindLabel(group.holdingKind)}</h3>
+                                  <span class="text-xs text-slate-500">{group.holdings.length}</span>
+                                </div>
+                                <ul class="divide-y divide-slate-100">
+                                  {#each group.holdings as holding}
+                                    <li class="grid gap-2 px-3 py-2 text-sm md:grid-cols-[minmax(160px,1fr)_minmax(180px,1fr)_auto] md:items-center">
+                                      <div>
+                                        <div class="font-medium text-slate-950">{holdingDisplayName(holding)}</div>
+                                        <div class="text-xs text-slate-500">{holding.holdingKind}</div>
+                                      </div>
+                                      <div class="truncate text-slate-600">{holdingInstrumentName(holding)}</div>
+                                      <div class="flex flex-wrap gap-1 md:justify-end">
+                                        {#if holding.default}
+                                          <span class="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">Default</span>
+                                        {/if}
+                                        {#if !holding.includeInValuation}
+                                          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Excluded</span>
+                                        {/if}
+                                        {#if !holding.active}
+                                          <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">Inactive</span>
+                                        {/if}
+                                      </div>
+                                    </li>
+                                  {/each}
+                                </ul>
+                              </section>
+                            {/each}
+                          </div>
+                        {:else}
+                          <div class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">No holdings found for this account.</div>
+                        {/if}
                       </div>
                     </td>
                   </tr>

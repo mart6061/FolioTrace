@@ -41,6 +41,7 @@ public static class TransactionCancellationEventBuilder
             return Result<IReadOnlyList<TransactionCancellationEvent>>.Invalid(validationErrors);
 
         var eventDateTime = originalEvents[0].EventDateTime;
+        var settlementDateTime = originalEvents[0].SettlementDateTime;
         var auditDateTime = AuditDateTimeBuilder.Create();
         var cancellationEventSetID = EventSetIDBuilder.Create();
         var eventIDGroup = Enumerable.Range(0, originalEvents.Count)
@@ -53,6 +54,7 @@ public static class TransactionCancellationEventBuilder
                 eventIDGroup[index],
                 request.UserID,
                 eventDateTime,
+                settlementDateTime,
                 auditDateTime,
                 request.Reason,
                 cancellationEventSetID,
@@ -81,6 +83,9 @@ public static class TransactionCancellationEventBuilder
 
         if (originalEvents.Select(@event => @event.EventDateTime.Value).Distinct().Count() != 1)
             messages.Add("All original transaction events must have the same EventDateTime.");
+
+        if (originalEvents.Select(@event => @event.SettlementDateTime.Value).Distinct().Count() != 1)
+            messages.Add("All original transaction events must have the same SettlementDateTime.");
 
         var expectedEventIds = originalEvents.Select(@event => @event.EventID).ToList();
         foreach (var @event in originalEvents)

@@ -5,7 +5,7 @@ namespace Repository.Seed;
 
 internal static class SeedInstrumentData
 {
-    private const int SeedMonths = 3;
+    private const int SeedMonths = 12;
 
     public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddMonths(-SeedMonths);
 

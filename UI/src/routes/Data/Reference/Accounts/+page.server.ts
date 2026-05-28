@@ -4,6 +4,7 @@ import {
   getAccounts,
   getApiBaseUrl,
   getHoldings,
+  getInstruments,
   postAccountActiveModifiedEvent,
   postAccountCreatedEvent,
   postAccountModifiedEvent,
@@ -23,9 +24,10 @@ export const load = async ({ fetch, url }) => {
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, holdings] = await Promise.all([
+    const [accounts, holdings, instruments] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
-      getHoldings(fetch, valuationDateTime, asAtDateTime, false)
+      getHoldings(fetch, valuationDateTime, asAtDateTime, false),
+      getInstruments(fetch, valuationDateTime, asAtDateTime)
     ]);
 
     return {
@@ -34,6 +36,7 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: '',
       holdings,
+      instruments,
       valuationDate
     };
   } catch (error) {
@@ -43,6 +46,7 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load accounts.',
       holdings: null,
+      instruments: null,
       valuationDate
     };
   }
@@ -135,6 +139,7 @@ export const actions = {
 
     try {
       const eventDateTime = toApiDateTime(values.eventDateTime);
+      const settlementDateTime = toApiDateTime(nextWorkingDayForInput(values.eventDateTime));
       const [holdings, accounts] = await Promise.all([
         getHoldings(fetch, eventDateTime, null, false),
         getAccounts(fetch, eventDateTime, null)
@@ -142,7 +147,7 @@ export const actions = {
       const capitalHolding = holdings.items.find((holding) =>
         holding.holdingID === values.holdingID &&
         holding.accountID === values.accountID &&
-        holding.holdingType === 'CashOnHand' &&
+        holding.holdingKind === 'PositionCash' &&
         holding.name === 'Capital' &&
         holding.default &&
         holding.active
@@ -154,8 +159,7 @@ export const actions = {
       const inflowHolding = holdings.items.find((holding) =>
         holding.accountID === capitalHolding.accountID &&
         holding.instrumentID === capitalHolding.instrumentID &&
-        holding.holdingType === 'Nominal' &&
-        holding.nominalType === 'Inflow' &&
+        holding.holdingKind === 'Inflow' &&
         holding.active
       );
 
@@ -168,6 +172,7 @@ export const actions = {
       const transactionSetRequest: TransactionSetRequest = {
         userID: systemUserID,
         eventDateTime,
+        settlementDateTime,
         reason: `Cash in ${amountLabel} to ${account?.name ?? 'Capital'}`,
         credits: [
           {
@@ -254,4 +259,18 @@ function formatAmount(value: number) {
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function nextWorkingDayForInput(value: string) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + 1);
+
+  while (date.getDay() === 0 || date.getDay() === 6)
+    date.setDate(date.getDate() + 1);
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function pad(value: number) {
+  return value.toString().padStart(2, '0');
 }

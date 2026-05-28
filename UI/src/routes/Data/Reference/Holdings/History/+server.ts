@@ -66,11 +66,14 @@ function normalizeHoldingEvent(event: Record<string, unknown>) {
     holdingID: readString(event, 'holdingID', 'holdingId', 'HoldingID'),
     accountID: readString(event, 'accountID', 'accountId', 'AccountID'),
     instrumentID: readString(event, 'instrumentID', 'instrumentId', 'InstrumentID'),
-    holdingType: readString(event, 'holdingType', 'HoldingType'),
-    nominalType: readString(event, 'nominalType', 'NominalType') || null,
+    holdingKind: readString(event, 'holdingKind', 'HoldingKind'),
     name: readString(event, 'name', 'Name'),
     active: readOptionalBoolean(event, 'active', 'Active'),
-    default: readOptionalBoolean(event, 'default', 'Default')
+    default: readOptionalBoolean(event, 'default', 'Default'),
+    bankName: readString(event, 'bankName', 'BankName'),
+    accountName: readString(event, 'accountName', 'AccountName'),
+    sortCode: readString(event, 'sortCode', 'SortCode'),
+    accountNumber: readString(event, 'accountNumber', 'AccountNumber')
   };
 }
 

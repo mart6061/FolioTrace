@@ -1,0 +1,9 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Foleo icon ring option</title>
+  <desc id="desc">A rounded portfolio loop with an event marker.</desc>
+  <rect width="512" height="512" rx="108" fill="#17362F"/>
+  <path d="M346 172c-25-28-59-44-98-44-73 0-132 57-132 128s59 128 132 128c51 0 93-27 115-67" stroke="#F7F8F4" stroke-width="40" stroke-linecap="round"/>
+  <path d="M196 256h154" stroke="#F7F8F4" stroke-width="40" stroke-linecap="round"/>
+  <circle cx="366" cy="256" r="28" fill="#2F80ED"/>
+  <circle cx="248" cy="384" r="18" fill="#C7923E"/>
+</svg>

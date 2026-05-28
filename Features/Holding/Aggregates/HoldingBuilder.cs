@@ -7,18 +7,7 @@ public static class HoldingBuilder
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Holding(
-            createdEvent.HoldingID,
-            createdEvent.AccountID,
-            createdEvent.InstrumentID,
-            createdEvent.HoldingType,
-            createdEvent.NominalType,
-            createdEvent.Name,
-            createdEvent.Active,
-            createdEvent.Default,
-            createdEvent.EventDateTime,
-            createdEvent.AuditDateTime,
-            createdEvent.EventID);
+        return createdEvent.CreateHolding();
     }
 
     extension(Holding holding)
@@ -31,16 +20,7 @@ public static class HoldingBuilder
             if (modifiedEvent is null)
                 throw new ArgumentNullException(nameof(modifiedEvent));
 
-            return holding with
-            {
-                NominalType = modifiedEvent.NominalType,
-                Name = modifiedEvent.Name,
-                Default = modifiedEvent.Default,
-                ValuationDateTime = modifiedEvent.EventDateTime,
-                AsOfDateTime = modifiedEvent.AuditDateTime,
-                LastEventID = modifiedEvent.EventID,
-                LastAuditDateTime = modifiedEvent.AuditDateTime
-            };
+            return modifiedEvent.Apply(holding);
         }
 
         public Holding Apply(HoldingActiveModifiedEvent activeModifiedEvent)
