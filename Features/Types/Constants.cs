@@ -31,7 +31,13 @@ public static class Constants
 
         public static readonly Guid TransactionsStreamId = Guid.Parse("9e6cc40d-df4f-4e6a-aa0e-d624635bcf68");
 
+        public static readonly Guid TicketsStreamId = Guid.Parse("f389de8b-08e0-4e05-8b46-76f37f0dfb72");
+
         public static readonly Guid UsersStreamId = Guid.Parse("02ff99c6-dfe9-4e61-aa02-bd1ca3a540a2");
+
+        public static readonly Guid UserMenuPreferencesStreamId = Guid.Parse("a1868c31-31ab-4d0b-93f4-77dfc7b8e2b5");
+
+        public static readonly Guid UserValuationPreferencesStreamId = Guid.Parse("f680675f-7966-4a7f-bc61-4c1d846455f1");
 
         public static readonly EventID EmptyViewEventID = Guid.Parse("11111111-1111-4111-8111-111111111111");
 

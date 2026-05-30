@@ -21,8 +21,15 @@ import type {
   InstrumentValueHistoryEvent,
   Instruments,
   MemoryDiagnostics,
+  TicketReferenceEvent,
+  Tickets,
+  TicketSide,
   TransactionReferenceEvent,
   BuildProgressNotification,
+  UserMenuPreferences,
+  UserMenuPreferenceItem,
+  UserValuationDateOption,
+  UserValuationPreferences,
   ValuationDateBasis
 } from '$lib/types';
 
@@ -201,6 +208,12 @@ export type TransactionSetRequest = {
   debits: TransactionRequest[];
 };
 
+export type TransactionCancellationRequest = {
+  userID: string;
+  reason: string;
+  eventSetID: string;
+};
+
 export type TransactionSetSubmissionResponse = {
   eventIDs: string[];
   links: {
@@ -208,6 +221,92 @@ export type TransactionSetSubmissionResponse = {
     href: string;
     method: string;
   }[];
+};
+
+export type TicketCreatedRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  side: TicketSide;
+  instrumentID: string;
+};
+
+export type TicketAccountRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  accountID: string;
+};
+
+export type TicketProposalRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  targetPrice: number;
+  totalAmount: number;
+  allocations: {
+    accountID: string;
+    quantity: number;
+  }[];
+};
+
+export type TicketApprovalRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+};
+
+export type TicketTradeRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  tradedPrice: number;
+  allocations: {
+    accountID: string;
+    quantity: number;
+    bookCost: number;
+  }[];
+};
+
+export type TicketTradeFillRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  fillID?: string;
+  price: number;
+  quantity: number;
+  note: string;
+};
+
+export type TicketTradeFillRemovedRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  fillID: string;
+};
+
+export type TicketCancellationRequest = TicketApprovalRequest;
+
+export type UserMenuPreferencesRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  items: UserMenuPreferenceItem[];
+};
+
+export type UserValuationPreferencesRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  valuationDateOption: UserValuationDateOption;
+  valuationDateBasis: ValuationDateBasis;
+  showZeroBalances: boolean;
 };
 
 export class ApiError extends Error {
@@ -480,6 +579,83 @@ export async function getInstrumentValues(fetchApi: typeof fetch, eventDateTime:
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as InstrumentValues;
+}
+
+export async function getTickets(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  includeClosed = false
+) {
+  const url = new URL(`${getApiBaseUrl()}/Tickets/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  url.searchParams.set('includeClosed', String(includeClosed));
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Tickets;
+}
+
+export async function getUserMenuPreferences(
+  fetchApi: typeof fetch,
+  userID: string,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/UserMenuPreferences/`);
+  url.searchParams.set('userID', userID);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as UserMenuPreferences;
+}
+
+export async function getUserValuationPreferences(
+  fetchApi: typeof fetch,
+  userID: string,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/UserValuationPreferences/`);
+  url.searchParams.set('userID', userID);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as UserValuationPreferences;
+}
+
+export async function getTicketEvents(fetchApi: typeof fetch, ticketNumber?: number) {
+  const url = new URL(`${getApiBaseUrl()}/Events/Ticket/`);
+
+  if (ticketNumber)
+    url.searchParams.set('ticketNumber', String(ticketNumber));
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as TicketReferenceEvent[];
 }
 
 export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
@@ -891,6 +1067,196 @@ export async function postTransactionSet(fetchApi: typeof fetch, request: Transa
   }
 
   return (await response.json()) as TransactionSetSubmissionResponse;
+}
+
+export async function postTransactionCancellation(fetchApi: typeof fetch, request: TransactionCancellationRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Transaction/Cancel`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      Reason: request.reason,
+      EventSetID: request.eventSetID
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as TransactionSetSubmissionResponse;
+}
+
+export async function postTicketCreatedEvent(fetchApi: typeof fetch, request: TicketCreatedRequest) {
+  return postTicketEvent(fetchApi, 'TicketCreatedEvent', request);
+}
+
+export async function postTicketAccountAddedEvent(fetchApi: typeof fetch, request: TicketAccountRequest) {
+  return postTicketEvent(fetchApi, 'TicketAccountAddedEvent', request);
+}
+
+export async function postTicketAccountRemovedEvent(fetchApi: typeof fetch, request: TicketAccountRequest) {
+  return postTicketEvent(fetchApi, 'TicketAccountRemovedEvent', request);
+}
+
+export async function postTicketProposalCreatedEvent(fetchApi: typeof fetch, request: TicketProposalRequest) {
+  return postTicketEvent(fetchApi, 'TicketProposalCreatedEvent', request);
+}
+
+export async function postTicketProposalModifiedEvent(fetchApi: typeof fetch, request: TicketProposalRequest) {
+  return postTicketEvent(fetchApi, 'TicketProposalModifiedEvent', request);
+}
+
+export async function postTicketProposalApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
+  return postTicketEvent(fetchApi, 'TicketProposalApprovedEvent', request);
+}
+
+export async function postTicketProposalNotApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
+  return postTicketEvent(fetchApi, 'TicketProposalNotApprovedEvent', request);
+}
+
+export async function postTicketTradeCreatedEvent(fetchApi: typeof fetch, request: TicketTradeRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeCreatedEvent', request);
+}
+
+export async function postTicketTradeModifiedEvent(fetchApi: typeof fetch, request: TicketTradeRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeModifiedEvent', request);
+}
+
+export async function postTicketTradeFillAddedEvent(fetchApi: typeof fetch, request: TicketTradeFillRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeFillAddedEvent', request);
+}
+
+export async function postTicketTradeFillModifiedEvent(fetchApi: typeof fetch, request: TicketTradeFillRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeFillModifiedEvent', request);
+}
+
+export async function postTicketTradeFillRemovedEvent(fetchApi: typeof fetch, request: TicketTradeFillRemovedRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeFillRemovedEvent', request);
+}
+
+export async function postTicketTradeApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeApprovedEvent', request);
+}
+
+export async function postTicketTradeNotApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeNotApprovedEvent', request);
+}
+
+export async function postTicketCancelledEvent(fetchApi: typeof fetch, request: TicketCancellationRequest) {
+  return postTicketEvent(fetchApi, 'TicketCancelledEvent', request);
+}
+
+export async function postUserMenuPreferencesCreatedEvent(fetchApi: typeof fetch, request: UserMenuPreferencesRequest) {
+  return postUserMenuPreferencesEvent(fetchApi, 'UserMenuPreferencesCreatedEvent', request);
+}
+
+export async function postUserMenuPreferencesModifiedEvent(fetchApi: typeof fetch, request: UserMenuPreferencesRequest) {
+  return postUserMenuPreferencesEvent(fetchApi, 'UserMenuPreferencesModifiedEvent', request);
+}
+
+export async function postUserValuationPreferencesCreatedEvent(fetchApi: typeof fetch, request: UserValuationPreferencesRequest) {
+  return postUserValuationPreferencesEvent(fetchApi, 'UserValuationPreferencesCreatedEvent', request);
+}
+
+export async function postUserValuationPreferencesModifiedEvent(fetchApi: typeof fetch, request: UserValuationPreferencesRequest) {
+  return postUserValuationPreferencesEvent(fetchApi, 'UserValuationPreferencesModifiedEvent', request);
+}
+
+async function postTicketEvent(fetchApi: typeof fetch, eventType: string, request: Record<string, unknown>) {
+  const body: Record<string, unknown> = {
+    UserID: request.userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason
+  };
+
+  if (typeof request.ticketNumber === 'number')
+    body.TicketNumber = request.ticketNumber;
+  if (request.side)
+    body.Side = request.side;
+  if (request.instrumentID)
+    body.InstrumentID = request.instrumentID;
+  if (request.accountID)
+    body.AccountID = request.accountID;
+  if (typeof request.targetPrice === 'number')
+    body.TargetPrice = request.targetPrice;
+  if (typeof request.totalAmount === 'number')
+    body.TotalAmount = request.totalAmount;
+  if (typeof request.tradedPrice === 'number')
+    body.TradedPrice = request.tradedPrice;
+  if (Array.isArray(request.allocations))
+    body.Allocations = (request.allocations as { accountID: string; quantity: number; bookCost?: number }[]).map((allocation) => ({
+      AccountID: allocation.accountID,
+      Quantity: allocation.quantity,
+      BookCost: allocation.bookCost
+    }));
+  if (request.fillID)
+    body.FillID = request.fillID;
+  if (typeof request.price === 'number')
+    body.Price = request.price;
+  if (typeof request.quantity === 'number')
+    body.Quantity = request.quantity;
+  if (typeof request.note === 'string')
+    body.Note = request.note;
+
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Ticket/${eventType}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postUserMenuPreferencesEvent(fetchApi: typeof fetch, eventType: 'UserMenuPreferencesCreatedEvent' | 'UserMenuPreferencesModifiedEvent', request: UserMenuPreferencesRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/UserMenuPreferences/${eventType}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      Items: request.items.map((item) => ({
+        MenuItemID: item.menuItemID,
+        Visible: item.visible
+      }))
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postUserValuationPreferencesEvent(fetchApi: typeof fetch, eventType: 'UserValuationPreferencesCreatedEvent' | 'UserValuationPreferencesModifiedEvent', request: UserValuationPreferencesRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/UserValuationPreferences/${eventType}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      ValuationDateOption: request.valuationDateOption,
+      ValuationDateBasis: request.valuationDateBasis,
+      ShowZeroBalances: request.showZeroBalances
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
 }
 
 async function postCountryEvent(

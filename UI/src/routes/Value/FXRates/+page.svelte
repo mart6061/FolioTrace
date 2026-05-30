@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, toApiDateTime } from '$lib/dates';
   import type { FXRate, FXRateHistoryEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -242,7 +243,7 @@
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" type="datetime-local" value={data.valuationDate} />
+          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
@@ -346,7 +347,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Event date</span>
-                        <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" type="datetime-local" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
                       </label>
                     </td>
                     <td class="px-3 py-2">

@@ -1,25 +1,39 @@
-import { getSystemVersion } from '$lib/server/api';
+import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
+import { defaultUserMenuPreferences, systemUserID } from '$lib/menuPreferences';
+import { getSystemVersion, getUserMenuPreferences } from '$lib/server/api';
 import { getUiVersion } from '$lib/server/version';
 
 let cachedApiVersion: string | null = null;
 let apiVersionRequest: Promise<string> | null = null;
 
-export const load = async ({ fetch }) => {
+export const load = async ({ fetch, url }) => {
   const uiVersion = getUiVersion();
+  const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
+  let apiVersion = 'unavailable';
+  let menuPreferences = defaultUserMenuPreferences();
 
   try {
-    const apiVersion = await getApiVersion(fetch);
-
-    return {
-      apiVersion,
-      uiVersion
-    };
+    apiVersion = await getApiVersion(fetch);
   } catch {
-    return {
-      apiVersion: 'unavailable',
-      uiVersion
-    };
+    apiVersion = 'unavailable';
   }
+
+  try {
+    menuPreferences = await getUserMenuPreferences(
+      fetch,
+      systemUserID,
+      toApiDateTime(nowForInput()),
+      auditDateTime ? toApiDateTime(auditDateTime) : null
+    );
+  } catch {
+    menuPreferences = defaultUserMenuPreferences();
+  }
+
+  return {
+    apiVersion,
+    menuPreferences,
+    uiVersion
+  };
 };
 
 async function getApiVersion(fetchApi: typeof fetch) {

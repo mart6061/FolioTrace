@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
   import type { AccountReferenceEvent, Holding, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -32,6 +33,15 @@
     instrumentID: string;
     quantity: string;
   };
+  type TransactionSetCard = {
+    cancelled: boolean;
+    cancellation?: TransactionReferenceEvent;
+    eventDateTime: string;
+    eventSetID: string;
+    movements: TransactionReferenceEvent[];
+    reason: string;
+    settlementDateTime: string;
+  };
 
   let sortKey = $state<SortKey>('name');
   let sortDirection = $state<1 | -1>(1);
@@ -48,6 +58,7 @@
   let submittingCashOut = $state(false);
   let submittingInspecieIn = $state(false);
   let submittingInspecieOut = $state(false);
+  let submittingCancelTransactionSetID = $state('');
   let openHistoryAccountID = $state('');
   let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
@@ -429,6 +440,17 @@
     };
   };
 
+  const enhanceCancelTransactionSet: SubmitFunction = ({ formData }) => {
+    const eventSetID = formData.get('eventSetID');
+
+    submittingCancelTransactionSetID = typeof eventSetID === 'string' ? eventSetID : '';
+
+    return async ({ update }) => {
+      await update({ reset: false });
+      submittingCancelTransactionSetID = '';
+    };
+  };
+
   async function toggleHistory(accountID: string) {
     if (openHistoryAccountID === accountID) {
       openHistoryAccountID = '';
@@ -547,20 +569,65 @@
     return instrumentByID.get(holding.instrumentID)?.name ?? holding.instrumentID;
   }
 
-  function transactionEventsForAccount(accountID: string) {
+  function isTransactionMovement(event: TransactionReferenceEvent) {
+    return event.$type === 'TransactionCreditEvent' || event.$type === 'TransactionDebitEvent';
+  }
+
+  function isVisibleTransactionEvent(event: TransactionReferenceEvent) {
     const valuationTime = new Date(toApiDateTime(data.valuationDate)).getTime();
     const auditTime = data.auditDateTime ? new Date(toApiDateTime(data.auditDateTime)).getTime() : null;
 
-    return (data.transactionEvents ?? [])
+    return new Date(event.eventDateTime).getTime() <= valuationTime &&
+      (auditTime === null || new Date(event.auditDateTime).getTime() <= auditTime);
+  }
+
+  function transactionSetCardsForAccount(accountID: string): TransactionSetCard[] {
+    const groups = new Map<string, TransactionReferenceEvent[]>();
+    const movements = (data.transactionEvents ?? [])
       .filter((event) =>
+        isTransactionMovement(event) &&
         event.accountID === accountID &&
-        new Date(event.eventDateTime).getTime() <= valuationTime &&
-        (auditTime === null || new Date(event.auditDateTime).getTime() <= auditTime)
-      )
+        isVisibleTransactionEvent(event)
+      );
+
+    for (const movement of movements) {
+      const group = groups.get(movement.eventSetID) ?? [];
+      group.push(movement);
+      groups.set(movement.eventSetID, group);
+    }
+
+    const cancellations = (data.transactionEvents ?? [])
+      .filter((event) =>
+        event.$type === 'TransactionCancellationEvent' &&
+        isVisibleTransactionEvent(event) &&
+        (!event.accountID || event.accountID === accountID)
+      );
+
+    return [...groups.entries()]
+      .map(([eventSetID, groupMovements]) => {
+        const movementIDs = new Set(groupMovements.flatMap((movement) => movement.eventIDGroup.length ? movement.eventIDGroup : [movement.eventID]));
+        const cancellation = cancellations.find((event) =>
+          (event.cancelledIDGroup ?? []).some((eventID) => movementIDs.has(eventID))
+        );
+        const sortedMovements = [...groupMovements].sort((left, right) =>
+          Number(left.$type === 'TransactionDebitEvent') - Number(right.$type === 'TransactionDebitEvent') ||
+          transactionHoldingName(left).localeCompare(transactionHoldingName(right))
+        );
+        const firstMovement = sortedMovements[0];
+
+        return {
+          cancelled: Boolean(cancellation),
+          cancellation,
+          eventDateTime: firstMovement?.eventDateTime ?? '',
+          eventSetID,
+          movements: sortedMovements,
+          reason: firstMovement?.reason ?? '',
+          settlementDateTime: firstMovement?.settlementDateTime ?? ''
+        };
+      })
       .sort((left, right) =>
         new Date(right.eventDateTime).getTime() - new Date(left.eventDateTime).getTime() ||
-        new Date(right.auditDateTime).getTime() - new Date(left.auditDateTime).getTime() ||
-        right.eventID.localeCompare(left.eventID)
+        right.eventSetID.localeCompare(left.eventSetID)
       );
   }
 
@@ -578,7 +645,13 @@
     return holding ? `${holdingDisplayName(holding)} (${holding.holdingKind})` : event.holdingID ?? '';
   }
 
-  function investableTransactionSubtotals(events: TransactionReferenceEvent[]) {
+  function activeTransactionMovements(cards: TransactionSetCard[]) {
+    return cards
+      .filter((card) => !card.cancelled)
+      .flatMap((card) => card.movements);
+  }
+
+  function investableTransactionSubtotals(cards: TransactionSetCard[]) {
     const groups = new Map<string, {
       creditTotal: number;
       debitTotal: number;
@@ -586,7 +659,7 @@
       setIDs: Set<string>;
     }>();
 
-    for (const event of events) {
+    for (const event of activeTransactionMovements(cards)) {
       if (!event.holdingID)
         continue;
 
@@ -681,10 +754,10 @@
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <input
+          <DateTimeInput
             class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             name="valuationDate"
-            step="1" type="datetime-local"
+            step="1"
             value={data.valuationDate}
           />
         </label>
@@ -889,12 +962,12 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
                       <span>Event date</span>
-                      <input
+                      <DateTimeInput
                         class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
                         form="account-create"
                         name="eventDateTime"
                         required
-                        step="1" type="datetime-local"
+                        step="1"
                         value={form?.intent === 'createAccount' ? (accountFormValues?.eventDateTime ?? data.valuationDate) : data.valuationDate}
                       />
                     </label>
@@ -983,12 +1056,12 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`account-edit-${account.accountID}`}>
                         <span>Event date</span>
-                        <input
+                        <DateTimeInput
                           class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
                           form={`account-edit-${account.accountID}`}
                           name="eventDateTime"
                           required
-                          step="1" type="datetime-local"
+                          step="1"
                           value={form?.accountID === account.accountID ? (accountFormValues?.eventDateTime ?? data.valuationDate) : data.valuationDate}
                         />
                       </label>
@@ -1111,17 +1184,18 @@
                       </div>
                     </td>
                   </tr>
-                  {@const rowTransactionEvents = transactionEventsForAccount(account.accountID)}
-                  {@const rowInvestableSubtotals = investableTransactionSubtotals(rowTransactionEvents)}
+                  {@const rowTransactionCards = transactionSetCardsForAccount(account.accountID)}
+                  {@const rowActiveTransactionMovements = activeTransactionMovements(rowTransactionCards)}
+                  {@const rowInvestableSubtotals = investableTransactionSubtotals(rowTransactionCards)}
                   <tr class="bg-slate-50/50">
                     <td class="px-3 py-3" colspan="6">
                       <div class="grid gap-3">
                         <div class="flex items-center justify-between gap-3">
                           <h2 class="text-sm font-semibold text-slate-950">Transactions</h2>
-                          <span class="text-xs text-slate-500">{rowTransactionEvents.length} movements</span>
+                          <span class="text-xs text-slate-500">{rowTransactionCards.length} sets · {rowActiveTransactionMovements.length} active movements</span>
                         </div>
 
-                        {#if rowTransactionEvents.length}
+                        {#if rowTransactionCards.length}
                           {#if rowInvestableSubtotals.length}
                             <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
                               <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
@@ -1157,47 +1231,71 @@
                             </div>
                           {/if}
 
-                          <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
-                            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
-                              <thead class="bg-slate-50 text-slate-500">
-                                <tr>
-                                  <th class="px-3 py-2 font-semibold">Type</th>
-                                  <th class="px-3 py-2 font-semibold">Event</th>
-                                  <th class="px-3 py-2 font-semibold">Settlement</th>
-                                  <th class="px-3 py-2 font-semibold">Holding</th>
-                                  <th class="px-3 py-2 text-right font-semibold">Quantity</th>
-                                  <th class="px-3 py-2 text-right font-semibold">Book cost</th>
-                                  <th class="px-3 py-2 font-semibold">Set</th>
-                                </tr>
-                              </thead>
-                              <tbody class="divide-y divide-slate-100">
-                                {#each rowTransactionEvents as transaction}
-                                  <tr>
-                                    <td class="px-3 py-2">
-                                      <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                        transaction.$type === 'TransactionCreditEvent'
-                                          ? 'bg-emerald-50 text-emerald-700'
-                                          : 'bg-sky-50 text-sky-700'
-                                      }`}>
-                                        {transactionEventLabel(transaction)}
-                                      </span>
-                                    </td>
-                                    <td class="px-3 py-2 text-slate-700">
-                                      <div>{formatTableDateTime(transaction.eventDateTime)}</div>
-                                      <div class="font-mono text-[11px] text-slate-400">{transaction.eventID}</div>
-                                    </td>
-                                    <td class="px-3 py-2 text-slate-600">{formatTableDateTime(transaction.settlementDateTime)}</td>
-                                    <td class="px-3 py-2 text-slate-700">
-                                      <div>{transactionHoldingName(transaction)}</div>
-                                      <div class="font-mono text-[11px] text-slate-400">{transaction.holdingID}</div>
-                                    </td>
-                                    <td class="px-3 py-2 text-right font-mono text-slate-700">{transaction.quantity ?? ''}</td>
-                                    <td class="px-3 py-2 text-right font-mono text-slate-700">{transaction.bookCost ?? ''}</td>
-                                    <td class="px-3 py-2 font-mono text-[11px] text-slate-500">{transaction.eventSetID}</td>
-                                  </tr>
-                                {/each}
-                              </tbody>
-                            </table>
+                          <div class="grid gap-2">
+                            {#each rowTransactionCards as card}
+                              <article class={`rounded-md border bg-white p-3 text-xs ${
+                                card.cancelled
+                                  ? 'border-red-200 bg-red-50/40'
+                                  : 'border-slate-200'
+                              }`}>
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                  <div class="grid gap-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <span class="text-sm font-semibold text-slate-900">{card.reason || 'Transaction set'}</span>
+                                      {#if card.cancelled}
+                                        <span class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">Cancelled</span>
+                                      {:else}
+                                        <span class="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">Active</span>
+                                      {/if}
+                                    </div>
+                                    <div class="text-slate-500">
+                                      Event {formatTableDateTime(card.eventDateTime)} · Settlement {formatTableDateTime(card.settlementDateTime)}
+                                    </div>
+                                    <div class="font-mono text-[11px] text-slate-400">{card.eventSetID}</div>
+                                    {#if card.cancelled && card.cancellation}
+                                      <div class="font-semibold text-red-700">Cancelled on: {formatTableDateTime(card.cancellation.auditDateTime)}</div>
+                                    {/if}
+                                  </div>
+
+                                  {#if !card.cancelled}
+                                    <form action="?/cancelTransactionSet" method="POST" use:enhance={enhanceCancelTransactionSet}>
+                                      <input name="accountID" type="hidden" value={account.accountID} />
+                                      <input name="eventSetID" type="hidden" value={card.eventSetID} />
+                                      <button
+                                        class="grid h-7 w-7 place-items-center rounded-md border border-red-200 bg-white text-sm font-semibold text-red-700 hover:border-red-300 hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+                                        disabled={submittingCancelTransactionSetID === card.eventSetID}
+                                        title={`Cancel transaction set ${card.eventSetID}`}
+                                        type="submit"
+                                      >
+                                        X
+                                      </button>
+                                    </form>
+                                  {/if}
+                                </div>
+
+                                <div class={`mt-3 grid gap-2 ${card.cancelled ? 'line-through decoration-red-500' : ''}`}>
+                                  {#each card.movements as transaction}
+                                    <div class="grid gap-2 rounded-md border border-slate-100 bg-white px-3 py-2 md:grid-cols-[90px_1fr_110px_120px] md:items-center">
+                                      <div>
+                                        <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                          transaction.$type === 'TransactionCreditEvent'
+                                            ? 'bg-emerald-50 text-emerald-700'
+                                            : 'bg-sky-50 text-sky-700'
+                                        }`}>
+                                          {transactionEventLabel(transaction)}
+                                        </span>
+                                      </div>
+                                      <div class="text-slate-700">
+                                        <div>{transactionHoldingName(transaction)}</div>
+                                        <div class="font-mono text-[11px] text-slate-400">{transaction.eventID}</div>
+                                      </div>
+                                      <div class="text-right font-mono text-slate-700">{transaction.quantity ?? ''}</div>
+                                      <div class="text-right font-mono text-slate-700">{transaction.bookCost ?? ''}</div>
+                                    </div>
+                                  {/each}
+                                </div>
+                              </article>
+                            {/each}
                           </div>
                         {:else}
                           <div class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">No transactions found for this account.</div>
@@ -1225,11 +1323,11 @@
 
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Event date</span>
-                            <input
+                            <DateTimeInput
                               class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
                               name="eventDateTime"
                               required
-                              step="1" type="datetime-local"
+                              step="1"
                               value={rowCashMovementFormValues?.accountID === account.accountID ? (rowCashMovementFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
                             />
                           </label>
@@ -1297,11 +1395,11 @@
 
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Event date</span>
-                            <input
+                            <DateTimeInput
                               class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
                               name="eventDateTime"
                               required
-                              step="1" type="datetime-local"
+                              step="1"
                               value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
                             />
                           </label>

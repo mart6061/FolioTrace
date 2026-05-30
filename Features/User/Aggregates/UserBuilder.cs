@@ -4,7 +4,7 @@ namespace FolioTrace.Aggregates;
 
 public static class UserBuilder
 {
-    public static User Create(UserID userId, string displayName, UserDisplayPreferences displayPreferences, UserValuationPreferences valuationPreferences)
+    public static User Create(UserID userId, string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
     {
         var createdEvent = UserCreatedEventBuilder.Create(
             userId,
@@ -17,7 +17,7 @@ public static class UserBuilder
         return Create(createdEvent.Value!);
     }
 
-    public static User CreateSeed(string displayName, UserDisplayPreferences displayPreferences, UserValuationPreferences valuationPreferences)
+    public static User CreateSeed(string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
     {
         var createdEvent = UserCreatedEventBuilder.CreateSeed(
             Guid.NewGuid(),
