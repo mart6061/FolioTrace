@@ -33,22 +33,12 @@ public static class ServiceCollectionExtensions
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidFrom);
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidTo);
             options.Schema.For<FXRatePointReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
-            options.Schema.For<InstrumentDefinitionReadModel>().Index(model => model.InstrumentID);
-            options.Schema.For<InstrumentDefinitionReadModel>().Index(model => model.ValidFrom);
-            options.Schema.For<InstrumentDefinitionReadModel>().Index(model => model.ValidTo);
-            options.Schema.For<InstrumentPricePointReadModel>().Index(model => model.InstrumentID);
-            options.Schema.For<InstrumentPricePointReadModel>().Index(model => model.ValidFrom);
-            options.Schema.For<InstrumentPricePointReadModel>().Index(model => model.ValidTo);
-            options.Schema.For<InstrumentIncomePointReadModel>().Index(model => model.InstrumentID);
-            options.Schema.For<InstrumentIncomePointReadModel>().Index(model => model.ValidFrom);
-            options.Schema.For<InstrumentIncomePointReadModel>().Index(model => model.ValidTo);
         });
 
         services.AddSingleton<MartenEventRepository>();
         services.AddScoped<IApiExchangeRepository, MartenApiExchangeRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
-        services.AddSingleton<IInstrumentValueReadModelRepository, MartenInstrumentValueReadModelRepository>();
         services.AddHostedService<InMemoryEventsRepositoryInitializer>();
         services.AddScoped<ISeedRepository, SeedRepository>();
 

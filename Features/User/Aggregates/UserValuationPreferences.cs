@@ -4,7 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record UserValuationPreferences : IType
+public sealed record UserProfileValuationPreferences : IType
 {
     public required EventDateTime ValuationDate { get; init; }
 
@@ -14,7 +14,7 @@ public sealed record UserValuationPreferences : IType
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public UserValuationPreferences(EventDateTime valuationDate, bool showIncome, bool showBook)
+    public UserProfileValuationPreferences(EventDateTime valuationDate, bool showIncome, bool showBook)
     {
         if (valuationDate is null)
             throw new ArgumentNullException(nameof(valuationDate));
@@ -26,5 +26,5 @@ public sealed record UserValuationPreferences : IType
 
     public string ToData() => $"{ValuationDate.ToData()}|{ShowIncome}|{ShowBook}";
 
-    public string ToDetail() => $"{nameof(UserValuationPreferences)}: (ValuationDate: {ValuationDate.ToDetail()}, ShowIncome: {ShowIncome}, ShowBook: {ShowBook})";
+    public string ToDetail() => $"{nameof(UserProfileValuationPreferences)}: (ValuationDate: {ValuationDate.ToDetail()}, ShowIncome: {ShowIncome}, ShowBook: {ShowBook})";
 }

@@ -42,6 +42,7 @@ public static class TransactionCancellationEventBuilder
 
         var eventDateTime = originalEvents[0].EventDateTime;
         var settlementDateTime = originalEvents[0].SettlementDateTime;
+        var accountID = originalEvents[0].AccountID;
         var auditDateTime = AuditDateTimeBuilder.Create();
         var cancellationEventSetID = EventSetIDBuilder.Create();
         var eventIDGroup = Enumerable.Range(0, originalEvents.Count)
@@ -59,6 +60,7 @@ public static class TransactionCancellationEventBuilder
                 request.Reason,
                 cancellationEventSetID,
                 eventIDGroup,
+                accountID,
                 @event.EventID,
                 cancelledIDGroup))
             .ToList();
@@ -86,6 +88,9 @@ public static class TransactionCancellationEventBuilder
 
         if (originalEvents.Select(@event => @event.SettlementDateTime.Value).Distinct().Count() != 1)
             messages.Add("All original transaction events must have the same SettlementDateTime.");
+
+        if (originalEvents.Select(@event => @event.AccountID.Value).Distinct().Count() != 1)
+            messages.Add("All original transaction events must have the same AccountID.");
 
         var expectedEventIds = originalEvents.Select(@event => @event.EventID).ToList();
         foreach (var @event in originalEvents)

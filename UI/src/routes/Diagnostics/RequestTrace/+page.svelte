@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { formatDateTime } from '$lib/dates';
   import type { ApiExchange, ApiHttpMessage } from '$lib/types';
 
@@ -241,10 +242,10 @@
 
         <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           From UTC
-          <input
+          <DateTimeInput
             class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
             name="fromUtc"
-            step="1" type="datetime-local"
+            step="1"
             value={data.filters.fromUtc}
           />
         </label>

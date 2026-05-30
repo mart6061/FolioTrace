@@ -111,6 +111,17 @@ public sealed class TransactionBuilderTests
     }
 
     [Fact]
+    public void Create_RejectsMixedAccountSet()
+    {
+        var result = TransactionBuilder.Create(CreateRequest(
+            credits: [CreateLeg(10m)],
+            debits: [CreateLeg(OtherHoldingID, OtherAccountID, 10m)]), CreateHoldings(includeOtherAccount: true));
+
+        Assert.False(result.IsValid);
+        Assert.Contains("All transaction movements in a set must have the same AccountID.", result.ValidationErrors);
+    }
+
+    [Fact]
     public void CreateCancellation_EmitsOneCancellationPerOriginalEvent()
     {
         var originalEvents = CreateBalancedSet();
@@ -122,6 +133,7 @@ public sealed class TransactionBuilderTests
         var cancellationEvents = result.Value!;
         Assert.Equal(originalEvents.Count, cancellationEvents.Count);
         Assert.Single(cancellationEvents.Select(@event => @event.EventSetID.Value).Distinct());
+        Assert.All(cancellationEvents, @event => Assert.Equal(originalEvents[0].AccountID, @event.AccountID));
         Assert.All(cancellationEvents, @event => Assert.Equal(originalEvents[0].EventDateTime, @event.EventDateTime));
         Assert.All(cancellationEvents, @event => Assert.Equal(originalEvents[0].SettlementDateTime, @event.SettlementDateTime));
 
@@ -182,6 +194,23 @@ public sealed class TransactionBuilderTests
     }
 
     [Fact]
+    public void CreateCancellation_RejectsMixedOriginalAccounts()
+    {
+        var originalEvents = CreateBalancedSet();
+        var changedDebit = Assert.IsType<TransactionDebitEvent>(originalEvents[1]) with
+        {
+            AccountID = OtherAccountID
+        };
+        var mixedEvents = new List<ITransactionEvent> { originalEvents[0], changedDebit };
+        var request = new TransactionCancellationRequest(UserID, "Cancel trade", originalEvents[0].EventSetID);
+
+        var result = TransactionCancellationEventBuilder.Create(request, mixedEvents);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("All original transaction events must have the same AccountID.", result.ValidationErrors);
+    }
+
+    [Fact]
     public void SettlementDateTime_SerializesAsRoundTripString()
     {
         var settlementDateTime = SettlementDateTimeBuilder.Create(new DateTime(2026, 5, 28, 13, 45, 0, DateTimeKind.Utc));
@@ -206,6 +235,22 @@ public sealed class TransactionBuilderTests
     }
 
     [Fact]
+    public void CreateCancellation_RejectsCancellationSetID()
+    {
+        var originalEvents = CreateBalancedSet();
+        var cancellationEvents = TransactionCancellationEventBuilder.Create(
+            new TransactionCancellationRequest(UserID, "Cancel trade", originalEvents[0].EventSetID),
+            originalEvents.Cast<ITransactionEvent>().ToList()).Value!;
+        var allEvents = originalEvents.Cast<ITransactionEvent>().Concat(cancellationEvents).ToList();
+        var request = new TransactionCancellationRequest(UserID, "Cancel cancellation", cancellationEvents[0].EventSetID);
+
+        var result = TransactionCancellationEventBuilder.Create(request, allEvents);
+
+        Assert.False(result.IsValid);
+        Assert.Contains($"No transaction events found for EventSetID '{request.EventSetID}'.", result.ValidationErrors);
+    }
+
+    [Fact]
     public void GetActiveMovements_IsAuditAwareForCancellations()
     {
         var originalEvents = CreateBalancedSet();
@@ -223,8 +268,10 @@ public sealed class TransactionBuilderTests
     private static readonly EventDateTime HoldingEventDate = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-20));
     private static readonly AuditDateTime HoldingAuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-19));
     private static readonly HoldingID HoldingID = HoldingIDBuilder.Create();
+    private static readonly HoldingID OtherHoldingID = HoldingIDBuilder.Create();
     private static readonly InstrumentID InstrumentID = InstrumentIDBuilder.Create();
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
+    private static readonly AccountID OtherAccountID = AccountIDBuilder.Create();
 
     private static TransactionSetRequest CreateRequest(IReadOnlyList<TransactionRequest> credits, IReadOnlyList<TransactionRequest> debits) =>
         CreateRequest(EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10)), credits, debits);
@@ -239,14 +286,17 @@ public sealed class TransactionBuilderTests
             debits);
 
     private static TransactionRequest CreateLeg(decimal bookCost) =>
+        CreateLeg(HoldingID, AccountID, bookCost);
+
+    private static TransactionRequest CreateLeg(HoldingID holdingID, AccountID accountID, decimal bookCost) =>
         new(
-            HoldingID,
+            holdingID,
             InstrumentID,
-            AccountID,
+            accountID,
             new TransactionQuantity(1m),
             new TransactionBookCost(bookCost));
 
-    private static Holdings CreateHoldings()
+    private static Holdings CreateHoldings(bool includeOtherAccount = false)
     {
         var holdingCreated = HoldingPositionMemoCreatedEventBuilder.CreateSeed(
             new EventID(Guid.NewGuid()),
@@ -261,7 +311,23 @@ public sealed class TransactionBuilderTests
             true,
             false).Value!;
 
-        return new Holdings(HoldingEventDate, HoldingAuditDate, [holdingCreated]);
+        if (!includeOtherAccount)
+            return new Holdings(HoldingEventDate, HoldingAuditDate, [holdingCreated]);
+
+        var otherHoldingCreated = HoldingPositionMemoCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.NewGuid()),
+            UserID,
+            HoldingEventDate,
+            HoldingAuditDate,
+            "Create other holding",
+            OtherHoldingID,
+            OtherAccountID,
+            InstrumentID,
+            string.Empty,
+            true,
+            false).Value!;
+
+        return new Holdings(HoldingEventDate, HoldingAuditDate, [holdingCreated, otherHoldingCreated]);
     }
 
     private static IReadOnlyList<ITransactionMovementEvent> CreateBalancedSet()

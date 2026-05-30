@@ -42,6 +42,41 @@ export type Accounts = {
   items: Account[];
 };
 
+export type UserMenuPreferenceItem = {
+  menuItemID: string;
+  visible: boolean;
+};
+
+export type UserMenuPreferences = {
+  userID: string;
+  items: UserMenuPreferenceItem[];
+  hasStoredPreferences: boolean;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type UserValuationDateOption =
+  | 'Now'
+  | 'TodayEndOfDay'
+  | 'YesterdayEndOfDay'
+  | 'LastWeekEndOfDay'
+  | 'LastMonthEndOfDay'
+  | 'LastQuarterEndOfDay';
+
+export type UserValuationPreferences = {
+  userID: string;
+  valuationDateOption: UserValuationDateOption;
+  valuationDateBasis: ValuationDateBasis;
+  showZeroBalances: boolean;
+  hasStoredPreferences: boolean;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
 export type HoldingKind =
   | 'CashDebt'
   | 'CashInvestable'
@@ -269,6 +304,64 @@ export type InstrumentValues = {
   items: InstrumentValue[];
 };
 
+export type TicketSide = 'Buy' | 'Sell';
+
+export type TicketStatus =
+  | 'Draft'
+  | 'Proposal'
+  | 'ProposalApproved'
+  | 'ProposalNotApproved'
+  | 'Trade'
+  | 'TradeApproved'
+  | 'TradeNotApproved'
+  | 'Completed'
+  | 'Cancelled';
+
+export type TicketProposalAllocation = {
+  accountID: string;
+  quantity: number;
+};
+
+export type TicketTradeAllocation = {
+  accountID: string;
+  quantity: number;
+  bookCost: number;
+};
+
+export type TicketFill = {
+  fillID: string;
+  price: number;
+  quantity: number;
+  note: string;
+};
+
+export type Ticket = {
+  ticketNumber: number;
+  side: TicketSide;
+  instrumentID: string;
+  status: TicketStatus;
+  accountIDs: string[];
+  proposalTargetPrice?: number | null;
+  proposalTotalAmount?: number | null;
+  proposalAllocations: TicketProposalAllocation[];
+  tradePrice?: number | null;
+  tradeAllocations: TicketTradeAllocation[];
+  fills: TicketFill[];
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  isActive: boolean;
+};
+
+export type Tickets = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: Ticket[];
+};
+
 export type ReferenceEventBase = {
   $type: string;
   eventID: string;
@@ -327,6 +420,11 @@ export type TransactionReferenceEvent = ReferenceEventBase & {
   bookCost?: number;
   cancelledEventID?: string;
   cancelledIDGroup?: string[];
+};
+
+export type TicketReferenceEvent = ReferenceEventBase & {
+  ticketNumber: number;
+  details?: Record<string, unknown>;
 };
 
 export type InstrumentReferenceEvent = ReferenceEventBase & {
@@ -502,7 +600,8 @@ export type AggregateKind =
   | 'Holdings'
   | 'HoldingPositions'
   | 'Instruments'
-  | 'InstrumentValues';
+  | 'InstrumentValues'
+  | 'Tickets';
 
 export type AggregateUpdateNotification = {
   notificationType: 'AggregateUpdated' | 'AggregatesInvalidated';
