@@ -4,6 +4,8 @@ using FolioTrace.Common;
 using FolioTrace.Types;
 using Repository;
 using Services;
+using System.ComponentModel;
+using System.Reflection;
 using System.Text.Json;
 
 namespace API;
@@ -22,7 +24,11 @@ public static class ApiEndpointRegistration
     private const string InstrumentPriceEventsRoute = "/API/Events/InstrumentPrice";
     private const string InstrumentIncomeEventsRoute = "/API/Events/InstrumentIncome";
     private const string TransactionEventsRoute = "/API/Events/Transaction";
+    private const string TicketEventsRoute = "/API/Events/Ticket";
     private const string UserEventsRoute = "/API/Events/User";
+    private const string UserMenuPreferencesEventsRoute = "/API/Events/UserMenuPreferences";
+    private const string UserValuationPreferencesEventsRoute = "/API/Events/UserValuationPreferences";
+    private const string UserBookmarksEventsRoute = "/API/Events/UserBookmarks";
 
     public static WebApplication MapFolioTraceApi(this WebApplication app)
     {
@@ -40,6 +46,10 @@ public static class ApiEndpointRegistration
         api.MapHoldingEndpoints();
         api.MapInstrumentEndpoints();
         api.MapInstrumentValueEndpoints();
+        api.MapTicketEndpoints();
+        api.MapUserMenuPreferencesEndpoints();
+        api.MapUserValuationPreferencesEndpoints();
+        api.MapUserBookmarksEndpoints();
         api.MapAccountEventEndpoints();
         api.MapCountryEventEndpoints();
         api.MapCurrencyEventEndpoints();
@@ -50,7 +60,11 @@ public static class ApiEndpointRegistration
         api.MapInstrumentPriceEventEndpoints();
         api.MapInstrumentIncomeEventEndpoints();
         api.MapTransactionEventEndpoints();
+        api.MapTicketEventEndpoints();
         api.MapUserEventEndpoints();
+        api.MapUserMenuPreferencesEventEndpoints();
+        api.MapUserValuationPreferencesEventEndpoints();
+        api.MapUserBookmarksEventEndpoints();
 
         return app;
     }
@@ -375,14 +389,12 @@ public static class ApiEndpointRegistration
             AggregateUpdateNotificationService notificationService,
             AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator,
             IFXRateReadModelRepository fxRateReadModelRepository,
-            IInstrumentValueReadModelRepository instrumentValueReadModelRepository,
             CancellationToken cancellationToken) =>
         {
             await using var maintenanceSuspension = await aggregateMaintenanceCoordinator.SuspendAsync("Clearing caches and projections.", cancellationToken);
 
             var removedCacheViews = cacheClearService.ClearAll();
             await fxRateReadModelRepository.ClearAsync(cancellationToken);
-            await instrumentValueReadModelRepository.ClearAsync(cancellationToken);
             notificationService.PublishAggregatesInvalidated("Caches and projections cleared.");
 
             return Results.Ok(new
@@ -393,10 +405,7 @@ public static class ApiEndpointRegistration
                 ClearedProjections = new[]
                 {
                     nameof(FXDefinitionReadModel),
-                    nameof(FXRatePointReadModel),
-                    nameof(InstrumentDefinitionReadModel),
-                    nameof(InstrumentPricePointReadModel),
-                    nameof(InstrumentIncomePointReadModel)
+                    nameof(FXRatePointReadModel)
                 }
             });
         });
@@ -540,6 +549,98 @@ public static class ApiEndpointRegistration
         });
     }
 
+    private static void MapTicketEndpoints(this RouteGroupBuilder api)
+    {
+        var tickets = api.MapGroup("/Tickets");
+
+        tickets.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, bool? includeClosed, TicketService ticketService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+            var aggregate = auditDateTime.HasValue
+                ? await ticketService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value))
+                : await ticketService.Get(valuationDate);
+
+            var items = includeClosed == true
+                ? aggregate.Items
+                : aggregate.Items.Where(ticket => ticket.IsActive).ToList();
+
+            return Results.Ok(aggregate with { Items = items });
+        });
+
+        tickets.MapGet("/Statuses", () =>
+            Results.Ok(Enum.GetValues<TicketStatus>()
+                .Select(status => new
+                {
+                    Status = status.ToString(),
+                    Description = GetTicketStatusDescription(status)
+                })
+                .ToList()));
+
+        tickets.MapGet("/{ticketNumber:int}", async (int ticketNumber, DateTime eventDateTime, DateTime? auditDateTime, TicketService ticketService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+            var aggregate = auditDateTime.HasValue
+                ? await ticketService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value))
+                : await ticketService.Get(valuationDate);
+            var ticket = aggregate.Find(new TicketNumber(ticketNumber));
+
+            return ticket is null
+                ? Results.NotFound()
+                : Results.Ok(ticket);
+        });
+    }
+
+    private static string GetTicketStatusDescription(TicketStatus status)
+    {
+        var member = typeof(TicketStatus).GetMember(status.ToString()).SingleOrDefault();
+        return member?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? status.ToString();
+    }
+
+    private static void MapUserMenuPreferencesEndpoints(this RouteGroupBuilder api)
+    {
+        var userMenuPreferences = api.MapGroup("/UserMenuPreferences");
+
+        userMenuPreferences.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserMenuPreferencesService userMenuPreferencesService) =>
+        {
+            var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await userMenuPreferencesService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await userMenuPreferencesService.Get(resolvedUserID, valuationDate));
+        });
+    }
+
+    private static void MapUserValuationPreferencesEndpoints(this RouteGroupBuilder api)
+    {
+        var userValuationPreferences = api.MapGroup("/UserValuationPreferences");
+
+        userValuationPreferences.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserValuationPreferencesService userValuationPreferencesService) =>
+        {
+            var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await userValuationPreferencesService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await userValuationPreferencesService.Get(resolvedUserID, valuationDate));
+        });
+    }
+
+    private static void MapUserBookmarksEndpoints(this RouteGroupBuilder api)
+    {
+        var userBookmarks = api.MapGroup("/UserBookmarks");
+
+        userBookmarks.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserBookmarksService userBookmarksService) =>
+        {
+            var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate));
+        });
+    }
+
     private static void MapAccountEventEndpoints(this RouteGroupBuilder api)
     {
         var accountEvents = api.MapGroup("/Events/Account");
@@ -595,6 +696,21 @@ public static class ApiEndpointRegistration
                 return Results.BadRequest(Result<AccountActiveModifiedEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
 
             var result = AccountActiveModifiedEventBuilder.Create(request, accounts);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.AccountsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
+        });
+
+        accountEvents.MapPost($"/{nameof(AccountDisplayOrderSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountDisplayOrderSetRequest request, CancellationToken cancellationToken) =>
+        {
+            var accounts = await TryGetAccounts(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            if (accounts is null)
+                return Results.BadRequest(Result<AccountDisplayOrderSetEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
+
+            var result = AccountDisplayOrderSetEventBuilder.Create(request, accounts);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
@@ -1056,11 +1172,23 @@ public static class ApiEndpointRegistration
                     .ToList();
 
             if (accountID.HasValue)
-                events = events
+            {
+                var accountMovementEventIds = events
                     .OfType<ITransactionMovementEvent>()
                     .Where(@event => @event.AccountID.Value == accountID.Value)
-                    .Cast<ITransactionEvent>()
+                    .Select(@event => @event.EventID.Value)
+                    .ToHashSet();
+
+                events = events
+                    .Where(@event => @event switch
+                    {
+                        ITransactionMovementEvent movementEvent => movementEvent.AccountID.Value == accountID.Value,
+                        TransactionCancellationEvent cancellationEvent => cancellationEvent.AccountID?.Value == accountID.Value ||
+                            cancellationEvent.CancelledIDGroup.Any(cancelled => accountMovementEventIds.Contains(cancelled.Value)),
+                        _ => false
+                    })
                     .ToList();
+            }
 
             if (instrumentID.HasValue)
                 events = events
@@ -1119,24 +1247,184 @@ public static class ApiEndpointRegistration
         });
     }
 
+    private static void MapTicketEventEndpoints(this RouteGroupBuilder api)
+    {
+        var ticketEvents = api.MapGroup("/Events/Ticket");
+
+        ticketEvents.MapGet("/", async (int? ticketNumber, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<ITicket>(Constants.Initialisation.TicketsStreamId, cancellationToken);
+            if (ticketNumber.HasValue)
+                events = events.Where(@event => @event.TicketNumber.Value == ticketNumber.Value).ToList();
+
+            return Results.Ok(events.Select(ToTicketEventResponse).ToList());
+        });
+
+        ticketEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is ITicket ticketEvent
+                ? Results.Ok(ToTicketEventResponse(ticketEvent))
+                : Results.NotFound();
+        });
+
+        ticketEvents.MapPost($"/{nameof(TicketCreatedEvent)}", async (IEventRepository eventRepository, InstrumentService instrumentService, AggregateCacheInvalidationService cacheInvalidationService, TicketCreatedRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var events = await eventRepository.LoadStreamAsync<ITicket>(Constants.Initialisation.TicketsStreamId, cancellationToken);
+                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.Create(request, TicketEventBuilder.NextTicketNumber(events), instruments);
+                },
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketAccountAddedEvent)}", async (TicketService ticketService, AccountService accountService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketAccountRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
+                    var accounts = await accountService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.AddAccount(request, tickets, accounts);
+                },
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketAccountRemovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketAccountRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.RemoveAccount(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketProposalCreatedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketProposalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.CreateProposal(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketProposalModifiedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketProposalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.ModifyProposal(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketProposalApprovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.ApproveProposal(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketProposalNotApprovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.NotApproveProposal(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeCreatedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.CreateTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeModifiedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.ModifyTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeFillAddedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeFillRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.AddFill(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeFillModifiedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeFillRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.ModifyFill(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeFillRemovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeFillRemovedRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.RemoveFill(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.ApproveTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeNotApprovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.NotApproveTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketCancelledEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketCancellationRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () => TicketEventBuilder.Cancel(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                cancellationToken));
+    }
+
     private static void MapUserEventEndpoints(this RouteGroupBuilder api)
     {
         var userEvents = api.MapGroup("/Events/User");
 
         userEvents.MapPost($"/{nameof(UserCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserEventRequest request, CancellationToken cancellationToken) =>
-            await EventEndpointFactory.CreateAndAppend(
-                Constants.Initialisation.UsersStreamId,
-                UserEventsRoute,
-                eventRepository,
-                cacheInvalidationService,
-                () => UserCreatedEventBuilder.Create(
-                    request.UserID,
-                    EventDateTimeBuilder.Create(request.EventDateTime),
-                    request.Reason,
-                    request.DisplayName,
-                    CreateUserDisplayPreferences(request),
-                    CreateUserValuationPreferences(request)),
-                cancellationToken));
+        {
+            var userResult = UserCreatedEventBuilder.Create(
+                request.UserID,
+                EventDateTimeBuilder.Create(request.EventDateTime),
+                request.Reason,
+                request.DisplayName,
+                CreateUserDisplayPreferences(request),
+                CreateUserValuationPreferences(request));
+
+            if (!userResult.IsValid || userResult.Value is null)
+                return Results.BadRequest(userResult);
+
+            var menuPreferencesResult = UserMenuPreferencesCreatedEventBuilder.CreateDefault(userResult.Value);
+            if (!menuPreferencesResult.IsValid || menuPreferencesResult.Value is null)
+                return Results.BadRequest(menuPreferencesResult);
+
+            var valuationPreferencesResult = UserValuationPreferencesCreatedEventBuilder.CreateDefault(userResult.Value);
+            if (!valuationPreferencesResult.IsValid || valuationPreferencesResult.Value is null)
+                return Results.BadRequest(valuationPreferencesResult);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.UsersStreamId, userResult.Value, cancellationToken);
+            await eventRepository.AppendAsync(Constants.Initialisation.UserMenuPreferencesStreamId, menuPreferencesResult.Value, cancellationToken);
+            await eventRepository.AppendAsync(Constants.Initialisation.UserValuationPreferencesStreamId, valuationPreferencesResult.Value, cancellationToken);
+
+            cacheInvalidationService.Invalidate(userResult.Value);
+            cacheInvalidationService.Invalidate(menuPreferencesResult.Value);
+            cacheInvalidationService.Invalidate(valuationPreferencesResult.Value);
+
+            return Results.Accepted(UserEventsRoute, CreateAcceptedEventsResponse([
+                (UserEventsRoute, (IEventBase)userResult.Value),
+                (UserMenuPreferencesEventsRoute, menuPreferencesResult.Value),
+                (UserValuationPreferencesEventsRoute, valuationPreferencesResult.Value)
+            ]));
+        });
 
         userEvents.MapPost($"/{nameof(UserModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserEventRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
@@ -1154,10 +1442,151 @@ public static class ApiEndpointRegistration
                 cancellationToken));
     }
 
+    private static void MapUserMenuPreferencesEventEndpoints(this RouteGroupBuilder api)
+    {
+        var userMenuPreferencesEvents = api.MapGroup("/Events/UserMenuPreferences");
+
+        userMenuPreferencesEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IUserMenuPreferencesEvent>(Constants.Initialisation.UserMenuPreferencesStreamId, cancellationToken);
+
+            if (userID.HasValue)
+                events = events.Where(@event => @event.UserID.Value == userID.Value).ToList();
+
+            return Results.Ok(events.ToList());
+        });
+
+        userMenuPreferencesEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IUserMenuPreferencesEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
+        userMenuPreferencesEvents.MapPost($"/{nameof(UserMenuPreferencesCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserMenuPreferencesRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserMenuPreferencesStreamId,
+                UserMenuPreferencesEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserMenuPreferencesCreatedEventBuilder.Create(request),
+                cancellationToken));
+
+        userMenuPreferencesEvents.MapPost($"/{nameof(UserMenuPreferencesModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserMenuPreferencesRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserMenuPreferencesStreamId,
+                UserMenuPreferencesEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserMenuPreferencesModifiedEventBuilder.Create(request),
+                cancellationToken));
+    }
+
+    private static void MapUserValuationPreferencesEventEndpoints(this RouteGroupBuilder api)
+    {
+        var userValuationPreferencesEvents = api.MapGroup("/Events/UserValuationPreferences");
+
+        userValuationPreferencesEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IUserValuationPreferencesEvent>(Constants.Initialisation.UserValuationPreferencesStreamId, cancellationToken);
+
+            if (userID.HasValue)
+                events = events.Where(@event => @event.UserID.Value == userID.Value).ToList();
+
+            return Results.Ok(events.ToList());
+        });
+
+        userValuationPreferencesEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IUserValuationPreferencesEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
+        userValuationPreferencesEvents.MapPost($"/{nameof(UserValuationPreferencesCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserValuationPreferencesRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserValuationPreferencesStreamId,
+                UserValuationPreferencesEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserValuationPreferencesCreatedEventBuilder.Create(request),
+                cancellationToken));
+
+        userValuationPreferencesEvents.MapPost($"/{nameof(UserValuationPreferencesModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserValuationPreferencesRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserValuationPreferencesStreamId,
+                UserValuationPreferencesEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserValuationPreferencesModifiedEventBuilder.Create(request),
+                cancellationToken));
+    }
+
+    private static void MapUserBookmarksEventEndpoints(this RouteGroupBuilder api)
+    {
+        var userBookmarksEvents = api.MapGroup("/Events/UserBookmarks");
+
+        userBookmarksEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IUserBookmarksEvent>(Constants.Initialisation.UserBookmarksStreamId, cancellationToken);
+
+            if (userID.HasValue)
+                events = events.Where(@event => @event.UserID.Value == userID.Value).ToList();
+
+            return Results.Ok(events.ToList());
+        });
+
+        userBookmarksEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IUserBookmarksEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkCreatedEventBuilder.Create(request),
+                cancellationToken));
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkModifiedEventBuilder.Create(request),
+                cancellationToken));
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkDisplayOrderSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkDisplayOrderSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkDisplayOrderSetEventBuilder.Create(request),
+                cancellationToken));
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkDeletedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkDeletedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkDeletedEventBuilder.Create(request),
+                cancellationToken));
+    }
+
     private static UserDisplayPreferences CreateUserDisplayPreferences(UserEventRequest request) =>
         new(request.DisplayPreferences.DarkMode, request.DisplayPreferences.RememberTraceDate);
 
-    private static UserValuationPreferences CreateUserValuationPreferences(UserEventRequest request) =>
+    private static UserProfileValuationPreferences CreateUserValuationPreferences(UserEventRequest request) =>
         new(
             EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate),
             request.ValuationPreferences.ShowIncome,
@@ -1176,6 +1605,37 @@ public static class ApiEndpointRegistration
                 })
                 .ToList()
         };
+
+    private static object CreateAcceptedEventsResponse(IReadOnlyList<(string EventRoute, IEventBase Event)> events) =>
+        new
+        {
+            EventIDs = events.Select(item => item.Event.EventID.Value).ToList(),
+            Links = events
+                .Select(item => new
+                {
+                    Rel = "self",
+                    Href = $"{item.EventRoute}/{item.Event.EventID.Value}",
+                    Method = "GET"
+                })
+                .ToList()
+        };
+
+    private static async Task<IResult> AppendTicketEvent<TEvent>(
+        IEventRepository eventRepository,
+        AggregateCacheInvalidationService cacheInvalidationService,
+        Func<Task<Result<TEvent>>> createEvent,
+        CancellationToken cancellationToken)
+        where TEvent : class, ITicket
+    {
+        var result = await createEvent();
+        if (!result.IsValid || result.Value is null)
+            return Results.BadRequest(result);
+
+        await eventRepository.AppendAsync(Constants.Initialisation.TicketsStreamId, result.Value, cancellationToken);
+        cacheInvalidationService.Invalidate(result.Value);
+
+        return Results.Accepted(TicketEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(TicketEventsRoute, result.Value));
+    }
 
     private static async Task<IReadOnlyList<string>> ValidateInstrumentValueEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
     {
@@ -1270,6 +1730,17 @@ public static class ApiEndpointRegistration
                 activeEvent.Reason,
                 AccountID = activeEvent.AccountID.Value,
                 activeEvent.Active
+            },
+            AccountDisplayOrderSetEvent displayOrderSetEvent => new
+            {
+                Type = displayOrderSetEvent.Type,
+                EventID = displayOrderSetEvent.EventID.Value,
+                UserID = displayOrderSetEvent.UserID.Value,
+                EventDateTime = displayOrderSetEvent.EventDateTime.Value,
+                AuditDateTime = displayOrderSetEvent.AuditDateTime.Value,
+                displayOrderSetEvent.Reason,
+                AccountID = displayOrderSetEvent.AccountID.Value,
+                DisplayOrder = displayOrderSetEvent.DisplayOrder.Value
             },
             _ => new
             {
@@ -1703,6 +2174,7 @@ public static class ApiEndpointRegistration
                 cancellationEvent.Reason,
                 EventSetID = cancellationEvent.EventSetID.Value,
                 EventIDGroup = cancellationEvent.EventIDGroup.Select(eventId => eventId.Value).ToList(),
+                AccountID = cancellationEvent.AccountID?.Value,
                 CancelledEventID = cancellationEvent.CancelledEventID.Value,
                 CancelledIDGroup = cancellationEvent.CancelledIDGroup.Select(eventId => eventId.Value).ToList()
             },
@@ -1715,5 +2187,92 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
+        };
+
+    private static object ToTicketEventResponse(ITicket @event) =>
+        @event switch
+        {
+            TicketCreatedEvent createdEvent => WithTicketBase(createdEvent, new
+            {
+                Side = createdEvent.Side.ToString(),
+                InstrumentID = createdEvent.InstrumentID.Value
+            }),
+            TicketAccountAddedEvent accountAddedEvent => WithTicketBase(accountAddedEvent, new
+            {
+                AccountID = accountAddedEvent.AccountID.Value
+            }),
+            TicketAccountRemovedEvent accountRemovedEvent => WithTicketBase(accountRemovedEvent, new
+            {
+                AccountID = accountRemovedEvent.AccountID.Value
+            }),
+            TicketProposalCreatedEvent proposalCreatedEvent => WithTicketBase(proposalCreatedEvent, new
+            {
+                proposalCreatedEvent.TargetPrice,
+                proposalCreatedEvent.TotalAmount,
+                Allocations = proposalCreatedEvent.Allocations.Select(ToResponse).ToList()
+            }),
+            TicketProposalModifiedEvent proposalModifiedEvent => WithTicketBase(proposalModifiedEvent, new
+            {
+                proposalModifiedEvent.TargetPrice,
+                proposalModifiedEvent.TotalAmount,
+                Allocations = proposalModifiedEvent.Allocations.Select(ToResponse).ToList()
+            }),
+            TicketTradeCreatedEvent tradeCreatedEvent => WithTicketBase(tradeCreatedEvent, new
+            {
+                tradeCreatedEvent.TradedPrice,
+                Allocations = tradeCreatedEvent.Allocations.Select(ToResponse).ToList()
+            }),
+            TicketTradeModifiedEvent tradeModifiedEvent => WithTicketBase(tradeModifiedEvent, new
+            {
+                tradeModifiedEvent.TradedPrice,
+                Allocations = tradeModifiedEvent.Allocations.Select(ToResponse).ToList()
+            }),
+            TicketTradeFillAddedEvent fillAddedEvent => WithTicketBase(fillAddedEvent, new
+            {
+                fillAddedEvent.FillID,
+                fillAddedEvent.Price,
+                fillAddedEvent.Quantity,
+                fillAddedEvent.Note
+            }),
+            TicketTradeFillModifiedEvent fillModifiedEvent => WithTicketBase(fillModifiedEvent, new
+            {
+                fillModifiedEvent.FillID,
+                fillModifiedEvent.Price,
+                fillModifiedEvent.Quantity,
+                fillModifiedEvent.Note
+            }),
+            TicketTradeFillRemovedEvent fillRemovedEvent => WithTicketBase(fillRemovedEvent, new
+            {
+                fillRemovedEvent.FillID
+            }),
+            _ => WithTicketBase(@event, new { })
+        };
+
+    private static object WithTicketBase(ITicket @event, object details) =>
+        new
+        {
+            Type = @event.Type,
+            EventID = @event.EventID.Value,
+            UserID = @event.UserID.Value,
+            EventDateTime = @event.EventDateTime.Value,
+            AuditDateTime = @event.AuditDateTime.Value,
+            @event.Reason,
+            TicketNumber = @event.TicketNumber.Value,
+            Details = details
+        };
+
+    private static object ToResponse(TicketProposalAllocation allocation) =>
+        new
+        {
+            AccountID = allocation.AccountID.Value,
+            allocation.Quantity
+        };
+
+    private static object ToResponse(TicketTradeAllocation allocation) =>
+        new
+        {
+            AccountID = allocation.AccountID.Value,
+            allocation.Quantity,
+            allocation.BookCost
         };
 }

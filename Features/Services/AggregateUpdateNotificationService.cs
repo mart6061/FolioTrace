@@ -116,6 +116,10 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
             IInstrumentPriceEvent => ["InstrumentValues"],
             IInstrumentIncomeEvent => ["InstrumentValues"],
             ITransactionEvent => ["Transactions", "HoldingPositions"],
+            ITicket => ["Tickets"],
+            IUserMenuPreferencesEvent => ["UserMenuPreferences"],
+            IUserValuationPreferencesEvent => ["UserValuationPreferences"],
+            IUserBookmarksEvent => ["UserBookmarks"],
             _ => []
         };
 }

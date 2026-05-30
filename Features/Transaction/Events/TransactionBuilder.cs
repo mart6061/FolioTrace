@@ -83,6 +83,15 @@ public static class TransactionBuilder
         if (request.Debits.Count == 0) messages.Add("At least one debit is required.");
         if (request.Credits.Count + request.Debits.Count < 2) messages.Add("At least two transaction movements are required.");
 
+        var accountIds = request.Credits
+            .Concat(request.Debits)
+            .Where(leg => leg?.AccountID is not null)
+            .Select(leg => leg.AccountID.Value)
+            .Distinct()
+            .ToList();
+        if (accountIds.Count > 1)
+            messages.Add("All transaction movements in a set must have the same AccountID.");
+
         ValidateLegs(messages, "Credit", request.Credits, holdings);
         ValidateLegs(messages, "Debit", request.Debits, holdings);
 

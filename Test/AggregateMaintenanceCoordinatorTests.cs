@@ -159,8 +159,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         var eventRepository = new TestEventRepository();
         var seedRepository = new SeedRepository(
             eventRepository,
-            new NullFXRateReadModelRepository(),
-            new NullInstrumentValueReadModelRepository());
+            new NullFXRateReadModelRepository());
         await seedRepository.Build();
 
         var countryService = new CountryService(eventRepository);
@@ -305,11 +304,4 @@ public sealed class AggregateMaintenanceCoordinatorTests
         public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    private sealed class NullInstrumentValueReadModelRepository : IInstrumentValueReadModelRepository
-    {
-        public Task<InstrumentValues?> LoadAsync(EventDateTime valuationDateTime, CancellationToken cancellationToken = default) =>
-            Task.FromResult<InstrumentValues?>(null);
-
-        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
 }

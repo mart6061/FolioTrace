@@ -1,11 +1,14 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
-  import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput } from '$lib/dates';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   let filterText = $state('');
   let addingFX = $state(false);
   let submittingCreate = $state(false);
@@ -152,13 +155,16 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Value Data</p>
-        <h1 class="page-title">FXs</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">FXs</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" type="datetime-local" value={data.valuationDate} />
+          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
@@ -265,7 +271,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="fx-create">
                       Event date
-                      <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form="fx-create" name="eventDateTime" required step="1" type="datetime-local" value={form?.intent === 'createFX' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form="fx-create" name="eventDateTime" required step="1" value={form?.intent === 'createFX' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -296,7 +302,7 @@
                     <form action="?/modifyActive" method="POST" use:enhance={enhanceActive}>
                       <input name="pair" type="hidden" value={fx.pair} />
                       <input name="active" type="hidden" value={String(!fx.active)} />
-                      <input name="eventDateTime" type="hidden" value={data.valuationDate} />
+                      <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                       <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:opacity-70" disabled={submittingPair === fx.pair} type="submit">
                         {fx.active ? 'Deactivate' : 'Activate'}
                       </button>

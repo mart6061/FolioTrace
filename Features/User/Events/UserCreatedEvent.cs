@@ -10,7 +10,7 @@ public sealed record UserCreatedEvent : EventBase, IUserEvent
 
     public UserDisplayPreferences DisplayPreferences { get; init; } = null!;
 
-    public UserValuationPreferences ValuationPreferences { get; init; } = null!;
+    public UserProfileValuationPreferences ValuationPreferences { get; init; } = null!;
 
     [JsonConstructor]
     private UserCreatedEvent()
@@ -18,12 +18,12 @@ public sealed record UserCreatedEvent : EventBase, IUserEvent
     {
     }
 
-    public UserCreatedEvent(UserID userId, EventDateTime eventDateTime, string reason, string displayName, UserDisplayPreferences displayPreferences, UserValuationPreferences valuationPreferences)
+    public UserCreatedEvent(UserID userId, EventDateTime eventDateTime, string reason, string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
         : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, displayName, displayPreferences, valuationPreferences)
     {
     }
 
-    internal UserCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, string displayName, UserDisplayPreferences displayPreferences, UserValuationPreferences valuationPreferences)
+    internal UserCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         DisplayName = displayName;
@@ -39,7 +39,7 @@ public sealed record UserCreatedEvent : EventBase, IUserEvent
     public override string ToDetail() =>
         $"{nameof(UserCreatedEvent)}: ({base.ToDetail()}, DisplayName: {DisplayName}, DisplayPreferences: {DisplayPreferences.ToDetail()}, ValuationPreferences: {ValuationPreferences.ToDetail()})";
 
-    public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, string? displayName, UserDisplayPreferences? displayPreferences, UserValuationPreferences? valuationPreferences)
+    public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, string? displayName, UserDisplayPreferences? displayPreferences, UserProfileValuationPreferences? valuationPreferences)
     {
         var messages = new List<string>();
 

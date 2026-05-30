@@ -7,4 +7,5 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(AccountCreatedEvent), nameof(AccountCreatedEvent))]
 [JsonDerivedType(typeof(AccountModifiedEvent), nameof(AccountModifiedEvent))]
 [JsonDerivedType(typeof(AccountActiveModifiedEvent), nameof(AccountActiveModifiedEvent))]
+[JsonDerivedType(typeof(AccountDisplayOrderSetEvent), nameof(AccountDisplayOrderSetEvent))]
 public interface IAccountEvent : IEventBase;

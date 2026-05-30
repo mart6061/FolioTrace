@@ -1,12 +1,15 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { Holding, HoldingKind, HoldingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   type SortKey = 'name' | 'type' | 'account' | 'instrument' | 'status' | 'lastAudit';
 
   const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InspecieIn', 'InspecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
@@ -244,13 +247,16 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Reference Data</p>
-        <h1 class="page-title">Holdings</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Holdings</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" type="datetime-local" value={data.valuationDate} />
+          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
@@ -386,7 +392,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Event date</span>
-                      <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="eventDateTime" required step="1" type="datetime-local" value={data.valuationDate} />
+                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="eventDateTime" required step="1" value={eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -442,7 +448,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`holding-edit-${holding.holdingID}`}>
                         <span>Event date</span>
-                        <input class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="eventDateTime" required step="1" type="datetime-local" value={data.valuationDate} />
+                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="eventDateTime" required step="1" value={eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
@@ -472,7 +478,7 @@
                         <form action="?/modifyHoldingActive" method="POST" use:enhance={enhanceHoldingActive}>
                           <input name="holdingID" type="hidden" value={holding.holdingID} />
                           <input name="name" type="hidden" value={displayName(holding)} />
-                          <input name="eventDateTime" type="hidden" value={data.valuationDate} />
+                          <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                           <input name="active" type="hidden" value={holding.active ? 'false' : 'true'} />
                           <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={submittingHoldingID === holding.holdingID} type="submit">{holding.active ? 'Deactivate' : 'Activate'}</button>
                         </form>

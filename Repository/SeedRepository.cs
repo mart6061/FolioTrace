@@ -6,7 +6,7 @@ using Repository.Seed;
 
 namespace Repository;
 
-public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository, IInstrumentValueReadModelRepository instrumentValueReadModelRepository) : ISeedRepository
+public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository) : ISeedRepository
 {
     private const int TotalBuildSteps = 12;
 
@@ -28,7 +28,6 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         progress("Clear", "Clearing events and projections.", 0, false);
         await eventRepository.ClearAsync(cancellationToken);
         await fxRateReadModelRepository.ClearAsync(cancellationToken);
-        await instrumentValueReadModelRepository.ClearAsync(cancellationToken);
         progress("Clear", "Events and projections cleared.", 0, true);
     }
 

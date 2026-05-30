@@ -12,7 +12,7 @@ public sealed record User : IModel
 
     public required UserDisplayPreferences DisplayPreferences { get; init; }
 
-    public required UserValuationPreferences ValuationPreferences { get; init; }
+    public required UserProfileValuationPreferences ValuationPreferences { get; init; }
 
     public required EventDateTime ValuationDateTime { get; init; }
 
@@ -28,7 +28,7 @@ public sealed record User : IModel
         UserID userID,
         string displayName,
         UserDisplayPreferences displayPreferences,
-        UserValuationPreferences valuationPreferences,
+        UserProfileValuationPreferences valuationPreferences,
         EventDateTime valuationDateTime,
         AuditDateTime asOfDateTime,
         EventID lastEventID,

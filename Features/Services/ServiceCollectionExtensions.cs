@@ -16,6 +16,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<HoldingPositionService>();
         services.AddSingleton<InstrumentService>();
         services.AddSingleton<InstrumentValueService>();
+        services.AddSingleton<TicketService>();
+        services.AddSingleton<UserMenuPreferencesService>();
+        services.AddSingleton<UserValuationPreferencesService>();
+        services.AddSingleton<UserBookmarksService>();
         services.AddSingleton<AggregateMaintenanceCoordinator>();
         services.AddSingleton<AggregateUpdateNotificationService>();
         services.AddSingleton<IAggregateCacheInvalidator<AccountCreatedEvent>>(provider => new AggregateCacheInvalidator<AccountCreatedEvent>(@event =>
@@ -23,6 +27,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<AccountModifiedEvent>>(provider => new AggregateCacheInvalidator<AccountModifiedEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<AccountActiveModifiedEvent>(@event =>
+            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>(provider => new AggregateCacheInvalidator<AccountDisplayOrderSetEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<CountryCreatedEvent>>(provider => new AggregateCacheInvalidator<CountryCreatedEvent>(provider.GetRequiredService<CountryService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<CountryModifiedEvent>>(provider => new AggregateCacheInvalidator<CountryModifiedEvent>(provider.GetRequiredService<CountryService>().Invalidate));
@@ -55,9 +61,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<TransactionCreditEvent>>(provider => new AggregateCacheInvalidator<TransactionCreditEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<TransactionDebitEvent>>(provider => new AggregateCacheInvalidator<TransactionDebitEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<TransactionCancellationEvent>>(provider => new AggregateCacheInvalidator<TransactionCancellationEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<ITicket>>(provider => new AggregateCacheInvalidator<ITicket>(provider.GetRequiredService<TicketService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IUserMenuPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserMenuPreferencesEvent>(provider.GetRequiredService<UserMenuPreferencesService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IUserValuationPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserValuationPreferencesEvent>(provider.GetRequiredService<UserValuationPreferencesService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IUserBookmarksEvent>>(provider => new AggregateCacheInvalidator<IUserBookmarksEvent>(provider.GetRequiredService<UserBookmarksService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountActiveModifiedEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryFlagModifiedEvent>>());
@@ -78,6 +89,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionCreditEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionDebitEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionCancellationEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<ITicket>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserMenuPreferencesEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserValuationPreferencesEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserBookmarksEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<AggregateUpdateNotificationService>());
         services.AddSingleton<AggregateCacheInvalidationService>();
         services.AddSingleton<AggregateCacheClearService>();

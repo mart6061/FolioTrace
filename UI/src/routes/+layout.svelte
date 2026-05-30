@@ -2,7 +2,10 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { formatBookmarkMenuUrl, formatBookmarkType } from '$lib/bookmarks';
   import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
+  import { normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import '../app.css';
   import { onMount } from 'svelte';
 
@@ -10,6 +13,7 @@
 
   const traceModeStorageKey = 'foliotrace.traceMode';
   const auditDateTimeStorageKey = 'foliotrace.auditDateTime';
+  const darkModeStorageKey = 'foliotrace.darkMode';
   const menuTones = {
     home: {
       border: '#5eead4',
@@ -35,6 +39,12 @@
       tint: '#fef3c7',
       tintText: '#92400e'
     },
+    todo: {
+      border: '#f9a8d4',
+      strong: '#be185d',
+      tint: '#fce7f3',
+      tintText: '#9d174d'
+    },
     danger: {
       border: '#fca5a5',
       strong: '#dc2626',
@@ -57,14 +67,16 @@
     path?: string;
     tone: MenuTone;
   };
-  type TopMenuID = 'data' | 'system' | '';
+  type TopMenuID = 'bookmarks' | 'data' | 'system' | '';
   type DataBranchID = 'value' | 'reference' | '';
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
+    { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'data', label: 'Data', tone: menuTones.value },
-    { id: 'system', label: 'System', tone: menuTones.logs }
+    { id: 'system', label: 'System', tone: menuTones.logs },
+    { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
   ];
   const dataBranchItems: MenuItem[] = [
     { id: 'value', label: 'Value', tone: menuTones.value },
@@ -89,8 +101,21 @@
   ];
   const topLeafItems = topMenuItems.filter((item) => item.path);
   const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, ...topLeafItems];
+  const menuVisibility = $derived(new Map(normalizeMenuPreferenceItems(data.menuPreferences?.items).map((item) => [item.menuItemID, item.visible])));
+  const visibleTopMenuItems = $derived(topMenuItems.filter((item) => isMenuItemVisible(item)));
+  const visibleDataBranchItems = $derived(dataBranchItems.filter((item) => isMenuItemVisible(item)));
+  const visibleValueItems = $derived(valueItems.filter((item) => isMenuItemVisible(item)));
+  const visibleReferenceItems = $derived(referenceItems.filter((item) => isMenuItemVisible(item)));
+  const visibleSystemItems = $derived(systemItems.filter((item) => isMenuItemVisible(item)));
+  const bookmarkMenuItems: MenuItem[] = $derived((data.userBookmarks?.items ?? []).map((bookmark) => ({
+    id: `bookmark-${bookmark.bookmarkID}`,
+    label: `${formatBookmarkType(bookmark.bookmarkType)}: ${formatBookmarkMenuUrl(bookmark.url)}`,
+    path: bookmark.url,
+    tone: menuTones.home
+  })));
 
   let traceMode = $state(false);
+  let darkMode = $state(false);
   let auditDateTime = $state('');
   let hydrated = $state(false);
   let openTopMenu = $state<TopMenuID>(routeTopMenu());
@@ -102,8 +127,12 @@
     const urlAuditDateTime = clampFutureInputDateTime(page.url.searchParams.get('auditDateTime') ?? '');
     const storedTraceMode = sessionStorage.getItem(traceModeStorageKey) === 'true';
     const storedAuditDateTime = clampFutureInputDateTime(sessionStorage.getItem(auditDateTimeStorageKey) ?? '');
+    const storedDarkMode = localStorage.getItem(darkModeStorageKey);
 
     traceMode = urlAuditDateTime ? true : storedTraceMode;
+    darkMode = storedDarkMode === null
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : storedDarkMode === 'true';
     auditDateTime = urlAuditDateTime || (traceMode ? storedAuditDateTime : '');
     hydrated = true;
     activeRouteKey = routeKey();
@@ -111,6 +140,7 @@
     openDataBranch = routeDataBranch();
     selectedMenuItemID = routeActiveItem()?.id ?? '';
 
+    applyDarkMode();
     syncTraceStateToUrl(true);
   });
 
@@ -135,6 +165,19 @@
       sessionStorage.setItem(auditDateTimeStorageKey, auditDateTime);
     else
       sessionStorage.removeItem(auditDateTimeStorageKey);
+  }
+
+  function applyDarkMode() {
+    if (!browser)
+      return;
+
+    document.documentElement.classList.toggle('dark', darkMode);
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+    localStorage.setItem(darkModeStorageKey, String(darkMode));
+  }
+
+  function handleDarkModeChange() {
+    applyDarkMode();
   }
 
   function syncTraceStateToUrl(replaceState = false) {
@@ -265,6 +308,12 @@
       return;
     }
 
+    if (bookmarkMenuItems.includes(item)) {
+      openTopMenu = 'bookmarks';
+      openDataBranch = '';
+      return;
+    }
+
     openTopMenu = '';
     openDataBranch = '';
   }
@@ -285,6 +334,9 @@
     if (systemItems.includes(activeItem))
       return 'system';
 
+    if (bookmarkMenuItems.includes(activeItem))
+      return 'bookmarks';
+
     return '';
   }
 
@@ -304,12 +356,35 @@
   }
 
   function routeActiveItem() {
-    return leafMenuItems.find((item) => matchesCurrentRoute(item)) ?? null;
+    return [...leafMenuItems, ...bookmarkMenuItems].find((item) => matchesCurrentRoute(item)) ?? null;
   }
 
   function visibleSubmenuItems(items: MenuItem[]) {
     const activeItem = items.find((item) => item.id === selectedMenuItemID && matchesCurrentRoute(item));
     return activeItem ? [activeItem] : items;
+  }
+
+  function isConfiguredMenuVisible(id: string) {
+    return id === 'home' || menuVisibility.get(id) !== false;
+  }
+
+  function isMenuItemVisible(item: MenuItem) {
+    if (item.id === 'home')
+      return true;
+
+    if (valueItems.includes(item))
+      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('value');
+
+    if (referenceItems.includes(item))
+      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('reference');
+
+    if (systemItems.includes(item))
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible(item.id);
+
+    if (item.id === 'value' || item.id === 'reference')
+      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible(item.id);
+
+    return isConfiguredMenuVisible(item.id);
   }
 
   function menuStyle(tone: MenuTone, stack = 10) {
@@ -346,23 +421,34 @@
 
       <div class="system-search">
         <nav class="system-menu" aria-label="Primary menu">
-          {#each topMenuItems as item, topIndex}
-            {#if item.disabled}
+          {#each visibleTopMenuItems as item, topIndex}
+            {#if item.id === 'bookmarks'}
+              <button aria-expanded={openTopMenu === 'bookmarks'} aria-label="Bookmarks" class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`} onclick={() => toggleTopMenu('bookmarks')} style={menuStyle(item.tone, 40 - topIndex)} title="Bookmarks" type="button">
+                <span aria-hidden="true" class="system-menu-bookmark-icon">
+                  <svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z" /></svg>
+                </span>
+              </button>
+            {:else if item.disabled}
               <button aria-disabled="true" class="system-menu-pill system-menu-pill-top system-menu-pill-disabled" style={menuStyle(item.tone, 40 - topIndex)} type="button">
                 {item.label}
               </button>
               {:else if item.path}
                 <a
-                  aria-label={item.id === 'home' ? 'Home' : undefined}
+                  aria-label={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
                   aria-current={isActiveMenuItem(item) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-top ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(item)}
                 onclick={() => handleLeafClick(item)}
                 style={menuStyle(item.tone, 40 - topIndex)}
+                title={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
               >
                   {#if item.id === 'home'}
                     <span aria-hidden="true" class="system-menu-home-icon">
                       <svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
+                    </span>
+                  {:else if item.id === 'todo'}
+                    <span aria-hidden="true" class="system-menu-todo-icon">
+                      <svg viewBox="0 0 24 24"><path d="M8 7h10" /><path d="M8 12h10" /><path d="M8 17h10" /><path d="m3.5 7 1 1 2-2" /><path d="m3.5 12 1 1 2-2" /><path d="m3.5 17 1 1 2-2" /></svg>
                     </span>
                   {:else}
                     <span>{item.label}</span>
@@ -380,8 +466,20 @@
               </button>
             {/if}
 
-            {#if item.id === 'data' && openTopMenu === 'data'}
-              {#if openDataBranch === 'value'}
+            {#if item.id === 'bookmarks' && openTopMenu === 'bookmarks'}
+              {#each bookmarkMenuItems as bookmarkItem, bookmarkIndex}
+                <a
+                  aria-current={isActiveMenuItem(bookmarkItem) ? 'page' : undefined}
+                  class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(bookmarkItem) ? 'system-menu-pill-active' : ''}`}
+                  href={menuHref(bookmarkItem)}
+                  onclick={() => handleLeafClick(bookmarkItem)}
+                  style={menuStyle(bookmarkItem.tone, 39 - topIndex - bookmarkIndex)}
+                >
+                  {bookmarkItem.label}
+                </a>
+              {/each}
+            {:else if item.id === 'data' && openTopMenu === 'data'}
+              {#if openDataBranch === 'value' && isMenuItemVisible(dataBranchItems[0])}
                 {@const valueItem = dataBranchItems[0]}
                 <button
                   aria-expanded="true"
@@ -392,7 +490,7 @@
                 >
                   {valueItem.label}
                 </button>
-                {#each visibleSubmenuItems(valueItems) as valueLeaf, valueIndex}
+                {#each visibleSubmenuItems(visibleValueItems) as valueLeaf, valueIndex}
                   <a
                     aria-current={isActiveMenuItem(valueLeaf) ? 'page' : undefined}
                     class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
@@ -403,7 +501,7 @@
                     {valueLeaf.label}
                   </a>
                 {/each}
-              {:else if openDataBranch === 'reference'}
+              {:else if openDataBranch === 'reference' && isMenuItemVisible(dataBranchItems[1])}
                 {@const referenceItem = dataBranchItems[1]}
                 <button
                   aria-expanded="true"
@@ -414,7 +512,7 @@
                 >
                   {referenceItem.label}
                 </button>
-                {#each visibleSubmenuItems(referenceItems) as referenceLeaf, referenceIndex}
+                {#each visibleSubmenuItems(visibleReferenceItems) as referenceLeaf, referenceIndex}
                   <a
                     aria-current={isActiveMenuItem(referenceLeaf) ? 'page' : undefined}
                     class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
@@ -426,7 +524,7 @@
                   </a>
                 {/each}
               {:else}
-                {#each dataBranchItems as branchItem, branchIndex}
+                {#each visibleDataBranchItems as branchItem, branchIndex}
                   <button
                     aria-expanded="false"
                     class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
@@ -439,7 +537,7 @@
                 {/each}
             {/if}
           {:else if item.id === 'system' && openTopMenu === 'system'}
-              {#each visibleSubmenuItems(systemItems) as systemItem, systemIndex}
+              {#each visibleSubmenuItems(visibleSystemItems) as systemItem, systemIndex}
                 <a
                   aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
                   class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
@@ -453,6 +551,19 @@
             {/if}
           {/each}
         </nav>
+
+        <div class="theme-mode-control theme-mode-control-header">
+          <span>Dark</span>
+          <label class="trace-toggle">
+            <input
+              aria-label="Dark Mode"
+              bind:checked={darkMode}
+              onchange={handleDarkModeChange}
+              type="checkbox"
+            />
+            <span></span>
+          </label>
+        </div>
 
         <a aria-label="User preferences" class="system-user-link" href={pathWithTrace('/User/Preferences')} title="User preferences">
           me
@@ -469,6 +580,12 @@
     <div class="trace-footer-inner">
       <div class="trace-footer-controls">
         <div class="trace-mode-control">
+          <span class="trace-info-control">
+            <button aria-describedby="trace-mode-help" aria-label="Trace Mode information" class="trace-info-button" type="button">i</button>
+            <span class="trace-info-message" id="trace-mode-help" role="tooltip">
+              Trace Mode shows each page as it looked using data entered on or before the selected date.
+            </span>
+          </span>
           <span>Trace Mode</span>
           <label class="trace-toggle">
             <input
@@ -483,13 +600,14 @@
 
         {#if traceMode}
           <label class="trace-date-control">
-            <span>Trace Date</span>
-            <input
+            <span>Date</span>
+            <DateTimeInput
               bind:value={auditDateTime}
+              futureLimited
               max={nowForInput()}
               name="traceAuditDateTime"
               onchange={handleAuditDateTimeChange}
-              step="1" type="datetime-local"
+              step="1"
             />
           </label>
         {/if}

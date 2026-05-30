@@ -10,11 +10,13 @@ import {
   postAccountActiveModifiedEvent,
   postAccountCreatedEvent,
   postAccountModifiedEvent,
+  postTransactionCancellation,
   postTransactionSet,
   type AccountActiveModifiedRequest,
   type AccountCreatedRequest,
   type AccountModifiedRequest,
   type HoldingCreatedRequest,
+  type TransactionCancellationRequest,
   type TransactionSetRequest
 } from '$lib/server/api';
 import type { Holding, HoldingKind, Instrument } from '$lib/types';
@@ -430,6 +432,41 @@ export const actions = {
       };
     } catch (error) {
       return fail(502, inspecieOutFailure(error instanceof Error ? error.message : 'Unable to create inspecie-out transaction.', values));
+    }
+  },
+
+  cancelTransactionSet: async ({ fetch, request }) => {
+    const formData = await request.formData();
+    const eventSetID = getFormString(formData, 'eventSetID');
+    const accountID = getFormString(formData, 'accountID');
+
+    if (!eventSetID)
+      return fail(400, { accountID, eventSetID, intent: 'cancelTransactionSet', message: 'Transaction set is required.', status: 'failure' });
+
+    try {
+      const cancellationRequest: TransactionCancellationRequest = {
+        userID: systemUserID,
+        eventSetID,
+        reason: `Cancel transaction set ${eventSetID}`
+      };
+
+      const result = await postTransactionCancellation(fetch, cancellationRequest);
+      return {
+        accountID,
+        eventIDs: result.eventIDs,
+        eventSetID,
+        intent: 'cancelTransactionSet',
+        message: 'Transaction set was cancelled successfully.',
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, {
+        accountID,
+        eventSetID,
+        intent: 'cancelTransactionSet',
+        message: error instanceof Error ? error.message : 'Unable to cancel transaction set.',
+        status: 'failure'
+      });
     }
   }
 };
