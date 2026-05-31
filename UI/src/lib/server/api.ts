@@ -24,12 +24,15 @@ import type {
   TicketReferenceEvent,
   Tickets,
   TicketSide,
+  TicketStatusOption,
   TransactionReferenceEvent,
   BuildProgressNotification,
   UserMenuPreferences,
   UserMenuPreferenceItem,
   UserValuationDateOption,
   UserValuationPreferences,
+  UserBookmarks,
+  UserBookmarkType,
   ValuationDateBasis
 } from '$lib/types';
 
@@ -64,6 +67,13 @@ export type AccountActiveModifiedRequest = {
   reason: string;
   accountID: string;
   active: boolean;
+};
+
+export type AccountDisplayOrderSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  accountID: string;
+  displayOrder: number;
 };
 
 export type HoldingCreatedRequest = {
@@ -307,6 +317,31 @@ export type UserValuationPreferencesRequest = {
   valuationDateOption: UserValuationDateOption;
   valuationDateBasis: ValuationDateBasis;
   showZeroBalances: boolean;
+};
+
+export type UserBookmarkRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  bookmarkID?: string;
+  bookmarkType: UserBookmarkType;
+  url: string;
+  displayOrder: number;
+};
+
+export type UserBookmarkDisplayOrderSetRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  bookmarkID: string;
+  displayOrder: number;
+};
+
+export type UserBookmarkDeletedRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  bookmarkID: string;
 };
 
 export class ApiError extends Error {
@@ -602,6 +637,15 @@ export async function getTickets(
   return (await response.json()) as Tickets;
 }
 
+export async function getTicketStatusOptions(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Tickets/Statuses`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as TicketStatusOption[];
+}
+
 export async function getUserMenuPreferences(
   fetchApi: typeof fetch,
   userID: string,
@@ -642,6 +686,27 @@ export async function getUserValuationPreferences(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as UserValuationPreferences;
+}
+
+export async function getUserBookmarks(
+  fetchApi: typeof fetch,
+  userID: string,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/UserBookmarks/`);
+  url.searchParams.set('userID', userID);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as UserBookmarks;
 }
 
 export async function getTicketEvents(fetchApi: typeof fetch, ticketNumber?: number) {
@@ -789,6 +854,14 @@ export async function postAccountActiveModifiedEvent(
   userID: string
 ) {
   return postAccountEvent(fetchApi, 'AccountActiveModifiedEvent', request, userID);
+}
+
+export async function postAccountDisplayOrderSetEvent(
+  fetchApi: typeof fetch,
+  request: AccountDisplayOrderSetRequest,
+  userID: string
+) {
+  return postAccountEvent(fetchApi, 'AccountDisplayOrderSetEvent', request, userID);
 }
 
 export async function postHoldingCreatedEvent(
@@ -1164,6 +1237,55 @@ export async function postUserValuationPreferencesModifiedEvent(fetchApi: typeof
   return postUserValuationPreferencesEvent(fetchApi, 'UserValuationPreferencesModifiedEvent', request);
 }
 
+export async function postUserBookmarkCreatedEvent(fetchApi: typeof fetch, request: UserBookmarkRequest) {
+  return postUserBookmarkEvent(fetchApi, 'UserBookmarkCreatedEvent', request);
+}
+
+export async function postUserBookmarkModifiedEvent(fetchApi: typeof fetch, request: UserBookmarkRequest) {
+  return postUserBookmarkEvent(fetchApi, 'UserBookmarkModifiedEvent', request);
+}
+
+export async function postUserBookmarkDisplayOrderSetEvent(fetchApi: typeof fetch, request: UserBookmarkDisplayOrderSetRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/UserBookmarks/UserBookmarkDisplayOrderSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      BookmarkID: request.bookmarkID,
+      DisplayOrder: request.displayOrder
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postUserBookmarkDeletedEvent(fetchApi: typeof fetch, request: UserBookmarkDeletedRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/UserBookmarks/UserBookmarkDeletedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      BookmarkID: request.bookmarkID
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
 async function postTicketEvent(fetchApi: typeof fetch, eventType: string, request: Record<string, unknown>) {
   const body: Record<string, unknown> = {
     UserID: request.userID,
@@ -1204,6 +1326,29 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postUserBookmarkEvent(fetchApi: typeof fetch, eventType: 'UserBookmarkCreatedEvent' | 'UserBookmarkModifiedEvent', request: UserBookmarkRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/UserBookmarks/${eventType}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      BookmarkID: request.bookmarkID,
+      BookmarkType: request.bookmarkType,
+      Url: request.url,
+      DisplayOrder: request.displayOrder
+    })
   });
 
   if (!response.ok) {
@@ -1291,8 +1436,8 @@ async function postCountryEvent(
 
 async function postAccountEvent(
   fetchApi: typeof fetch,
-  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveModifiedEvent',
-  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest,
+  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveModifiedEvent' | 'AccountDisplayOrderSetEvent',
+  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest | AccountDisplayOrderSetRequest,
   userID: string
 ) {
   const body: Record<string, unknown> = {
@@ -1314,6 +1459,9 @@ async function postAccountEvent(
 
   if ('active' in request)
     body.Active = request.active;
+
+  if ('displayOrder' in request)
+    body.DisplayOrder = request.displayOrder;
 
   const response = await fetchApi(`${getApiBaseUrl()}/Events/Account/${eventType}`, {
     method: 'POST',

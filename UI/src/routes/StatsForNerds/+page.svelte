@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import { formatTableDateTime } from '$lib/dates';
   import type { AggregateMaintenanceNotification, BuildProgressNotification } from '$lib/types';
   import { onMount } from 'svelte';
@@ -147,7 +148,10 @@
   <section class="page-header">
     <div class="page-container">
       <p class="page-kicker">System</p>
-      <h1 class="page-title">Stats for Nerds</h1>
+      <div class="page-title-row">
+        <h1 class="page-title">Stats for Nerds</h1>
+        <BookmarkButton />
+      </div>
     </div>
   </section>
 

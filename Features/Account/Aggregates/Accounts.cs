@@ -68,6 +68,9 @@ public sealed record Accounts : IAggregate
             case AccountActiveModifiedEvent activeModifiedEvent:
                 Apply(activeModifiedEvent);
                 break;
+            case AccountDisplayOrderSetEvent displayOrderSetEvent:
+                Apply(displayOrderSetEvent);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported account event type '{accountEvent.GetType().Name}'.");
         }
@@ -80,7 +83,8 @@ public sealed record Accounts : IAggregate
         if (Items.Any(account => string.Equals(account.Name, createdEvent.Name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"Account already exists for Name '{createdEvent.Name}'.");
 
-        Items.Add(AccountBuilder.Create(createdEvent));
+        Items.Add(AccountBuilder.Create(createdEvent, new DisplayOrder(Items.Count + 1)));
+        SortItems();
         LastEventID = createdEvent.EventID;
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
@@ -94,6 +98,7 @@ public sealed record Accounts : IAggregate
             throw new InvalidOperationException($"Account already exists for Name '{modifiedEvent.Name}'.");
 
         Items[index] = Items[index].Apply(modifiedEvent);
+        SortItems();
         LastEventID = modifiedEvent.EventID;
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
@@ -105,7 +110,20 @@ public sealed record Accounts : IAggregate
             throw new InvalidOperationException($"No matching account found for AccountID '{activeModifiedEvent.AccountID}'.");
 
         Items[index] = Items[index].Apply(activeModifiedEvent);
+        SortItems();
         LastEventID = activeModifiedEvent.EventID;
+        LastAuditDateTime = GetLastAuditDateTime(Items);
+    }
+
+    public void Apply(AccountDisplayOrderSetEvent displayOrderSetEvent)
+    {
+        var index = Items.FindIndex(account => account.AccountID == displayOrderSetEvent.AccountID);
+        if (index < 0)
+            throw new InvalidOperationException($"No matching account found for AccountID '{displayOrderSetEvent.AccountID}'.");
+
+        Items[index] = Items[index].Apply(displayOrderSetEvent);
+        SortItems();
+        LastEventID = displayOrderSetEvent.EventID;
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
@@ -115,6 +133,15 @@ public sealed record Accounts : IAggregate
 
     private static LastAuditDateTime GetLastAuditDateTime(List<Account> items) =>
         new(items.Max(account => account.LastAuditDateTime.Value));
+
+    private void SortItems() =>
+        Items.Sort((left, right) =>
+        {
+            var displayOrder = left.DisplayOrder.Value.CompareTo(right.DisplayOrder.Value);
+            return displayOrder != 0
+                ? displayOrder
+                : string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
+        });
 
     private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<IAccountEvent> items)
     {

@@ -1,6 +1,7 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
+import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, systemUserID } from '$lib/menuPreferences';
-import { getSystemVersion, getUserMenuPreferences } from '$lib/server/api';
+import { getSystemVersion, getUserBookmarks, getUserMenuPreferences } from '$lib/server/api';
 import { getUiVersion } from '$lib/server/version';
 
 let cachedApiVersion: string | null = null;
@@ -11,6 +12,7 @@ export const load = async ({ fetch, url }) => {
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   let apiVersion = 'unavailable';
   let menuPreferences = defaultUserMenuPreferences();
+  let userBookmarks = defaultUserBookmarks();
 
   try {
     apiVersion = await getApiVersion(fetch);
@@ -19,19 +21,21 @@ export const load = async ({ fetch, url }) => {
   }
 
   try {
-    menuPreferences = await getUserMenuPreferences(
-      fetch,
-      systemUserID,
-      toApiDateTime(nowForInput()),
-      auditDateTime ? toApiDateTime(auditDateTime) : null
-    );
+    const eventDateTime = toApiDateTime(nowForInput());
+    const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+    [menuPreferences, userBookmarks] = await Promise.all([
+      getUserMenuPreferences(fetch, systemUserID, eventDateTime, apiAuditDateTime),
+      getUserBookmarks(fetch, systemUserID, eventDateTime, apiAuditDateTime)
+    ]);
   } catch {
     menuPreferences = defaultUserMenuPreferences();
+    userBookmarks = defaultUserBookmarks();
   }
 
   return {
     apiVersion,
     menuPreferences,
+    userBookmarks,
     uiVersion
   };
 };

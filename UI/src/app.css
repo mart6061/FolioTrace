@@ -467,7 +467,8 @@ main {
   box-shadow: none;
 }
 
-.system-menu-home-icon {
+.system-menu-home-icon,
+.system-menu-todo-icon {
   display: inline-flex;
   width: 15px;
   height: 15px;
@@ -484,6 +485,7 @@ main {
 }
 
 .system-menu-home-icon svg,
+.system-menu-todo-icon svg,
 .system-menu-bookmark-icon svg {
   display: block;
   width: 15px;
@@ -538,6 +540,91 @@ main {
   font-size: 26px;
   font-weight: 680;
   line-height: 1.15;
+}
+
+.page-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-title-row .page-title {
+  margin-right: auto;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.page-bookmark-control {
+  display: inline-flex;
+  align-items: center;
+}
+
+.page-bookmark-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.page-bookmark-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 999px 0 0 999px;
+  background: #f8fafc;
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.page-bookmark-button:hover,
+.page-bookmark-button:focus-visible {
+  border-color: var(--accent);
+  background: #ecfdf5;
+  color: var(--accent);
+  outline: none;
+  z-index: 1;
+}
+
+.page-bookmark-button svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.page-bookmark-button:disabled {
+  cursor: wait;
+  opacity: 0.64;
+}
+
+.page-bookmark-select {
+  min-height: 34px;
+  border: 1px solid rgb(203 213 225);
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  background: #fff;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 4px 10px 4px 12px;
+}
+
+.page-bookmark-select:hover,
+.page-bookmark-select:focus-visible {
+  border-color: var(--accent);
+  outline: none;
 }
 
 .dashboard-grid {
@@ -757,6 +844,128 @@ main {
   border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
+}
+
+.todo-list {
+  display: grid;
+  gap: 14px;
+}
+
+.todo-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.06);
+}
+
+.todo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgb(203 213 225 / 0.72);
+  padding: 11px 14px;
+}
+
+.todo-card-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.todo-card-state {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.todo-card-body {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.todo-card-body p {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.todo-card-body ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.todo-card-core .todo-card-header {
+  background: #fef3c7;
+}
+
+.todo-card-core {
+  border-color: #f59e0b;
+}
+
+.todo-card-ideas .todo-card-header {
+  background: #f5ead7;
+}
+
+.todo-card-ideas {
+  border-color: #dec7a1;
+}
+
+.todo-card-in-progress .todo-card-header {
+  background: #dcfce7;
+}
+
+.todo-card-in-progress {
+  border-color: #86efac;
+}
+
+.todo-card-done .todo-card-header {
+  background: #16a34a;
+}
+
+.todo-card-done .todo-card-title,
+.todo-card-done .todo-card-state {
+  color: #fff;
+}
+
+.todo-card-done {
+  border-color: #15803d;
+}
+
+.dark .todo-card-body p,
+.dark .todo-card-body ul {
+  color: #cbd5e1;
+}
+
+.dark .todo-card-state {
+  color: #cbd5e1;
+}
+
+.dark .todo-card-core .todo-card-header {
+  background: rgb(120 53 15 / 0.28);
+}
+
+.dark .todo-card-ideas .todo-card-header {
+  background: rgb(120 113 108 / 0.28);
+}
+
+.dark .todo-card-in-progress .todo-card-header {
+  background: rgb(22 101 52 / 0.28);
+}
+
+.dark .todo-card-done .todo-card-header {
+  background: #15803d;
 }
 
 .data-summary {
@@ -1344,6 +1553,10 @@ main {
   margin-top: 10px;
 }
 
+#preferences-form + .menu-preference-card {
+  margin-top: 10px;
+}
+
 .menu-preference-save-card {
   display: flex;
   min-height: 48px;
@@ -1411,6 +1624,142 @@ main {
   font-size: 12px;
   line-height: 1.25;
   padding: 3px 8px;
+}
+
+.menu-preference-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bookmark-preference-list {
+  display: grid;
+  gap: 0;
+}
+
+.bookmark-preference-row {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 1px 2px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.bookmark-preference-row-over {
+  background: #ecfdf5;
+}
+
+.bookmark-preference-grip {
+  display: inline-flex;
+  width: 20px;
+  height: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: grab;
+}
+
+.bookmark-preference-grip:active {
+  cursor: grabbing;
+}
+
+.bookmark-preference-grip:hover,
+.bookmark-preference-grip:focus-visible {
+  background: #f1f5f9;
+  outline: none;
+}
+
+.bookmark-preference-grip span {
+  width: 10px;
+  height: 14px;
+  background-image: radial-gradient(circle, #94a3b8 1.3px, transparent 1.4px);
+  background-position: 0 0;
+  background-size: 5px 5px;
+}
+
+.bookmark-preference-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.bookmark-preference-url {
+  font-weight: 400;
+}
+
+.bookmark-preference-kind {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bookmark-preference-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.bookmark-preference-actions form {
+  margin: 0;
+}
+
+.bookmark-remove-action {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 10px;
+}
+
+.bookmark-remove-action:hover,
+.bookmark-remove-action:focus-visible {
+  border-color: var(--accent);
+  background: #ecfdf5;
+  color: var(--accent);
+  outline: none;
+}
+
+.icon-action {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.icon-action:hover,
+.icon-action:focus-visible {
+  border-color: var(--accent);
+  background: #ecfdf5;
+  color: var(--accent);
+  outline: none;
+}
+
+.icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .flag svg {
@@ -1501,6 +1850,80 @@ tbody tr {
   padding: 1rem;
 }
 
+.create-ticket-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.create-ticket-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.create-ticket-form {
+  display: grid;
+  gap: 0.85rem;
+  align-items: end;
+}
+
+@media (min-width: 1024px) {
+  .create-ticket-form {
+    grid-template-columns: max-content minmax(280px, 1fr) auto;
+  }
+}
+
+.create-ticket-field {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.create-ticket-field input {
+  width: 100%;
+}
+
+.ticket-side-field {
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket-side-field .side-radio-group {
+  flex-wrap: nowrap;
+}
+
+.commit-ticket-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: #0f766e;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0 1rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+}
+
+.commit-ticket-button:hover,
+.commit-ticket-button:focus-visible {
+  background: #115e59;
+  outline: none;
+}
+
+.commit-ticket-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .success-message,
 .error-message {
   border: 1px solid;
@@ -1557,6 +1980,130 @@ tbody tr {
 .muted {
   color: var(--muted);
   font-size: 0.8125rem;
+}
+
+.side-radio-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(241 245 249 / 0.9);
+  padding: 0.25rem;
+}
+
+.ticket-filter-group {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.ticket-filter-layout {
+  display: grid;
+  gap: 0.85rem;
+  align-items: end;
+}
+
+@media (min-width: 1024px) {
+  .ticket-filter-layout {
+    grid-template-columns: minmax(0, 1fr) max-content 260px;
+  }
+}
+
+.ticket-text-filter {
+  min-width: 0;
+}
+
+.ticket-view-group {
+  width: fit-content;
+  flex-wrap: nowrap;
+}
+
+fieldset.field {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+fieldset.field legend {
+  margin-bottom: 0.25rem;
+}
+
+.side-radio-pill {
+  cursor: pointer;
+}
+
+.side-radio-pill input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.side-radio-pill span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.side-radio-pill:hover span {
+  border-color: #99f6e4;
+  color: var(--accent);
+}
+
+.side-radio-pill input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgb(20 184 166 / 0.22);
+}
+
+.side-radio-pill input[value='Buy']:checked + span {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: white;
+}
+
+.side-radio-pill input[value='Sell']:checked + span {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: white;
+}
+
+.ticket-filter-pill input:checked + span {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: white;
+}
+
+.ticket-card-compact .ticket-header {
+  padding-block: 0.75rem;
+}
+
+.ticket-compact-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.65rem 1rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.dark .side-radio-group {
+  background: #0f172a;
+}
+
+.dark .side-radio-pill:hover span {
+  border-color: #2dd4bf;
 }
 
 .buy-side {

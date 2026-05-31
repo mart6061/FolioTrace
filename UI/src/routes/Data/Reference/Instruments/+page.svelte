@@ -1,12 +1,14 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { InstrumentReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   let filterText = $state('');
   let addingInstrument = $state(false);
   let editingInstrumentID = $state('');
@@ -311,7 +313,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Reference Data</p>
-        <h1 class="page-title">Instruments</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Instruments</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
@@ -439,7 +444,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Event date</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="eventDateTime" required step="1" value={createValue('eventDateTime') || data.valuationDate} />
+                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="eventDateTime" required step="1" value={createValue('eventDateTime') || eventDateDefault} />
                     </label>
                   </td>
                   <td class="sticky right-0 bg-teal-50 px-3 py-2 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.6)]">
@@ -484,7 +489,7 @@
                               <input name="formAction" type="hidden" value="unsetIdentifier" />
                               <input name="instrumentID" type="hidden" value={instrument.instrumentID} />
                               <input name="identifierType" type="hidden" value={identifierType} />
-                              <input name="eventDateTime" type="hidden" value={data.valuationDate} />
+                              <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                               <span class="font-semibold text-slate-500">{identifierTypeName(identifier.type)}</span>
                               <span class="font-mono">{identifier.value}</span>
                               <button aria-label={`Remove ${identifierTypeName(identifier.type)} ${identifier.value}`} class="ml-0.5 rounded px-1 font-semibold text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:cursor-wait disabled:opacity-60" disabled={submittingIdentifierKey === unsetKey} title="Remove identifier" type="submit">x</button>
@@ -495,7 +500,7 @@
                       <form action="?/setIdentifier" class="mt-2 flex max-w-xl flex-wrap items-end gap-1.5" method="POST" use:enhance={enhanceIdentifier}>
                         <input name="formAction" type="hidden" value="setIdentifier" />
                         <input name="instrumentID" type="hidden" value={instrument.instrumentID} />
-                        <input name="eventDateTime" type="hidden" value={data.valuationDate} />
+                        <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                         <label class="grid gap-0.5 text-[11px] font-medium text-slate-500">
                           <span>Identifier</span>
                           <select class="h-7 rounded border border-slate-300 bg-white px-1.5 text-xs text-slate-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="identifierType">
@@ -542,7 +547,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={editValue(instrument.instrumentID, 'eventDateTime') ?? data.valuationDate} />
+                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={editValue(instrument.instrumentID, 'eventDateTime') ?? eventDateDefault} />
                       </label>
                     </td>
                     <td class="sticky right-0 bg-teal-50 px-3 py-2 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.6)]">

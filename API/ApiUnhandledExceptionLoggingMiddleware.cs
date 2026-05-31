@@ -19,20 +19,26 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
         {
             var errorId = Guid.NewGuid();
             await WriteExceptionLogAsync(context, exception, errorId);
+            var statusCode = exception is BadHttpRequestException badRequestException
+                ? badRequestException.StatusCode
+                : StatusCodes.Status500InternalServerError;
+            var title = statusCode == StatusCodes.Status400BadRequest
+                ? "Invalid request."
+                : "An unexpected error occurred.";
             logger.LogError(exception, "Unhandled API exception {ErrorId} for {Method} {Path}.", errorId, context.Request.Method, context.Request.Path);
 
             if (context.Response.HasStarted)
                 throw;
 
             context.Response.Clear();
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/problem+json";
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(new
             {
-                type = "https://httpstatuses.com/500",
-                title = "An unexpected error occurred.",
-                status = StatusCodes.Status500InternalServerError,
+                type = $"https://httpstatuses.com/{statusCode}",
+                title,
+                status = statusCode,
                 traceId = context.TraceIdentifier,
                 errorId
             }));

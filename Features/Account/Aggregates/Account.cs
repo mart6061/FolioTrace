@@ -11,6 +11,7 @@ public sealed record Account : IModel
     public required string FormalName { get; init; }
     public required Alpha3 BookCurrency { get; init; }
     public required bool Active { get; init; }
+    public required DisplayOrder DisplayOrder { get; init; }
     public required EventDateTime ValuationDateTime { get; init; }
     public required AuditDateTime AsOfDateTime { get; init; }
     public required EventID LastEventID { get; init; }
@@ -18,13 +19,14 @@ public sealed record Account : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active, DisplayOrder? displayOrder, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         AccountID = accountID;
         Name = name;
         FormalName = formalName;
         BookCurrency = bookCurrency;
         Active = active;
+        DisplayOrder = displayOrder ?? new DisplayOrder(0);
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
         LastEventID = lastEventID;
@@ -32,14 +34,14 @@ public sealed record Account : IModel
     }
 
     [SetsRequiredMembers]
-    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
-        : this(accountID, name, formalName, bookCurrency, active, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
+    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active, DisplayOrder displayOrder, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
+        : this(accountID, name, formalName, bookCurrency, active, displayOrder, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
     {
     }
 
     public override string ToString() => Name;
 
-    public string ToData() => $"{AccountID.ToData()}|{Name}|{FormalName}|{BookCurrency.ToData()}|{Active}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{AccountID.ToData()}|{Name}|{FormalName}|{BookCurrency.ToData()}|{Active}|{DisplayOrder.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(Account)}: {Name} ({AccountID}, BookCurrency: {BookCurrency}, Active: {Active}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
+    public string ToDetail() => $"{nameof(Account)}: {Name} ({AccountID}, BookCurrency: {BookCurrency}, Active: {Active}, DisplayOrder: {DisplayOrder.ToDetail()}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }
