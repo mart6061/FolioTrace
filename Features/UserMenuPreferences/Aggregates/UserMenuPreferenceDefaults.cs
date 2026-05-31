@@ -13,8 +13,6 @@ public static class UserMenuPreferenceDefaults
     public const string Reference = "reference";
     public const string SystemLogs = "system-logs";
     public const string SystemStats = "system-stats";
-    public const string SystemClearCache = "system-clear-cache";
-    public const string SystemRebuildDatabase = "system-rebuild-database";
     public const string Todo = "todo";
 
     public static readonly IReadOnlyList<string> ControlledMenuItemIDs =
@@ -30,8 +28,6 @@ public static class UserMenuPreferenceDefaults
         System,
         SystemLogs,
         SystemStats,
-        SystemClearCache,
-        SystemRebuildDatabase,
         Todo
     ];
 

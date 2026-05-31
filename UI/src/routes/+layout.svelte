@@ -109,9 +109,7 @@
   ];
   const systemItems: MenuItem[] = [
     { id: 'system-logs', label: 'Logs', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },
-    { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs },
-    { hash: '#system-heading', id: 'system-clear-cache', label: 'Clear Cache', path: '/StatsForNerds', tone: menuTones.danger },
-    { hash: '#system-heading', id: 'system-rebuild-database', label: 'Rebuild Database', path: '/StatsForNerds', tone: menuTones.danger }
+    { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs }
   ];
   const topLeafItems = topMenuItems.filter((item) => item.path);
   const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, ...topLeafItems];
@@ -450,7 +448,7 @@
                 <a
                   aria-label={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
                   aria-current={isActiveMenuItem(item) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${item.id === 'todo' ? 'system-menu-pill-todo' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(item)}
                 onclick={() => handleLeafClick(item)}
                 style={menuStyle(item.tone, 40 - topIndex)}

@@ -20,8 +20,6 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'system', label: 'System' },
   { id: 'system-logs', label: 'Logs', parentID: 'system' },
   { id: 'system-stats', label: 'Stats for Nerds', parentID: 'system' },
-  { id: 'system-clear-cache', label: 'Clear Cache', parentID: 'system' },
-  { id: 'system-rebuild-database', label: 'Rebuild Database', parentID: 'system' },
   { id: 'todo', label: 'To Do' }
 ];
 

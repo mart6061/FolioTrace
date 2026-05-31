@@ -1,0 +1,39 @@
+<svg width="1600" height="480" viewBox="0 0 1600 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FolioTrace dark banner</title>
+  <desc id="desc">Dark mode FolioTrace banner with wordmark, folio symbol, and event timeline.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081F1D"/>
+      <stop offset="0.52" stop-color="#102033"/>
+      <stop offset="1" stop-color="#050A14"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(560 0 0 350 1220 130)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F80ED" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#2F80ED" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="480" rx="44" fill="url(#bg)"/>
+  <rect width="1600" height="480" rx="44" fill="url(#glow)"/>
+  <path d="M788 120c128-56 250-12 326 70 82 88 186 104 318 50" stroke="#D9EDE7" stroke-opacity="0.13" stroke-width="32" stroke-linecap="round"/>
+  <path d="M766 340c140 56 286 20 386-112 68-90 176-112 310-92" stroke="#D9EDE7" stroke-opacity="0.09" stroke-width="28" stroke-linecap="round"/>
+  <rect x="112" y="78" width="392" height="324" rx="68" fill="#0F766E"/>
+  <rect x="150" y="126" width="334" height="300" rx="50" fill="#115E59"/>
+  <rect x="190" y="176" width="334" height="268" rx="50" fill="#F8FAFC"/>
+  <path d="M266 260h166" stroke="#0F766E" stroke-width="24" stroke-linecap="round"/>
+  <path d="M266 318h196" stroke="#2563EB" stroke-width="24" stroke-linecap="round"/>
+  <path d="M266 376h126" stroke="#C7923E" stroke-width="24" stroke-linecap="round"/>
+  <path d="M106 240a212 212 0 1 1 424 0" stroke="#D9EDE7" stroke-opacity="0.24" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="318" cy="28" r="24" fill="#2F80ED" stroke="#F8FAFC" stroke-width="10"/>
+  <circle cx="530" cy="240" r="24" fill="#C7923E" stroke="#F8FAFC" stroke-width="10"/>
+  <circle cx="106" cy="240" r="24" fill="#14B8A6" stroke="#F8FAFC" stroke-width="10"/>
+  <text x="604" y="216" fill="#F8FAFC" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="86" font-weight="760" letter-spacing="0">FolioTrace</text>
+  <text x="608" y="276" fill="#D9EDE7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="520" letter-spacing="0">Event-sourced portfolio traceability</text>
+  <path d="M608 334h244" stroke="#14B8A6" stroke-width="12" stroke-linecap="round"/>
+  <path d="M900 334h140" stroke="#2F80ED" stroke-width="12" stroke-linecap="round"/>
+  <path d="M1088 334h92" stroke="#C7923E" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="608" cy="334" r="13" fill="#14B8A6"/>
+  <circle cx="900" cy="334" r="13" fill="#2F80ED"/>
+  <circle cx="1088" cy="334" r="13" fill="#C7923E"/>
+  <circle cx="1180" cy="334" r="13" fill="#D9EDE7"/>
+  <text x="608" y="388" fill="#94A3B8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="520" letter-spacing="0">valuation date + audit date + event history</text>
+</svg>
