@@ -12,7 +12,8 @@ public sealed class AggregateCacheClearService(
     InstrumentValueService instrumentValueService,
     TicketService ticketService,
     UserMenuPreferencesService userMenuPreferencesService,
-    UserValuationPreferencesService userValuationPreferencesService)
+    UserValuationPreferencesService userValuationPreferencesService,
+    UserBookmarksService userBookmarksService)
 {
     public AggregateCacheClearResult ClearAll()
     {
@@ -28,8 +29,9 @@ public sealed class AggregateCacheClearService(
         var tickets = ticketService.InvalidateAll();
         var userMenuPreferences = userMenuPreferencesService.InvalidateAll();
         var userValuationPreferences = userValuationPreferencesService.InvalidateAll();
+        var userBookmarks = userBookmarksService.InvalidateAll();
 
-        return new AggregateCacheClearResult(accounts, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, userMenuPreferences, userValuationPreferences);
+        return new AggregateCacheClearResult(accounts, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, userMenuPreferences, userValuationPreferences, userBookmarks);
     }
 }
 
@@ -45,4 +47,5 @@ public sealed record AggregateCacheClearResult(
     int InstrumentValues,
     int Tickets,
     int UserMenuPreferences,
-    int UserValuationPreferences);
+    int UserValuationPreferences,
+    int UserBookmarks);

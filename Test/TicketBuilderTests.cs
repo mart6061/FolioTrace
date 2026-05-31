@@ -26,6 +26,16 @@ public sealed class TicketBuilderTests
     }
 
     [Fact]
+    public void CreatedTicket_StartsAtProposal()
+    {
+        var created = CreateTicket();
+
+        var ticket = Assert.Single(new Tickets(EventDate, [created]).Items);
+
+        Assert.Equal(TicketStatus.Proposal, ticket.Status);
+    }
+
+    [Fact]
     public void AccountAddRemove_UpdatesSingleTicketAggregate()
     {
         var created = CreateTicket();

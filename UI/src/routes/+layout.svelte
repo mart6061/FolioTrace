@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { formatBookmarkMenuUrl, formatBookmarkType } from '$lib/bookmarks';
   import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
   import { normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import '../app.css';
@@ -38,6 +39,24 @@
       tint: '#fef3c7',
       tintText: '#92400e'
     },
+    compliance: {
+      border: '#fda4af',
+      strong: '#be123c',
+      tint: '#ffe4e6',
+      tintText: '#9f1239'
+    },
+    administration: {
+      border: '#a5b4fc',
+      strong: '#4f46e5',
+      tint: '#e0e7ff',
+      tintText: '#3730a3'
+    },
+    todo: {
+      border: '#f9a8d4',
+      strong: '#be185d',
+      tint: '#fce7f3',
+      tintText: '#9d174d'
+    },
     danger: {
       border: '#fca5a5',
       strong: '#dc2626',
@@ -60,15 +79,18 @@
     path?: string;
     tone: MenuTone;
   };
-  type TopMenuID = 'data' | 'system' | '';
+  type TopMenuID = 'bookmarks' | 'data' | 'system' | '';
   type DataBranchID = 'value' | 'reference' | '';
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
+    { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
+    { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
     { id: 'data', label: 'Data', tone: menuTones.value },
-    { id: 'system', label: 'System', tone: menuTones.logs }
+    { id: 'system', label: 'System', tone: menuTones.logs },
+    { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
   ];
   const dataBranchItems: MenuItem[] = [
     { id: 'value', label: 'Value', tone: menuTones.value },
@@ -99,6 +121,12 @@
   const visibleValueItems = $derived(valueItems.filter((item) => isMenuItemVisible(item)));
   const visibleReferenceItems = $derived(referenceItems.filter((item) => isMenuItemVisible(item)));
   const visibleSystemItems = $derived(systemItems.filter((item) => isMenuItemVisible(item)));
+  const bookmarkMenuItems: MenuItem[] = $derived((data.userBookmarks?.items ?? []).map((bookmark) => ({
+    id: `bookmark-${bookmark.bookmarkID}`,
+    label: `${formatBookmarkType(bookmark.bookmarkType)}: ${formatBookmarkMenuUrl(bookmark.url)}`,
+    path: bookmark.url,
+    tone: menuTones.home
+  })));
 
   let traceMode = $state(false);
   let darkMode = $state(false);
@@ -294,6 +322,12 @@
       return;
     }
 
+    if (bookmarkMenuItems.includes(item)) {
+      openTopMenu = 'bookmarks';
+      openDataBranch = '';
+      return;
+    }
+
     openTopMenu = '';
     openDataBranch = '';
   }
@@ -314,6 +348,9 @@
     if (systemItems.includes(activeItem))
       return 'system';
 
+    if (bookmarkMenuItems.includes(activeItem))
+      return 'bookmarks';
+
     return '';
   }
 
@@ -333,7 +370,7 @@
   }
 
   function routeActiveItem() {
-    return leafMenuItems.find((item) => matchesCurrentRoute(item)) ?? null;
+    return [...leafMenuItems, ...bookmarkMenuItems].find((item) => matchesCurrentRoute(item)) ?? null;
   }
 
   function visibleSubmenuItems(items: MenuItem[]) {
@@ -400,7 +437,7 @@
         <nav class="system-menu" aria-label="Primary menu">
           {#each visibleTopMenuItems as item, topIndex}
             {#if item.id === 'bookmarks'}
-              <button aria-label="Bookmarks" class="system-menu-pill system-menu-pill-top system-menu-pill-icon-only" style={menuStyle(item.tone, 40 - topIndex)} title="Bookmarks" type="button">
+              <button aria-expanded={openTopMenu === 'bookmarks'} aria-label="Bookmarks" class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`} onclick={() => toggleTopMenu('bookmarks')} style={menuStyle(item.tone, 40 - topIndex)} title="Bookmarks" type="button">
                 <span aria-hidden="true" class="system-menu-bookmark-icon">
                   <svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z" /></svg>
                 </span>
@@ -411,16 +448,21 @@
               </button>
               {:else if item.path}
                 <a
-                  aria-label={item.id === 'home' ? 'Home' : undefined}
+                  aria-label={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
                   aria-current={isActiveMenuItem(item) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' ? 'system-menu-pill-icon-only' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(item)}
                 onclick={() => handleLeafClick(item)}
                 style={menuStyle(item.tone, 40 - topIndex)}
+                title={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
               >
                   {#if item.id === 'home'}
                     <span aria-hidden="true" class="system-menu-home-icon">
                       <svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
+                    </span>
+                  {:else if item.id === 'todo'}
+                    <span aria-hidden="true" class="system-menu-todo-icon">
+                      <svg viewBox="0 0 24 24"><path d="M8 7h10" /><path d="M8 12h10" /><path d="M8 17h10" /><path d="m3.5 7 1 1 2-2" /><path d="m3.5 12 1 1 2-2" /><path d="m3.5 17 1 1 2-2" /></svg>
                     </span>
                   {:else}
                     <span>{item.label}</span>
@@ -438,7 +480,19 @@
               </button>
             {/if}
 
-            {#if item.id === 'data' && openTopMenu === 'data'}
+            {#if item.id === 'bookmarks' && openTopMenu === 'bookmarks'}
+              {#each bookmarkMenuItems as bookmarkItem, bookmarkIndex}
+                <a
+                  aria-current={isActiveMenuItem(bookmarkItem) ? 'page' : undefined}
+                  class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(bookmarkItem) ? 'system-menu-pill-active' : ''}`}
+                  href={menuHref(bookmarkItem)}
+                  onclick={() => handleLeafClick(bookmarkItem)}
+                  style={menuStyle(bookmarkItem.tone, 39 - topIndex - bookmarkIndex)}
+                >
+                  {bookmarkItem.label}
+                </a>
+              {/each}
+            {:else if item.id === 'data' && openTopMenu === 'data'}
               {#if openDataBranch === 'value' && isMenuItemVisible(dataBranchItems[0])}
                 {@const valueItem = dataBranchItems[0]}
                 <button

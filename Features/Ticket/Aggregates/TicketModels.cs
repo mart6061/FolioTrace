@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FolioTrace;
@@ -5,22 +6,41 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[JsonConverter(typeof(JsonStringEnumConverter<TicketSide>))]
 public enum TicketSide
 {
     Buy,
     Sell
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter<TicketStatus>))]
 public enum TicketStatus
 {
+    [Description("Draft")]    
     Draft,
+
+    [Description("Proposal")]
     Proposal,
+
+    [Description("Proposal approved")]
     ProposalApproved,
+
+    [Description("Proposal not approved")]
     ProposalNotApproved,
+
+    [Description("Trade")]
     Trade,
+
+    [Description("Trade approved")]
     TradeApproved,
+
+    [Description("Trade not approved")]
     TradeNotApproved,
+
+    [Description("Completed")]
     Completed,
+
+    [Description("Cancelled")]
     Cancelled
 }
 
@@ -32,21 +52,21 @@ public sealed record TicketFill(Guid FillID, decimal Price, decimal Quantity, st
 
 public sealed record Ticket : IModel
 {
-    public required TicketNumber TicketNumber { get; init; }
+    public required TicketNumber TicketNumber { get; init; } = null!;
     public required TicketSide Side { get; init; }
-    public required InstrumentID InstrumentID { get; init; }
+    public required InstrumentID InstrumentID { get; init; } = null!;
     public required TicketStatus Status { get; init; }
-    public required List<AccountID> AccountIDs { get; init; }
+    public required List<AccountID> AccountIDs { get; init; } = [];
     public decimal? ProposalTargetPrice { get; init; }
     public decimal? ProposalTotalAmount { get; init; }
-    public required List<TicketProposalAllocation> ProposalAllocations { get; init; }
+    public required List<TicketProposalAllocation> ProposalAllocations { get; init; } = [];
     public decimal? TradePrice { get; init; }
-    public required List<TicketTradeAllocation> TradeAllocations { get; init; }
-    public required List<TicketFill> Fills { get; init; }
-    public required EventDateTime ValuationDateTime { get; init; }
-    public required AuditDateTime AsOfDateTime { get; init; }
-    public required EventID LastEventID { get; init; }
-    public required LastAuditDateTime LastAuditDateTime { get; init; }
+    public required List<TicketTradeAllocation> TradeAllocations { get; init; } = [];
+    public required List<TicketFill> Fills { get; init; } = [];
+    public required EventDateTime ValuationDateTime { get; init; } = null!;
+    public required AuditDateTime AsOfDateTime { get; init; } = null!;
+    public required EventID LastEventID { get; init; } = null!;
+    public required LastAuditDateTime LastAuditDateTime { get; init; } = null!;
     public bool IsActive => Status is not TicketStatus.Completed and not TicketStatus.Cancelled;
 
     [JsonConstructor]
@@ -201,7 +221,7 @@ public sealed record Tickets : IAggregate
             TicketNumber = createdEvent.TicketNumber,
             Side = createdEvent.Side,
             InstrumentID = createdEvent.InstrumentID,
-            Status = TicketStatus.Draft,
+            Status = TicketStatus.Proposal,
             AccountIDs = [],
             ProposalAllocations = [],
             TradeAllocations = [],

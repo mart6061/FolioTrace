@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { formatDateTime } from '$lib/dates';
   import type { ApiExchange, ApiHttpMessage } from '$lib/types';
@@ -192,7 +193,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Diagnostics</p>
-        <h1 class="page-title">Request Trace</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Request Trace</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-3 md:grid-cols-2 lg:grid-cols-[96px_minmax(150px,0.75fr)_88px_96px_190px_minmax(150px,0.7fr)_auto] lg:items-end">

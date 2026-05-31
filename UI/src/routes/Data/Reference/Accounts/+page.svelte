@@ -1,13 +1,15 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { AccountReferenceEvent, Holding, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   const accountCount = $derived(data.accounts?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.accounts ? formatDisplayDateTime(data.accounts.asOfDateTime) : 'now');
 
@@ -748,7 +750,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Reference Data</p>
-        <h1 class="page-title">Accounts</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Accounts</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
@@ -968,7 +973,7 @@
                         name="eventDateTime"
                         required
                         step="1"
-                        value={form?.intent === 'createAccount' ? (accountFormValues?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                        value={form?.intent === 'createAccount' ? (accountFormValues?.eventDateTime ?? eventDateDefault) : eventDateDefault}
                       />
                     </label>
                   </td>
@@ -1062,7 +1067,7 @@
                           name="eventDateTime"
                           required
                           step="1"
-                          value={form?.accountID === account.accountID ? (accountFormValues?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                          value={form?.accountID === account.accountID ? (accountFormValues?.eventDateTime ?? eventDateDefault) : eventDateDefault}
                         />
                       </label>
                     </td>
@@ -1123,7 +1128,7 @@
                         <form action="?/modifyAccountActive" method="POST" use:enhance={enhanceAccountActive}>
                           <input name="accountID" type="hidden" value={account.accountID} />
                           <input name="name" type="hidden" value={account.name} />
-                          <input name="eventDateTime" type="hidden" value={data.valuationDate} />
+                          <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                           <input name="active" type="hidden" value={account.active ? 'false' : 'true'} />
                           <button
                             class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70"
@@ -1328,7 +1333,7 @@
                               name="eventDateTime"
                               required
                               step="1"
-                              value={rowCashMovementFormValues?.accountID === account.accountID ? (rowCashMovementFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                              value={rowCashMovementFormValues?.accountID === account.accountID ? (rowCashMovementFormValues.eventDateTime ?? eventDateDefault) : eventDateDefault}
                             />
                           </label>
 
@@ -1400,7 +1405,7 @@
                               name="eventDateTime"
                               required
                               step="1"
-                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.eventDateTime ?? eventDateDefault) : eventDateDefault}
                             />
                           </label>
 

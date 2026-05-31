@@ -8,6 +8,7 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(AccountCreatedEvent), nameof(AccountCreatedEvent))]
 [JsonDerivedType(typeof(AccountModifiedEvent), nameof(AccountModifiedEvent))]
 [JsonDerivedType(typeof(AccountActiveModifiedEvent), nameof(AccountActiveModifiedEvent))]
+[JsonDerivedType(typeof(AccountDisplayOrderSetEvent), nameof(AccountDisplayOrderSetEvent))]
 [JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
 [JsonDerivedType(typeof(CountryModifiedEvent), nameof(CountryModifiedEvent))]
 [JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
@@ -77,6 +78,10 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(UserMenuPreferencesModifiedEvent), nameof(UserMenuPreferencesModifiedEvent))]
 [JsonDerivedType(typeof(UserValuationPreferencesCreatedEvent), nameof(UserValuationPreferencesCreatedEvent))]
 [JsonDerivedType(typeof(UserValuationPreferencesModifiedEvent), nameof(UserValuationPreferencesModifiedEvent))]
+[JsonDerivedType(typeof(UserBookmarkCreatedEvent), nameof(UserBookmarkCreatedEvent))]
+[JsonDerivedType(typeof(UserBookmarkModifiedEvent), nameof(UserBookmarkModifiedEvent))]
+[JsonDerivedType(typeof(UserBookmarkDisplayOrderSetEvent), nameof(UserBookmarkDisplayOrderSetEvent))]
+[JsonDerivedType(typeof(UserBookmarkDeletedEvent), nameof(UserBookmarkDeletedEvent))]
 public abstract record EventBase(EventID EventID, UserID UserID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase
 {
     [JsonIgnore]

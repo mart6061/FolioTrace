@@ -4,6 +4,8 @@ using FolioTrace.Common;
 using FolioTrace.Types;
 using Repository;
 using Services;
+using System.ComponentModel;
+using System.Reflection;
 using System.Text.Json;
 
 namespace API;
@@ -26,6 +28,7 @@ public static class ApiEndpointRegistration
     private const string UserEventsRoute = "/API/Events/User";
     private const string UserMenuPreferencesEventsRoute = "/API/Events/UserMenuPreferences";
     private const string UserValuationPreferencesEventsRoute = "/API/Events/UserValuationPreferences";
+    private const string UserBookmarksEventsRoute = "/API/Events/UserBookmarks";
 
     public static WebApplication MapFolioTraceApi(this WebApplication app)
     {
@@ -46,6 +49,7 @@ public static class ApiEndpointRegistration
         api.MapTicketEndpoints();
         api.MapUserMenuPreferencesEndpoints();
         api.MapUserValuationPreferencesEndpoints();
+        api.MapUserBookmarksEndpoints();
         api.MapAccountEventEndpoints();
         api.MapCountryEventEndpoints();
         api.MapCurrencyEventEndpoints();
@@ -60,6 +64,7 @@ public static class ApiEndpointRegistration
         api.MapUserEventEndpoints();
         api.MapUserMenuPreferencesEventEndpoints();
         api.MapUserValuationPreferencesEventEndpoints();
+        api.MapUserBookmarksEventEndpoints();
 
         return app;
     }
@@ -562,6 +567,15 @@ public static class ApiEndpointRegistration
             return Results.Ok(aggregate with { Items = items });
         });
 
+        tickets.MapGet("/Statuses", () =>
+            Results.Ok(Enum.GetValues<TicketStatus>()
+                .Select(status => new
+                {
+                    Status = status.ToString(),
+                    Description = GetTicketStatusDescription(status)
+                })
+                .ToList()));
+
         tickets.MapGet("/{ticketNumber:int}", async (int ticketNumber, DateTime eventDateTime, DateTime? auditDateTime, TicketService ticketService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
@@ -574,6 +588,12 @@ public static class ApiEndpointRegistration
                 ? Results.NotFound()
                 : Results.Ok(ticket);
         });
+    }
+
+    private static string GetTicketStatusDescription(TicketStatus status)
+    {
+        var member = typeof(TicketStatus).GetMember(status.ToString()).SingleOrDefault();
+        return member?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? status.ToString();
     }
 
     private static void MapUserMenuPreferencesEndpoints(this RouteGroupBuilder api)
@@ -603,6 +623,21 @@ public static class ApiEndpointRegistration
             return auditDateTime.HasValue
                 ? Results.Ok(await userValuationPreferencesService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await userValuationPreferencesService.Get(resolvedUserID, valuationDate));
+        });
+    }
+
+    private static void MapUserBookmarksEndpoints(this RouteGroupBuilder api)
+    {
+        var userBookmarks = api.MapGroup("/UserBookmarks");
+
+        userBookmarks.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserBookmarksService userBookmarksService) =>
+        {
+            var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate));
         });
     }
 
@@ -661,6 +696,21 @@ public static class ApiEndpointRegistration
                 return Results.BadRequest(Result<AccountActiveModifiedEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
 
             var result = AccountActiveModifiedEventBuilder.Create(request, accounts);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.AccountsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
+        });
+
+        accountEvents.MapPost($"/{nameof(AccountDisplayOrderSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountDisplayOrderSetRequest request, CancellationToken cancellationToken) =>
+        {
+            var accounts = await TryGetAccounts(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            if (accounts is null)
+                return Results.BadRequest(Result<AccountDisplayOrderSetEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
+
+            var result = AccountDisplayOrderSetEventBuilder.Create(request, accounts);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
@@ -1474,6 +1524,65 @@ public static class ApiEndpointRegistration
                 cancellationToken));
     }
 
+    private static void MapUserBookmarksEventEndpoints(this RouteGroupBuilder api)
+    {
+        var userBookmarksEvents = api.MapGroup("/Events/UserBookmarks");
+
+        userBookmarksEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IUserBookmarksEvent>(Constants.Initialisation.UserBookmarksStreamId, cancellationToken);
+
+            if (userID.HasValue)
+                events = events.Where(@event => @event.UserID.Value == userID.Value).ToList();
+
+            return Results.Ok(events.ToList());
+        });
+
+        userBookmarksEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IUserBookmarksEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkCreatedEventBuilder.Create(request),
+                cancellationToken));
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkModifiedEventBuilder.Create(request),
+                cancellationToken));
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkDisplayOrderSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkDisplayOrderSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkDisplayOrderSetEventBuilder.Create(request),
+                cancellationToken));
+
+        userBookmarksEvents.MapPost($"/{nameof(UserBookmarkDeletedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserBookmarkDeletedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.UserBookmarksStreamId,
+                UserBookmarksEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => UserBookmarkDeletedEventBuilder.Create(request),
+                cancellationToken));
+    }
+
     private static UserDisplayPreferences CreateUserDisplayPreferences(UserEventRequest request) =>
         new(request.DisplayPreferences.DarkMode, request.DisplayPreferences.RememberTraceDate);
 
@@ -1621,6 +1730,17 @@ public static class ApiEndpointRegistration
                 activeEvent.Reason,
                 AccountID = activeEvent.AccountID.Value,
                 activeEvent.Active
+            },
+            AccountDisplayOrderSetEvent displayOrderSetEvent => new
+            {
+                Type = displayOrderSetEvent.Type,
+                EventID = displayOrderSetEvent.EventID.Value,
+                UserID = displayOrderSetEvent.UserID.Value,
+                EventDateTime = displayOrderSetEvent.EventDateTime.Value,
+                AuditDateTime = displayOrderSetEvent.AuditDateTime.Value,
+                displayOrderSetEvent.Reason,
+                AccountID = displayOrderSetEvent.AccountID.Value,
+                DisplayOrder = displayOrderSetEvent.DisplayOrder.Value
             },
             _ => new
             {

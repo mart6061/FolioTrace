@@ -28,6 +28,10 @@ public sealed class UserMenuPreferencesTests
         Assert.NotNull(result.Value);
         Assert.All(result.Value!.Items, item => Assert.True(item.Visible));
         Assert.Equal(UserMenuPreferenceDefaults.ControlledMenuItemIDs.Count, result.Value.Items.Count);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Bookmarks);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Compliance);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Administration);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Todo);
     }
 
     [Theory]

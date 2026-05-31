@@ -4,12 +4,12 @@ namespace FolioTrace.Aggregates;
 
 public static class AccountBuilder
 {
-    public static Account Create(AccountCreatedEvent createdEvent)
+    public static Account Create(AccountCreatedEvent createdEvent, DisplayOrder displayOrder)
     {
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Account(createdEvent.AccountID, createdEvent.Name, createdEvent.FormalName, createdEvent.BookCurrency, createdEvent.Active, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
+        return new Account(createdEvent.AccountID, createdEvent.Name, createdEvent.FormalName, createdEvent.BookCurrency, createdEvent.Active, displayOrder, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
     }
 
     extension(Account account)
@@ -48,6 +48,24 @@ public static class AccountBuilder
                 AsOfDateTime = activeModifiedEvent.AuditDateTime,
                 LastEventID = activeModifiedEvent.EventID,
                 LastAuditDateTime = activeModifiedEvent.AuditDateTime
+            };
+        }
+
+        public Account Apply(AccountDisplayOrderSetEvent displayOrderSetEvent)
+        {
+            if (account is null)
+                throw new ArgumentNullException(nameof(account));
+
+            if (displayOrderSetEvent is null)
+                throw new ArgumentNullException(nameof(displayOrderSetEvent));
+
+            return account with
+            {
+                DisplayOrder = displayOrderSetEvent.DisplayOrder,
+                ValuationDateTime = displayOrderSetEvent.EventDateTime,
+                AsOfDateTime = displayOrderSetEvent.AuditDateTime,
+                LastEventID = displayOrderSetEvent.EventID,
+                LastAuditDateTime = displayOrderSetEvent.AuditDateTime
             };
         }
     }

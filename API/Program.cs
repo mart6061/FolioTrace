@@ -7,10 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new()
+    options.SwaggerDoc("v0", new()
     {
         Title = "FolioTrace API",
-        Version = "v1"
+        Version = "v0"
     });
     options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
 });
@@ -33,7 +33,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("v1/swagger.json", "FolioTrace API v1");
+        options.SwaggerEndpoint("v0/swagger.json", "FolioTrace API v0");
         options.RoutePrefix = "swagger";
     });
     app.UseHttpsRedirection();

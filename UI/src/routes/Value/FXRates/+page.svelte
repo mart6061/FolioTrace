@@ -1,13 +1,15 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, toApiDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { FXRate, FXRateHistoryEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   let filterText = $state('');
   let addingPair = $state('');
   let editingPair = $state('');
@@ -237,7 +239,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Value Data</p>
-        <h1 class="page-title">FX Rates</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">FX Rates</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
@@ -347,7 +352,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">

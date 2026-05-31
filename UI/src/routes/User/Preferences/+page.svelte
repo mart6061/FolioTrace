@@ -1,9 +1,10 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { formatBookmarkType, formatBookmarkUrl } from '$lib/bookmarks';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { defaultShowZeroBalances, defaultValuationDateBasis, defaultValuationDateOption, normalizeValuationDateBasis, normalizeValuationDateOption, valuationDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
-  import { formatDisplayDateTime } from '$lib/dates';
-  import type { UserValuationDateOption, ValuationDateBasis } from '$lib/types';
+  import type { UserBookmarkItem, UserValuationDateOption, ValuationDateBasis } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -17,9 +18,13 @@
   let originalValuationDateOption = $state<UserValuationDateOption>(defaultValuationDateOption);
   let originalValuationDateBasis = $state<ValuationDateBasis>(defaultValuationDateBasis);
   let originalShowZeroBalances = $state(defaultShowZeroBalances);
+  let bookmarks = $state<UserBookmarkItem[]>(createBookmarks());
+  let originalBookmarks = $state<UserBookmarkItem[]>(createBookmarks());
   let syncedMenuSignature = $state('');
   let syncedValuationSignature = $state('');
-  const asOfSummary = $derived(data.auditDateTime && data.menuPreferences.asOfDateTime ? formatDisplayDateTime(data.menuPreferences.asOfDateTime) : 'now');
+  let syncedBookmarkSignature = $state('');
+  let draggedBookmarkID = $state<string | null>(null);
+  let dragOverBookmarkID = $state<string | null>(null);
 
   $effect(() => {
     const nextMenuSignature = menuSignature();
@@ -41,6 +46,14 @@
       originalShowZeroBalances = showZeroBalances;
       syncedValuationSignature = nextValuationSignature;
     }
+
+    const nextBookmarkSignature = bookmarkSignature();
+
+    if (nextBookmarkSignature !== syncedBookmarkSignature) {
+      bookmarks = createBookmarks();
+      originalBookmarks = createBookmarks();
+      syncedBookmarkSignature = nextBookmarkSignature;
+    }
   });
 
   const enhanceSavePreferences: SubmitFunction = () => {
@@ -54,6 +67,7 @@
         originalValuationDateOption = valuationDateOption;
         originalValuationDateBasis = valuationDateBasis;
         originalShowZeroBalances = showZeroBalances;
+        originalBookmarks = cloneBookmarks(bookmarks);
       }
 
       submitting = false;
@@ -62,6 +76,10 @@
 
   function createVisibleByID() {
     return Object.fromEntries(normalizeMenuPreferenceItems(data.menuPreferences.items).map((item) => [item.menuItemID, item.visible]));
+  }
+
+  function createBookmarks() {
+    return sortBookmarks(data.userBookmarks?.items ?? []);
   }
 
   function isChildDisabled(parentID: string | undefined) {
@@ -86,19 +104,93 @@
       String(data.valuationPreferences.showZeroBalances)
     ].join('|');
   }
+
+  function bookmarkSignature() {
+    return JSON.stringify(data.userBookmarks?.items ?? []);
+  }
+
+  function cloneBookmarks(items: UserBookmarkItem[]) {
+    return items.map((item, index) => ({
+      bookmarkID: item.bookmarkID,
+      bookmarkType: item.bookmarkType,
+      url: item.url,
+      displayOrder: index + 1
+    }));
+  }
+
+  function sortBookmarks(items: UserBookmarkItem[]) {
+    return cloneBookmarks([...items].sort((left, right) =>
+      left.displayOrder - right.displayOrder
+      || left.url.localeCompare(right.url)
+      || left.bookmarkID.localeCompare(right.bookmarkID)));
+  }
+
+  function deleteBookmark(bookmarkID: string) {
+    bookmarks = cloneBookmarks(bookmarks.filter((bookmark) => bookmark.bookmarkID !== bookmarkID));
+  }
+
+  function serializeBookmarks(items: UserBookmarkItem[]) {
+    return JSON.stringify(items);
+  }
+
+  function startBookmarkDrag(event: DragEvent, bookmarkID: string) {
+    draggedBookmarkID = bookmarkID;
+    dragOverBookmarkID = bookmarkID;
+    event.dataTransfer?.setData('text/plain', bookmarkID);
+
+    if (event.dataTransfer)
+      event.dataTransfer.effectAllowed = 'move';
+  }
+
+  function dragOverBookmark(event: DragEvent, bookmarkID: string) {
+    event.preventDefault();
+    dragOverBookmarkID = bookmarkID;
+
+    if (event.dataTransfer)
+      event.dataTransfer.dropEffect = 'move';
+  }
+
+  function dropBookmark(event: DragEvent, targetBookmarkID: string) {
+    event.preventDefault();
+    const sourceBookmarkID = event.dataTransfer?.getData('text/plain') || draggedBookmarkID;
+    draggedBookmarkID = null;
+    dragOverBookmarkID = null;
+
+    if (!sourceBookmarkID || sourceBookmarkID === targetBookmarkID)
+      return;
+
+    const sourceIndex = bookmarks.findIndex((bookmark) => bookmark.bookmarkID === sourceBookmarkID);
+    const targetIndex = bookmarks.findIndex((bookmark) => bookmark.bookmarkID === targetBookmarkID);
+
+    if (sourceIndex < 0 || targetIndex < 0)
+      return;
+
+    const next = [...bookmarks];
+    const [moved] = next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    bookmarks = cloneBookmarks(next);
+  }
+
+  function endBookmarkDrag() {
+    draggedBookmarkID = null;
+    dragOverBookmarkID = null;
+  }
 </script>
 
 <main class="min-h-screen">
   <section class="page-header">
     <div class="page-container">
       <p class="page-kicker">User</p>
-      <h1 class="page-title">Preferences</h1>
-      <p class="page-subtitle">Menu visibility as of {asOfSummary}.</p>
+      <div class="page-title-row">
+        <h1 class="page-title">Preferences</h1>
+        <BookmarkButton />
+      </div>
+      <p class="page-subtitle">My Options</p>
     </div>
   </section>
 
   <section class="page-container page-section">
-    <form method="POST" action="?/savePreferences" use:enhance={enhanceSavePreferences}>
+    <form id="preferences-form" method="POST" action="?/savePreferences" use:enhance={enhanceSavePreferences}>
       <div class="data-panel menu-preference-card">
         <h2 class="menu-preference-title">Menu Options</h2>
 
@@ -200,13 +292,57 @@
 
       <div class="data-panel menu-preference-card">
         <h2 class="menu-preference-title">Bookmarks</h2>
-      </div>
+        <input type="hidden" name="bookmarks" value={serializeBookmarks(bookmarks)} />
+        <input type="hidden" name="originalBookmarks" value={serializeBookmarks(originalBookmarks)} />
 
-      <div class="data-panel menu-preference-save-card">
-        <button class="primary-action" disabled={submitting} type="submit">
-          {submitting ? 'Saving...' : 'Save'}
-        </button>
+        {#if bookmarks.length === 0}
+          <p class="menu-preference-empty">No bookmarks yet.</p>
+        {:else}
+          <div class="bookmark-preference-list" role="list">
+            {#each bookmarks as bookmark (bookmark.bookmarkID)}
+              <div
+                class={`bookmark-preference-row ${dragOverBookmarkID === bookmark.bookmarkID ? 'bookmark-preference-row-over' : ''}`}
+                ondragover={(event) => dragOverBookmark(event, bookmark.bookmarkID)}
+                ondrop={(event) => dropBookmark(event, bookmark.bookmarkID)}
+                role="listitem"
+              >
+                <button
+                  aria-label={`Drag ${bookmark.url}`}
+                  class="bookmark-preference-grip"
+                  draggable="true"
+                  ondragend={endBookmarkDrag}
+                  ondragstart={(event) => startBookmarkDrag(event, bookmark.bookmarkID)}
+                  title="Drag to reorder"
+                  type="button"
+                >
+                  <span aria-hidden="true"></span>
+                </button>
+                <div class="bookmark-preference-main">
+                  <span class="bookmark-preference-url">{formatBookmarkUrl(bookmark.url)}</span>
+                  <span class="bookmark-preference-kind">{formatBookmarkType(bookmark.bookmarkType)}</span>
+                </div>
+                <div class="bookmark-preference-actions">
+                  <button
+                    aria-label={`Delete ${bookmark.url}`}
+                    class="bookmark-remove-action"
+                    onclick={() => deleteBookmark(bookmark.bookmarkID)}
+                    title="Remove"
+                    type="button"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </form>
+
+    <div class="data-panel menu-preference-save-card">
+      <button class="primary-action" disabled={submitting} form="preferences-form" type="submit">
+        {submitting ? 'Saving...' : 'Save'}
+      </button>
+    </div>
   </section>
 </main>
