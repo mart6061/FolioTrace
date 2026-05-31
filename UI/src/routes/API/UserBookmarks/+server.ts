@@ -1,4 +1,4 @@
-import { formatBookmarkType, normalizeBookmarkType } from '$lib/bookmarks';
+import { formatBookmarkType, normalizeBookmarkPath, normalizeBookmarkType } from '$lib/bookmarks';
 import { nowForInput, toApiDateTime } from '$lib/dates';
 import { systemUserID } from '$lib/menuPreferences';
 import {
@@ -11,7 +11,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 
 export const POST: RequestHandler = async ({ fetch, request }) => {
   const body = await request.json() as { path?: string; bookmarkType?: string };
-  const url = normalizePath(body.path);
+  const url = normalizeBookmarkPath(body.path);
   const bookmarkType = normalizeBookmarkType(body.bookmarkType);
   const eventDateTime = toApiDateTime(nowForInput());
   const bookmarks = await getUserBookmarks(fetch, systemUserID, eventDateTime, null);
@@ -44,10 +44,3 @@ export const POST: RequestHandler = async ({ fetch, request }) => {
     eventIDs: [bookmarkEvent.eventID, displayOrderEvent.eventID].filter(Boolean)
   });
 };
-
-function normalizePath(path: string | null | undefined) {
-  const value = path?.trim() || '/';
-  const [withoutQuery] = value.split('?');
-  const normalized = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`;
-  return normalized || '/';
-}

@@ -604,6 +604,10 @@ main {
   stroke-width: 2;
 }
 
+.page-bookmark-button-bookmarked svg {
+  fill: currentColor;
+}
+
 .page-bookmark-button:disabled {
   cursor: wait;
   opacity: 0.64;

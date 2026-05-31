@@ -39,6 +39,18 @@
       tint: '#fef3c7',
       tintText: '#92400e'
     },
+    compliance: {
+      border: '#fda4af',
+      strong: '#be123c',
+      tint: '#ffe4e6',
+      tintText: '#9f1239'
+    },
+    administration: {
+      border: '#a5b4fc',
+      strong: '#4f46e5',
+      tint: '#e0e7ff',
+      tintText: '#3730a3'
+    },
     todo: {
       border: '#f9a8d4',
       strong: '#be185d',
@@ -74,6 +86,8 @@
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
+    { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
+    { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
     { id: 'data', label: 'Data', tone: menuTones.value },
     { id: 'system', label: 'System', tone: menuTones.logs },
     { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }

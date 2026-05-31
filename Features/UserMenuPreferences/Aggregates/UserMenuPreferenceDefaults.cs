@@ -2,8 +2,11 @@ namespace FolioTrace.Aggregates;
 
 public static class UserMenuPreferenceDefaults
 {
+    public const string Bookmarks = "bookmarks";
     public const string Blotter = "blotter";
     public const string Account = "account";
+    public const string Compliance = "compliance";
+    public const string Administration = "administration";
     public const string Data = "data";
     public const string System = "system";
     public const string Value = "value";
@@ -12,19 +15,24 @@ public static class UserMenuPreferenceDefaults
     public const string SystemStats = "system-stats";
     public const string SystemClearCache = "system-clear-cache";
     public const string SystemRebuildDatabase = "system-rebuild-database";
+    public const string Todo = "todo";
 
     public static readonly IReadOnlyList<string> ControlledMenuItemIDs =
     [
+        Bookmarks,
         Blotter,
         Account,
+        Compliance,
+        Administration,
         Data,
-        System,
         Value,
         Reference,
+        System,
         SystemLogs,
         SystemStats,
         SystemClearCache,
-        SystemRebuildDatabase
+        SystemRebuildDatabase,
+        Todo
     ];
 
     private static readonly HashSet<string> ControlledMenuItemIDSet = ControlledMenuItemIDs.ToHashSet(StringComparer.Ordinal);

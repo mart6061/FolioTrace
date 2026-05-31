@@ -21,6 +21,13 @@ export function normalizeBookmarkType(value: string | null | undefined): UserBoo
   return value === 'Query' ? 'Query' : 'Base';
 }
 
+export function normalizeBookmarkPath(path: string | null | undefined): string {
+  const value = path?.trim() || '/';
+  const [withoutQuery] = value.split('?');
+  const normalized = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`;
+  return normalized || '/';
+}
+
 export function formatBookmarkType(value: UserBookmarkType): string {
   return value === 'Base' ? 'Page' : 'Filter';
 }
