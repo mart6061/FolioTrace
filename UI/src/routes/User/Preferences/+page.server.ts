@@ -1,12 +1,16 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
+import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions, systemUserID } from '$lib/menuPreferences';
 import { defaultUserValuationPreferences, normalizeValuationDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
 import {
   getApiBaseUrl,
+  getUserBookmarks,
   getUserMenuPreferences,
   getUserValuationPreferences,
+  postUserBookmarkDeletedEvent,
   postUserMenuPreferencesCreatedEvent,
   postUserMenuPreferencesModifiedEvent,
+  postUserBookmarkDisplayOrderSetEvent,
   postUserValuationPreferencesCreatedEvent,
   postUserValuationPreferencesModifiedEvent,
   type EventSubmissionResponse,
@@ -14,6 +18,7 @@ import {
   type UserValuationPreferencesRequest
 } from '$lib/server/api';
 import { fail } from '@sveltejs/kit';
+import type { UserBookmarkItem } from '$lib/types';
 
 export const load = async ({ fetch, url }) => {
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
@@ -22,9 +27,10 @@ export const load = async ({ fetch, url }) => {
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
 
   try {
-    const [menuPreferences, valuationPreferences] = await Promise.all([
+    const [menuPreferences, valuationPreferences, userBookmarks] = await Promise.all([
       getUserMenuPreferences(fetch, systemUserID, apiEventDateTime, apiAuditDateTime),
-      getUserValuationPreferences(fetch, systemUserID, apiEventDateTime, apiAuditDateTime)
+      getUserValuationPreferences(fetch, systemUserID, apiEventDateTime, apiAuditDateTime),
+      getUserBookmarks(fetch, systemUserID, apiEventDateTime, apiAuditDateTime)
     ]);
 
     return {
@@ -33,6 +39,7 @@ export const load = async ({ fetch, url }) => {
       error: '',
       eventDateTime,
       menuPreferences,
+      userBookmarks,
       valuationPreferences
     };
   } catch (error) {
@@ -42,6 +49,7 @@ export const load = async ({ fetch, url }) => {
       error: error instanceof Error ? error.message : 'Unable to load user preferences.',
       eventDateTime,
       menuPreferences: defaultUserMenuPreferences(),
+      userBookmarks: defaultUserBookmarks(),
       valuationPreferences: defaultUserValuationPreferences()
     };
   }
@@ -69,10 +77,13 @@ export const actions = {
     const originalValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalValuationDateOption'));
     const originalValuationDateBasis = normalizeValuationDateBasis(getFormString(formData, 'originalValuationDateBasis'));
     const originalShowZeroBalances = getFormString(formData, 'originalShowZeroBalances') === 'true';
+    const bookmarks = parseBookmarks(getFormString(formData, 'bookmarks'));
+    const originalBookmarks = parseBookmarks(getFormString(formData, 'originalBookmarks'));
     const menuChanged = !areMenuItemsEqual(items, originalItems);
     const valuationChanged = valuationDateOption !== originalValuationDateOption
       || valuationDateBasis !== originalValuationDateBasis
       || showZeroBalances !== originalShowZeroBalances;
+    const bookmarkChanges = getBookmarkChanges(bookmarks, originalBookmarks);
 
     try {
       const eventIDs: string[] = [];
@@ -112,6 +123,27 @@ export const actions = {
         addEventID(eventIDs, result);
       }
 
+      for (const bookmark of bookmarkChanges.deleted) {
+        const result = await postUserBookmarkDeletedEvent(fetch, {
+          userID: systemUserID,
+          eventDateTime,
+          reason: 'Delete user bookmark',
+          bookmarkID: bookmark.bookmarkID
+        });
+        addEventID(eventIDs, result);
+      }
+
+      for (const bookmark of bookmarkChanges.reordered) {
+        const result = await postUserBookmarkDisplayOrderSetEvent(fetch, {
+          userID: systemUserID,
+          eventDateTime,
+          reason: 'Set bookmark display order',
+          bookmarkID: bookmark.bookmarkID,
+          displayOrder: bookmark.displayOrder
+        });
+        addEventID(eventIDs, result);
+      }
+
       return {
         eventIDs,
         intent: 'savePreferences',
@@ -133,6 +165,25 @@ function getFormString(formData: FormData, name: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function parseBookmarks(value: string) {
+  if (!value)
+    return [];
+
+  try {
+    const parsed = JSON.parse(value) as UserBookmarkItem[];
+    return parsed
+      .filter((item) => item && item.bookmarkID && item.url && Number.isFinite(item.displayOrder))
+      .map((item) => ({
+        bookmarkID: item.bookmarkID,
+        bookmarkType: item.bookmarkType,
+        url: item.url,
+        displayOrder: item.displayOrder
+      }));
+  } catch {
+    return [];
+  }
+}
+
 function areMenuItemsEqual(left: { menuItemID: string; visible: boolean }[], right: { menuItemID: string; visible: boolean }[]) {
   return menuPreferenceDefinitions.every((item) =>
     left.find((candidate) => candidate.menuItemID === item.id)?.visible === right.find((candidate) => candidate.menuItemID === item.id)?.visible);
@@ -141,4 +192,14 @@ function areMenuItemsEqual(left: { menuItemID: string; visible: boolean }[], rig
 function addEventID(eventIDs: string[], response: EventSubmissionResponse) {
   if (response.eventID)
     eventIDs.push(response.eventID);
+}
+
+function getBookmarkChanges(bookmarks: UserBookmarkItem[], originalBookmarks: UserBookmarkItem[]) {
+  const currentByID = new Map(bookmarks.map((bookmark) => [bookmark.bookmarkID, bookmark]));
+  const originalByID = new Map(originalBookmarks.map((bookmark) => [bookmark.bookmarkID, bookmark]));
+
+  return {
+    deleted: originalBookmarks.filter((bookmark) => !currentByID.has(bookmark.bookmarkID)),
+    reordered: bookmarks.filter((bookmark) => originalByID.has(bookmark.bookmarkID) && originalByID.get(bookmark.bookmarkID)?.displayOrder !== bookmark.displayOrder)
+  };
 }

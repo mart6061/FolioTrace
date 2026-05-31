@@ -28,6 +28,7 @@ export type Account = {
   formalName: string;
   bookCurrency: string;
   active: boolean;
+  displayOrder: number;
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -71,6 +72,24 @@ export type UserValuationPreferences = {
   valuationDateBasis: ValuationDateBasis;
   showZeroBalances: boolean;
   hasStoredPreferences: boolean;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type UserBookmarkType = 'Base' | 'Query';
+
+export type UserBookmarkItem = {
+  bookmarkID: string;
+  bookmarkType: UserBookmarkType;
+  url: string;
+  displayOrder: number;
+};
+
+export type UserBookmarks = {
+  userID: string;
+  items: UserBookmarkItem[];
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -317,6 +336,11 @@ export type TicketStatus =
   | 'Completed'
   | 'Cancelled';
 
+export type TicketStatusOption = {
+  status: TicketStatus;
+  description: string;
+};
+
 export type TicketProposalAllocation = {
   accountID: string;
   quantity: number;
@@ -393,6 +417,7 @@ export type AccountReferenceEvent = ReferenceEventBase & {
   formalName?: string;
   bookCurrency?: string;
   active?: boolean;
+  displayOrder?: number;
 };
 
 export type HoldingReferenceEvent = ReferenceEventBase & {
@@ -601,7 +626,10 @@ export type AggregateKind =
   | 'HoldingPositions'
   | 'Instruments'
   | 'InstrumentValues'
-  | 'Tickets';
+  | 'Tickets'
+  | 'UserBookmarks'
+  | 'UserMenuPreferences'
+  | 'UserValuationPreferences';
 
 export type AggregateUpdateNotification = {
   notificationType: 'AggregateUpdated' | 'AggregatesInvalidated';

@@ -1,8 +1,15 @@
+<script lang="ts">
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+</script>
+
 <main class="min-h-screen">
   <section class="page-header">
     <div class="page-container">
       <p class="page-kicker">FolioTrace</p>
-      <h1 class="page-title">Welcome</h1>
+      <div class="page-title-row">
+        <h1 class="page-title">Welcome</h1>
+        <BookmarkButton />
+      </div>
     </div>
   </section>
 
@@ -30,6 +37,14 @@
           This gives the application traceability as a first-class feature. Every aggregate is derived from its events,
           carries provenance such as the last event and audit time, and can be refreshed or checked without losing the
           history that explains how it got there.
+        </p>
+      </section>
+
+      <section class="dashboard-intro" aria-labelledby="who-am-i-for-heading">
+        <h2 id="who-am-i-for-heading">Who am I for?</h2>
+        <p>
+          The discretionary fund manager who wants ease of use, control of their processes, compliance visibility, and
+          the confidence to support customers with detailed and accurate reporting.
         </p>
       </section>
 

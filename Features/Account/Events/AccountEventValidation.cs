@@ -53,4 +53,17 @@ internal static class AccountEventValidation
         if (!string.IsNullOrWhiteSpace(name) && accounts.Items.Any(account => account.AccountID != accountID && string.Equals(account.Name, name, StringComparison.OrdinalIgnoreCase)))
             messages.Add($"Account Name '{name}' already exists.");
     }
+
+    public static List<string> ValidateAccountDisplayOrder(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AccountID? accountID, DisplayOrder? displayOrder)
+    {
+        var messages = new List<string>();
+        if (eventId is null) messages.Add("EventID is required.");
+        if (userId is null) messages.Add("UserID is required.");
+        if (eventDateTime is null) messages.Add("EventDateTime is required.");
+        if (auditDateTime is null) messages.Add("AuditDateTime is required.");
+        if (string.IsNullOrWhiteSpace(reason)) messages.Add("Reason is required.");
+        if (accountID is null) messages.Add("AccountID is required.");
+        if (displayOrder is null || displayOrder.Value < 1) messages.Add("DisplayOrder must be positive.");
+        return messages;
+    }
 }

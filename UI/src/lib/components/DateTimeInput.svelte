@@ -11,6 +11,7 @@
     name?: string;
     onchange?: (event: Event) => void;
     required?: boolean;
+    showShortcuts?: boolean;
     step?: string | number;
     value?: string;
   };
@@ -25,6 +26,7 @@
     name,
     onchange,
     required = false,
+    showShortcuts = true,
     step = '1',
     value = $bindable('')
   }: Props = $props();
@@ -93,9 +95,11 @@
     onfocus={refreshEffectiveMax}
     type="datetime-local"
   />
-  <span class="datetime-input-shortcuts" aria-label="Date time shortcuts">
-    <button aria-label="Start of day" disabled={disabled} onclick={setStartOfDay} title="Start of day" type="button">S</button>
-    <button aria-label="Now" disabled={disabled} onclick={setNow} title="Now" type="button">N</button>
-    <button aria-label="End of day" disabled={disabled} onclick={setEndOfDay} title="End of day" type="button">E</button>
-  </span>
+  {#if showShortcuts}
+    <span class="datetime-input-shortcuts" aria-label="Date time shortcuts">
+      <button aria-label="Start of day" disabled={disabled} onclick={setStartOfDay} title="Start of day" type="button">S</button>
+      <button aria-label="Now" disabled={disabled} onclick={setNow} title="Now" type="button">N</button>
+      <button aria-label="End of day" disabled={disabled} onclick={setEndOfDay} title="End of day" type="button">E</button>
+    </span>
+  {/if}
 </span>

@@ -1,7 +1,8 @@
-import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import {
   getAccounts,
   getInstruments,
+  getTicketStatusOptions,
   getTickets,
   postTicketAccountAddedEvent,
   postTicketAccountRemovedEvent,
@@ -20,22 +21,23 @@ import {
   type TicketProposalRequest,
   type TicketTradeRequest
 } from '$lib/server/api';
-import type { TicketSide } from '$lib/types';
+import type { Instrument, TicketSide } from '$lib/types';
 import { fail } from '@sveltejs/kit';
 
 const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
-  const valuationDate = nowForInput();
+  const valuationDate = todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = toApiDateTime(valuationDate);
   const asOfDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
 
   try {
-    const [tickets, accounts, instruments] = await Promise.all([
+    const [tickets, accounts, instruments, ticketStatusOptions] = await Promise.all([
       getTickets(fetch, eventDateTime, asOfDateTime),
       getAccounts(fetch, eventDateTime, asOfDateTime),
-      getInstruments(fetch, eventDateTime, asOfDateTime)
+      getInstruments(fetch, eventDateTime, asOfDateTime),
+      getTicketStatusOptions(fetch)
     ]);
 
     return {
@@ -43,6 +45,7 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: '',
       instruments,
+      ticketStatusOptions,
       tickets,
       valuationDate
     };
@@ -52,6 +55,7 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load the blotter.',
       instruments: null,
+      ticketStatusOptions: [],
       tickets: null,
       valuationDate
     };
@@ -62,16 +66,22 @@ export const actions = {
   createTicket: async ({ fetch, request }) => {
     const formData = await request.formData();
     const side = getFormString(formData, 'side') as TicketSide;
-    const instrumentID = getFormString(formData, 'instrumentID');
-    const eventDateTime = getFormString(formData, 'eventDateTime');
+    const instrumentValue = getFormString(formData, 'instrumentID');
 
-    if (!side || !instrumentID || !eventDateTime)
-      return fail(400, responseFailure('createTicket', 'Side, instrument, and event date are required.'));
+    if (!side || !instrumentValue)
+      return fail(400, responseFailure('createTicket', 'Side and instrument are required.'));
 
     try {
+      const apiEventDateTime = new Date().toISOString();
+      const instruments = await getInstruments(fetch, apiEventDateTime, null);
+      const instrument = resolveInstrument(instruments.items, instrumentValue);
+
+      if (!instrument)
+        return fail(400, responseFailure('createTicket', 'Select a valid instrument.'));
+
       const result = await postTicketCreatedEvent(fetch, {
-        eventDateTime: toApiDateTime(eventDateTime),
-        instrumentID,
+        eventDateTime: apiEventDateTime,
+        instrumentID: instrument.instrumentID,
         reason: `Create ${side.toLowerCase()} ticket`,
         side,
         userID: systemUserID
@@ -374,4 +384,17 @@ function responseFailure(intent: string, message: string) {
 
 function readError(error: unknown) {
   return error instanceof Error ? error.message : 'Unable to update ticket.';
+}
+
+function resolveInstrument(instruments: Instrument[], value: string) {
+  return instruments.find((instrument) =>
+    instrument.instrumentID === value ||
+    instrumentOptionLabel(instrument) === value ||
+    instrument.name === value
+  );
+}
+
+function instrumentOptionLabel(instrument: Instrument) {
+  const ticker = instrument.identifiers.find((identifier) => identifier.type === 'Ticker' || identifier.type === 0)?.value ?? '';
+  return [ticker, instrument.name, instrument.exchange].filter(Boolean).join(' - ');
 }

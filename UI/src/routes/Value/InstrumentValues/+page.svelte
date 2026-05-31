@@ -1,8 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, toApiDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type {
     InstrumentIncomeCash,
     InstrumentIncomeEquity,
@@ -27,6 +28,7 @@
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   let filterText = $state('');
   let editingInstrumentID = $state('');
   let submittingInstrumentID = $state('');
@@ -387,7 +389,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Value Data</p>
-        <h1 class="page-title">Instrument Values</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Instrument Values</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
@@ -517,7 +522,7 @@
                             <td class="px-3 py-2">
                               <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                 <span>Event date</span>
-                                <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={data.valuationDate} />
+                                <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={eventDateDefault} />
                               </label>
                             </td>
                             <td class="px-3 py-2 text-slate-600">{formatTableDateTime(instrument.lastAuditDateTime)}</td>

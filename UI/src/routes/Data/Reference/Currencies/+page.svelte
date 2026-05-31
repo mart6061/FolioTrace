@@ -1,13 +1,15 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { CurrencyReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   type SortKey = 'currency' | 'alphabeticCode' | 'numericCode' | 'decimalPlace' | 'lastAudit';
 
   let sortKey = $state<SortKey>('currency');
@@ -292,7 +294,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Reference Data</p>
-        <h1 class="page-title">Currencies</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Currencies</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
@@ -434,7 +439,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="currency-create">
                       <span>Event date</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" name="eventDateTime" required step="1" value={form?.intent === 'createCurrency' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" name="eventDateTime" required step="1" value={form?.intent === 'createCurrency' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -482,7 +487,7 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`currency-edit-${currency.alphabeticCode}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} name="eventDateTime" required step="1" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate} />
+                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} name="eventDateTime" required step="1" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">

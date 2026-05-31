@@ -1,13 +1,15 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { CountryReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
 
+  const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   const countryCount = $derived(data.countries?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.countries ? formatDisplayDateTime(data.countries.asOfDateTime) : 'now');
 
@@ -295,7 +297,10 @@
     <div class="page-container flex flex-col gap-5">
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Reference Data</p>
-        <h1 class="page-title">Countries</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Countries</h1>
+          <BookmarkButton />
+        </div>
       </div>
 
       <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
@@ -511,7 +516,7 @@
                         name="eventDateTime"
                         required
                         step="1"
-                        value={form?.intent === 'createCountry' ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                        value={form?.intent === 'createCountry' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault}
                       />
                     </label>
                   </td>
@@ -615,7 +620,7 @@
                           name="eventDateTime"
                           required
                           step="1"
-                          value={form?.alpha2 === country.alpha2 ? (form.values?.eventDateTime ?? data.valuationDate) : data.valuationDate}
+                          value={form?.alpha2 === country.alpha2 ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault}
                         />
                       </label>
                     </td>
