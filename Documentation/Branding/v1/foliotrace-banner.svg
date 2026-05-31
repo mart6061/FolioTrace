@@ -1,0 +1,45 @@
+<svg width="1600" height="480" viewBox="0 0 1600 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FolioTrace brand banner</title>
+  <desc id="desc">A wide FolioTrace banner with an event timeline, portfolio folio mark, and product wordmark.</desc>
+  <defs>
+    <linearGradient id="banner-bg" x1="0" y1="0" x2="1600" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081F1D"/>
+      <stop offset="0.48" stop-color="#102033"/>
+      <stop offset="1" stop-color="#07111F"/>
+    </linearGradient>
+    <radialGradient id="event-glow" cx="0" cy="0" r="1" gradientTransform="matrix(560 0 0 360 1230 150)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F80ED" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#2F80ED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mark-card" x1="143" y1="112" x2="401" y2="370" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#D9EDE7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="480" rx="44" fill="url(#banner-bg)"/>
+  <rect width="1600" height="480" rx="44" fill="url(#event-glow)"/>
+  <path d="M790 106C904 64 1032 96 1114 188C1188 272 1300 302 1416 254" stroke="#D9EDE7" stroke-opacity="0.13" stroke-width="32" stroke-linecap="round"/>
+  <path d="M772 326C914 390 1068 352 1164 232C1228 152 1318 112 1458 128" stroke="#D9EDE7" stroke-opacity="0.1" stroke-width="28" stroke-linecap="round"/>
+  <path d="M112 144c0-35.3 28.7-64 64-64h240c35.3 0 64 28.7 64 64v192c0 35.3-28.7 64-64 64H176c-35.3 0-64-28.7-64-64V144Z" fill="#0F766E"/>
+  <path d="M148 174c0-26.5 21.5-48 48-48h220c26.5 0 48 21.5 48 48v188c0 26.5-21.5 48-48 48H196c-26.5 0-48-21.5-48-48V174Z" fill="#115E59"/>
+  <path d="M188 220c0-26.5 21.5-48 48-48h220c26.5 0 48 21.5 48 48v178c0 26.5-21.5 48-48 48H236c-26.5 0-48-21.5-48-48V220Z" fill="url(#mark-card)"/>
+  <path d="M260 260h156" stroke="#0F766E" stroke-width="24" stroke-linecap="round"/>
+  <path d="M260 316h188" stroke="#2563EB" stroke-opacity="0.86" stroke-width="24" stroke-linecap="round"/>
+  <path d="M260 372h116" stroke="#C7923E" stroke-width="24" stroke-linecap="round"/>
+  <path d="M104 240a212 212 0 1 1 424 0" stroke="#D9EDE7" stroke-opacity="0.24" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="316" cy="28" r="24" fill="#2F80ED" stroke="#F8FAFC" stroke-width="10"/>
+  <circle cx="528" cy="240" r="24" fill="#C7923E" stroke="#F8FAFC" stroke-width="10"/>
+  <circle cx="104" cy="240" r="24" fill="#14B8A6" stroke="#F8FAFC" stroke-width="10"/>
+  <text x="600" y="218" fill="#F8FAFC" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="86" font-weight="760" letter-spacing="0">FolioTrace</text>
+  <text x="604" y="276" fill="#D9EDE7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="520" letter-spacing="0">Event-sourced portfolio traceability</text>
+  <g opacity="0.86">
+    <path d="M604 334h240" stroke="#14B8A6" stroke-width="12" stroke-linecap="round"/>
+    <path d="M892 334h140" stroke="#2F80ED" stroke-width="12" stroke-linecap="round"/>
+    <path d="M1080 334h92" stroke="#C7923E" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="604" cy="334" r="13" fill="#14B8A6"/>
+    <circle cx="892" cy="334" r="13" fill="#2F80ED"/>
+    <circle cx="1080" cy="334" r="13" fill="#C7923E"/>
+    <circle cx="1172" cy="334" r="13" fill="#D9EDE7"/>
+  </g>
+  <text x="604" y="388" fill="#94A3B8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="520" letter-spacing="0">valuation date + audit date + event history</text>
+</svg>

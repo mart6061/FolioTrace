@@ -17,3 +17,6 @@ node_modules/
 .svelte-kit/
 UI/build/
 UI/.certs/
+UI/.env
+UI/.env.*
+!UI/.env.example

@@ -1,4 +1,3 @@
-import { systemUserID } from '$lib/menuPreferences';
 import type { UserValuationDateOption, UserValuationPreferences, ValuationDateBasis } from '$lib/types';
 
 export type ValuationDateOptionDefinition = {
@@ -29,9 +28,9 @@ export const valuationDateBasisOptions: ValuationDateBasisDefinition[] = [
   { value: 'SettlementDateTime', label: 'Settlement' }
 ];
 
-export function defaultUserValuationPreferences(): UserValuationPreferences {
+export function defaultUserValuationPreferences(userID = ''): UserValuationPreferences {
   return {
-    userID: systemUserID,
+    userID,
     valuationDateOption: defaultValuationDateOption,
     valuationDateBasis: defaultValuationDateBasis,
     showZeroBalances: defaultShowZeroBalances,

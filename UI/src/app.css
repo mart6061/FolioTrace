@@ -415,6 +415,11 @@ main {
   padding-left: 0;
 }
 
+.system-menu-pill-todo {
+  background: #be185d;
+  color: #f8fafc;
+}
+
 .system-menu-pill:hover,
 .system-menu-pill:focus-visible {
   border-color: transparent;
@@ -428,6 +433,13 @@ main {
   border-color: transparent;
   background: #0f5f54;
   box-shadow: 0 8px 18px rgb(15 23 42 / 0.16);
+  color: #fff;
+}
+
+.system-menu-pill-todo:hover,
+.system-menu-pill-todo:focus-visible,
+.system-menu-pill-todo.system-menu-pill-active {
+  background: #9d174d;
   color: #fff;
 }
 
@@ -602,6 +614,10 @@ main {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
+}
+
+.page-bookmark-button-bookmarked svg {
+  fill: currentColor;
 }
 
 .page-bookmark-button:disabled {
@@ -1095,6 +1111,48 @@ main {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.datetime-input-control-embedded {
+  box-sizing: border-box;
+  min-height: 36px;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 6px;
+  background: #fff;
+  gap: 2px;
+  padding-right: 4px;
+}
+
+.datetime-input-control-embedded:has(input.h-8) {
+  height: 2rem;
+  min-height: 2rem;
+}
+
+.datetime-input-control-embedded:has(input.h-9) {
+  height: 2.25rem;
+  min-height: 2.25rem;
+}
+
+.datetime-input-control-embedded:has(input.h-10) {
+  height: 2.5rem;
+  min-height: 2.5rem;
+}
+
+.datetime-input-control-embedded input {
+  height: 100% !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+.datetime-input-control-embedded input:focus {
+  box-shadow: none !important;
+}
+
+.datetime-input-control-embedded:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(15 118 110 / 0.2);
+}
+
 .datetime-input-shortcuts {
   display: inline-flex;
   flex: 0 0 auto;
@@ -1121,6 +1179,13 @@ main {
   text-decoration: none;
 }
 
+.datetime-input-control-embedded .datetime-input-shortcuts button {
+  width: 22px;
+  height: 22px;
+  border-color: transparent;
+  background: #eef8f4;
+}
+
 .datetime-input-shortcuts button:hover,
 .datetime-input-shortcuts button:focus-visible {
   border-color: var(--accent);
@@ -1138,6 +1203,16 @@ main {
   border-color: #475569;
   background: #0f172a;
   color: #5eead4;
+}
+
+.dark .datetime-input-control-embedded {
+  border-color: #475569;
+  background: #0f172a;
+}
+
+.dark .datetime-input-control-embedded .datetime-input-shortcuts button {
+  border-color: transparent;
+  background: rgb(20 184 166 / 0.14);
 }
 
 .page-shell {
@@ -1218,6 +1293,7 @@ main {
 }
 
 .primary-action,
+.secondary-action,
 .row-actions button,
 .form-actions button,
 .inline-edit button {
@@ -1228,6 +1304,12 @@ main {
   color: #334155;
   cursor: pointer;
   padding: 0 12px;
+}
+
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .primary-action {

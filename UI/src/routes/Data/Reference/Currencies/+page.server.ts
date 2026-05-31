@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
   getCurrencies,
@@ -8,8 +9,6 @@ import {
   type CurrencyCreatedRequest,
   type CurrencyModifiedRequest
 } from '$lib/server/api';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -41,7 +40,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createCurrency: async ({ fetch, request }) => {
+  createCurrency: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const alphabeticCode = getFormString(formData, 'alphabeticCode').toUpperCase();
     const name = getFormString(formData, 'name');
@@ -90,7 +90,7 @@ export const actions = {
         reason: `Create currency ${alphabeticCode}`
       };
 
-      const result = await postCurrencyCreatedEvent(fetch, currencyCreatedRequest, systemUserID);
+      const result = await postCurrencyCreatedEvent(fetch, currencyCreatedRequest, currentUser.userID);
 
       return {
         alphabeticCode,
@@ -110,7 +110,8 @@ export const actions = {
     }
   },
 
-  modifyCurrency: async ({ fetch, request }) => {
+  modifyCurrency: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const alphabeticCode = getFormString(formData, 'alphabeticCode').toUpperCase();
     const name = getFormString(formData, 'name');
@@ -159,7 +160,7 @@ export const actions = {
         reason: `Modify currency ${alphabeticCode}`
       };
 
-      const result = await postCurrencyModifiedEvent(fetch, currencyModifiedRequest, systemUserID);
+      const result = await postCurrencyModifiedEvent(fetch, currencyModifiedRequest, currentUser.userID);
 
       return {
         alphabeticCode,

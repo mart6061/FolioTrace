@@ -6,19 +6,19 @@ export type MenuPreferenceDefinition = {
   parentID?: string;
 };
 
-export const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
-
 export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
+  { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'blotter', label: 'Blotter' },
   { id: 'account', label: 'Account' },
+  { id: 'compliance', label: 'Compliance' },
+  { id: 'administration', label: 'Administration' },
   { id: 'data', label: 'Data' },
   { id: 'value', label: 'Value', parentID: 'data' },
   { id: 'reference', label: 'Reference', parentID: 'data' },
   { id: 'system', label: 'System' },
   { id: 'system-logs', label: 'Logs', parentID: 'system' },
   { id: 'system-stats', label: 'Stats for Nerds', parentID: 'system' },
-  { id: 'system-clear-cache', label: 'Clear Cache', parentID: 'system' },
-  { id: 'system-rebuild-database', label: 'Rebuild Database', parentID: 'system' }
+  { id: 'todo', label: 'To Do' }
 ];
 
 export const controlledMenuItemIDs = menuPreferenceDefinitions.map((item) => item.id);
@@ -27,9 +27,9 @@ export function defaultMenuPreferenceItems(): UserMenuPreferenceItem[] {
   return controlledMenuItemIDs.map((menuItemID) => ({ menuItemID, visible: true }));
 }
 
-export function defaultUserMenuPreferences(): UserMenuPreferences {
+export function defaultUserMenuPreferences(userID = ''): UserMenuPreferences {
   return {
-    userID: systemUserID,
+    userID,
     items: defaultMenuPreferenceItems(),
     hasStoredPreferences: false,
     valuationDateTime: '',

@@ -1390,6 +1390,24 @@ public static class ApiEndpointRegistration
     {
         var userEvents = api.MapGroup("/Events/User");
 
+        userEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IUserEvent>(Constants.Initialisation.UsersStreamId, cancellationToken);
+
+            if (userID.HasValue)
+                events = events.Where(@event => @event.UserID.Value == userID.Value).ToList();
+
+            return Results.Ok(events.ToList());
+        });
+
+        userEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IUserEvent
+                ? Results.Ok(@event)
+                : Results.NotFound();
+        });
+
         userEvents.MapPost($"/{nameof(UserCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, UserEventRequest request, CancellationToken cancellationToken) =>
         {
             var userResult = UserCreatedEventBuilder.Create(

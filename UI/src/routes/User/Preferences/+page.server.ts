@@ -1,7 +1,8 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
 import { defaultUserBookmarks } from '$lib/bookmarks';
-import { defaultUserMenuPreferences, menuPreferenceDefinitions, systemUserID } from '$lib/menuPreferences';
+import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
 import { defaultUserValuationPreferences, normalizeValuationDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
   getUserBookmarks,
@@ -20,7 +21,8 @@ import {
 import { fail } from '@sveltejs/kit';
 import type { UserBookmarkItem } from '$lib/types';
 
-export const load = async ({ fetch, url }) => {
+export const load = async ({ fetch, locals, url }) => {
+  const currentUser = requireCurrentUser(locals);
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = nowForInput();
   const apiEventDateTime = toApiDateTime(eventDateTime);
@@ -28,9 +30,9 @@ export const load = async ({ fetch, url }) => {
 
   try {
     const [menuPreferences, valuationPreferences, userBookmarks] = await Promise.all([
-      getUserMenuPreferences(fetch, systemUserID, apiEventDateTime, apiAuditDateTime),
-      getUserValuationPreferences(fetch, systemUserID, apiEventDateTime, apiAuditDateTime),
-      getUserBookmarks(fetch, systemUserID, apiEventDateTime, apiAuditDateTime)
+      getUserMenuPreferences(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime),
+      getUserValuationPreferences(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime),
+      getUserBookmarks(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime)
     ]);
 
     return {
@@ -38,6 +40,7 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: '',
       eventDateTime,
+      currentUser,
       menuPreferences,
       userBookmarks,
       valuationPreferences
@@ -48,15 +51,17 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load user preferences.',
       eventDateTime,
-      menuPreferences: defaultUserMenuPreferences(),
-      userBookmarks: defaultUserBookmarks(),
-      valuationPreferences: defaultUserValuationPreferences()
+      currentUser,
+      menuPreferences: defaultUserMenuPreferences(currentUser.userID),
+      userBookmarks: defaultUserBookmarks(currentUser.userID),
+      valuationPreferences: defaultUserValuationPreferences(currentUser.userID)
     };
   }
 };
 
 export const actions = {
-  savePreferences: async ({ fetch, request }) => {
+  savePreferences: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const hasStoredMenuPreferences = getFormString(formData, 'hasStoredMenuPreferences') === 'true';
     const hasStoredValuationPreferences = getFormString(formData, 'hasStoredValuationPreferences') === 'true';
@@ -91,7 +96,7 @@ export const actions = {
 
       if (menuChanged) {
         const menuPreferencesRequest: UserMenuPreferencesRequest = {
-          userID: systemUserID,
+          userID: currentUser.userID,
           eventDateTime,
           reason: 'Modify user menu preferences',
           items
@@ -107,7 +112,7 @@ export const actions = {
 
       if (valuationChanged) {
         const valuationPreferencesRequest: UserValuationPreferencesRequest = {
-          userID: systemUserID,
+          userID: currentUser.userID,
           eventDateTime,
           reason: 'Modify user valuation preferences',
           valuationDateOption,
@@ -125,7 +130,7 @@ export const actions = {
 
       for (const bookmark of bookmarkChanges.deleted) {
         const result = await postUserBookmarkDeletedEvent(fetch, {
-          userID: systemUserID,
+          userID: currentUser.userID,
           eventDateTime,
           reason: 'Delete user bookmark',
           bookmarkID: bookmark.bookmarkID
@@ -135,7 +140,7 @@ export const actions = {
 
       for (const bookmark of bookmarkChanges.reordered) {
         const result = await postUserBookmarkDisplayOrderSetEvent(fetch, {
-          userID: systemUserID,
+          userID: currentUser.userID,
           eventDateTime,
           reason: 'Set bookmark display order',
           bookmarkID: bookmark.bookmarkID,

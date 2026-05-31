@@ -1,4 +1,3 @@
-import { systemUserID } from '$lib/menuPreferences';
 import type { UserBookmarks, UserBookmarkType } from '$lib/types';
 
 export const bookmarkTypeOptions: { value: UserBookmarkType; label: string }[] = [
@@ -6,9 +5,9 @@ export const bookmarkTypeOptions: { value: UserBookmarkType; label: string }[] =
   { value: 'Query', label: 'Filter' }
 ];
 
-export function defaultUserBookmarks(): UserBookmarks {
+export function defaultUserBookmarks(userID = ''): UserBookmarks {
   return {
-    userID: systemUserID,
+    userID,
     items: [],
     valuationDateTime: '',
     asOfDateTime: '',
@@ -19,6 +18,13 @@ export function defaultUserBookmarks(): UserBookmarks {
 
 export function normalizeBookmarkType(value: string | null | undefined): UserBookmarkType {
   return value === 'Query' ? 'Query' : 'Base';
+}
+
+export function normalizeBookmarkPath(path: string | null | undefined): string {
+  const value = path?.trim() || '/';
+  const [withoutQuery] = value.split('?');
+  const normalized = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`;
+  return normalized || '/';
 }
 
 export function formatBookmarkType(value: UserBookmarkType): string {

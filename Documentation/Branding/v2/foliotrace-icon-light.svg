@@ -1,0 +1,30 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FolioTrace light icon</title>
+  <desc id="desc">Light mode FolioTrace icon with folio layers and event timeline nodes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="96" y1="64" x2="930" y2="956" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="0.56" stop-color="#EEF7F4"/>
+      <stop offset="1" stop-color="#E7EEF7"/>
+    </linearGradient>
+    <linearGradient id="folio" x1="262" y1="318" x2="666" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECFDF5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <rect x="34" y="34" width="956" height="956" rx="192" stroke="#CBD5E1" stroke-width="12"/>
+  <circle cx="512" cy="512" r="304" stroke="#0F766E" stroke-opacity="0.14" stroke-width="34"/>
+  <path d="M512 208a304 304 0 0 1 304 304" stroke="#2563EB" stroke-width="38" stroke-linecap="round"/>
+  <path d="M816 512a304 304 0 0 1-304 304" stroke="#B45309" stroke-width="38" stroke-linecap="round"/>
+  <path d="M512 816a304 304 0 0 1-304-304" stroke="#0F766E" stroke-width="38" stroke-linecap="round"/>
+  <path d="M342 336h304c28.7 0 52 23.3 52 52v260c0 28.7-23.3 52-52 52H342c-28.7 0-52-23.3-52-52V388c0-28.7 23.3-52 52-52Z" fill="#14B8A6"/>
+  <path d="M296 396h304c28.7 0 52 23.3 52 52v260c0 28.7-23.3 52-52 52H296c-28.7 0-52-23.3-52-52V448c0-28.7 23.3-52 52-52Z" fill="#0F766E"/>
+  <path d="M256 456h304c28.7 0 52 23.3 52 52v240c0 28.7-23.3 52-52 52H256c-28.7 0-52-23.3-52-52V508c0-28.7 23.3-52 52-52Z" fill="url(#folio)" stroke="#CBD5E1" stroke-width="8"/>
+  <path d="M322 530h226" stroke="#0F766E" stroke-width="30" stroke-linecap="round"/>
+  <path d="M322 608h254" stroke="#2563EB" stroke-opacity="0.84" stroke-width="30" stroke-linecap="round"/>
+  <path d="M322 686h168" stroke="#B45309" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="512" cy="208" r="38" fill="#2563EB" stroke="#FFFFFF" stroke-width="16"/>
+  <circle cx="816" cy="512" r="38" fill="#B45309" stroke="#FFFFFF" stroke-width="16"/>
+  <circle cx="512" cy="816" r="38" fill="#0F766E" stroke="#FFFFFF" stroke-width="16"/>
+</svg>

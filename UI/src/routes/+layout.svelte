@@ -39,6 +39,18 @@
       tint: '#fef3c7',
       tintText: '#92400e'
     },
+    compliance: {
+      border: '#fda4af',
+      strong: '#be123c',
+      tint: '#ffe4e6',
+      tintText: '#9f1239'
+    },
+    administration: {
+      border: '#a5b4fc',
+      strong: '#4f46e5',
+      tint: '#e0e7ff',
+      tintText: '#3730a3'
+    },
     todo: {
       border: '#f9a8d4',
       strong: '#be185d',
@@ -74,6 +86,8 @@
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
+    { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
+    { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
     { id: 'data', label: 'Data', tone: menuTones.value },
     { id: 'system', label: 'System', tone: menuTones.logs },
     { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
@@ -95,9 +109,7 @@
   ];
   const systemItems: MenuItem[] = [
     { id: 'system-logs', label: 'Logs', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },
-    { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs },
-    { hash: '#system-heading', id: 'system-clear-cache', label: 'Clear Cache', path: '/StatsForNerds', tone: menuTones.danger },
-    { hash: '#system-heading', id: 'system-rebuild-database', label: 'Rebuild Database', path: '/StatsForNerds', tone: menuTones.danger }
+    { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs }
   ];
   const topLeafItems = topMenuItems.filter((item) => item.path);
   const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, ...topLeafItems];
@@ -436,7 +448,7 @@
                 <a
                   aria-label={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
                   aria-current={isActiveMenuItem(item) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${item.id === 'todo' ? 'system-menu-pill-todo' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(item)}
                 onclick={() => handleLeafClick(item)}
                 style={menuStyle(item.tone, 40 - topIndex)}

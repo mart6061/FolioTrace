@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
   getInstruments,
@@ -23,8 +24,6 @@ import {
 } from '$lib/server/api';
 import type { Instrument, TicketSide } from '$lib/types';
 import { fail } from '@sveltejs/kit';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = todayEndForInput();
@@ -63,7 +62,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createTicket: async ({ fetch, request }) => {
+  createTicket: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const side = getFormString(formData, 'side') as TicketSide;
     const instrumentValue = getFormString(formData, 'instrumentID');
@@ -84,7 +84,7 @@ export const actions = {
         instrumentID: instrument.instrumentID,
         reason: `Create ${side.toLowerCase()} ticket`,
         side,
-        userID: systemUserID
+        userID: currentUser.userID
       });
 
       return responseSuccess('createTicket', 'Ticket created.', result.eventID);
@@ -93,7 +93,8 @@ export const actions = {
     }
   },
 
-  addAccount: async ({ fetch, request }) => {
+  addAccount: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const accountID = getFormString(formData, 'accountID');
@@ -108,7 +109,7 @@ export const actions = {
         eventDateTime: toApiDateTime(eventDateTime),
         reason: `Add account to ticket ${ticketNumber}`,
         ticketNumber,
-        userID: systemUserID
+        userID: currentUser.userID
       });
 
       return responseSuccess('addAccount', 'Account added.', result.eventID);
@@ -117,7 +118,8 @@ export const actions = {
     }
   },
 
-  removeAccount: async ({ fetch, request }) => {
+  removeAccount: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const accountID = getFormString(formData, 'accountID');
@@ -132,7 +134,7 @@ export const actions = {
         eventDateTime: toApiDateTime(eventDateTime),
         reason: `Remove account from ticket ${ticketNumber}`,
         ticketNumber,
-        userID: systemUserID
+        userID: currentUser.userID
       });
 
       return responseSuccess('removeAccount', 'Account removed.', result.eventID);
@@ -141,7 +143,8 @@ export const actions = {
     }
   },
 
-  saveProposal: async ({ fetch, request }) => {
+  saveProposal: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -160,7 +163,7 @@ export const actions = {
       targetPrice,
       ticketNumber,
       totalAmount,
-      userID: systemUserID
+      userID: currentUser.userID
     };
 
     try {
@@ -174,10 +177,11 @@ export const actions = {
     }
   },
 
-  proposalApprove: async ({ fetch, request }) => approveProposal(fetch, request, true),
-  proposalNotApprove: async ({ fetch, request }) => approveProposal(fetch, request, false),
+  proposalApprove: async ({ fetch, locals, request }) => approveProposal(fetch, request, true, requireCurrentUser(locals).userID),
+  proposalNotApprove: async ({ fetch, locals, request }) => approveProposal(fetch, request, false, requireCurrentUser(locals).userID),
 
-  saveTrade: async ({ fetch, request }) => {
+  saveTrade: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -194,7 +198,7 @@ export const actions = {
       reason: `${hasTrade ? 'Modify' : 'Create'} trade for ticket ${ticketNumber}`,
       ticketNumber,
       tradedPrice,
-      userID: systemUserID
+      userID: currentUser.userID
     };
 
     try {
@@ -208,7 +212,8 @@ export const actions = {
     }
   },
 
-  addFill: async ({ fetch, request }) => {
+  addFill: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -227,7 +232,7 @@ export const actions = {
         quantity,
         reason: `Add fill to ticket ${ticketNumber}`,
         ticketNumber,
-        userID: systemUserID
+        userID: currentUser.userID
       });
 
       return responseSuccess('addFill', 'Fill added.', result.eventID);
@@ -236,7 +241,8 @@ export const actions = {
     }
   },
 
-  removeFill: async ({ fetch, request }) => {
+  removeFill: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -251,7 +257,7 @@ export const actions = {
         fillID,
         reason: `Remove fill from ticket ${ticketNumber}`,
         ticketNumber,
-        userID: systemUserID
+        userID: currentUser.userID
       });
 
       return responseSuccess('removeFill', 'Fill removed.', result.eventID);
@@ -260,10 +266,11 @@ export const actions = {
     }
   },
 
-  tradeApprove: async ({ fetch, request }) => approveTrade(fetch, request, true),
-  tradeNotApprove: async ({ fetch, request }) => approveTrade(fetch, request, false),
+  tradeApprove: async ({ fetch, locals, request }) => approveTrade(fetch, request, true, requireCurrentUser(locals).userID),
+  tradeNotApprove: async ({ fetch, locals, request }) => approveTrade(fetch, request, false, requireCurrentUser(locals).userID),
 
-  cancelTicket: async ({ fetch, request }) => {
+  cancelTicket: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -276,7 +283,7 @@ export const actions = {
         eventDateTime: toApiDateTime(eventDateTime),
         reason: `Cancel ticket ${ticketNumber}`,
         ticketNumber,
-        userID: systemUserID
+        userID: currentUser.userID
       });
 
       return responseSuccess('cancelTicket', 'Ticket cancelled.', result.eventID);
@@ -286,7 +293,7 @@ export const actions = {
   }
 };
 
-async function approveProposal(fetchApi: typeof fetch, request: Request, approved: boolean) {
+async function approveProposal(fetchApi: typeof fetch, request: Request, approved: boolean, userID: string) {
   const formData = await request.formData();
   const ticketNumber = getFormNumber(formData, 'ticketNumber');
   const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -300,7 +307,7 @@ async function approveProposal(fetchApi: typeof fetch, request: Request, approve
       eventDateTime: toApiDateTime(eventDateTime),
       reason: `${approved ? 'Approve' : 'Not approve'} proposal for ticket ${ticketNumber}`,
       ticketNumber,
-      userID: systemUserID
+      userID
     });
 
     return responseSuccess(approved ? 'proposalApprove' : 'proposalNotApprove', `Proposal ${approved ? 'approved' : 'not approved'}.`, result.eventID);
@@ -309,7 +316,7 @@ async function approveProposal(fetchApi: typeof fetch, request: Request, approve
   }
 }
 
-async function approveTrade(fetchApi: typeof fetch, request: Request, approved: boolean) {
+async function approveTrade(fetchApi: typeof fetch, request: Request, approved: boolean, userID: string) {
   const formData = await request.formData();
   const ticketNumber = getFormNumber(formData, 'ticketNumber');
   const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -323,7 +330,7 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
       eventDateTime: toApiDateTime(eventDateTime),
       reason: `${approved ? 'Approve' : 'Not approve'} trade for ticket ${ticketNumber}`,
       ticketNumber,
-      userID: systemUserID
+      userID
     });
 
     return responseSuccess(approved ? 'tradeApprove' : 'tradeNotApprove', `Trade ${approved ? 'approved' : 'not approved'}.`, result.eventID);

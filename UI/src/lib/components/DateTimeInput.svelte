@@ -12,6 +12,7 @@
     onchange?: (event: Event) => void;
     required?: boolean;
     showShortcuts?: boolean;
+    shortcutMode?: 'adjacent' | 'embedded';
     step?: string | number;
     value?: string;
   };
@@ -27,11 +28,13 @@
     onchange,
     required = false,
     showShortcuts = true,
+    shortcutMode = 'embedded',
     step = '1',
     value = $bindable('')
   }: Props = $props();
 
   let effectiveMax = $state('');
+  const useEmbeddedShortcuts = $derived(showShortcuts && shortcutMode === 'embedded');
 
   $effect(() => {
     effectiveMax = futureLimited ? nowForInput() : (max ?? '');
@@ -79,7 +82,7 @@
   }
 </script>
 
-<span class="datetime-input-control">
+<span class={`datetime-input-control ${useEmbeddedShortcuts ? 'datetime-input-control-embedded' : ''}`}>
   <input
     class={className}
     bind:value

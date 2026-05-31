@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getInstruments,
   postInstrumentCreatedEvent,
@@ -13,7 +14,6 @@ import {
   type InstrumentModifiedRequest
 } from '$lib/server/api';
 
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 const identifierTypes = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'] as const;
 
 export const load = async ({ fetch, url }) => {
@@ -42,7 +42,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createInstrument: async ({ fetch, request }) => {
+  createInstrument: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const name = getFormString(formData, 'name');
     const formalName = getFormString(formData, 'formalName') || name;
@@ -78,7 +79,7 @@ export const actions = {
         reason: `Create instrument ${name}`
       };
 
-      const result = await postInstrumentCreatedEvent(fetch, instrumentRequest, systemUserID);
+      const result = await postInstrumentCreatedEvent(fetch, instrumentRequest, currentUser.userID);
 
       if (ticker)
         await postInstrumentIdentifierSetEvent(fetch, {
@@ -87,9 +88,9 @@ export const actions = {
           identifierValue: ticker,
           instrumentID,
           reason: `Set ticker ${ticker}`
-        }, systemUserID);
+        }, currentUser.userID);
 
-      await postInstrumentTermsEquitySetEvent(fetch, instrumentRequest.eventDateTime, instrumentID, systemUserID);
+      await postInstrumentTermsEquitySetEvent(fetch, instrumentRequest.eventDateTime, instrumentID, currentUser.userID);
 
       return {
         eventID: result.eventID,
@@ -107,7 +108,8 @@ export const actions = {
     }
   },
 
-  modifyInstrument: async ({ fetch, request }) => {
+  modifyInstrument: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const instrumentID = getFormString(formData, 'instrumentID');
     const name = getFormString(formData, 'name');
@@ -143,7 +145,7 @@ export const actions = {
         reason: `Modify instrument ${instrumentID}`
       };
 
-      const result = await postInstrumentModifiedEvent(fetch, instrumentRequest, systemUserID);
+      const result = await postInstrumentModifiedEvent(fetch, instrumentRequest, currentUser.userID);
 
       return {
         eventID: result.eventID,
@@ -163,7 +165,8 @@ export const actions = {
     }
   },
 
-  setIdentifier: async ({ fetch, request }) => {
+  setIdentifier: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const instrumentID = getFormString(formData, 'instrumentID');
     const identifierType = normaliseIdentifierType(getFormString(formData, 'identifierType'));
@@ -189,7 +192,7 @@ export const actions = {
         reason: `Set ${identifierType} ${identifierValue}`
       };
 
-      const result = await postInstrumentIdentifierSetEvent(fetch, identifierRequest, systemUserID);
+      const result = await postInstrumentIdentifierSetEvent(fetch, identifierRequest, currentUser.userID);
 
       return {
         eventID: result.eventID,
@@ -209,7 +212,8 @@ export const actions = {
     }
   },
 
-  unsetIdentifier: async ({ fetch, request }) => {
+  unsetIdentifier: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const instrumentID = getFormString(formData, 'instrumentID');
     const identifierType = normaliseIdentifierType(getFormString(formData, 'identifierType'));
@@ -232,7 +236,7 @@ export const actions = {
         reason: `Unset ${identifierType}`
       };
 
-      const result = await postInstrumentIdentifierUnsetEvent(fetch, identifierRequest, systemUserID);
+      const result = await postInstrumentIdentifierUnsetEvent(fetch, identifierRequest, currentUser.userID);
 
       return {
         eventID: result.eventID,

@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
   getApiBaseUrl,
@@ -20,8 +21,6 @@ import {
   type TransactionSetRequest
 } from '$lib/server/api';
 import type { Holding, HoldingKind, Instrument } from '$lib/types';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -62,7 +61,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createAccount: async ({ fetch, request }) => {
+  createAccount: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readAccountForm(formData);
 
@@ -80,14 +80,15 @@ export const actions = {
         reason: `Create account ${values.name}`
       };
 
-      const result = await postAccountCreatedEvent(fetch, accountCreatedRequest, systemUserID);
+      const result = await postAccountCreatedEvent(fetch, accountCreatedRequest, currentUser.userID);
       return { accountID: values.accountID, eventID: result.eventID, intent: 'createAccount', message: `${values.name} was created successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, failure('createAccount', error instanceof Error ? error.message : 'Unable to create account.', values));
     }
   },
 
-  modifyAccount: async ({ fetch, request }) => {
+  modifyAccount: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readAccountForm(formData);
 
@@ -103,14 +104,15 @@ export const actions = {
         reason: `Modify account ${values.name}`
       };
 
-      const result = await postAccountModifiedEvent(fetch, accountModifiedRequest, systemUserID);
+      const result = await postAccountModifiedEvent(fetch, accountModifiedRequest, currentUser.userID);
       return { accountID: values.accountID, eventID: result.eventID, intent: 'modifyAccount', message: `${values.name} was updated successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, failure('modifyAccount', error instanceof Error ? error.message : 'Unable to update account.', values));
     }
   },
 
-  modifyAccountActive: async ({ fetch, request }) => {
+  modifyAccountActive: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const accountID = getFormString(formData, 'accountID');
     const name = getFormString(formData, 'name');
@@ -128,14 +130,15 @@ export const actions = {
         reason: `${active ? 'Activate' : 'Deactivate'} account ${name || accountID}`
       };
 
-      const result = await postAccountActiveModifiedEvent(fetch, accountActiveModifiedRequest, systemUserID);
+      const result = await postAccountActiveModifiedEvent(fetch, accountActiveModifiedRequest, currentUser.userID);
       return { accountID, eventID: result.eventID, intent: 'modifyAccountActive', message: `${name || 'Account'} was ${active ? 'activated' : 'deactivated'} successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, { accountID, intent: 'modifyAccountActive', message: error instanceof Error ? error.message : 'Unable to update account status.', status: 'failure' });
     }
   },
 
-  cashIn: async ({ fetch, request }) => {
+  cashIn: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readCashInForm(formData);
 
@@ -177,7 +180,7 @@ export const actions = {
       const amount = amountResult.amount;
       const amountLabel = `${formatAmount(amount)} ${account?.bookCurrency ?? ''}`.trim();
       const transactionSetRequest: TransactionSetRequest = {
-        userID: systemUserID,
+        userID: currentUser.userID,
         eventDateTime,
         settlementDateTime,
         reason: `Cash in ${amountLabel} to ${account?.name ?? 'Investable'}`,
@@ -213,7 +216,8 @@ export const actions = {
     }
   },
 
-  cashOut: async ({ fetch, request }) => {
+  cashOut: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readCashInForm(formData);
 
@@ -255,7 +259,7 @@ export const actions = {
       const amount = amountResult.amount;
       const amountLabel = `${formatAmount(amount)} ${account?.bookCurrency ?? ''}`.trim();
       const transactionSetRequest: TransactionSetRequest = {
-        userID: systemUserID,
+        userID: currentUser.userID,
         eventDateTime,
         settlementDateTime,
         reason: `Cash out ${amountLabel} from ${account?.name ?? 'Investable'}`,
@@ -291,7 +295,8 @@ export const actions = {
     }
   },
 
-  inspecieIn: async ({ fetch, request }) => {
+  inspecieIn: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readInspecieForm(formData);
 
@@ -322,12 +327,12 @@ export const actions = {
       if (!instrument)
         return fail(400, inspecieInFailure('Select a valid instrument.', values));
 
-      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionMemo', instrument.name || 'Position');
-      const inspecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InspecieIn', 'Inspecie In');
+      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionMemo', instrument.name || 'Position', currentUser.userID);
+      const inspecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InspecieIn', 'Inspecie In', currentUser.userID);
       const quantity = quantityResult.amount;
       const bookCost = bookCostResult.amount;
       const transactionSetRequest: TransactionSetRequest = {
-        userID: systemUserID,
+        userID: currentUser.userID,
         eventDateTime,
         settlementDateTime,
         reason: `Inspecie in ${formatAmount(quantity)} ${instrument.name} to ${account.name}`,
@@ -363,7 +368,8 @@ export const actions = {
     }
   },
 
-  inspecieOut: async ({ fetch, request }) => {
+  inspecieOut: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readInspecieForm(formData);
 
@@ -394,12 +400,12 @@ export const actions = {
       if (!instrument)
         return fail(400, inspecieOutFailure('Select a valid instrument.', values));
 
-      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionMemo', instrument.name || 'Position');
-      const inspecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InspecieOut', 'Inspecie Out');
+      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionMemo', instrument.name || 'Position', currentUser.userID);
+      const inspecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InspecieOut', 'Inspecie Out', currentUser.userID);
       const quantity = quantityResult.amount;
       const bookCost = bookCostResult.amount;
       const transactionSetRequest: TransactionSetRequest = {
-        userID: systemUserID,
+        userID: currentUser.userID,
         eventDateTime,
         settlementDateTime,
         reason: `Inspecie out ${formatAmount(quantity)} ${instrument.name} from ${account.name}`,
@@ -435,7 +441,8 @@ export const actions = {
     }
   },
 
-  cancelTransactionSet: async ({ fetch, request }) => {
+  cancelTransactionSet: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const eventSetID = getFormString(formData, 'eventSetID');
     const accountID = getFormString(formData, 'accountID');
@@ -445,7 +452,7 @@ export const actions = {
 
     try {
       const cancellationRequest: TransactionCancellationRequest = {
-        userID: systemUserID,
+        userID: currentUser.userID,
         eventSetID,
         reason: `Cancel transaction set ${eventSetID}`
       };
@@ -609,7 +616,8 @@ async function ensureMovementHolding(
   accountID: string,
   instrument: Instrument,
   holdingKind: HoldingKind,
-  name: string
+  name: string,
+  userID: string
 ) {
   const existing = holdings.find((holding) =>
     holding.accountID === accountID &&
@@ -634,7 +642,7 @@ async function ensureMovementHolding(
     reason: `Create ${name} holding for ${instrument.name}`
   };
 
-  await postHoldingCreatedEvent(fetch, request, systemUserID);
+  await postHoldingCreatedEvent(fetch, request, userID);
 
   const created: Holding = {
     accountID,
