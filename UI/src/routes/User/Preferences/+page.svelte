@@ -186,6 +186,9 @@
         <BookmarkButton />
       </div>
       <p class="page-subtitle">My Options</p>
+      {#if data.currentUser}
+        <p class="page-subtitle">{data.currentUser.displayName} · {data.currentUser.email}</p>
+      {/if}
     </div>
   </section>
 
@@ -340,6 +343,7 @@
     </form>
 
     <div class="data-panel menu-preference-save-card">
+      <a class="secondary-action" href="/sign-out">Sign out</a>
       <button class="primary-action" disabled={submitting} form="preferences-form" type="submit">
         {submitting ? 'Saving...' : 'Save'}
       </button>

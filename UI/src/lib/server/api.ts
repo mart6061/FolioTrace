@@ -319,6 +319,30 @@ export type UserValuationPreferencesRequest = {
   showZeroBalances: boolean;
 };
 
+export type UserCreatedRequest = {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  displayName: string;
+  displayPreferences: {
+    darkMode: boolean;
+    rememberTraceDate: boolean;
+  };
+  valuationPreferences: {
+    valuationDate: string;
+    showIncome: boolean;
+    showBook: boolean;
+  };
+};
+
+export type UserReferenceEvent = {
+  $type?: string;
+  type?: string;
+  Type?: string;
+  eventID?: string;
+  userID?: string;
+};
+
 export type UserBookmarkRequest = {
   userID: string;
   eventDateTime: string;
@@ -707,6 +731,20 @@ export async function getUserBookmarks(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as UserBookmarks;
+}
+
+export async function getUserEvents(fetchApi: typeof fetch, userID?: string) {
+  const url = new URL(`${getApiBaseUrl()}/Events/User/`);
+
+  if (userID)
+    url.searchParams.set('userID', userID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as UserReferenceEvent[];
 }
 
 export async function getTicketEvents(fetchApi: typeof fetch, ticketNumber?: number) {
@@ -1235,6 +1273,35 @@ export async function postUserValuationPreferencesCreatedEvent(fetchApi: typeof 
 
 export async function postUserValuationPreferencesModifiedEvent(fetchApi: typeof fetch, request: UserValuationPreferencesRequest) {
   return postUserValuationPreferencesEvent(fetchApi, 'UserValuationPreferencesModifiedEvent', request);
+}
+
+export async function postUserCreatedEvent(fetchApi: typeof fetch, request: UserCreatedRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/User/UserCreatedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      DisplayName: request.displayName,
+      DisplayPreferences: {
+        DarkMode: request.displayPreferences.darkMode,
+        RememberTraceDate: request.displayPreferences.rememberTraceDate
+      },
+      ValuationPreferences: {
+        ValuationDate: request.valuationPreferences.valuationDate,
+        ShowIncome: request.valuationPreferences.showIncome,
+        ShowBook: request.valuationPreferences.showBook
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
 }
 
 export async function postUserBookmarkCreatedEvent(fetchApi: typeof fetch, request: UserBookmarkRequest) {

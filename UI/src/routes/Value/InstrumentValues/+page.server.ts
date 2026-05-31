@@ -1,12 +1,11 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getInstrumentValues,
   postInstrumentPriceSetEvent,
   type InstrumentPriceSetRequest
 } from '$lib/server/api';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -34,10 +33,10 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  setInstrumentPrice: async ({ fetch, request }) => postPriceEvent(fetch, request)
+  setInstrumentPrice: async ({ fetch, locals, request }) => postPriceEvent(fetch, request, requireCurrentUser(locals).userID)
 };
 
-async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request) {
+async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request, userID: string) {
   const formData = await request.formData();
   const instrumentID = getFormString(formData, 'instrumentID');
   const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -84,7 +83,7 @@ async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request) 
       priceRequest.cleanPrice = cleanPrice;
     }
 
-    const result = await postInstrumentPriceSetEvent(fetch, priceRequest, systemUserID);
+    const result = await postInstrumentPriceSetEvent(fetch, priceRequest, userID);
 
     return {
       eventID: result.eventID,

@@ -1,4 +1,3 @@
-import { systemUserID } from '$lib/menuPreferences';
 import type { UserBookmarks, UserBookmarkType } from '$lib/types';
 
 export const bookmarkTypeOptions: { value: UserBookmarkType; label: string }[] = [
@@ -6,9 +5,9 @@ export const bookmarkTypeOptions: { value: UserBookmarkType; label: string }[] =
   { value: 'Query', label: 'Filter' }
 ];
 
-export function defaultUserBookmarks(): UserBookmarks {
+export function defaultUserBookmarks(userID = ''): UserBookmarks {
   return {
-    userID: systemUserID,
+    userID,
     items: [],
     valuationDateTime: '',
     asOfDateTime: '',

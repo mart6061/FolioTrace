@@ -1293,6 +1293,7 @@ main {
 }
 
 .primary-action,
+.secondary-action,
 .row-actions button,
 .form-actions button,
 .inline-edit button {
@@ -1303,6 +1304,12 @@ main {
   color: #334155;
   cursor: pointer;
   padding: 0 12px;
+}
+
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .primary-action {

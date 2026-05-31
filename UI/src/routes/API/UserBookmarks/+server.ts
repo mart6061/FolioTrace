@@ -1,6 +1,6 @@
 import { formatBookmarkType, normalizeBookmarkPath, normalizeBookmarkType } from '$lib/bookmarks';
 import { nowForInput, toApiDateTime } from '$lib/dates';
-import { systemUserID } from '$lib/menuPreferences';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getUserBookmarks,
   postUserBookmarkCreatedEvent,
@@ -9,18 +9,19 @@ import {
 } from '$lib/server/api';
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-export const POST: RequestHandler = async ({ fetch, request }) => {
+export const POST: RequestHandler = async ({ fetch, locals, request }) => {
+  const currentUser = requireCurrentUser(locals);
   const body = await request.json() as { path?: string; bookmarkType?: string };
   const url = normalizeBookmarkPath(body.path);
   const bookmarkType = normalizeBookmarkType(body.bookmarkType);
   const eventDateTime = toApiDateTime(nowForInput());
-  const bookmarks = await getUserBookmarks(fetch, systemUserID, eventDateTime, null);
+  const bookmarks = await getUserBookmarks(fetch, currentUser.userID, eventDateTime, null);
   const existing = bookmarks.items.find((item) => item.bookmarkType === bookmarkType && item.url === url);
   const displayOrder = existing?.displayOrder ?? Math.max(0, ...bookmarks.items.map((item) => item.displayOrder)) + 1;
   const bookmarkID = existing?.bookmarkID ?? crypto.randomUUID();
   const bookmarkTypeLabel = formatBookmarkType(bookmarkType);
   const requestBody = {
-    userID: systemUserID,
+    userID: currentUser.userID,
     eventDateTime,
     reason: existing ? `Modify ${bookmarkTypeLabel} bookmark` : `Create ${bookmarkTypeLabel} bookmark`,
     bookmarkID,
@@ -32,7 +33,7 @@ export const POST: RequestHandler = async ({ fetch, request }) => {
     ? await postUserBookmarkModifiedEvent(fetch, requestBody)
     : await postUserBookmarkCreatedEvent(fetch, requestBody);
   const displayOrderEvent = await postUserBookmarkDisplayOrderSetEvent(fetch, {
-    userID: systemUserID,
+    userID: currentUser.userID,
     eventDateTime,
     reason: `Set ${bookmarkTypeLabel} bookmark display order`,
     bookmarkID,

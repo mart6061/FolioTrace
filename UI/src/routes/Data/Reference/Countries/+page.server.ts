@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
   getCountries,
@@ -8,8 +9,6 @@ import {
   type CountryCreatedRequest,
   type CountryModifiedRequest
 } from '$lib/server/api';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -41,7 +40,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createCountry: async ({ fetch, request }) => {
+  createCountry: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const alpha2 = getFormString(formData, 'alpha2').toUpperCase();
     const alpha3 = getFormString(formData, 'alpha3').toUpperCase();
@@ -78,7 +78,7 @@ export const actions = {
         name
       };
 
-      const result = await postCountryCreatedEvent(fetch, countryCreatedRequest, systemUserID);
+      const result = await postCountryCreatedEvent(fetch, countryCreatedRequest, currentUser.userID);
 
       return {
         alpha2,
@@ -98,7 +98,8 @@ export const actions = {
     }
   },
 
-  modifyCountry: async ({ fetch, request }) => {
+  modifyCountry: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const alpha2 = getFormString(formData, 'alpha2').toUpperCase();
     const alpha3 = getFormString(formData, 'alpha3').toUpperCase();
@@ -135,7 +136,7 @@ export const actions = {
         name
       };
 
-      const result = await postCountryModifiedEvent(fetch, countryModifiedRequest, systemUserID);
+      const result = await postCountryModifiedEvent(fetch, countryModifiedRequest, currentUser.userID);
 
       return {
         alpha2,

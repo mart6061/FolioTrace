@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
   getApiBaseUrl,
@@ -13,8 +14,6 @@ import {
   type HoldingModifiedRequest
 } from '$lib/server/api';
 import type { HoldingKind } from '$lib/types';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -52,7 +51,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createHolding: async ({ fetch, request }) => {
+  createHolding: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readHoldingForm(formData);
 
@@ -76,14 +76,15 @@ export const actions = {
         reason: `Create holding ${values.name || values.holdingKind}`
       };
 
-      const result = await postHoldingCreatedEvent(fetch, holdingCreatedRequest, systemUserID);
+      const result = await postHoldingCreatedEvent(fetch, holdingCreatedRequest, currentUser.userID);
       return { eventID: result.eventID, holdingID: values.holdingID, intent: 'createHolding', message: `${values.name || 'Holding'} was created successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, failure('createHolding', error instanceof Error ? error.message : 'Unable to create holding.', values));
     }
   },
 
-  modifyHolding: async ({ fetch, request }) => {
+  modifyHolding: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const values = readHoldingForm(formData);
 
@@ -104,14 +105,15 @@ export const actions = {
         reason: `Modify holding ${values.name || values.holdingID}`
       };
 
-      const result = await postHoldingModifiedEvent(fetch, holdingModifiedRequest, systemUserID);
+      const result = await postHoldingModifiedEvent(fetch, holdingModifiedRequest, currentUser.userID);
       return { eventID: result.eventID, holdingID: values.holdingID, intent: 'modifyHolding', message: `${values.name || 'Holding'} was updated successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, failure('modifyHolding', error instanceof Error ? error.message : 'Unable to update holding.', values));
     }
   },
 
-  modifyHoldingActive: async ({ fetch, request }) => {
+  modifyHoldingActive: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const holdingID = getFormString(formData, 'holdingID');
     const name = getFormString(formData, 'name');
@@ -129,7 +131,7 @@ export const actions = {
         reason: `${active ? 'Activate' : 'Deactivate'} holding ${name || holdingID}`
       };
 
-      const result = await postHoldingActiveModifiedEvent(fetch, holdingActiveModifiedRequest, systemUserID);
+      const result = await postHoldingActiveModifiedEvent(fetch, holdingActiveModifiedRequest, currentUser.userID);
       return { eventID: result.eventID, holdingID, intent: 'modifyHoldingActive', message: `${name || 'Holding'} was ${active ? 'activated' : 'deactivated'} successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, { holdingID, intent: 'modifyHoldingActive', message: error instanceof Error ? error.message : 'Unable to update holding status.', status: 'failure' });

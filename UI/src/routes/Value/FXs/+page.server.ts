@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import { requireCurrentUser } from '$lib/server/auth';
 import {
   getCountries,
   getFXs,
@@ -8,8 +9,6 @@ import {
   type FXActiveModifiedRequest,
   type FXCreatedRequest
 } from '$lib/server/api';
-
-const systemUserID = '334f6bb3-762d-4d10-9752-f913d75f7c6c';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -44,7 +43,8 @@ export const load = async ({ fetch, url }) => {
 };
 
 export const actions = {
-  createFX: async ({ fetch, request }) => {
+  createFX: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const baseCurrency = getFormString(formData, 'baseCurrency').toUpperCase();
     const quoteCurrency = getFormString(formData, 'quoteCurrency').toUpperCase();
@@ -68,7 +68,7 @@ export const actions = {
         reason: `Create FX ${baseCurrency}${quoteCurrency}`
       };
 
-      const result = await postFXCreatedEvent(fetch, fxCreatedRequest, systemUserID);
+      const result = await postFXCreatedEvent(fetch, fxCreatedRequest, currentUser.userID);
 
       return {
         eventID: result.eventID,
@@ -86,7 +86,8 @@ export const actions = {
     }
   },
 
-  modifyActive: async ({ fetch, request }) => {
+  modifyActive: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const pair = getFormString(formData, 'pair').toUpperCase();
     const eventDateTime = getFormString(formData, 'eventDateTime');
@@ -107,7 +108,7 @@ export const actions = {
         reason: `${active ? 'Activate' : 'Deactivate'} FX ${pair}`
       };
 
-      const result = await postFXActiveModifiedEvent(fetch, fxActiveModifiedRequest, systemUserID);
+      const result = await postFXActiveModifiedEvent(fetch, fxActiveModifiedRequest, currentUser.userID);
 
       return {
         eventID: result.eventID,
