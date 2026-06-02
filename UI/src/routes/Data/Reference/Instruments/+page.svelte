@@ -100,12 +100,16 @@
     return instrument.identifiers.map((identifier) => `${identifierTypeName(identifier.type)}: ${identifier.value}`).join(' | ');
   }
 
-  function createValue(key: 'cfi' | 'eventDateTime' | 'exchange' | 'formalName' | 'incomeCountry' | 'name' | 'priceCountry' | 'ticker') {
+  function svgDataUrl(svg: string) {
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }
+
+  function createValue(key: 'cfi' | 'eventDateTime' | 'exchange' | 'formalName' | 'incomeCountry' | 'name' | 'priceCountry' | 'priceCurrency' | 'ticker') {
     const values = form?.intent === 'createInstrument' ? form.values as Record<string, string> | undefined : undefined;
     return values?.[key] ?? '';
   }
 
-  function editValue(instrumentID: string, key: 'cfi' | 'eventDateTime' | 'exchange' | 'formalName' | 'incomeCountry' | 'name' | 'priceCountry') {
+  function editValue(instrumentID: string, key: 'cfi' | 'eventDateTime' | 'exchange' | 'formalName' | 'incomeCountry' | 'name' | 'priceCountry' | 'priceCurrency') {
     const values = form?.intent === 'modifyInstrument' && form.instrumentID === instrumentID ? form.values as Record<string, string> | undefined : undefined;
     return values?.[key];
   }
@@ -122,6 +126,7 @@
       lastAuditDateTime: instrument.lastAuditDateTime,
       name: instrument.name,
       priceCountry: instrument.priceCountry,
+      priceCurrency: instrument.priceCurrency,
       ticker: ticker(instrument)
     }));
   }
@@ -149,11 +154,11 @@
   }
 
   function exportCsv() {
-    const header = ['Instrument ID', 'Name', 'Formal name', 'Ticker', 'Identifiers', 'Exchange', 'CFI', 'Price country', 'Income country', 'Active', 'Last audit'];
+    const header = ['Instrument ID', 'Name', 'Formal name', 'Ticker', 'Identifiers', 'Exchange', 'CFI', 'Price country', 'Price currency', 'Income country', 'Active', 'Last audit'];
     const lines = [
       header.map(csvValue).join(','),
       ...instrumentExportRows().map((row) =>
-        [row.instrumentID, row.name, row.formalName, row.ticker, row.identifiers, row.exchange, row.cfi, row.priceCountry, row.incomeCountry, row.active, row.lastAuditDateTime]
+        [row.instrumentID, row.name, row.formalName, row.ticker, row.identifiers, row.exchange, row.cfi, row.priceCountry, row.priceCurrency, row.incomeCountry, row.active, row.lastAuditDateTime]
           .map(csvValue)
           .join(',')
       )
@@ -163,7 +168,7 @@
 
   function exportXlsx() {
     const rows = instrumentExportRows();
-    const html = `<table><thead><tr><th>Instrument ID</th><th>Name</th><th>Formal name</th><th>Ticker</th><th>Identifiers</th><th>Exchange</th><th>CFI</th><th>Price country</th><th>Income country</th><th>Active</th><th>Last audit</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${htmlValue(row.instrumentID)}</td><td>${htmlValue(row.name)}</td><td>${htmlValue(row.formalName)}</td><td>${htmlValue(row.ticker)}</td><td>${htmlValue(row.identifiers)}</td><td>${htmlValue(row.exchange)}</td><td>${htmlValue(row.cfi)}</td><td>${htmlValue(row.priceCountry)}</td><td>${htmlValue(row.incomeCountry)}</td><td>${htmlValue(row.active)}</td><td>${htmlValue(row.lastAuditDateTime)}</td></tr>`).join('')}</tbody></table>`;
+    const html = `<table><thead><tr><th>Instrument ID</th><th>Name</th><th>Formal name</th><th>Ticker</th><th>Identifiers</th><th>Exchange</th><th>CFI</th><th>Price country</th><th>Price currency</th><th>Income country</th><th>Active</th><th>Last audit</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${htmlValue(row.instrumentID)}</td><td>${htmlValue(row.name)}</td><td>${htmlValue(row.formalName)}</td><td>${htmlValue(row.ticker)}</td><td>${htmlValue(row.identifiers)}</td><td>${htmlValue(row.exchange)}</td><td>${htmlValue(row.cfi)}</td><td>${htmlValue(row.priceCountry)}</td><td>${htmlValue(row.priceCurrency)}</td><td>${htmlValue(row.incomeCountry)}</td><td>${htmlValue(row.active)}</td><td>${htmlValue(row.lastAuditDateTime)}</td></tr>`).join('')}</tbody></table>`;
     downloadFile('instruments.xls', html, 'application/vnd.ms-excel');
   }
 
@@ -431,6 +436,10 @@
                       <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="2" minlength="2" name="priceCountry" required type="text" value={createValue('priceCountry')} />
                     </label>
                     <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
+                      <span>Price currency</span>
+                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="3" minlength="3" name="priceCurrency" required type="text" value={createValue('priceCurrency')} />
+                    </label>
+                    <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Income country</span>
                       <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="2" minlength="2" name="incomeCountry" type="text" value={createValue('incomeCountry')} />
                     </label>
@@ -459,12 +468,12 @@
                 </tr>
               {/if}
 
-              {#each rows as instrument}
+              {#each rows as instrument (instrument.instrumentID)}
                 {#if editingInstrumentID === instrument.instrumentID}
                   <tr class="bg-teal-50/30 align-top">
                     <td class="px-3 py-2">
                       {#if instrument.logo?.svg}
-                        <span class="flag" aria-label={`${instrument.name} logo`}>{@html instrument.logo.svg}</span>
+                        <span class="flag"><img src={svgDataUrl(instrument.logo.svg)} alt={`${instrument.name} logo`} /></span>
                       {/if}
                     </td>
                     <td class="px-3 py-2">
@@ -482,7 +491,7 @@
                       </label>
                       {#if instrument.identifiers.length}
                         <div class="mt-2 flex max-w-xl flex-wrap gap-1.5">
-                          {#each instrument.identifiers as identifier}
+                          {#each instrument.identifiers as identifier (`${identifier.type}-${identifier.value}`)}
                             {@const identifierType = identifierTypeValue(identifier.type)}
                             {@const unsetKey = `${instrument.instrumentID}|${identifierType}|unsetIdentifier`}
                             <form action="?/unsetIdentifier" class="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] leading-4 text-slate-700" method="POST" use:enhance={enhanceIdentifier}>
@@ -504,7 +513,7 @@
                         <label class="grid gap-0.5 text-[11px] font-medium text-slate-500">
                           <span>Identifier</span>
                           <select class="h-7 rounded border border-slate-300 bg-white px-1.5 text-xs text-slate-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="identifierType">
-                            {#each identifierTypeOptions as identifierType}
+                            {#each identifierTypeOptions as identifierType (identifierType)}
                               <option value={identifierType}>{identifierType}</option>
                             {/each}
                           </select>
@@ -537,6 +546,10 @@
                         <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="2" minlength="2" name="priceCountry" required type="text" value={editValue(instrument.instrumentID, 'priceCountry') ?? instrument.priceCountry} />
                       </label>
                       <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
+                        <span>Price currency</span>
+                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="3" minlength="3" name="priceCurrency" required type="text" value={editValue(instrument.instrumentID, 'priceCurrency') ?? instrument.priceCurrency} />
+                      </label>
+                      <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Income country</span>
                         <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="2" minlength="2" name="incomeCountry" type="text" value={editValue(instrument.instrumentID, 'incomeCountry') ?? instrument.incomeCountry} />
                       </label>
@@ -564,7 +577,7 @@
                   <tr class="group hover:bg-slate-50">
                     <td class="px-3 py-2">
                       {#if instrument.logo?.svg}
-                        <span class="flag" aria-label={`${instrument.name} logo`}>{@html instrument.logo.svg}</span>
+                        <span class="flag"><img src={svgDataUrl(instrument.logo.svg)} alt={`${instrument.name} logo`} /></span>
                       {/if}
                     </td>
                     <td class="px-3 py-2">
@@ -572,7 +585,7 @@
                       <div class="text-xs text-slate-500">{instrument.formalName}</div>
                       {#if instrument.identifiers.length}
                         <div class="mt-2 flex max-w-xl flex-wrap gap-1.5">
-                          {#each instrument.identifiers as identifier}
+                          {#each instrument.identifiers as identifier (`${identifier.type}-${identifier.value}`)}
                             <span class="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] leading-4 text-slate-700">
                               <span class="font-semibold text-slate-500">{identifierTypeName(identifier.type)}</span>
                               <span class="font-mono">{identifier.value}</span>
@@ -584,7 +597,7 @@
                     <td class="px-3 py-2 font-mono">{ticker(instrument)}</td>
                     <td class="px-3 py-2">{instrument.exchange}</td>
                     <td class="px-3 py-2 font-mono">{instrument.cfi}</td>
-                    <td class="px-3 py-2">{instrument.priceCountry}</td>
+                    <td class="px-3 py-2">{instrument.priceCountry} / {instrument.priceCurrency}</td>
                     <td class="px-3 py-2">
                       <span class={`rounded px-2 py-1 text-xs font-semibold ${instrument.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>{instrument.active ? 'Active' : 'Inactive'}</span>
                     </td>
@@ -621,7 +634,7 @@
                             <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
                           {:else if history?.events.length}
                             <ol class="grid gap-2">
-                              {#each history.events as event}
+                              {#each history.events as event (event.eventID)}
                                 <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
                                   event.applicationStatus === 'omitted'
                                     ? 'border-amber-200 bg-amber-50/70'

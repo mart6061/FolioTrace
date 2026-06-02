@@ -5,10 +5,12 @@ using Repository;
 
 namespace Services;
 
-public sealed class CountryService(IEventRepository eventRepository)
+public sealed class CountryService(IEventRepository eventRepository) : IReferenceDataService<Countries, CountryServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
     private readonly Dictionary<CountryCacheKey, Countries> cache = [];
+
+    public Task<Countries> Current => Get(ReferenceDataCurrent.EndOfToday());
 
     public CountryServiceDiagnostics GetDiagnostics()
     {

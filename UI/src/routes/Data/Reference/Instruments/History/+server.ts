@@ -72,6 +72,7 @@ function normalizeInstrumentEvent(event: Record<string, unknown>) {
     active: readOptionalBoolean(event, 'active', 'Active'),
     incomeCountry: readString(event, 'incomeCountry', 'IncomeCountry'),
     priceCountry: readString(event, 'priceCountry', 'PriceCountry'),
+    priceCurrency: readString(event, 'priceCurrency', 'PriceCurrency'),
     identifier: readIdentifier(event),
     identifierType: readIdentifierType(event),
     terms: readOptionalObject(event, 'terms', 'Terms')

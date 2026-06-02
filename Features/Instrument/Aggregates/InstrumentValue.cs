@@ -16,6 +16,7 @@ public sealed record InstrumentValue : IModel
     public required bool Active { get; init; }
     public required Alpha2 IncomeCountry { get; init; }
     public required Alpha2 PriceCountry { get; init; }
+    public required Alpha3 PriceCurrency { get; init; }
     public required List<InstrumentIdentifier> Identifiers { get; init; }
     public IInstrumentTerms? Terms { get; init; }
     public IInstrumentPrice? Price { get; init; }
@@ -42,6 +43,7 @@ public sealed record InstrumentValue : IModel
         Active = instrument.Active;
         IncomeCountry = instrument.IncomeCountry;
         PriceCountry = instrument.PriceCountry;
+        PriceCurrency = instrument.PriceCurrency;
         Identifiers = instrument.Identifiers;
         Terms = instrument.Terms;
         EnsureValidValuePair(price, income);

@@ -10,23 +10,23 @@ public static class InstrumentCreatedEventBuilder
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        return Create(request.UserID, request.EventDateTime, request.Reason, request.InstrumentID ?? InstrumentIDBuilder.Create(), request.Name, request.FormalName, request.Exchange, request.CFI, request.Logo, request.Active, request.IncomeCountry, request.PriceCountry);
+        return Create(request.UserID, request.EventDateTime, request.Reason, request.InstrumentID ?? InstrumentIDBuilder.Create(), request.Name, request.FormalName, request.Exchange, request.CFI, request.Logo, request.Active, request.IncomeCountry, request.PriceCountry, request.PriceCurrency);
     }
 
-    public static Result<InstrumentCreatedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, bool active, Alpha2 incomeCountry, Alpha2 priceCountry)
+    public static Result<InstrumentCreatedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, bool active, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
         EventID eventId = Guid.NewGuid();
-        return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, instrumentID, name, formalName, exchange, cfi, logo, active, incomeCountry, priceCountry);
+        return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, instrumentID, name, formalName, exchange, cfi, logo, active, incomeCountry, priceCountry, priceCurrency);
     }
 
-    public static Result<InstrumentCreatedEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, bool active, Alpha2 incomeCountry, Alpha2 priceCountry)
+    public static Result<InstrumentCreatedEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, bool active, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency)
     {
         var validationErrors = ValidateCommon(eventId, userId, eventDateTime, auditDateTime, reason, instrumentID);
-        ValidateDefinition(validationErrors, name, formalName, exchange, cfi, incomeCountry, priceCountry);
+        ValidateDefinition(validationErrors, name, formalName, exchange, cfi, incomeCountry, priceCountry, priceCurrency);
 
         return validationErrors.Count == 0
-            ? Result<InstrumentCreatedEvent>.Success(new InstrumentCreatedEvent(eventId, userId, eventDateTime, auditDateTime, reason, instrumentID, name, formalName, exchange, cfi, logo, active, incomeCountry, priceCountry))
+            ? Result<InstrumentCreatedEvent>.Success(new InstrumentCreatedEvent(eventId, userId, eventDateTime, auditDateTime, reason, instrumentID, name, formalName, exchange, cfi, logo, active, incomeCountry, priceCountry, priceCurrency))
             : Result<InstrumentCreatedEvent>.Invalid(validationErrors);
     }
 
@@ -42,7 +42,7 @@ public static class InstrumentCreatedEventBuilder
         return messages;
     }
 
-    internal static void ValidateDefinition(List<string> messages, string? name, string? formalName, Exchange? exchange, CFI? cfi, Alpha2? incomeCountry, Alpha2? priceCountry)
+    internal static void ValidateDefinition(List<string> messages, string? name, string? formalName, Exchange? exchange, CFI? cfi, Alpha2? incomeCountry, Alpha2? priceCountry, Alpha3? priceCurrency)
     {
         if (string.IsNullOrWhiteSpace(name)) messages.Add("Name is required.");
         if (string.IsNullOrWhiteSpace(formalName)) messages.Add("FormalName is required.");
@@ -50,5 +50,6 @@ public static class InstrumentCreatedEventBuilder
         if (cfi is null) messages.Add("CFI is required.");
         if (incomeCountry is null) messages.Add("IncomeCountry is required.");
         if (priceCountry is null) messages.Add("PriceCountry is required.");
+        if (priceCurrency is null) messages.Add("PriceCurrency is required.");
     }
 }

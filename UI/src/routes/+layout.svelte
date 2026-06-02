@@ -6,6 +6,7 @@
   import { formatBookmarkMenuUrl, formatBookmarkType } from '$lib/bookmarks';
   import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
   import { normalizeMenuPreferenceItems } from '$lib/menuPreferences';
+  import { applyDarkModePreference, readInitialDarkMode } from '$lib/themeMode';
   import '../app.css';
   import { onMount } from 'svelte';
 
@@ -13,61 +14,66 @@
 
   const traceModeStorageKey = 'foliotrace.traceMode';
   const auditDateTimeStorageKey = 'foliotrace.auditDateTime';
-  const darkModeStorageKey = 'foliotrace.darkMode';
   const menuTones = {
     home: {
-      border: '#5eead4',
-      strong: '#0f766e',
-      tint: '#ccfbf1',
-      tintText: '#115e59'
+      border: '#8fd8c4',
+      strong: '#146c5c',
+      tint: '#dceee9',
+      tintText: '#0f574b'
     },
     value: {
-      border: '#93c5fd',
-      strong: '#2563eb',
-      tint: '#dbeafe',
-      tintText: '#1e40af'
+      border: '#9bbcff',
+      strong: '#2f6fed',
+      tint: '#dce8ff',
+      tintText: '#1f4f9f'
     },
     reference: {
-      border: '#86efac',
-      strong: '#059669',
-      tint: '#dcfce7',
-      tintText: '#166534'
+      border: '#8bd9a8',
+      strong: '#177245',
+      tint: '#ddf3e6',
+      tintText: '#115b36'
+    },
+    tickets: {
+      border: '#e0a0b3',
+      strong: '#a83b5b',
+      tint: '#f4dfe7',
+      tintText: '#7d2d49'
     },
     logs: {
-      border: '#fcd34d',
-      strong: '#b45309',
-      tint: '#fef3c7',
-      tintText: '#92400e'
+      border: '#e6c17b',
+      strong: '#b9822f',
+      tint: '#f3e3c7',
+      tintText: '#865817'
     },
     compliance: {
-      border: '#fda4af',
-      strong: '#be123c',
-      tint: '#ffe4e6',
-      tintText: '#9f1239'
+      border: '#ee9a92',
+      strong: '#b42318',
+      tint: '#fde3df',
+      tintText: '#8f1c13'
     },
     administration: {
-      border: '#a5b4fc',
-      strong: '#4f46e5',
-      tint: '#e0e7ff',
-      tintText: '#3730a3'
+      border: '#b8b7dc',
+      strong: '#5e5a9d',
+      tint: '#e7e7f3',
+      tintText: '#454178'
     },
     todo: {
-      border: '#f9a8d4',
-      strong: '#be185d',
-      tint: '#fce7f3',
-      tintText: '#9d174d'
+      border: '#dda0b4',
+      strong: '#a33a5e',
+      tint: '#f4dfe7',
+      tintText: '#7d2d49'
     },
     danger: {
-      border: '#fca5a5',
-      strong: '#dc2626',
-      tint: '#fee2e2',
-      tintText: '#991b1b'
+      border: '#ee9a92',
+      strong: '#b42318',
+      tint: '#fde3df',
+      tintText: '#8f1c13'
     },
     disabled: {
-      border: '#94a3b8',
-      strong: '#475569',
-      tint: '#e2e8f0',
-      tintText: '#334155'
+      border: '#aeb9b0',
+      strong: '#66736a',
+      tint: '#e8eee8',
+      tintText: '#47534c'
     }
   };
   type MenuTone = typeof menuTones.home;
@@ -84,7 +90,7 @@
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
-    { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.disabled },
+    { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.tickets },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
     { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
@@ -127,7 +133,6 @@
   })));
 
   let traceMode = $state(false);
-  let darkMode = $state(false);
   let auditDateTime = $state('');
   let hydrated = $state(false);
   let openTopMenu = $state<TopMenuID>(routeTopMenu());
@@ -139,12 +144,8 @@
     const urlAuditDateTime = clampFutureInputDateTime(page.url.searchParams.get('auditDateTime') ?? '');
     const storedTraceMode = sessionStorage.getItem(traceModeStorageKey) === 'true';
     const storedAuditDateTime = clampFutureInputDateTime(sessionStorage.getItem(auditDateTimeStorageKey) ?? '');
-    const storedDarkMode = localStorage.getItem(darkModeStorageKey);
 
     traceMode = urlAuditDateTime ? true : storedTraceMode;
-    darkMode = storedDarkMode === null
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      : storedDarkMode === 'true';
     auditDateTime = urlAuditDateTime || (traceMode ? storedAuditDateTime : '');
     hydrated = true;
     activeRouteKey = routeKey();
@@ -152,7 +153,7 @@
     openDataBranch = routeDataBranch();
     selectedMenuItemID = routeActiveItem()?.id ?? '';
 
-    applyDarkMode();
+    applyDarkModePreference(readInitialDarkMode());
     syncTraceStateToUrl(true);
   });
 
@@ -177,19 +178,6 @@
       sessionStorage.setItem(auditDateTimeStorageKey, auditDateTime);
     else
       sessionStorage.removeItem(auditDateTimeStorageKey);
-  }
-
-  function applyDarkMode() {
-    if (!browser)
-      return;
-
-    document.documentElement.classList.toggle('dark', darkMode);
-    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
-    localStorage.setItem(darkModeStorageKey, String(darkMode));
-  }
-
-  function handleDarkModeChange() {
-    applyDarkMode();
   }
 
   function syncTraceStateToUrl(replaceState = false) {
@@ -407,10 +395,10 @@
 </script>
 
 <svelte:head>
-  <title>FolioTrace</title>
+  <title>Foleo</title>
   <meta
     name="description"
-    content="FolioTrace reference data and event-sourced aggregate views"
+    content="Foleo reference data and event-sourced aggregate views"
   />
 </svelte:head>
 
@@ -427,13 +415,13 @@
   <header class="app-header">
     <div class="app-header-inner">
       <a class="app-brand" href={pathWithTrace('/')}>
-        <span class="app-brand-mark">FT</span>
-        <span>FolioTrace</span>
+        <span class="app-brand-mark">F<span class="app-brand-accent">e</span></span>
+        <span class="app-brand-name brand-wordmark">Fol<span class="brand-wordmark-accent">e</span>o</span>
       </a>
 
       <div class="system-search">
         <nav class="system-menu" aria-label="Primary menu">
-          {#each visibleTopMenuItems as item, topIndex}
+          {#each visibleTopMenuItems as item, topIndex (item.id)}
             {#if item.id === 'bookmarks'}
               <button aria-expanded={openTopMenu === 'bookmarks'} aria-label="Bookmarks" class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`} onclick={() => toggleTopMenu('bookmarks')} style={menuStyle(item.tone, 40 - topIndex)} title="Bookmarks" type="button">
                 <span aria-hidden="true" class="system-menu-bookmark-icon">
@@ -479,7 +467,7 @@
             {/if}
 
             {#if item.id === 'bookmarks' && openTopMenu === 'bookmarks'}
-              {#each bookmarkMenuItems as bookmarkItem, bookmarkIndex}
+              {#each bookmarkMenuItems as bookmarkItem, bookmarkIndex (bookmarkItem.id)}
                 <a
                   aria-current={isActiveMenuItem(bookmarkItem) ? 'page' : undefined}
                   class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(bookmarkItem) ? 'system-menu-pill-active' : ''}`}
@@ -502,7 +490,7 @@
                 >
                   {valueItem.label}
                 </button>
-                {#each visibleSubmenuItems(visibleValueItems) as valueLeaf, valueIndex}
+                {#each visibleSubmenuItems(visibleValueItems) as valueLeaf, valueIndex (valueLeaf.id)}
                   <a
                     aria-current={isActiveMenuItem(valueLeaf) ? 'page' : undefined}
                     class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
@@ -524,7 +512,7 @@
                 >
                   {referenceItem.label}
                 </button>
-                {#each visibleSubmenuItems(visibleReferenceItems) as referenceLeaf, referenceIndex}
+                {#each visibleSubmenuItems(visibleReferenceItems) as referenceLeaf, referenceIndex (referenceLeaf.id)}
                   <a
                     aria-current={isActiveMenuItem(referenceLeaf) ? 'page' : undefined}
                     class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
@@ -536,7 +524,7 @@
                   </a>
                 {/each}
               {:else}
-                {#each visibleDataBranchItems as branchItem, branchIndex}
+                {#each visibleDataBranchItems as branchItem, branchIndex (branchItem.id)}
                   <button
                     aria-expanded="false"
                     class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
@@ -549,7 +537,7 @@
                 {/each}
             {/if}
           {:else if item.id === 'system' && openTopMenu === 'system'}
-              {#each visibleSubmenuItems(visibleSystemItems) as systemItem, systemIndex}
+              {#each visibleSubmenuItems(visibleSystemItems) as systemItem, systemIndex (systemItem.id)}
                 <a
                   aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
                   class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
@@ -563,19 +551,6 @@
             {/if}
           {/each}
         </nav>
-
-        <div class="theme-mode-control theme-mode-control-header">
-          <span>Dark</span>
-          <label class="trace-toggle">
-            <input
-              aria-label="Dark Mode"
-              bind:checked={darkMode}
-              onchange={handleDarkModeChange}
-              type="checkbox"
-            />
-            <span></span>
-          </label>
-        </div>
 
         <a aria-label="User preferences" class="system-user-link" href={pathWithTrace('/User/Preferences')} title="User preferences">
           me

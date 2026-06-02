@@ -14,4 +14,5 @@ public sealed record InstrumentModifiedRequest(
     CFI CFI,
     InstrumentLogo? Logo,
     Alpha2 IncomeCountry,
-    Alpha2 PriceCountry) : IEventRequest;
+    Alpha2 PriceCountry,
+    Alpha3 PriceCurrency) : IEventRequest;

@@ -1,6 +1,7 @@
 {
   "name": "foliotrace-ui",
   "version": "0.1.0",
+  "uiVersion": "0.1.90.4910",
   "private": true,
   "type": "module",
   "scripts": {

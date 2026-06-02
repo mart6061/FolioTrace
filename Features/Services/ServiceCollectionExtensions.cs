@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<InstrumentService>();
         services.AddSingleton<InstrumentValueService>();
         services.AddSingleton<TicketService>();
+        services.AddSingleton<UserService>();
         services.AddSingleton<UserMenuPreferencesService>();
         services.AddSingleton<UserValuationPreferencesService>();
         services.AddSingleton<UserBookmarksService>();
@@ -62,6 +63,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<TransactionDebitEvent>>(provider => new AggregateCacheInvalidator<TransactionDebitEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<TransactionCancellationEvent>>(provider => new AggregateCacheInvalidator<TransactionCancellationEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<ITicket>>(provider => new AggregateCacheInvalidator<ITicket>(provider.GetRequiredService<TicketService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IUserEvent>>(provider => new AggregateCacheInvalidator<IUserEvent>(provider.GetRequiredService<UserService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserMenuPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserMenuPreferencesEvent>(provider.GetRequiredService<UserMenuPreferencesService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserValuationPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserValuationPreferencesEvent>(provider.GetRequiredService<UserValuationPreferencesService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserBookmarksEvent>>(provider => new AggregateCacheInvalidator<IUserBookmarksEvent>(provider.GetRequiredService<UserBookmarksService>().Invalidate));
@@ -90,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionDebitEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionCancellationEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<ITicket>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserMenuPreferencesEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserValuationPreferencesEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserBookmarksEvent>>());

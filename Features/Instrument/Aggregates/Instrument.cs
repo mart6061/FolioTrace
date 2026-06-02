@@ -24,6 +24,8 @@ public sealed record Instrument : IModel
 
     public required Alpha2 PriceCountry { get; init; }
 
+    public required Alpha3 PriceCurrency { get; init; }
+
     public required List<InstrumentIdentifier> Identifiers { get; init; }
 
     public IInstrumentTerms? Terms { get; init; }
@@ -48,6 +50,7 @@ public sealed record Instrument : IModel
         bool active,
         Alpha2 incomeCountry,
         Alpha2 priceCountry,
+        Alpha3 priceCurrency,
         List<InstrumentIdentifier> identifiers,
         IInstrumentTerms? terms,
         EventDateTime valuationDateTime,
@@ -64,6 +67,7 @@ public sealed record Instrument : IModel
         Active = active;
         IncomeCountry = incomeCountry ?? throw new ArgumentNullException(nameof(incomeCountry));
         PriceCountry = priceCountry ?? throw new ArgumentNullException(nameof(priceCountry));
+        PriceCurrency = priceCurrency ?? throw new ArgumentNullException(nameof(priceCurrency));
         Identifiers = identifiers ?? [];
         Terms = terms;
         ValuationDateTime = valuationDateTime ?? throw new ArgumentNullException(nameof(valuationDateTime));
@@ -72,7 +76,7 @@ public sealed record Instrument : IModel
         LastAuditDateTime = lastAuditDateTime ?? throw new ArgumentNullException(nameof(lastAuditDateTime));
     }
 
-    public string ToData() => $"{InstrumentID.ToData()}|{Name}|{FormalName}|{Exchange.ToData()}|{CFI.ToData()}|{Active}|{IncomeCountry.ToData()}|{PriceCountry.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
+    public string ToData() => $"{InstrumentID.ToData()}|{Name}|{FormalName}|{Exchange.ToData()}|{CFI.ToData()}|{Active}|{IncomeCountry.ToData()}|{PriceCountry.ToData()}|{PriceCurrency.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
 
-    public string ToDetail() => $"{nameof(Instrument)}: (InstrumentID: {InstrumentID.ToDetail()}, Name: {Name}, FormalName: {FormalName}, Exchange: {Exchange.ToDetail()}, CFI: {CFI.ToDetail()}, Active: {Active}, IncomeCountry: {IncomeCountry.ToDetail()}, PriceCountry: {PriceCountry.ToDetail()}, Identifiers: {Identifiers.Count}, Terms: {Terms?.ToDetail()}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
+    public string ToDetail() => $"{nameof(Instrument)}: (InstrumentID: {InstrumentID.ToDetail()}, Name: {Name}, FormalName: {FormalName}, Exchange: {Exchange.ToDetail()}, CFI: {CFI.ToDetail()}, Active: {Active}, IncomeCountry: {IncomeCountry.ToDetail()}, PriceCountry: {PriceCountry.ToDetail()}, PriceCurrency: {PriceCurrency.ToDetail()}, Identifiers: {Identifiers.Count}, Terms: {Terms?.ToDetail()}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

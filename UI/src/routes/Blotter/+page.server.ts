@@ -2,27 +2,34 @@ import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
+  getInstrumentValues,
   getInstruments,
-  getTicketStatusOptions,
+  getTicketStageOptions,
   getTickets,
   postTicketAccountAddedEvent,
   postTicketAccountRemovedEvent,
   postTicketCancelledEvent,
   postTicketCreatedEvent,
   postTicketProposalApprovedEvent,
+  postTicketProposalAllocationSetEvent,
   postTicketProposalCreatedEvent,
+  postTicketProposalDecisionRequestedEvent,
   postTicketProposalModifiedEvent,
   postTicketProposalNotApprovedEvent,
+  postTicketProposalReasonSetEvent,
   postTicketTradeApprovedEvent,
   postTicketTradeCreatedEvent,
   postTicketTradeFillAddedEvent,
   postTicketTradeFillRemovedEvent,
+  postTicketTradeInstructionNotesSetEvent,
   postTicketTradeModifiedEvent,
   postTicketTradeNotApprovedEvent,
+  postTicketTradeProgressNotesSetEvent,
   type TicketProposalRequest,
+  type TicketTextSetRequest,
   type TicketTradeRequest
 } from '$lib/server/api';
-import type { Instrument, TicketSide } from '$lib/types';
+import type { Instrument, Ticket, TicketProposalAllocation, TicketSide, TicketTradeAllocation } from '$lib/types';
 import { fail } from '@sveltejs/kit';
 
 export const load = async ({ fetch, url }) => {
@@ -32,11 +39,12 @@ export const load = async ({ fetch, url }) => {
   const asOfDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
 
   try {
-    const [tickets, accounts, instruments, ticketStatusOptions] = await Promise.all([
+    const [tickets, accounts, instruments, instrumentValues, ticketStageOptions] = await Promise.all([
       getTickets(fetch, eventDateTime, asOfDateTime),
       getAccounts(fetch, eventDateTime, asOfDateTime),
       getInstruments(fetch, eventDateTime, asOfDateTime),
-      getTicketStatusOptions(fetch)
+      getInstrumentValues(fetch, eventDateTime, asOfDateTime),
+      getTicketStageOptions(fetch)
     ]);
 
     return {
@@ -44,7 +52,8 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: '',
       instruments,
-      ticketStatusOptions,
+      instrumentValues,
+      ticketStageOptions,
       tickets,
       valuationDate
     };
@@ -54,7 +63,8 @@ export const load = async ({ fetch, url }) => {
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load the blotter.',
       instruments: null,
-      ticketStatusOptions: [],
+      instrumentValues: null,
+      ticketStageOptions: [],
       tickets: null,
       valuationDate
     };
@@ -150,11 +160,12 @@ export const actions = {
     const eventDateTime = getFormString(formData, 'eventDateTime');
     const targetPrice = getFormNumber(formData, 'targetPrice');
     const totalAmount = getFormNumber(formData, 'totalAmount');
+    const tradeCurrency = getFormString(formData, 'tradeCurrency');
     const allocations = getProposalAllocations(formData);
     const hasProposal = getFormString(formData, 'hasProposal') === 'true';
 
     if (!ticketNumber || !eventDateTime || !targetPrice || !totalAmount || allocations.length === 0)
-      return fail(400, responseFailure('saveProposal', 'Proposal price, amount, and allocations are required.'));
+      return fail(400, responseFailure('saveProposal', 'Proposal price, quantity, and allocations are required.'));
 
     const ticketProposalRequest: TicketProposalRequest = {
       allocations,
@@ -163,6 +174,7 @@ export const actions = {
       targetPrice,
       ticketNumber,
       totalAmount,
+      tradeCurrency: tradeCurrency || undefined,
       userID: currentUser.userID
     };
 
@@ -177,6 +189,165 @@ export const actions = {
     }
   },
 
+  saveTicketFields: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const ticketNumber = getFormNumber(formData, 'ticketNumber');
+    const eventDateTime = getFormString(formData, 'eventDateTime');
+
+    if (!ticketNumber || !eventDateTime)
+      return fail(400, responseFailure('saveTicketFields', 'Ticket and event date are required.'));
+
+    const apiEventDateTime = toApiDateTime(eventDateTime);
+
+    try {
+      const tickets = await getTickets(fetch, apiEventDateTime, null, true);
+      const ticket = tickets.items.find((item) => item.ticketNumber === ticketNumber);
+
+      if (!ticket)
+        return fail(404, responseFailure('saveTicketFields', `No matching ticket found for TicketNumber '${ticketNumber}'.`));
+
+      const eventIDs: string[] = [];
+
+      if (hasProposalFields(formData)) {
+        const targetPrice = submittedOrCurrentNumber(formData, 'targetPrice', ticket.proposalTargetPrice);
+        const totalAmount = submittedOrCurrentNumber(formData, 'totalAmount', ticket.proposalTotalAmount);
+        const allocations = formData.has('proposalAllocationAccountID')
+          ? getProposalAllocations(formData, 'proposalAllocationAccountID')
+          : ticket.proposalAllocations;
+
+        if (!numbersEqual(targetPrice, ticket.proposalTargetPrice) ||
+            !numbersEqual(totalAmount, ticket.proposalTotalAmount) ||
+            !proposalAllocationsEqual(allocations, ticket.proposalAllocations)) {
+          if (!targetPrice || !totalAmount || allocations.length === 0)
+            return fail(400, responseFailure('saveTicketFields', 'Proposal price, quantity, and allocations are required.'));
+
+          const proposalRequest: TicketProposalRequest = {
+            allocations,
+            eventDateTime: apiEventDateTime,
+            reason: `${ticket.proposalAllocations.length > 0 ? 'Modify' : 'Create'} proposal for ticket ${ticketNumber}`,
+            targetPrice,
+            ticketNumber,
+            totalAmount,
+            tradeCurrency: ticket.tradeCurrency,
+            userID: currentUser.userID
+          };
+          const result = ticket.proposalAllocations.length > 0
+            ? await postTicketProposalModifiedEvent(fetch, proposalRequest)
+            : await postTicketProposalCreatedEvent(fetch, proposalRequest);
+
+          eventIDs.push(result.eventID);
+        }
+      }
+
+      if (changedTextField(formData, ticket, 'proposalReason')) {
+        const result = await postTicketProposalReasonSetEvent(fetch, {
+          eventDateTime: apiEventDateTime,
+          reason: `Set proposal reason for ticket ${ticketNumber}`,
+          ticketNumber,
+          userID: currentUser.userID,
+          value: getFormString(formData, 'proposalReason')
+        });
+
+        eventIDs.push(result.eventID);
+      }
+
+      if (changedTextField(formData, ticket, 'proposalAllocation')) {
+        const result = await postTicketProposalAllocationSetEvent(fetch, {
+          eventDateTime: apiEventDateTime,
+          reason: `Set proposal allocation for ticket ${ticketNumber}`,
+          ticketNumber,
+          userID: currentUser.userID,
+          value: getFormString(formData, 'proposalAllocation')
+        });
+
+        eventIDs.push(result.eventID);
+      }
+
+      if (hasTradeFields(formData)) {
+        const tradedPrice = submittedOrCurrentNumber(formData, 'tradedPrice', ticket.tradePrice);
+        const allocations = formData.has('tradeAllocationAccountID')
+          ? getTradeAllocations(formData, 'tradeAllocationAccountID')
+          : ticket.tradeAllocations;
+
+        if (!numbersEqual(tradedPrice, ticket.tradePrice) ||
+            !tradeAllocationsEqual(allocations, ticket.tradeAllocations)) {
+          if (!tradedPrice || allocations.length === 0)
+            return fail(400, responseFailure('saveTicketFields', 'Trade price and allocations are required.'));
+
+          const tradeRequest: TicketTradeRequest = {
+            allocations,
+            eventDateTime: apiEventDateTime,
+            reason: `${ticket.tradeAllocations.length > 0 ? 'Modify' : 'Create'} trade for ticket ${ticketNumber}`,
+            ticketNumber,
+            tradedPrice,
+            userID: currentUser.userID
+          };
+          const result = ticket.tradeAllocations.length > 0
+            ? await postTicketTradeModifiedEvent(fetch, tradeRequest)
+            : await postTicketTradeCreatedEvent(fetch, tradeRequest);
+
+          eventIDs.push(result.eventID);
+        }
+      }
+
+      if (changedTextField(formData, ticket, 'tradeInstructionNotes')) {
+        const result = await postTicketTradeInstructionNotesSetEvent(fetch, {
+          eventDateTime: apiEventDateTime,
+          reason: `Set trade instruction notes for ticket ${ticketNumber}`,
+          ticketNumber,
+          userID: currentUser.userID,
+          value: getFormString(formData, 'tradeInstructionNotes')
+        });
+
+        eventIDs.push(result.eventID);
+      }
+
+      if (changedTextField(formData, ticket, 'tradeProgressNotes')) {
+        const result = await postTicketTradeProgressNotesSetEvent(fetch, {
+          eventDateTime: apiEventDateTime,
+          reason: `Set trade progress notes for ticket ${ticketNumber}`,
+          ticketNumber,
+          userID: currentUser.userID,
+          value: getFormString(formData, 'tradeProgressNotes')
+        });
+
+        eventIDs.push(result.eventID);
+      }
+
+      return responseSuccess(
+        'saveTicketFields',
+        eventIDs.length === 0 ? 'No changes to save.' : 'Changed fields saved.',
+        eventIDs[eventIDs.length - 1] ?? ''
+      );
+    } catch (error) {
+      return fail(502, responseFailure('saveTicketFields', readError(error)));
+    }
+  },
+
+  setProposalReason: async ({ fetch, locals, request }) => setTicketText(
+    fetch,
+    request,
+    requireCurrentUser(locals).userID,
+    'proposalReason',
+    'setProposalReason',
+    'Set proposal reason',
+    'Proposal reason saved.',
+    postTicketProposalReasonSetEvent
+  ),
+
+  setProposalAllocation: async ({ fetch, locals, request }) => setTicketText(
+    fetch,
+    request,
+    requireCurrentUser(locals).userID,
+    'proposalAllocation',
+    'setProposalAllocation',
+    'Set proposal allocation',
+    'Proposal allocation saved.',
+    postTicketProposalAllocationSetEvent
+  ),
+
+  proposalRequestDecision: async ({ fetch, locals, request }) => requestProposalDecision(fetch, request, requireCurrentUser(locals).userID),
   proposalApprove: async ({ fetch, locals, request }) => approveProposal(fetch, request, true, requireCurrentUser(locals).userID),
   proposalNotApprove: async ({ fetch, locals, request }) => approveProposal(fetch, request, false, requireCurrentUser(locals).userID),
 
@@ -269,29 +440,83 @@ export const actions = {
   tradeApprove: async ({ fetch, locals, request }) => approveTrade(fetch, request, true, requireCurrentUser(locals).userID),
   tradeNotApprove: async ({ fetch, locals, request }) => approveTrade(fetch, request, false, requireCurrentUser(locals).userID),
 
-  cancelTicket: async ({ fetch, locals, request }) => {
+  setTradeInstructionNotes: async ({ fetch, locals, request }) => setTicketText(
+    fetch,
+    request,
+    requireCurrentUser(locals).userID,
+    'tradeInstructionNotes',
+    'setTradeInstructionNotes',
+    'Set trade instruction notes',
+    'Trade instruction notes saved.',
+    postTicketTradeInstructionNotesSetEvent
+  ),
+
+  setTradeProgressNotes: async ({ fetch, locals, request }) => setTicketText(
+    fetch,
+    request,
+    requireCurrentUser(locals).userID,
+    'tradeProgressNotes',
+    'setTradeProgressNotes',
+    'Set trade progress notes',
+    'Trade progress notes saved.',
+    postTicketTradeProgressNotesSetEvent
+  ),
+
+  deleteTicket: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
 
     if (!ticketNumber || !eventDateTime)
-      return fail(400, responseFailure('cancelTicket', 'Ticket and event date are required.'));
+      return fail(400, responseFailure('deleteTicket', 'Ticket and event date are required.'));
 
     try {
       const result = await postTicketCancelledEvent(fetch, {
         eventDateTime: toApiDateTime(eventDateTime),
-        reason: `Cancel ticket ${ticketNumber}`,
+        reason: `Delete ticket ${ticketNumber}`,
         ticketNumber,
         userID: currentUser.userID
       });
 
-      return responseSuccess('cancelTicket', 'Ticket cancelled.', result.eventID);
+      return responseSuccess('deleteTicket', 'Ticket deleted.', result.eventID);
     } catch (error) {
-      return fail(502, responseFailure('cancelTicket', readError(error)));
+      return fail(502, responseFailure('deleteTicket', readError(error)));
     }
   }
 };
+
+async function setTicketText(
+  fetchApi: typeof fetch,
+  request: Request,
+  userID: string,
+  fieldName: string,
+  intent: string,
+  reasonPrefix: string,
+  successMessage: string,
+  submit: (fetchApi: typeof fetch, request: TicketTextSetRequest) => Promise<{ eventID: string }>
+) {
+  const formData = await request.formData();
+  const ticketNumber = getFormNumber(formData, 'ticketNumber');
+  const eventDateTime = getFormString(formData, 'eventDateTime');
+
+  if (!ticketNumber || !eventDateTime)
+    return fail(400, responseFailure(intent, 'Ticket and event date are required.'));
+
+  try {
+    const result = await submit(fetchApi, {
+      eventDateTime: toApiDateTime(eventDateTime),
+      reason: `${reasonPrefix} for ticket ${ticketNumber}`,
+      ticketNumber,
+      userID,
+      value: getFormString(formData, fieldName)
+    });
+
+    return responseSuccess(intent, successMessage, result.eventID);
+  } catch (error) {
+    return fail(502, responseFailure(intent, readError(error)));
+  }
+}
 
 async function approveProposal(fetchApi: typeof fetch, request: Request, approved: boolean, userID: string) {
   const formData = await request.formData();
@@ -313,6 +538,28 @@ async function approveProposal(fetchApi: typeof fetch, request: Request, approve
     return responseSuccess(approved ? 'proposalApprove' : 'proposalNotApprove', `Proposal ${approved ? 'approved' : 'not approved'}.`, result.eventID);
   } catch (error) {
     return fail(502, responseFailure(approved ? 'proposalApprove' : 'proposalNotApprove', readError(error)));
+  }
+}
+
+async function requestProposalDecision(fetchApi: typeof fetch, request: Request, userID: string) {
+  const formData = await request.formData();
+  const ticketNumber = getFormNumber(formData, 'ticketNumber');
+  const eventDateTime = getFormString(formData, 'eventDateTime');
+
+  if (!ticketNumber || !eventDateTime)
+    return fail(400, responseFailure('proposalRequestDecision', 'Ticket and event date are required.'));
+
+  try {
+    const result = await postTicketProposalDecisionRequestedEvent(fetchApi, {
+      eventDateTime: toApiDateTime(eventDateTime),
+      reason: `Request proposal decision for ticket ${ticketNumber}`,
+      ticketNumber,
+      userID
+    });
+
+    return responseSuccess('proposalRequestDecision', 'Proposal decision requested.', result.eventID);
+  } catch (error) {
+    return fail(502, responseFailure('proposalRequestDecision', readError(error)));
   }
 }
 
@@ -339,21 +586,93 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
   }
 }
 
-function getProposalAllocations(formData: FormData) {
-  return getFormStrings(formData, 'allocationAccountID')
+function hasProposalFields(formData: FormData) {
+  return formData.has('targetPrice') || formData.has('totalAmount') || formData.has('proposalAllocationAccountID');
+}
+
+function hasTradeFields(formData: FormData) {
+  return formData.has('tradedPrice') || formData.has('tradeAllocationAccountID');
+}
+
+function changedTextField(
+  formData: FormData,
+  ticket: Ticket,
+  fieldName: 'proposalReason' | 'proposalAllocation' | 'tradeInstructionNotes' | 'tradeProgressNotes'
+) {
+  return formData.has(fieldName) && getFormString(formData, fieldName) !== ticket[fieldName];
+}
+
+function submittedOrCurrentNumber(formData: FormData, fieldName: string, current: number | null | undefined) {
+  const submitted = getOptionalFormNumber(formData, fieldName);
+  return submitted === undefined ? current ?? null : submitted;
+}
+
+function getOptionalFormNumber(formData: FormData, key: string) {
+  if (!formData.has(key))
+    return undefined;
+
+  const value = getFormString(formData, key);
+
+  if (!value)
+    return null;
+
+  const number = parseFormNumber(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function numbersEqual(left: number | null | undefined, right: number | null | undefined) {
+  if (left == null || right == null)
+    return left == null && right == null;
+
+  return Math.abs(left - right) < 0.00000001;
+}
+
+function proposalAllocationsEqual(left: TicketProposalAllocation[], right: TicketProposalAllocation[]) {
+  const leftSorted = sortProposalAllocations(left);
+  const rightSorted = sortProposalAllocations(right);
+
+  return leftSorted.length === rightSorted.length &&
+    leftSorted.every((allocation, index) =>
+      allocation.accountID === rightSorted[index].accountID &&
+      numbersEqual(allocation.quantity, rightSorted[index].quantity)
+    );
+}
+
+function tradeAllocationsEqual(left: TicketTradeAllocation[], right: TicketTradeAllocation[]) {
+  const leftSorted = sortTradeAllocations(left);
+  const rightSorted = sortTradeAllocations(right);
+
+  return leftSorted.length === rightSorted.length &&
+    leftSorted.every((allocation, index) =>
+      allocation.accountID === rightSorted[index].accountID &&
+      numbersEqual(allocation.quantity, rightSorted[index].quantity) &&
+      numbersEqual(allocation.bookCost, rightSorted[index].bookCost)
+    );
+}
+
+function sortProposalAllocations(allocations: TicketProposalAllocation[]) {
+  return [...allocations].sort((left, right) => left.accountID.localeCompare(right.accountID));
+}
+
+function sortTradeAllocations(allocations: TicketTradeAllocation[]) {
+  return [...allocations].sort((left, right) => left.accountID.localeCompare(right.accountID));
+}
+
+function getProposalAllocations(formData: FormData, accountIDField = 'allocationAccountID') {
+  return getFormStrings(formData, accountIDField)
     .map((accountID) => ({
       accountID,
-      quantity: Number(getFormStrings(formData, `proposalQuantity-${accountID}`)[0] || 0)
+      quantity: parseFormNumber(getFormStrings(formData, `proposalQuantity-${accountID}`)[0] || '')
     }))
     .filter((allocation) => allocation.accountID && allocation.quantity > 0);
 }
 
-function getTradeAllocations(formData: FormData) {
-  return getFormStrings(formData, 'allocationAccountID')
+function getTradeAllocations(formData: FormData, accountIDField = 'allocationAccountID') {
+  return getFormStrings(formData, accountIDField)
     .map((accountID) => ({
       accountID,
-      bookCost: Number(getFormStrings(formData, `tradeBookCost-${accountID}`)[0] || 0),
-      quantity: Number(getFormStrings(formData, `tradeQuantity-${accountID}`)[0] || 0)
+      bookCost: parseFormNumber(getFormStrings(formData, `tradeBookCost-${accountID}`)[0] || ''),
+      quantity: parseFormNumber(getFormStrings(formData, `tradeQuantity-${accountID}`)[0] || '')
     }))
     .filter((allocation) => allocation.accountID && allocation.quantity > 0 && allocation.bookCost > 0);
 }
@@ -368,8 +687,13 @@ function getFormStrings(formData: FormData, key: string) {
 }
 
 function getFormNumber(formData: FormData, key: string) {
-  const value = Number(getFormString(formData, key));
+  const value = parseFormNumber(getFormString(formData, key));
   return Number.isFinite(value) ? value : 0;
+}
+
+function parseFormNumber(value: string) {
+  const normalized = value.replace(/,/g, '').trim();
+  return normalized ? Number(normalized) : 0;
 }
 
 function responseSuccess(intent: string, message: string, eventID: string) {

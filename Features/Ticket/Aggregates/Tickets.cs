@@ -1,82 +1,8 @@
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using FolioTrace;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
-
-[JsonConverter(typeof(JsonStringEnumConverter<TicketSide>))]
-public enum TicketSide
-{
-    Buy,
-    Sell
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter<TicketStatus>))]
-public enum TicketStatus
-{
-    [Description("Draft")]    
-    Draft,
-
-    [Description("Proposal")]
-    Proposal,
-
-    [Description("Proposal approved")]
-    ProposalApproved,
-
-    [Description("Proposal not approved")]
-    ProposalNotApproved,
-
-    [Description("Trade")]
-    Trade,
-
-    [Description("Trade approved")]
-    TradeApproved,
-
-    [Description("Trade not approved")]
-    TradeNotApproved,
-
-    [Description("Completed")]
-    Completed,
-
-    [Description("Cancelled")]
-    Cancelled
-}
-
-public sealed record TicketProposalAllocation(AccountID AccountID, decimal Quantity);
-
-public sealed record TicketTradeAllocation(AccountID AccountID, decimal Quantity, decimal BookCost);
-
-public sealed record TicketFill(Guid FillID, decimal Price, decimal Quantity, string Note);
-
-public sealed record Ticket : IModel
-{
-    public required TicketNumber TicketNumber { get; init; } = null!;
-    public required TicketSide Side { get; init; }
-    public required InstrumentID InstrumentID { get; init; } = null!;
-    public required TicketStatus Status { get; init; }
-    public required List<AccountID> AccountIDs { get; init; } = [];
-    public decimal? ProposalTargetPrice { get; init; }
-    public decimal? ProposalTotalAmount { get; init; }
-    public required List<TicketProposalAllocation> ProposalAllocations { get; init; } = [];
-    public decimal? TradePrice { get; init; }
-    public required List<TicketTradeAllocation> TradeAllocations { get; init; } = [];
-    public required List<TicketFill> Fills { get; init; } = [];
-    public required EventDateTime ValuationDateTime { get; init; } = null!;
-    public required AuditDateTime AsOfDateTime { get; init; } = null!;
-    public required EventID LastEventID { get; init; } = null!;
-    public required LastAuditDateTime LastAuditDateTime { get; init; } = null!;
-    public bool IsActive => Status is not TicketStatus.Completed and not TicketStatus.Cancelled;
-
-    [JsonConstructor]
-    [SetsRequiredMembers]
-    public Ticket() { }
-
-    public string ToData() => $"{TicketNumber.ToData()}|{Side}|{InstrumentID.ToData()}|{Status}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Ticket)}: ({TicketNumber.ToDetail()}, Side: {Side}, InstrumentID: {InstrumentID.ToDetail()}, Status: {Status})";
-}
 
 public sealed record Tickets : IAggregate
 {
@@ -130,8 +56,7 @@ public sealed record Tickets : IAggregate
             case TicketAccountAddedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    AccountIDs = ticket.AccountIDs.Contains(@event.AccountID) ? ticket.AccountIDs : [.. ticket.AccountIDs, @event.AccountID],
-                    Status = ticket.Status is TicketStatus.Draft ? TicketStatus.Draft : ticket.Status
+                    AccountIDs = ticket.AccountIDs.Contains(@event.AccountID) ? ticket.AccountIDs : [.. ticket.AccountIDs, @event.AccountID]
                 });
                 break;
             case TicketAccountRemovedEvent @event:
@@ -140,31 +65,45 @@ public sealed record Tickets : IAggregate
             case TicketProposalCreatedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    Status = TicketStatus.Proposal,
+                    Stage = TicketStage.Proposal,
+                    ProposalDecision = TicketDecision.InProgress,
                     ProposalTargetPrice = @event.TargetPrice,
                     ProposalTotalAmount = @event.TotalAmount,
+                    TradeCurrency = @event.TradeCurrency,
                     ProposalAllocations = @event.Allocations.ToList()
                 });
                 break;
             case TicketProposalModifiedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    Status = TicketStatus.Proposal,
+                    Stage = TicketStage.Proposal,
+                    ProposalDecision = TicketDecision.InProgress,
                     ProposalTargetPrice = @event.TargetPrice,
                     ProposalTotalAmount = @event.TotalAmount,
+                    TradeCurrency = @event.TradeCurrency,
                     ProposalAllocations = @event.Allocations.ToList()
                 });
                 break;
+            case TicketProposalDecisionRequestedEvent @event:
+                Update(@event, ticket => ticket with { Stage = TicketStage.Proposal, ProposalDecision = TicketDecision.PendingApproval });
+                break;
             case TicketProposalApprovedEvent @event:
-                Update(@event, ticket => ticket with { Status = TicketStatus.ProposalApproved });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, ProposalDecision = TicketDecision.Approved, TradeDecision = TicketDecision.InProgress });
                 break;
             case TicketProposalNotApprovedEvent @event:
-                Update(@event, ticket => ticket with { Status = TicketStatus.ProposalNotApproved });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Proposal, ProposalDecision = TicketDecision.InProgress });
+                break;
+            case TicketProposalReasonSetEvent @event:
+                Update(@event, ticket => ticket with { ProposalReason = @event.ProposalReason });
+                break;
+            case TicketProposalAllocationSetEvent @event:
+                Update(@event, ticket => ticket with { ProposalAllocation = @event.ProposalAllocation });
                 break;
             case TicketTradeCreatedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    Status = TicketStatus.Trade,
+                    Stage = TicketStage.Trade,
+                    TradeDecision = TicketDecision.PendingApproval,
                     TradePrice = @event.TradedPrice,
                     TradeAllocations = @event.Allocations.ToList()
                 });
@@ -172,7 +111,8 @@ public sealed record Tickets : IAggregate
             case TicketTradeModifiedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    Status = TicketStatus.Trade,
+                    Stage = TicketStage.Trade,
+                    TradeDecision = TicketDecision.PendingApproval,
                     TradePrice = @event.TradedPrice,
                     TradeAllocations = @event.Allocations.ToList()
                 });
@@ -180,28 +120,36 @@ public sealed record Tickets : IAggregate
             case TicketTradeFillAddedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    Status = TicketStatus.Trade,
+                    Stage = TicketStage.Trade,
+                    TradeDecision = TicketDecision.PendingApproval,
                     Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.Price, @event.Quantity, @event.Note)]
                 });
                 break;
             case TicketTradeFillModifiedEvent @event:
                 Update(@event, ticket => ticket with
                 {
-                    Status = TicketStatus.Trade,
+                    Stage = TicketStage.Trade,
+                    TradeDecision = TicketDecision.PendingApproval,
                     Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.Price, @event.Quantity, @event.Note)]
                 });
                 break;
             case TicketTradeFillRemovedEvent @event:
-                Update(@event, ticket => ticket with { Fills = ticket.Fills.Where(fill => fill.FillID != @event.FillID).ToList() });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.PendingApproval, Fills = ticket.Fills.Where(fill => fill.FillID != @event.FillID).ToList() });
                 break;
             case TicketTradeApprovedEvent @event:
-                Update(@event, ticket => ticket with { Status = TicketStatus.Completed });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Completed, TradeDecision = TicketDecision.Approved });
                 break;
             case TicketTradeNotApprovedEvent @event:
-                Update(@event, ticket => ticket with { Status = TicketStatus.TradeNotApproved });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.NotApproved });
+                break;
+            case TicketTradeInstructionNotesSetEvent @event:
+                Update(@event, ticket => ticket with { TradeInstructionNotes = @event.TradeInstructionNotes });
+                break;
+            case TicketTradeProgressNotesSetEvent @event:
+                Update(@event, ticket => ticket with { TradeProgressNotes = @event.TradeProgressNotes });
                 break;
             case TicketCancelledEvent @event:
-                Update(@event, ticket => ticket with { Status = TicketStatus.Cancelled });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Cancelled });
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported ticket event type '{ticketEvent.GetType().Name}'.");
@@ -221,11 +169,18 @@ public sealed record Tickets : IAggregate
             TicketNumber = createdEvent.TicketNumber,
             Side = createdEvent.Side,
             InstrumentID = createdEvent.InstrumentID,
-            Status = TicketStatus.Proposal,
+            TradeCurrency = createdEvent.TradeCurrency,
+            Stage = TicketStage.Proposal,
+            ProposalDecision = TicketDecision.InProgress,
+            TradeDecision = TicketDecision.InProgress,
             AccountIDs = [],
             ProposalAllocations = [],
+            ProposalReason = string.Empty,
+            ProposalAllocation = string.Empty,
             TradeAllocations = [],
             Fills = [],
+            TradeInstructionNotes = string.Empty,
+            TradeProgressNotes = string.Empty,
             ValuationDateTime = createdEvent.EventDateTime,
             AsOfDateTime = createdEvent.AuditDateTime,
             LastEventID = createdEvent.EventID,

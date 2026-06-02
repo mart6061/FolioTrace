@@ -8,11 +8,34 @@ export function getUiVersion() {
 }
 
 function createUiVersion() {
+  const explicitVersion = parseDisplayVersion(packageJson.uiVersion);
+  if (explicitVersion) {
+    return explicitVersion;
+  }
+
   const baseVersion = parseBaseVersion(packageJson.version);
   const build = parseInteger(runGit('rev-list', '--count', 'HEAD')) ?? 0;
   const revision = parseHexRevision(runGit('rev-parse', '--short=4', 'HEAD')) ?? 0;
 
   return `${baseVersion.major}.${baseVersion.minor}.${build}.${revision}`;
+}
+
+function parseDisplayVersion(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parts = value.split('.');
+  if (parts.length !== 4) {
+    return null;
+  }
+
+  const [major, minor, build, revision] = parts.map((part) => parseInteger(part));
+  if (major === null || minor === null || build === null || revision === null) {
+    return null;
+  }
+
+  return `${major}.${minor}.${build}.${revision}`;
 }
 
 function parseBaseVersion(value: string) {

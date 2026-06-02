@@ -32,7 +32,13 @@ public sealed class TicketBuilderTests
 
         var ticket = Assert.Single(new Tickets(EventDate, [created]).Items);
 
-        Assert.Equal(TicketStatus.Proposal, ticket.Status);
+        Assert.Equal(TicketStage.Proposal, ticket.Stage);
+        Assert.Equal(TicketDecision.InProgress, ticket.ProposalDecision);
+        Assert.Equal(TicketDecision.InProgress, ticket.TradeDecision);
+        Assert.Equal(string.Empty, ticket.ProposalReason);
+        Assert.Equal(string.Empty, ticket.ProposalAllocation);
+        Assert.Equal(string.Empty, ticket.TradeInstructionNotes);
+        Assert.Equal(string.Empty, ticket.TradeProgressNotes);
     }
 
     [Fact]
@@ -58,21 +64,40 @@ public sealed class TicketBuilderTests
         var added = AddAccount(created);
         var tickets = new Tickets(EventDate, [created, added]);
         var proposal = TicketEventBuilder.CreateProposal(
-            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, 10m, 100m, [new TicketProposalAllocation(AccountID, 7m)]),
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), new TransactionQuantity(100m), null, [new TicketProposalAllocation(AccountID, 7m)]),
             tickets).Value!;
         tickets = new Tickets(EventDate, [created, added, proposal]);
         var modified = TicketEventBuilder.ModifyProposal(
-            new TicketProposalRequest(UserID, EventDate, "Modify proposal", created.TicketNumber, 11m, 110m, [new TicketProposalAllocation(AccountID, 8m)]),
+            new TicketProposalRequest(UserID, EventDate, "Modify proposal", created.TicketNumber, new Price(11m), new TransactionQuantity(110m), Alpha3Builder.Create("USD"), [new TicketProposalAllocation(AccountID, 8m)]),
             tickets).Value!;
 
         var ticket = Assert.Single(new Tickets(EventDate, [created, added, proposal, modified]).Items);
-        Assert.Equal(TicketStatus.Proposal, ticket.Status);
-        Assert.Equal(11m, ticket.ProposalTargetPrice);
+        Assert.Equal(TicketStage.Proposal, ticket.Stage);
+        Assert.Equal(TicketDecision.InProgress, ticket.ProposalDecision);
+        Assert.Equal(11m, ticket.ProposalTargetPrice?.Amount);
+        Assert.Equal(110m, ticket.ProposalTotalAmount?.Value);
+        Assert.Equal(Alpha3Builder.Create("USD"), ticket.TradeCurrency);
         Assert.Equal(8m, Assert.Single(ticket.ProposalAllocations).Quantity);
     }
 
     [Fact]
-    public void ProposalApproval_ChangesStatusAndNotApprovedStaysActive()
+    public void ProposalDecisionRequest_MarksProposalPendingApproval()
+    {
+        var created = CreateTicket();
+        var added = AddAccount(created);
+        var proposal = TicketEventBuilder.CreateProposal(
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), new TransactionQuantity(100m), null, [new TicketProposalAllocation(AccountID, 7m)]),
+            new Tickets(EventDate, [created, added])).Value!;
+
+        var requested = TicketEventBuilder.RequestProposalDecision(new TicketApprovalRequest(UserID, EventDate, "Request decision", TicketOne), new Tickets(EventDate, [created, added, proposal])).Value!;
+
+        var ticket = Assert.Single(new Tickets(EventDate, [created, added, proposal, requested]).Items);
+        Assert.Equal(TicketStage.Proposal, ticket.Stage);
+        Assert.Equal(TicketDecision.PendingApproval, ticket.ProposalDecision);
+    }
+
+    [Fact]
+    public void ProposalApproval_MovesToTradeAndDeclineReturnsToInProgressProposal()
     {
         var events = CreateProposalEvents();
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
@@ -82,9 +107,51 @@ public sealed class TicketBuilderTests
         var approvedTicket = Assert.Single(new Tickets(EventDate, [.. events, approved]).Items);
         var notApprovedTicket = Assert.Single(new Tickets(EventDate, [.. notApprovedEvents, notApproved]).Items);
 
-        Assert.Equal(TicketStatus.ProposalApproved, approvedTicket.Status);
-        Assert.Equal(TicketStatus.ProposalNotApproved, notApprovedTicket.Status);
+        Assert.Equal(TicketStage.Trade, approvedTicket.Stage);
+        Assert.Equal(TicketDecision.Approved, approvedTicket.ProposalDecision);
+        Assert.Equal(TicketDecision.InProgress, approvedTicket.TradeDecision);
+        Assert.Equal(TicketStage.Proposal, notApprovedTicket.Stage);
+        Assert.Equal(TicketDecision.InProgress, notApprovedTicket.ProposalDecision);
         Assert.True(notApprovedTicket.IsActive);
+    }
+
+    [Fact]
+    public void ProposalApproval_RejectsWithoutPendingProposal()
+    {
+        var created = CreateTicket();
+        var added = AddAccount(created);
+
+        var result = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, [created, added]));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationErrors, error => error.Contains("pending", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.ValidationErrors, error => error.Contains("allocations", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ProposalTextSetEvents_OnlyApplyAtProposalStage()
+    {
+        var events = CreateProposalEvents();
+        var proposalReason = TicketEventBuilder.SetProposalReason(
+            new TicketTextSetRequest(UserID, EventDate, "Set proposal reason", TicketOne, "Client rebalance"),
+            new Tickets(EventDate, events)).Value!;
+        var proposalAllocation = TicketEventBuilder.SetProposalAllocation(
+            new TicketTextSetRequest(UserID, EventDate, "Set proposal allocation", TicketOne, "Allocate by target weight"),
+            new Tickets(EventDate, [.. events, proposalReason])).Value!;
+        var approved = TicketEventBuilder.ApproveProposal(
+            new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne),
+            new Tickets(EventDate, [.. events, proposalReason, proposalAllocation])).Value!;
+
+        var ticket = Assert.Single(new Tickets(EventDate, [.. events, proposalReason, proposalAllocation, approved]).Items);
+        Assert.Equal("Client rebalance", ticket.ProposalReason);
+        Assert.Equal("Allocate by target weight", ticket.ProposalAllocation);
+
+        var result = TicketEventBuilder.SetProposalReason(
+            new TicketTextSetRequest(UserID, EventDate, "Set proposal reason", TicketOne, "Late change"),
+            new Tickets(EventDate, [.. events, proposalReason, proposalAllocation, approved]));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationErrors, error => error.Contains("Proposal stage", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -93,7 +160,7 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents();
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, 12m, [new TicketTradeAllocation(AccountID, 9m, 108m)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
             new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, 12m, 9m, "Done"),
@@ -108,21 +175,67 @@ public sealed class TicketBuilderTests
         var withFill = Assert.Single(new Tickets(EventDate, [.. events, approved, trade, fill, modified]).Items);
         var withoutFill = Assert.Single(new Tickets(EventDate, [.. events, approved, trade, fill, modified, removed]).Items);
 
-        Assert.Equal(TicketStatus.Trade, withFill.Status);
+        Assert.Equal(TicketStage.Trade, withFill.Stage);
+        Assert.Equal(TicketDecision.PendingApproval, withFill.TradeDecision);
         Assert.Equal(12.5m, Assert.Single(withFill.Fills).Price);
         Assert.Empty(withoutFill.Fills);
+        Assert.Equal(TicketDecision.PendingApproval, withoutFill.TradeDecision);
     }
 
     [Fact]
-    public void TradeApproval_MarksTicketComplete()
+    public void TradeApproval_MarksTicketCompleteAndNotApprovedStaysInTrade()
     {
         var events = CreateTradeEvents();
         var approved = TicketEventBuilder.ApproveTrade(new TicketApprovalRequest(UserID, EventDate, "Approve trade", TicketOne), new Tickets(EventDate, events)).Value!;
+        var notApprovedEvents = CreateTradeEvents(TicketTwo);
+        var notApproved = TicketEventBuilder.NotApproveTrade(new TicketApprovalRequest(UserID, EventDate, "Do not approve trade", TicketTwo), new Tickets(EventDate, notApprovedEvents)).Value!;
 
         var ticket = Assert.Single(new Tickets(EventDate, [.. events, approved]).Items);
+        var notApprovedTicket = Assert.Single(new Tickets(EventDate, [.. notApprovedEvents, notApproved]).Items);
 
-        Assert.Equal(TicketStatus.Completed, ticket.Status);
+        Assert.Equal(TicketStage.Completed, ticket.Stage);
+        Assert.Equal(TicketDecision.Approved, ticket.TradeDecision);
         Assert.False(ticket.IsActive);
+        Assert.Equal(TicketStage.Trade, notApprovedTicket.Stage);
+        Assert.Equal(TicketDecision.NotApproved, notApprovedTicket.TradeDecision);
+        Assert.True(notApprovedTicket.IsActive);
+    }
+
+    [Fact]
+    public void TradeApproval_RejectsWithoutPendingTrade()
+    {
+        var events = CreateProposalEvents();
+        var proposalApproved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve proposal", TicketOne), new Tickets(EventDate, events)).Value!;
+
+        var result = TicketEventBuilder.ApproveTrade(new TicketApprovalRequest(UserID, EventDate, "Approve trade", TicketOne), new Tickets(EventDate, [.. events, proposalApproved]));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationErrors, error => error.Contains("pending", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.ValidationErrors, error => error.Contains("allocations", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void TradeTextSetEvents_OnlyApplyAtTradeStage()
+    {
+        var proposalEvents = CreateProposalEvents();
+        var tradeResult = TicketEventBuilder.SetTradeInstructionNotes(
+            new TicketTextSetRequest(UserID, EventDate, "Set trade instructions", TicketOne, "Work VWAP"),
+            new Tickets(EventDate, proposalEvents));
+
+        Assert.False(tradeResult.IsValid);
+        Assert.Contains(tradeResult.ValidationErrors, error => error.Contains("Trade stage", StringComparison.OrdinalIgnoreCase));
+
+        var tradeEvents = CreateTradeEvents();
+        var instructions = TicketEventBuilder.SetTradeInstructionNotes(
+            new TicketTextSetRequest(UserID, EventDate, "Set trade instructions", TicketOne, "Work VWAP"),
+            new Tickets(EventDate, tradeEvents)).Value!;
+        var progress = TicketEventBuilder.SetTradeProgressNotes(
+            new TicketTextSetRequest(UserID, EventDate, "Set trade progress", TicketOne, "Half filled"),
+            new Tickets(EventDate, [.. tradeEvents, instructions])).Value!;
+
+        var ticket = Assert.Single(new Tickets(EventDate, [.. tradeEvents, instructions, progress]).Items);
+        Assert.Equal("Work VWAP", ticket.TradeInstructionNotes);
+        Assert.Equal("Half filled", ticket.TradeProgressNotes);
     }
 
     [Fact]
@@ -132,7 +245,7 @@ public sealed class TicketBuilderTests
         var cancelled = TicketEventBuilder.Cancel(new TicketCancellationRequest(UserID, EventDate, "Cancel", TicketOne), new Tickets(EventDate, events)).Value!;
 
         var ticket = Assert.Single(new Tickets(EventDate, [.. events, cancelled]).Items);
-        Assert.Equal(TicketStatus.Cancelled, ticket.Status);
+        Assert.Equal(TicketStage.Cancelled, ticket.Stage);
         Assert.False(ticket.IsActive);
 
         var completedEvents = CreateTradeEvents();
@@ -166,18 +279,22 @@ public sealed class TicketBuilderTests
         var created = CreateTicket(ticketNumber ?? TicketOne);
         var added = AddAccount(created);
         var proposal = TicketEventBuilder.CreateProposal(
-            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, 10m, 100m, [new TicketProposalAllocation(AccountID, 7m)]),
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), new TransactionQuantity(100m), null, [new TicketProposalAllocation(AccountID, 7m)]),
             new Tickets(EventDate, [created, added])).Value!;
+        var requested = TicketEventBuilder.RequestProposalDecision(
+            new TicketApprovalRequest(UserID, EventDate, "Request proposal decision", created.TicketNumber),
+            new Tickets(EventDate, [created, added, proposal])).Value!;
 
-        return [created, added, proposal];
+        return [created, added, proposal, requested];
     }
 
-    private static List<ITicket> CreateTradeEvents()
+    private static List<ITicket> CreateTradeEvents(TicketNumber? ticketNumber = null)
     {
-        var events = CreateProposalEvents();
-        var proposalApproved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve proposal", TicketOne), new Tickets(EventDate, events)).Value!;
+        var number = ticketNumber ?? TicketOne;
+        var events = CreateProposalEvents(number);
+        var proposalApproved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve proposal", number), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, 12m, [new TicketTradeAllocation(AccountID, 9m, 108m)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", number, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
             new Tickets(EventDate, [.. events, proposalApproved])).Value!;
 
         return [.. events, proposalApproved, trade];
@@ -216,7 +333,8 @@ public sealed class TicketBuilderTests
             null,
             true,
             Alpha2Builder.Create("GB"),
-            Alpha2Builder.Create("GB")).Value!;
+            Alpha2Builder.Create("GB"),
+            Alpha3Builder.Create("GBP")).Value!;
 
         return new Instruments(EventDate, AuditDate, [created]);
     }

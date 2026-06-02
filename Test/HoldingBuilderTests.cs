@@ -350,7 +350,8 @@ public sealed class HoldingBuilderTests
             null,
             true,
             Alpha2Builder.Create("GB"),
-            Alpha2Builder.Create("GB")).Value!;
+            Alpha2Builder.Create("GB"),
+            Alpha3Builder.Create("GBP")).Value!;
         var equity = InstrumentCreatedEventBuilder.CreateSeed(
             new EventID(Guid.NewGuid()),
             UserID,
@@ -365,7 +366,8 @@ public sealed class HoldingBuilderTests
             null,
             true,
             Alpha2Builder.Create("GB"),
-            Alpha2Builder.Create("GB")).Value!;
+            Alpha2Builder.Create("GB"),
+            Alpha3Builder.Create("GBP")).Value!;
 
         return new Instruments(EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), [cash, equity]);
     }
