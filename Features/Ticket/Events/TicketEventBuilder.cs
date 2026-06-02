@@ -3,199 +3,84 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public static class TicketEventBuilder
+public static partial class TicketEventBuilder
 {
-    public static TicketNumber NextTicketNumber(IEnumerable<ITicket> events)
-    {
-        if (events is null)
-            throw new ArgumentNullException(nameof(events));
-
-        var max = events
-            .OfType<TicketCreatedEvent>()
-            .Select(@event => @event.TicketNumber.Value)
-            .DefaultIfEmpty(0)
-            .Max();
-        return new TicketNumber(max + 1);
-    }
-
-    public static Result<TicketCreatedEvent> Create(TicketCreatedRequest request, TicketNumber ticketNumber, Instruments instruments) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateBase(request.UserID, request.EventDateTime, request.Reason);
-            if (request.InstrumentID is null)
-                messages.Add("InstrumentID is required.");
-            if (!Enum.IsDefined(request.Side))
-                messages.Add("Side is required.");
-            if (instruments.Items.All(instrument => instrument.InstrumentID != request.InstrumentID || !instrument.Active))
-                messages.Add($"InstrumentID '{request.InstrumentID}' does not exist or is inactive.");
-
-            return messages.Count > 0
-                ? Result<TicketCreatedEvent>.Invalid(messages)
-                : Result<TicketCreatedEvent>.Success(new TicketCreatedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, ticketNumber, request.Side, request.InstrumentID!));
-        });
-
-    public static Result<TicketAccountAddedEvent> AddAccount(TicketAccountRequest request, Tickets tickets, Accounts accounts) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            ValidateAccount(request.AccountID, accounts, messages);
-            if (ticket is not null && ticket.AccountIDs.Contains(request.AccountID))
-                messages.Add($"AccountID '{request.AccountID}' is already on ticket '{request.TicketNumber}'.");
-
-            return messages.Count > 0
-                ? Result<TicketAccountAddedEvent>.Invalid(messages)
-                : Result<TicketAccountAddedEvent>.Success(new TicketAccountAddedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.AccountID));
-        });
-
-    public static Result<TicketAccountRemovedEvent> RemoveAccount(TicketAccountRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            if (request.AccountID is null)
-                messages.Add("AccountID is required.");
-            if (ticket is not null && request.AccountID is not null && !ticket.AccountIDs.Contains(request.AccountID))
-                messages.Add($"AccountID '{request.AccountID}' is not on ticket '{request.TicketNumber}'.");
-
-            return messages.Count > 0
-                ? Result<TicketAccountRemovedEvent>.Invalid(messages)
-                : Result<TicketAccountRemovedEvent>.Success(new TicketAccountRemovedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.AccountID!));
-        });
-
-    public static Result<TicketProposalCreatedEvent> CreateProposal(TicketProposalRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            ValidatePositiveDecimal(request.TargetPrice, "TargetPrice", messages);
-            ValidatePositiveDecimal(request.TotalAmount, "TotalAmount", messages);
-            ValidateProposalAllocations(request.Allocations, ticket, messages);
-
-            return messages.Count > 0
-                ? Result<TicketProposalCreatedEvent>.Invalid(messages)
-                : Result<TicketProposalCreatedEvent>.Success(new TicketProposalCreatedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.TargetPrice, request.TotalAmount, request.Allocations));
-        });
-
-    public static Result<TicketProposalModifiedEvent> ModifyProposal(TicketProposalRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            ValidatePositiveDecimal(request.TargetPrice, "TargetPrice", messages);
-            ValidatePositiveDecimal(request.TotalAmount, "TotalAmount", messages);
-            ValidateProposalAllocations(request.Allocations, ticket, messages);
-
-            return messages.Count > 0
-                ? Result<TicketProposalModifiedEvent>.Invalid(messages)
-                : Result<TicketProposalModifiedEvent>.Success(new TicketProposalModifiedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.TargetPrice, request.TotalAmount, request.Allocations));
-        });
-
-    public static Result<TicketProposalApprovedEvent> ApproveProposal(TicketApprovalRequest request, Tickets tickets) =>
-        CreateDecisionEvent(request, tickets, TicketStatus.Proposal, () => new TicketProposalApprovedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber));
-
-    public static Result<TicketProposalNotApprovedEvent> NotApproveProposal(TicketApprovalRequest request, Tickets tickets) =>
-        CreateDecisionEvent(request, tickets, TicketStatus.Proposal, () => new TicketProposalNotApprovedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber));
-
-    public static Result<TicketTradeCreatedEvent> CreateTrade(TicketTradeRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            if (ticket is not null && ticket.Status is not (TicketStatus.ProposalApproved or TicketStatus.Trade or TicketStatus.TradeNotApproved))
-                messages.Add("Trade can only be created after proposal approval.");
-            ValidatePositiveDecimal(request.TradedPrice, "TradedPrice", messages);
-            ValidateTradeAllocations(request.Allocations, ticket, messages);
-
-            return messages.Count > 0
-                ? Result<TicketTradeCreatedEvent>.Invalid(messages)
-                : Result<TicketTradeCreatedEvent>.Success(new TicketTradeCreatedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.TradedPrice, request.Allocations));
-        });
-
-    public static Result<TicketTradeModifiedEvent> ModifyTrade(TicketTradeRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            if (ticket is not null && ticket.Status is not (TicketStatus.ProposalApproved or TicketStatus.Trade or TicketStatus.TradeNotApproved))
-                messages.Add("Trade can only be modified after proposal approval.");
-            ValidatePositiveDecimal(request.TradedPrice, "TradedPrice", messages);
-            ValidateTradeAllocations(request.Allocations, ticket, messages);
-
-            return messages.Count > 0
-                ? Result<TicketTradeModifiedEvent>.Invalid(messages)
-                : Result<TicketTradeModifiedEvent>.Success(new TicketTradeModifiedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.TradedPrice, request.Allocations));
-        });
-
-    public static Result<TicketTradeFillAddedEvent> AddFill(TicketTradeFillRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            if (ticket is not null && ticket.Status is not (TicketStatus.Trade or TicketStatus.TradeNotApproved))
-                messages.Add("Fills can only be changed while the ticket is in trade.");
-            ValidatePositiveDecimal(request.Price, "Price", messages);
-            ValidatePositiveDecimal(request.Quantity, "Quantity", messages);
-            var fillID = request.FillID ?? Guid.NewGuid();
-            if (fillID == Guid.Empty)
-                messages.Add("FillID is required.");
-
-            return messages.Count > 0
-                ? Result<TicketTradeFillAddedEvent>.Invalid(messages)
-                : Result<TicketTradeFillAddedEvent>.Success(new TicketTradeFillAddedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, fillID, request.Price, request.Quantity, request.Note ?? string.Empty));
-        });
-
-    public static Result<TicketTradeFillModifiedEvent> ModifyFill(TicketTradeFillRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            if (ticket is not null && ticket.Status is not (TicketStatus.Trade or TicketStatus.TradeNotApproved))
-                messages.Add("Fills can only be changed while the ticket is in trade.");
-            ValidatePositiveDecimal(request.Price, "Price", messages);
-            ValidatePositiveDecimal(request.Quantity, "Quantity", messages);
-            if (request.FillID is null || request.FillID == Guid.Empty)
-                messages.Add("FillID is required.");
-            if (ticket is not null && ticket.Fills.All(fill => fill.FillID != request.FillID))
-                messages.Add($"FillID '{request.FillID}' is not on ticket '{request.TicketNumber}'.");
-
-            return messages.Count > 0
-                ? Result<TicketTradeFillModifiedEvent>.Invalid(messages)
-                : Result<TicketTradeFillModifiedEvent>.Success(new TicketTradeFillModifiedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.FillID!.Value, request.Price, request.Quantity, request.Note ?? string.Empty));
-        });
-
-    public static Result<TicketTradeFillRemovedEvent> RemoveFill(TicketTradeFillRemovedRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-            if (request.FillID == Guid.Empty)
-                messages.Add("FillID is required.");
-            if (ticket is not null && ticket.Fills.All(fill => fill.FillID != request.FillID))
-                messages.Add($"FillID '{request.FillID}' is not on ticket '{request.TicketNumber}'.");
-
-            return messages.Count > 0
-                ? Result<TicketTradeFillRemovedEvent>.Invalid(messages)
-                : Result<TicketTradeFillRemovedEvent>.Success(new TicketTradeFillRemovedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.FillID));
-        });
-
-    public static Result<TicketTradeApprovedEvent> ApproveTrade(TicketApprovalRequest request, Tickets tickets) =>
-        CreateDecisionEvent(request, tickets, TicketStatus.Trade, () => new TicketTradeApprovedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber));
-
-    public static Result<TicketTradeNotApprovedEvent> NotApproveTrade(TicketApprovalRequest request, Tickets tickets) =>
-        CreateDecisionEvent(request, tickets, TicketStatus.Trade, () => new TicketTradeNotApprovedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber));
-
-    public static Result<TicketCancelledEvent> Cancel(TicketCancellationRequest request, Tickets tickets) =>
-        CreateResult(() =>
-        {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var _);
-
-            return messages.Count > 0
-                ? Result<TicketCancelledEvent>.Invalid(messages)
-                : Result<TicketCancelledEvent>.Success(new TicketCancelledEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber));
-        });
-
-    private static Result<TEvent> CreateDecisionEvent<TEvent>(TicketApprovalRequest request, Tickets tickets, TicketStatus requiredStatus, Func<TEvent> create)
+    private static Result<TEvent> CreateProposalDecisionEvent<TEvent>(TicketApprovalRequest request, Tickets tickets, Func<TEvent> create)
         where TEvent : class, ITicket
     {
         var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
-        if (ticket is not null && ticket.Status != requiredStatus)
-            messages.Add($"Ticket must be in {requiredStatus} status.");
+        if (ticket is not null)
+        {
+            if (ticket.Stage != TicketStage.Proposal)
+                messages.Add("Ticket must be in Proposal stage.");
+            if (ticket.ProposalDecision != TicketDecision.PendingApproval)
+                messages.Add("Proposal decision must be pending approval.");
+            if (ticket.ProposalAllocations.Count == 0)
+                messages.Add("Proposal allocations are required before proposal approval.");
+        }
 
         return messages.Count > 0
             ? Result<TEvent>.Invalid(messages)
             : Result<TEvent>.Success(create());
+    }
+
+    private static Result<TEvent> CreateProposalTextSetEvent<TEvent>(TicketTextSetRequest request, Tickets tickets, Func<TEvent> create)
+        where TEvent : class, ITicket
+    {
+        var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
+        if (ticket is not null && ticket.Stage != TicketStage.Proposal)
+            messages.Add("Ticket must be in Proposal stage.");
+
+        return messages.Count > 0
+            ? Result<TEvent>.Invalid(messages)
+            : Result<TEvent>.Success(create());
+    }
+
+    private static Result<TEvent> CreateTradeDecisionEvent<TEvent>(TicketApprovalRequest request, Tickets tickets, Func<TEvent> create)
+        where TEvent : class, ITicket
+    {
+        var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
+        if (ticket is not null)
+        {
+            if (ticket.Stage != TicketStage.Trade)
+                messages.Add("Ticket must be in Trade stage.");
+            if (ticket.TradeDecision != TicketDecision.PendingApproval)
+                messages.Add("Trade decision must be pending.");
+            if (ticket.TradeAllocations.Count == 0)
+                messages.Add("Trade allocations are required before trade approval.");
+        }
+
+        return messages.Count > 0
+            ? Result<TEvent>.Invalid(messages)
+            : Result<TEvent>.Success(create());
+    }
+
+    private static Result<TEvent> CreateTradeTextSetEvent<TEvent>(TicketTextSetRequest request, Tickets tickets, Func<TEvent> create)
+        where TEvent : class, ITicket
+    {
+        var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
+        if (ticket is not null && ticket.Stage != TicketStage.Trade)
+            messages.Add("Ticket must be in Trade stage.");
+
+        return messages.Count > 0
+            ? Result<TEvent>.Invalid(messages)
+            : Result<TEvent>.Success(create());
+    }
+
+    private static void ValidateTradeEntry(Ticket? ticket, List<string> messages, string verb)
+    {
+        if (ticket is null)
+            return;
+        if (ticket.Stage != TicketStage.Trade || ticket.ProposalDecision != TicketDecision.Approved)
+            messages.Add($"Trade can only be {verb} after proposal approval.");
+    }
+
+    private static void ValidateProposalEntry(Ticket? ticket, List<string> messages, string verb)
+    {
+        if (ticket is null)
+            return;
+        if (ticket.Stage != TicketStage.Proposal)
+            messages.Add($"Proposal can only be {verb} while the ticket is in Proposal stage.");
     }
 
     private static List<string> ValidateTicketMutation(UserID userID, EventDateTime eventDateTime, string reason, TicketNumber ticketNumber, Tickets tickets, out Ticket? ticket)
@@ -211,9 +96,9 @@ public static class TicketEventBuilder
         ticket = tickets.Find(ticketNumber);
         if (ticket is null)
             messages.Add($"No matching ticket found for TicketNumber '{ticketNumber}'.");
-        else if (ticket.Status == TicketStatus.Completed)
+        else if (ticket.Stage == TicketStage.Completed)
             messages.Add($"Ticket '{ticketNumber}' is complete and cannot be changed.");
-        else if (ticket.Status == TicketStatus.Cancelled)
+        else if (ticket.Stage == TicketStage.Cancelled)
             messages.Add($"Ticket '{ticketNumber}' is cancelled and cannot be changed.");
 
         return messages;
@@ -246,6 +131,36 @@ public static class TicketEventBuilder
             messages.Add($"{name} must be greater than zero.");
         if (decimal.Round(value, 8) != value)
             messages.Add($"{name} can have at most 8 decimal places.");
+    }
+
+    private static void ValidatePrice(Price? value, string name, List<string> messages)
+    {
+        if (value is null)
+        {
+            messages.Add($"{name} is required.");
+            return;
+        }
+
+        ValidatePositiveDecimal(value.Amount, name, messages);
+    }
+
+    private static void ValidateTransactionQuantity(TransactionQuantity? value, string name, List<string> messages)
+    {
+        if (value is null)
+        {
+            messages.Add($"{name} is required.");
+            return;
+        }
+
+        ValidatePositiveDecimal(value.Value, name, messages);
+    }
+
+    private static Alpha3? ResolveTradeCurrency(TicketProposalRequest request, Ticket? ticket, List<string> messages)
+    {
+        var tradeCurrency = request.TradeCurrency ?? ticket?.TradeCurrency;
+        if (tradeCurrency is null)
+            messages.Add("TradeCurrency is required.");
+        return tradeCurrency;
     }
 
     private static void ValidateProposalAllocations(IReadOnlyList<TicketProposalAllocation>? allocations, Ticket? ticket, List<string> messages)

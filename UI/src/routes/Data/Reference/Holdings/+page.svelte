@@ -239,7 +239,7 @@
 </script>
 
 <svelte:head>
-  <title>Holdings - FolioTrace</title>
+  <title>Holdings - Foleo</title>
 </svelte:head>
 
 <main class="min-h-screen">

@@ -51,16 +51,17 @@ export const actions = {
     const cfi = getFormString(formData, 'cfi').toUpperCase();
     const ticker = getFormString(formData, 'ticker').toUpperCase();
     const priceCountry = getFormString(formData, 'priceCountry').toUpperCase();
+    const priceCurrency = getFormString(formData, 'priceCurrency').toUpperCase();
     const incomeCountry = getFormString(formData, 'incomeCountry').toUpperCase() || priceCountry;
     const eventDateTime = getFormString(formData, 'eventDateTime');
     const active = formData.get('active') === 'on';
     const instrumentID = crypto.randomUUID();
-    const values = { active, cfi, eventDateTime, exchange, formalName, incomeCountry, name, priceCountry, ticker };
+    const values = { active, cfi, eventDateTime, exchange, formalName, incomeCountry, name, priceCountry, priceCurrency, ticker };
 
-    if (!name || !exchange || !cfi || !priceCountry || !eventDateTime)
+    if (!name || !exchange || !cfi || !priceCountry || !priceCurrency || !eventDateTime)
       return fail(400, {
         intent: 'createInstrument',
-        message: 'Name, exchange, CFI, price country, and event date are required.',
+        message: 'Name, exchange, CFI, price country, price currency, and event date are required.',
         status: 'failure',
         values
       });
@@ -76,6 +77,7 @@ export const actions = {
         instrumentID,
         name,
         priceCountry,
+        priceCurrency,
         reason: `Create instrument ${name}`
       };
 
@@ -117,16 +119,17 @@ export const actions = {
     const exchange = getFormString(formData, 'exchange').toUpperCase();
     const cfi = getFormString(formData, 'cfi').toUpperCase();
     const priceCountry = getFormString(formData, 'priceCountry').toUpperCase();
+    const priceCurrency = getFormString(formData, 'priceCurrency').toUpperCase();
     const incomeCountry = getFormString(formData, 'incomeCountry').toUpperCase() || priceCountry;
     const eventDateTime = getFormString(formData, 'eventDateTime');
     const logoSvg = getFormString(formData, 'logoSvg');
-    const values = { cfi, eventDateTime, exchange, formalName, incomeCountry, name, priceCountry };
+    const values = { cfi, eventDateTime, exchange, formalName, incomeCountry, name, priceCountry, priceCurrency };
 
-    if (!instrumentID || !name || !exchange || !cfi || !priceCountry || !eventDateTime)
+    if (!instrumentID || !name || !exchange || !cfi || !priceCountry || !priceCurrency || !eventDateTime)
       return fail(400, {
         instrumentID,
         intent: 'modifyInstrument',
-        message: 'Name, exchange, CFI, price country, and event date are required.',
+        message: 'Name, exchange, CFI, price country, price currency, and event date are required.',
         status: 'failure',
         values
       });
@@ -142,6 +145,7 @@ export const actions = {
         logo: logoSvg ? { svg: logoSvg } : null,
         name,
         priceCountry,
+        priceCurrency,
         reason: `Modify instrument ${instrumentID}`
       };
 

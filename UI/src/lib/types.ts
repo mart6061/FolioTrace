@@ -43,6 +43,38 @@ export type Accounts = {
   items: Account[];
 };
 
+export type UserDisplayPreferences = {
+  darkMode: boolean;
+  rememberTraceDate: boolean;
+};
+
+export type UserProfileValuationPreferences = {
+  valuationDate: string;
+  showIncome: boolean;
+  showBook: boolean;
+};
+
+export type User = {
+  userID: string;
+  displayName: string;
+  displayPreferences: UserDisplayPreferences;
+  valuationPreferences: UserProfileValuationPreferences;
+  lastSignedIn: string | null;
+  lastSignedOut: string | null;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type Users = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: User[];
+};
+
 export type UserMenuPreferenceItem = {
   menuItemID: string;
   visible: boolean;
@@ -293,6 +325,7 @@ export type Instrument = {
   active: boolean;
   incomeCountry: string;
   priceCountry: string;
+  priceCurrency: string;
   identifiers: InstrumentIdentifier[];
   terms?: unknown;
   valuationDateTime: string;
@@ -325,19 +358,12 @@ export type InstrumentValues = {
 
 export type TicketSide = 'Buy' | 'Sell';
 
-export type TicketStatus =
-  | 'Draft'
-  | 'Proposal'
-  | 'ProposalApproved'
-  | 'ProposalNotApproved'
-  | 'Trade'
-  | 'TradeApproved'
-  | 'TradeNotApproved'
-  | 'Completed'
-  | 'Cancelled';
+export type TicketStage = 'Proposal' | 'Trade' | 'Completed' | 'Cancelled';
 
-export type TicketStatusOption = {
-  status: TicketStatus;
+export type TicketDecision = 'InProgress' | 'PendingApproval' | 'Approved' | 'NotApproved';
+
+export type TicketStageOption = {
+  stage: TicketStage;
   description: string;
 };
 
@@ -363,14 +389,21 @@ export type Ticket = {
   ticketNumber: number;
   side: TicketSide;
   instrumentID: string;
-  status: TicketStatus;
+  tradeCurrency: string;
+  stage: TicketStage;
+  proposalDecision: TicketDecision;
+  tradeDecision: TicketDecision;
   accountIDs: string[];
   proposalTargetPrice?: number | null;
   proposalTotalAmount?: number | null;
   proposalAllocations: TicketProposalAllocation[];
+  proposalReason: string;
+  proposalAllocation: string;
   tradePrice?: number | null;
   tradeAllocations: TicketTradeAllocation[];
   fills: TicketFill[];
+  tradeInstructionNotes: string;
+  tradeProgressNotes: string;
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -384,6 +417,19 @@ export type Tickets = {
   lastEventID: string;
   lastAuditDateTime: string;
   items: Ticket[];
+};
+
+export type TicketDetail = Ticket & {
+  instrument: Instrument | null;
+  accounts: Account[];
+};
+
+export type TicketDetails = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: TicketDetail[];
 };
 
 export type ReferenceEventBase = {
@@ -462,6 +508,7 @@ export type InstrumentReferenceEvent = ReferenceEventBase & {
   active?: boolean;
   incomeCountry?: string;
   priceCountry?: string;
+  priceCurrency?: string;
   identifier?: InstrumentIdentifier | null;
   identifierType?: string | number;
   terms?: unknown;
@@ -537,6 +584,11 @@ export type MemoryDiagnostics = {
   instrumentValueService?: {
     cacheEntryCount: number;
     instrumentValueCount: number;
+    estimatedMemoryBytes: number;
+  };
+  userService?: {
+    cacheEntryCount: number;
+    userCount: number;
     estimatedMemoryBytes: number;
   };
   sse?: {
@@ -627,6 +679,7 @@ export type AggregateKind =
   | 'Instruments'
   | 'InstrumentValues'
   | 'Tickets'
+  | 'Users'
   | 'UserBookmarks'
   | 'UserMenuPreferences'
   | 'UserValuationPreferences';

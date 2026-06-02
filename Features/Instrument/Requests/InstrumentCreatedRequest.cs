@@ -15,4 +15,5 @@ public sealed record InstrumentCreatedRequest(
     InstrumentLogo? Logo,
     bool Active,
     Alpha2 IncomeCountry,
-    Alpha2 PriceCountry) : IEventRequest;
+    Alpha2 PriceCountry,
+    Alpha3 PriceCurrency) : IEventRequest;

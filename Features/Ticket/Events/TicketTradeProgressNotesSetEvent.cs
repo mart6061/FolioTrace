@@ -1,0 +1,18 @@
+using System.Text.Json.Serialization;
+using FolioTrace.Types;
+
+namespace FolioTrace.Aggregates;
+
+public sealed record TicketTradeProgressNotesSetEvent : TicketEventBase
+{
+    public string TradeProgressNotes { get; init; } = string.Empty;
+
+    [JsonConstructor]
+    private TicketTradeProgressNotesSetEvent() : this(null!, null!, null!, null!, string.Empty, null!, string.Empty) { }
+
+    internal TicketTradeProgressNotesSetEvent(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, TicketNumber ticketNumber, string tradeProgressNotes)
+        : base(eventID, userID, eventDateTime, auditDateTime, reason, ticketNumber) =>
+        TradeProgressNotes = tradeProgressNotes ?? string.Empty;
+
+    public override string Type => nameof(TicketTradeProgressNotesSetEvent);
+}

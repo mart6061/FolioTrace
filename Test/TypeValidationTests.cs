@@ -511,6 +511,7 @@ public sealed class TypeValidationTests
             true,
             Alpha2Builder.Create("GB"),
             Alpha2Builder.Create("GB"),
+            Alpha3Builder.Create("GBP"),
             [],
             null,
             eventDateTime,

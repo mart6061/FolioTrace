@@ -524,7 +524,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 seed.Logo,
                 active: true,
                 seed.Country,
-                seed.Country).Value!)
+                seed.Country,
+                seed.Currency).Value!)
             .ToList();
 
     private static IReadOnlyList<InstrumentIdentifierSetEvent> CreateInitialInstrumentIdentifierSetEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds)

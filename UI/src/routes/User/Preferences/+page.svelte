@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { formatBookmarkType, formatBookmarkUrl } from '$lib/bookmarks';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { defaultShowZeroBalances, defaultValuationDateBasis, defaultValuationDateOption, normalizeValuationDateBasis, normalizeValuationDateOption, valuationDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
   import type { UserBookmarkItem, UserValuationDateOption, ValuationDateBasis } from '$lib/types';
@@ -193,6 +194,13 @@
   </section>
 
   <section class="page-container page-section">
+    <div class="data-panel menu-preference-card">
+      <h2 class="menu-preference-title">Appearance</h2>
+      <div class="menu-preference-list">
+        <ThemeModeControl class="theme-mode-control-preference" />
+      </div>
+    </div>
+
     <form id="preferences-form" method="POST" action="?/savePreferences" use:enhance={enhanceSavePreferences}>
       <div class="data-panel menu-preference-card">
         <h2 class="menu-preference-title">Menu Options</h2>
@@ -212,7 +220,7 @@
         <input type="hidden" name="hasStoredMenuPreferences" value={String(data.menuPreferences.hasStoredPreferences)} />
 
         <div class="menu-preference-list">
-          {#each menuPreferenceDefinitions as item}
+          {#each menuPreferenceDefinitions as item (item.id)}
             {@const disabled = isChildDisabled(item.parentID)}
             <label class={`menu-preference-row ${item.parentID ? 'menu-preference-row-child' : ''}`}>
               <span>{item.label}</span>
@@ -254,7 +262,7 @@
               value={valuationDateOption}
               onchange={(event) => valuationDateOption = normalizeValuationDateOption(event.currentTarget.value)}
             >
-              {#each valuationDateOptions as option}
+              {#each valuationDateOptions as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>
@@ -268,7 +276,7 @@
               value={valuationDateBasis}
               onchange={(event) => valuationDateBasis = normalizeValuationDateBasis(event.currentTarget.value)}
             >
-              {#each valuationDateBasisOptions as option}
+              {#each valuationDateBasisOptions as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>

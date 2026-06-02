@@ -43,6 +43,8 @@ public static class UserBuilder
             createdEvent.DisplayName,
             createdEvent.DisplayPreferences,
             createdEvent.ValuationPreferences,
+            null,
+            null,
             createdEvent.EventDateTime,
             createdEvent.AuditDateTime,
             createdEvent.EventID,
@@ -69,6 +71,42 @@ public static class UserBuilder
                 AsOfDateTime = modifiedEvent.AuditDateTime,
                 LastEventID = modifiedEvent.EventID,
                 LastAuditDateTime = modifiedEvent.AuditDateTime
+            };
+        }
+
+        public User Apply(UserSignedInEvent signedInEvent)
+        {
+            if (user is null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (signedInEvent is null)
+                throw new ArgumentNullException(nameof(signedInEvent));
+
+            return user with
+            {
+                LastSignedIn = signedInEvent.EventDateTime,
+                ValuationDateTime = signedInEvent.EventDateTime,
+                AsOfDateTime = signedInEvent.AuditDateTime,
+                LastEventID = signedInEvent.EventID,
+                LastAuditDateTime = signedInEvent.AuditDateTime
+            };
+        }
+
+        public User Apply(UserSignedOutEvent signedOutEvent)
+        {
+            if (user is null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (signedOutEvent is null)
+                throw new ArgumentNullException(nameof(signedOutEvent));
+
+            return user with
+            {
+                LastSignedOut = signedOutEvent.EventDateTime,
+                ValuationDateTime = signedOutEvent.EventDateTime,
+                AsOfDateTime = signedOutEvent.AuditDateTime,
+                LastEventID = signedOutEvent.EventID,
+                LastAuditDateTime = signedOutEvent.AuditDateTime
             };
         }
     }

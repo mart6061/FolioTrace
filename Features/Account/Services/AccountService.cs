@@ -5,10 +5,12 @@ using Repository;
 
 namespace Services;
 
-public sealed class AccountService(IEventRepository eventRepository)
+public sealed class AccountService(IEventRepository eventRepository) : IReferenceDataService<Accounts, AccountServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
     private readonly Dictionary<AccountCacheKey, Accounts> cache = [];
+
+    public Task<Accounts> Current => Get(ReferenceDataCurrent.EndOfToday());
 
     public AccountServiceDiagnostics GetDiagnostics()
     {

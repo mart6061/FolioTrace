@@ -742,7 +742,7 @@
 </script>
 
 <svelte:head>
-  <title>Accounts - FolioTrace</title>
+  <title>Accounts - Foleo</title>
 </svelte:head>
 
 <main class="min-h-screen">

@@ -10,9 +10,7 @@
   let { data, form } = $props();
   let buildRunning = $state(false);
   let buildProgress = $state<BuildProgressNotification | null>(null);
-  let buildConfirming = $state(false);
   let buildConfirmationInput = $state('');
-  let clearConfirming = $state(false);
   let clearConfirmationInput = $state('');
 
   function formatCount(value: number | null | undefined) {
@@ -83,7 +81,6 @@
     }
 
     buildRunning = true;
-    buildConfirming = false;
     buildConfirmationInput = '';
     buildProgress = {
       notificationType: 'BuildProgress',
@@ -112,23 +109,12 @@
       return;
     }
 
-    clearConfirming = false;
     clearConfirmationInput = '';
 
     return async ({ update }) => {
       await update({ reset: false });
     };
   };
-
-  function cancelBuildConfirmation() {
-    buildConfirming = false;
-    buildConfirmationInput = '';
-  }
-
-  function cancelClearConfirmation() {
-    clearConfirming = false;
-    clearConfirmationInput = '';
-  }
 
   function calculateBuildPercent(progress: BuildProgressNotification | null) {
     if (!progress)
@@ -256,32 +242,25 @@
             <span class="metric-label">Danger Zone</span>
             <strong>Build</strong>
             <span>This will clear the database of all manually created events and state. The database will be seeded with sample data.</span>
-            {#if buildConfirming}
-              <form
-                class="danger-confirmation"
-                action="?/build"
-                method="POST"
-                use:enhance={enhanceBuild}
-              >
-                <label>
-                  <span>Type Build to confirm</span>
-                  <input
-                    autocomplete="off"
-                    bind:value={buildConfirmationInput}
-                    disabled={buildRunning}
-                    spellcheck="false"
-                  />
-                </label>
-                <div class="danger-confirmation-actions">
-                  <button disabled={!canConfirmBuild || buildRunning} type="submit">Confirm</button>
-                  <button type="button" onclick={cancelBuildConfirmation}>Cancel</button>
-                </div>
-              </form>
-            {:else}
-              <button disabled={buildRunning} type="button" onclick={() => (buildConfirming = true)}>
+            <form
+              class="danger-confirmation"
+              action="?/build"
+              method="POST"
+              use:enhance={enhanceBuild}
+            >
+              <label>
+                <span>Type Build to confirm</span>
+                <input
+                  autocomplete="off"
+                  bind:value={buildConfirmationInput}
+                  disabled={buildRunning}
+                  spellcheck="false"
+                />
+              </label>
+              <button disabled={!canConfirmBuild || buildRunning} type="submit">
                 {buildRunning ? 'Build running' : 'Rebuild database'}
               </button>
-            {/if}
+            </form>
 
             {#if buildProgress}
               <div class="mt-3 grid gap-2 rounded-md border border-red-200 bg-white/70 p-3 text-sm text-slate-800">
@@ -306,29 +285,22 @@
             <span class="metric-label">Danger Zone</span>
             <strong>Clear caches and projections</strong>
             <span>This will clear all in-memory aggregate caches and stored projection data. Events will not be deleted.</span>
-            {#if clearConfirming}
-              <form
-                class="danger-confirmation"
-                action="?/clearCacheAndProjections"
-                method="POST"
-                use:enhance={enhanceClearCache}
-              >
-                <label>
-                  <span>Type Clear to confirm</span>
-                  <input
-                    autocomplete="off"
-                    bind:value={clearConfirmationInput}
-                    spellcheck="false"
-                  />
-                </label>
-                <div class="danger-confirmation-actions">
-                  <button disabled={!canConfirmClear} type="submit">Confirm</button>
-                  <button type="button" onclick={cancelClearConfirmation}>Cancel</button>
-                </div>
-              </form>
-            {:else}
-              <button type="button" onclick={() => (clearConfirming = true)}>Clear caches</button>
-            {/if}
+            <form
+              class="danger-confirmation"
+              action="?/clearCacheAndProjections"
+              method="POST"
+              use:enhance={enhanceClearCache}
+            >
+              <label>
+                <span>Type Clear to confirm</span>
+                <input
+                  autocomplete="off"
+                  bind:value={clearConfirmationInput}
+                  spellcheck="false"
+                />
+              </label>
+              <button disabled={!canConfirmClear} type="submit">Clear caches</button>
+            </form>
           </article>
         </div>
       </section>
@@ -353,7 +325,7 @@
             <span class="metric-label">Unprocessed Events</span>
             <strong>{formatCount(data.memoryDiagnostics?.eventCache.unprocessedEventCount)}</strong>
             {#if data.memoryDiagnostics?.eventCache.recentUnprocessedEvents?.length}
-              {#each data.memoryDiagnostics.eventCache.recentUnprocessedEvents.slice(0, 3) as event}
+              {#each data.memoryDiagnostics.eventCache.recentUnprocessedEvents.slice(0, 3) as event (event.eventId ?? `${event.eventType}-${event.recordedAtUtc}`)}
                 <span>{event.eventType}: {event.reason}</span>
               {/each}
             {:else}
@@ -401,6 +373,13 @@
             <strong>{formatCount(data.memoryDiagnostics?.instrumentValueService?.instrumentValueCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.instrumentValueService?.cacheEntryCount)} cached views</span>
             <span>{formatBytes(data.memoryDiagnostics?.instrumentValueService?.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">User Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.userService?.userCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.userService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.userService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">

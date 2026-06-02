@@ -5,7 +5,7 @@
 <main class="min-h-screen">
   <section class="page-header">
     <div class="page-container">
-      <p class="page-kicker">FolioTrace</p>
+      <p class="page-kicker">Foleo</p>
       <div class="page-title-row">
         <h1 class="page-title">Welcome</h1>
         <BookmarkButton />
@@ -24,7 +24,7 @@
         </p>
         <h3>In Detail</h3>
         <p>
-          FolioTrace stores changes as an append-only timeline of events. Instead of overwriting a country, currency,
+          Foleo stores changes as an append-only timeline of events. Instead of overwriting a country, currency,
           FX rate, instrument, or value, it records what changed, when it took effect, when the system learned about it,
           and why the change was made.
         </p>
@@ -51,7 +51,7 @@
       <section class="dashboard-intro" aria-labelledby="tech-stack-heading">
         <h2 id="tech-stack-heading">Tech stack</h2>
         <p>
-          FolioTrace is built as a .NET 10 application with a SvelteKit front end. The API layer exposes the portfolio
+          Foleo is built as a .NET 10 application with a SvelteKit front end. The API layer exposes the portfolio
           and reference-data views, while the domain logic sits in the Features project where events, aggregates, and
           strongly typed values are modelled.
         </p>

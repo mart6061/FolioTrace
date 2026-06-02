@@ -1,22 +1,22 @@
 :root {
   color-scheme: light;
 
-  --foleo-bg: #f7f8f4;
-  --foleo-bg-muted: #e9f1ed;
+  --foleo-bg: #f6f7f2;
+  --foleo-bg-muted: #e8eee8;
   --foleo-surface: #ffffff;
-  --foleo-surface-muted: #f1f5f2;
+  --foleo-surface-muted: #f1f4ef;
   --foleo-ink: #17201b;
-  --foleo-ink-strong: #0f1814;
-  --foleo-muted: #647067;
-  --foleo-line: #d8ded8;
+  --foleo-ink-strong: #0d1511;
+  --foleo-muted: #66736a;
+  --foleo-line: #d7dfd6;
 
   --foleo-primary: #146c5c;
-  --foleo-primary-strong: #0f5a4d;
+  --foleo-primary-strong: #0f574b;
   --foleo-primary-soft: #dceee9;
-  --foleo-accent: #c7923e;
-  --foleo-accent-soft: #f3e6cc;
-  --foleo-event: #2f80ed;
-  --foleo-event-soft: #dbeafe;
+  --foleo-accent: #b9822f;
+  --foleo-accent-soft: #f3e3c7;
+  --foleo-event: #2f6fed;
+  --foleo-event-soft: #dce8ff;
   --foleo-danger: #b42318;
   --foleo-success: #177245;
 
@@ -26,6 +26,29 @@
   --foleo-shadow-md: 0 8px 24px rgb(23 32 27 / 0.1);
   --foleo-font:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --foleo-bg: #0c1210;
+  --foleo-bg-muted: #121c18;
+  --foleo-surface: #14201b;
+  --foleo-surface-muted: #182720;
+  --foleo-ink: #edf5ef;
+  --foleo-ink-strong: #ffffff;
+  --foleo-muted: #9dafaa;
+  --foleo-line: #2d4038;
+
+  --foleo-primary: #4fd1b3;
+  --foleo-primary-strong: #7ee3cb;
+  --foleo-primary-soft: rgb(79 209 179 / 0.14);
+  --foleo-accent: #e2b15f;
+  --foleo-accent-soft: rgb(226 177 95 / 0.18);
+  --foleo-event: #7aa7ff;
+  --foleo-event-soft: rgb(122 167 255 / 0.16);
+  --foleo-danger: #ff8b82;
+  --foleo-success: #72d69a;
 }
 
 body {
@@ -42,7 +65,7 @@ body {
 
 .foleo-header {
   border-bottom: 1px solid var(--foleo-line);
-  background: rgb(247 248 244 / 0.94);
+  background: color-mix(in srgb, var(--foleo-bg) 94%, transparent);
   box-shadow: var(--foleo-shadow-sm);
   backdrop-filter: blur(10px);
 }
@@ -109,7 +132,7 @@ body {
   gap: 7px;
   border-radius: 999px;
   background: var(--foleo-event-soft);
-  color: #1e4f91;
+  color: var(--foleo-event);
   font-size: 12px;
   font-weight: 720;
   padding: 4px 10px;

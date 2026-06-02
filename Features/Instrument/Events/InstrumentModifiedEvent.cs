@@ -14,11 +14,12 @@ public sealed record InstrumentModifiedEvent : EventBase, IInstrumentEvent
     public InstrumentLogo? Logo { get; init; }
     public Alpha2 IncomeCountry { get; init; } = null!;
     public Alpha2 PriceCountry { get; init; } = null!;
+    public Alpha3 PriceCurrency { get; init; } = null!;
 
     [JsonConstructor]
     private InstrumentModifiedEvent() : base(null!, null!, null!, null!, string.Empty) { }
 
-    internal InstrumentModifiedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, Alpha2 incomeCountry, Alpha2 priceCountry)
+    internal InstrumentModifiedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         InstrumentID = instrumentID;
@@ -29,6 +30,7 @@ public sealed record InstrumentModifiedEvent : EventBase, IInstrumentEvent
         Logo = logo;
         IncomeCountry = incomeCountry;
         PriceCountry = priceCountry;
+        PriceCurrency = priceCurrency;
     }
 
     public override string Type => nameof(InstrumentModifiedEvent);
