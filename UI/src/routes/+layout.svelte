@@ -423,11 +423,29 @@
         <nav class="system-menu" aria-label="Primary menu">
           {#each visibleTopMenuItems as item, topIndex (item.id)}
             {#if item.id === 'bookmarks'}
-              <button aria-expanded={openTopMenu === 'bookmarks'} aria-label="Bookmarks" class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`} onclick={() => toggleTopMenu('bookmarks')} style={menuStyle(item.tone, 40 - topIndex)} title="Bookmarks" type="button">
-                <span aria-hidden="true" class="system-menu-bookmark-icon">
-                  <svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z" /></svg>
-                </span>
-              </button>
+              <div class="system-menu-bookmark-cluster">
+                <button aria-expanded={openTopMenu === 'bookmarks'} aria-label="Bookmarks" class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`} onclick={() => toggleTopMenu('bookmarks')} style={menuStyle(item.tone, 40 - topIndex)} title="Bookmarks" type="button">
+                  <span aria-hidden="true" class="system-menu-bookmark-icon">
+                    <svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z" /></svg>
+                  </span>
+                </button>
+                {#if openTopMenu === 'bookmarks'}
+                  <div aria-label="Bookmarks" class="system-menu-bookmark-dropdown" role="menu">
+                    {#each bookmarkMenuItems as bookmarkItem, bookmarkIndex (bookmarkItem.id)}
+                      <a
+                        aria-current={isActiveMenuItem(bookmarkItem) ? 'page' : undefined}
+                        class={`system-menu-pill system-menu-pill-secondary system-menu-pill-bookmark-subitem ${isActiveMenuItem(bookmarkItem) ? 'system-menu-pill-active' : ''}`}
+                        href={menuHref(bookmarkItem)}
+                        onclick={() => handleLeafClick(bookmarkItem)}
+                        role="menuitem"
+                        style={menuStyle(bookmarkItem.tone, 80 - bookmarkIndex)}
+                      >
+                        {bookmarkItem.label}
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             {:else if item.disabled}
               <button aria-disabled="true" class="system-menu-pill system-menu-pill-top system-menu-pill-disabled" style={menuStyle(item.tone, 40 - topIndex)} type="button">
                 {item.label}
@@ -466,19 +484,7 @@
               </button>
             {/if}
 
-            {#if item.id === 'bookmarks' && openTopMenu === 'bookmarks'}
-              {#each bookmarkMenuItems as bookmarkItem, bookmarkIndex (bookmarkItem.id)}
-                <a
-                  aria-current={isActiveMenuItem(bookmarkItem) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(bookmarkItem) ? 'system-menu-pill-active' : ''}`}
-                  href={menuHref(bookmarkItem)}
-                  onclick={() => handleLeafClick(bookmarkItem)}
-                  style={menuStyle(bookmarkItem.tone, 39 - topIndex - bookmarkIndex)}
-                >
-                  {bookmarkItem.label}
-                </a>
-              {/each}
-            {:else if item.id === 'data' && openTopMenu === 'data'}
+            {#if item.id === 'data' && openTopMenu === 'data'}
               {#if openDataBranch === 'value' && isMenuItemVisible(dataBranchItems[0])}
                 {@const valueItem = dataBranchItems[0]}
                 <button

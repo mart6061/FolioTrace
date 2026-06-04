@@ -73,6 +73,8 @@ export const actions = {
         name: values.name,
         sortCode: values.sortCode,
         accountNumber: values.accountNumber,
+        bic: values.bic,
+        iban: values.iban,
         reason: `Create holding ${values.name || values.holdingKind}`
       };
 
@@ -102,6 +104,8 @@ export const actions = {
         name: values.name,
         sortCode: values.sortCode,
         accountNumber: values.accountNumber,
+        bic: values.bic,
+        iban: values.iban,
         reason: `Modify holding ${values.name || values.holdingID}`
       };
 
@@ -145,10 +149,12 @@ function readHoldingForm(formData: FormData) {
     active: getFormString(formData, 'active') !== 'false',
     accountName: getFormString(formData, 'accountName'),
     bankName: getFormString(formData, 'bankName'),
+    bic: getFormString(formData, 'bic'),
     default: getFormString(formData, 'default') === 'true',
     eventDateTime: getFormString(formData, 'eventDateTime'),
     holdingID: getFormString(formData, 'holdingID'),
     holdingKind: getFormString(formData, 'holdingKind'),
+    iban: getFormString(formData, 'iban'),
     instrumentID: getFormString(formData, 'instrumentID'),
     name: getFormString(formData, 'name'),
     sortCode: getFormString(formData, 'sortCode'),

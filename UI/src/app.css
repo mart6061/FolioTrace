@@ -551,8 +551,66 @@ main {
 }
 
 .system-menu-pill-overlap {
-  margin-left: -36px;
-  padding-left: 39px;
+  margin-left: -24px;
+  border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 70%, #ffffff);
+  background: color-mix(in srgb, var(--menu-tint, var(--accent-soft)) 92%, #ffffff);
+  box-shadow:
+    -9px 0 14px rgb(15 23 42 / 0.18),
+    inset 1px 0 0 rgb(255 255 255 / 0.58);
+  color: var(--menu-tint-text, var(--accent-strong));
+  padding-left: 35px;
+}
+
+.system-menu-pill-overlap:hover,
+.system-menu-pill-overlap:focus-visible {
+  border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 78%, #ffffff);
+  background: color-mix(in srgb, var(--menu-tint, var(--accent-soft)) 96%, #ffffff);
+  color: var(--menu-tint-text, var(--accent-strong));
+}
+
+.system-menu-bookmark-cluster {
+  position: relative;
+  z-index: 80;
+  display: inline-flex;
+}
+
+.system-menu-bookmark-dropdown {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 79;
+  display: flex;
+  max-width: min(72vw, 440px);
+  min-width: max-content;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 22px;
+  background: rgb(15 23 42 / 0.32);
+  box-shadow: 0 18px 36px rgb(0 0 0 / 0.28);
+  padding: 8px;
+  backdrop-filter: blur(14px);
+}
+
+.system-menu-pill-bookmark-subitem {
+  max-width: min(68vw, 420px);
+  justify-content: flex-start;
+  border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 56%, transparent);
+  background: rgb(255 255 255 / 0.78);
+  color: var(--menu-tint-text, var(--accent-strong));
+  overflow: hidden;
+  padding-right: 15px;
+  padding-left: 15px;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.system-menu-pill-bookmark-subitem:hover,
+.system-menu-pill-bookmark-subitem:focus-visible {
+  border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 78%, transparent);
+  background: rgb(255 255 255 / 0.92);
+  color: var(--menu-tint-text, var(--accent-strong));
 }
 
 .system-menu-pill-secondary.system-menu-pill-open {
@@ -2394,6 +2452,43 @@ tbody tr {
   opacity: 0.62;
 }
 
+.btn {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1;
+  padding: 0 0.875rem;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.btn-secondary {
+  border-color: color-mix(in srgb, var(--accent) 84%, var(--line));
+  background: color-mix(in srgb, var(--accent) 92%, var(--panel));
+}
+
+.btn:hover,
+.btn:focus-visible {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  outline: none;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  box-shadow: none;
+}
+
 .ticket-cancel-confirmation {
   border-bottom: 1px solid var(--line);
   background: var(--danger-soft);
@@ -2784,6 +2879,10 @@ fieldset.field legend {
   flex: 1 1 22rem;
 }
 
+.ticket-detail-row > .workflow-panel-wide {
+  flex-basis: 100%;
+}
+
 .workflow-panel {
   display: flex;
   flex-direction: column;
@@ -3076,9 +3175,22 @@ input[inputmode='decimal'] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.allocation-row {
-  display: grid;
-  gap: 0.35rem;
+.workflow-panel-wide > .trade-main-form {
+  align-items: stretch;
+}
+
+.trade-allocation-table {
+  grid-column: 1 / -1;
+}
+
+.trade-allocation-table .account-allocation-header,
+.trade-allocation-table .account-allocation-row {
+  grid-template-columns: minmax(12rem, 1fr) minmax(10rem, 0.44fr) minmax(10rem, 0.44fr);
+}
+
+.trade-allocation-table .input,
+.trade-allocation-table .ticket-readonly-value {
+  min-width: 0;
   width: 100%;
 }
 
@@ -3113,11 +3225,14 @@ input[inputmode='decimal'] {
   .account-add-button {
     width: 100%;
   }
-}
 
-.trade-row {
-  grid-template-columns: minmax(80px, 1fr) minmax(80px, 1fr) minmax(80px, 1fr);
-  align-items: end;
+  .trade-allocation-table .account-allocation-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trade-allocation-table .account-allocation-account {
+    grid-column: 1 / -1;
+  }
 }
 
 .fill-form {
@@ -3128,4 +3243,9 @@ input[inputmode='decimal'] {
 .fill-form input[name='fillNote'],
 .fill-form button {
   grid-column: span 2;
+}
+
+.fill-form .btn {
+  justify-self: start;
+  min-width: 7rem;
 }

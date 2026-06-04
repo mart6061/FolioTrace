@@ -3,6 +3,8 @@ import type {
   Accounts,
   AccountReferenceEvent,
   ApiExchangeSearchResponse,
+  Brokers,
+  BrokerReferenceEvent,
   Countries,
   CountryReferenceEvent,
   Currencies,
@@ -92,6 +94,8 @@ export type HoldingCreatedRequest = {
   accountName?: string;
   sortCode?: string;
   accountNumber?: string;
+  bic?: string;
+  iban?: string;
 };
 
 export type HoldingModifiedRequest = {
@@ -105,6 +109,8 @@ export type HoldingModifiedRequest = {
   accountName?: string;
   sortCode?: string;
   accountNumber?: string;
+  bic?: string;
+  iban?: string;
 };
 
 export type HoldingActiveModifiedRequest = {
@@ -124,6 +130,49 @@ export type CurrencyModifiedRequest = {
 };
 
 export type CurrencyCreatedRequest = CurrencyModifiedRequest;
+
+export type BrokerModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  lei: string;
+  name: string;
+  commission: number;
+};
+
+export type BrokerCreatedRequest = BrokerModifiedRequest & {
+  active: boolean;
+  approvedDateTime: string;
+  nextReview: string;
+  notes: string;
+};
+
+export type BrokerActiveSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  lei: string;
+  active: boolean;
+};
+
+export type BrokerApprovedDateTimeSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  lei: string;
+  approvedDateTime: string;
+};
+
+export type BrokerNextReviewSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  lei: string;
+  nextReview: string;
+};
+
+export type BrokerNotesSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  lei: string;
+  notes: string;
+};
 
 export type FXCreatedRequest = {
   eventDateTime: string;
@@ -498,6 +547,25 @@ export async function getCurrencies(
   return (await response.json()) as Currencies;
 }
 
+export async function getBrokers(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/Brokers/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Brokers;
+}
+
 export async function getCountryEvents(fetchApi: typeof fetch) {
   const response = await fetchApi(`${getApiBaseUrl()}/Events/Country/`);
 
@@ -514,6 +582,15 @@ export async function getCurrencyEvents(fetchApi: typeof fetch) {
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as CurrencyReferenceEvent[];
+}
+
+export async function getBrokerEvents(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Broker/`);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as BrokerReferenceEvent[];
 }
 
 export async function getAccountEvents(fetchApi: typeof fetch) {
@@ -990,6 +1067,54 @@ export async function postCurrencyModifiedEvent(
   userID: string
 ) {
   return postCurrencyEvent(fetchApi, 'CurrencyModifiedEvent', request, userID);
+}
+
+export async function postBrokerCreatedEvent(
+  fetchApi: typeof fetch,
+  request: BrokerCreatedRequest,
+  userID: string
+) {
+  return postBrokerEvent(fetchApi, 'BrokerCreatedEvent', request, userID);
+}
+
+export async function postBrokerModifiedEvent(
+  fetchApi: typeof fetch,
+  request: BrokerModifiedRequest,
+  userID: string
+) {
+  return postBrokerEvent(fetchApi, 'BrokerModifiedEvent', request, userID);
+}
+
+export async function postBrokerActiveSetEvent(
+  fetchApi: typeof fetch,
+  request: BrokerActiveSetRequest,
+  userID: string
+) {
+  return postBrokerEvent(fetchApi, 'BrokerActiveSetEvent', request, userID);
+}
+
+export async function postBrokerApprovedDateTimeSetEvent(
+  fetchApi: typeof fetch,
+  request: BrokerApprovedDateTimeSetRequest,
+  userID: string
+) {
+  return postBrokerEvent(fetchApi, 'BrokerApprovedDateTimeSetEvent', request, userID);
+}
+
+export async function postBrokerNextReviewSetEvent(
+  fetchApi: typeof fetch,
+  request: BrokerNextReviewSetRequest,
+  userID: string
+) {
+  return postBrokerEvent(fetchApi, 'BrokerNextReviewSetEvent', request, userID);
+}
+
+export async function postBrokerNotesSetEvent(
+  fetchApi: typeof fetch,
+  request: BrokerNotesSetRequest,
+  userID: string
+) {
+  return postBrokerEvent(fetchApi, 'BrokerNotesSetEvent', request, userID);
 }
 
 export async function postFXCreatedEvent(fetchApi: typeof fetch, request: FXCreatedRequest, userID: string) {
@@ -1825,6 +1950,8 @@ function addBankFields(body: Record<string, unknown>, request: HoldingCreatedReq
   body.AccountName = request.accountName ?? '';
   body.SortCode = request.sortCode ?? '';
   body.AccountNumber = request.accountNumber ?? '';
+  body.BIC = request.bic ?? '';
+  body.IBAN = request.iban ?? '';
 }
 
 async function postCurrencyEvent(
@@ -1847,6 +1974,65 @@ async function postCurrencyEvent(
       DecimalPlace: request.decimalPlace,
       Name: request.name
     })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postBrokerEvent(
+  fetchApi: typeof fetch,
+  eventType:
+    | 'BrokerCreatedEvent'
+    | 'BrokerModifiedEvent'
+    | 'BrokerActiveSetEvent'
+    | 'BrokerApprovedDateTimeSetEvent'
+    | 'BrokerNextReviewSetEvent'
+    | 'BrokerNotesSetEvent',
+  request:
+    | BrokerCreatedRequest
+    | BrokerModifiedRequest
+    | BrokerActiveSetRequest
+    | BrokerApprovedDateTimeSetRequest
+    | BrokerNextReviewSetRequest
+    | BrokerNotesSetRequest,
+  userID: string
+) {
+  const body: Record<string, unknown> = {
+    UserID: userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    LEI: request.lei
+  };
+
+  if ('name' in request)
+    body.Name = request.name;
+
+  if ('commission' in request)
+    body.Commission = request.commission;
+
+  if ('active' in request)
+    body.Active = request.active;
+
+  if ('approvedDateTime' in request)
+    body.ApprovedDateTime = request.approvedDateTime;
+
+  if ('nextReview' in request)
+    body.NextReview = request.nextReview;
+
+  if ('notes' in request)
+    body.Notes = request.notes;
+
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Broker/${eventType}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {
