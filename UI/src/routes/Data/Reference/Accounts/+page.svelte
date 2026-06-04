@@ -4,7 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import type { AccountReferenceEvent, Holding, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
+  import type { AccountReferenceEvent, Holding, HoldingKind, HoldingReferenceEvent, Instrument, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -28,12 +28,26 @@
     eventDateTime: string;
     holdingID: string;
   };
+  type FeeMovementFormValues = {
+    accountID: string;
+    amount: string;
+    cashHoldingID: string;
+    eventDateTime: string;
+    feeHoldingID: string;
+  };
   type InspecieMovementFormValues = {
     accountID: string;
     bookCost: string;
     eventDateTime: string;
     instrumentID: string;
     quantity: string;
+  };
+  type HoldingCardFormValues = {
+    active: boolean;
+    default: boolean;
+    eventDateTime: string;
+    holdingID: string;
+    name: string;
   };
   type TransactionSetCard = {
     cancelled: boolean;
@@ -54,15 +68,23 @@
   let submittingCreate = $state(false);
   let cashInAccountID = $state('');
   let cashOutAccountID = $state('');
+  let feesInAccountID = $state('');
+  let feesOutAccountID = $state('');
   let inspecieInAccountID = $state('');
   let inspecieOutAccountID = $state('');
   let submittingCashIn = $state(false);
   let submittingCashOut = $state(false);
+  let submittingFeesIn = $state(false);
+  let submittingFeesOut = $state(false);
   let submittingInspecieIn = $state(false);
   let submittingInspecieOut = $state(false);
   let submittingCancelTransactionSetID = $state('');
+  let editingHoldingID = $state('');
+  let submittingHoldingID = $state('');
   let openHistoryAccountID = $state('');
+  let openHistoryHoldingID = $state('');
   let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
+  let historyByHoldingID = $state<Record<string, { events: HoldingReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
   const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
@@ -83,6 +105,16 @@
       ? form.values as CashMovementFormValues
       : null
   );
+  const feesInFormValues = $derived(
+    form?.intent === 'feesIn' && form.values
+      ? form.values as FeeMovementFormValues
+      : null
+  );
+  const feesOutFormValues = $derived(
+    form?.intent === 'feesOut' && form.values
+      ? form.values as FeeMovementFormValues
+      : null
+  );
   const inspecieInFormValues = $derived(
     form?.intent === 'inspecieIn' && form.values
       ? form.values as InspecieMovementFormValues
@@ -93,11 +125,32 @@
       ? form.values as InspecieMovementFormValues
       : null
   );
+  const holdingCardFormValues = $derived(
+    form?.intent === 'modifyHoldingCard' && form.values
+      ? form.values as HoldingCardFormValues
+      : null
+  );
   const cashInHoldings = $derived(
     (data.holdings?.items ?? [])
       .filter((holding) =>
         holding.active &&
         holding.holdingKind === 'CashInvestable'
+      )
+      .sort((left, right) => cashInHoldingLabel(left).localeCompare(cashInHoldingLabel(right)))
+  );
+  const feeCashHoldings = $derived(
+    (data.holdings?.items ?? [])
+      .filter((holding) =>
+        holding.active &&
+        (holding.holdingKind === 'CashInvestable' || holding.holdingKind === 'CashNonInvestable')
+      )
+      .sort((left, right) => cashInHoldingLabel(left).localeCompare(cashInHoldingLabel(right)))
+  );
+  const feeHoldings = $derived(
+    (data.holdings?.items ?? [])
+      .filter((holding) =>
+        holding.active &&
+        (holding.holdingKind === 'FeesCustodian' || holding.holdingKind === 'FeesAdministrator' || holding.holdingKind === 'FeesBank')
       )
       .sort((left, right) => cashInHoldingLabel(left).localeCompare(cashInHoldingLabel(right)))
   );
@@ -155,32 +208,63 @@
     loadedHistoryContextKey = nextHistoryContextKey;
     if (openHistoryAccountID)
       void loadHistory(openHistoryAccountID);
+    if (openHistoryHoldingID)
+      void loadHoldingHistory(openHistoryHoldingID);
   });
 
   $effect(() => {
     if (form?.intent === 'cashIn' && form.status === 'failure') {
       cashOutAccountID = '';
+      feesInAccountID = '';
+      feesOutAccountID = '';
       inspecieInAccountID = '';
       inspecieOutAccountID = '';
       cashInAccountID = cashInFormValues?.accountID ?? '';
     }
     if (form?.intent === 'cashOut' && form.status === 'failure') {
       cashInAccountID = '';
+      feesInAccountID = '';
+      feesOutAccountID = '';
       inspecieInAccountID = '';
       inspecieOutAccountID = '';
       cashOutAccountID = cashOutFormValues?.accountID ?? '';
     }
+    if (form?.intent === 'feesIn' && form.status === 'failure') {
+      cashInAccountID = '';
+      cashOutAccountID = '';
+      feesOutAccountID = '';
+      inspecieInAccountID = '';
+      inspecieOutAccountID = '';
+      feesInAccountID = feesInFormValues?.accountID ?? '';
+    }
+    if (form?.intent === 'feesOut' && form.status === 'failure') {
+      cashInAccountID = '';
+      cashOutAccountID = '';
+      feesInAccountID = '';
+      inspecieInAccountID = '';
+      inspecieOutAccountID = '';
+      feesOutAccountID = feesOutFormValues?.accountID ?? '';
+    }
     if (form?.intent === 'inspecieIn' && form.status === 'failure') {
       cashInAccountID = '';
       cashOutAccountID = '';
+      feesInAccountID = '';
+      feesOutAccountID = '';
       inspecieOutAccountID = '';
       inspecieInAccountID = inspecieInFormValues?.accountID ?? '';
     }
     if (form?.intent === 'inspecieOut' && form.status === 'failure') {
       cashInAccountID = '';
       cashOutAccountID = '';
+      feesInAccountID = '';
+      feesOutAccountID = '';
       inspecieInAccountID = '';
       inspecieOutAccountID = inspecieOutFormValues?.accountID ?? '';
+    }
+    if (form?.intent === 'modifyHoldingCard' && form.status === 'failure') {
+      editingAccountID = '';
+      addingAccount = false;
+      editingHoldingID = holdingCardFormValues?.holdingID ?? '';
     }
   });
 
@@ -289,6 +373,9 @@
 
   function startEdit(accountID: string) {
     addingAccount = false;
+    editingHoldingID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
     editingAccountID = accountID;
   }
 
@@ -298,6 +385,9 @@
 
   function startAdd() {
     editingAccountID = '';
+    editingHoldingID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
     addingAccount = true;
   }
 
@@ -308,7 +398,10 @@
   function startCashIn(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
+    editingHoldingID = '';
     cashOutAccountID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
     inspecieInAccountID = '';
     inspecieOutAccountID = '';
     cashInAccountID = accountID;
@@ -321,7 +414,10 @@
   function startCashOut(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
+    editingHoldingID = '';
     cashInAccountID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
     inspecieInAccountID = '';
     inspecieOutAccountID = '';
     cashOutAccountID = accountID;
@@ -331,11 +427,46 @@
     cashOutAccountID = '';
   }
 
+  function startFeesIn(accountID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    editingHoldingID = '';
+    cashInAccountID = '';
+    cashOutAccountID = '';
+    feesOutAccountID = '';
+    inspecieInAccountID = '';
+    inspecieOutAccountID = '';
+    feesInAccountID = accountID;
+  }
+
+  function cancelFeesIn() {
+    feesInAccountID = '';
+  }
+
+  function startFeesOut(accountID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    editingHoldingID = '';
+    cashInAccountID = '';
+    cashOutAccountID = '';
+    feesInAccountID = '';
+    inspecieInAccountID = '';
+    inspecieOutAccountID = '';
+    feesOutAccountID = accountID;
+  }
+
+  function cancelFeesOut() {
+    feesOutAccountID = '';
+  }
+
   function startInspecieIn(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
+    editingHoldingID = '';
     cashInAccountID = '';
     cashOutAccountID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
     inspecieOutAccountID = '';
     inspecieInAccountID = accountID;
   }
@@ -347,14 +478,33 @@
   function startInspecieOut(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
+    editingHoldingID = '';
     cashInAccountID = '';
     cashOutAccountID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
     inspecieInAccountID = '';
     inspecieOutAccountID = accountID;
   }
 
   function cancelInspecieOut() {
     inspecieOutAccountID = '';
+  }
+
+  function startHoldingEdit(holdingID: string) {
+    addingAccount = false;
+    editingAccountID = '';
+    cashInAccountID = '';
+    cashOutAccountID = '';
+    feesInAccountID = '';
+    feesOutAccountID = '';
+    inspecieInAccountID = '';
+    inspecieOutAccountID = '';
+    editingHoldingID = holdingID;
+  }
+
+  function cancelHoldingEdit() {
+    editingHoldingID = '';
   }
 
   const enhanceAccountCreate: SubmitFunction = () => {
@@ -394,6 +544,20 @@
     };
   };
 
+  const enhanceHoldingCardEdit: SubmitFunction = ({ formData }) => {
+    const holdingID = formData.get('holdingID');
+
+    submittingHoldingID = typeof holdingID === 'string' ? holdingID : '';
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingHoldingID = '';
+
+      if (result.type === 'success')
+        editingHoldingID = '';
+    };
+  };
+
   const enhanceCashIn: SubmitFunction = () => {
     submittingCashIn = true;
 
@@ -415,6 +579,30 @@
 
       if (result.type === 'success')
         cashOutAccountID = '';
+    };
+  };
+
+  const enhanceFeesIn: SubmitFunction = () => {
+    submittingFeesIn = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingFeesIn = false;
+
+      if (result.type === 'success')
+        feesInAccountID = '';
+    };
+  };
+
+  const enhanceFeesOut: SubmitFunction = () => {
+    submittingFeesOut = true;
+
+    return async ({ result, update }) => {
+      await update({ reset: false });
+      submittingFeesOut = false;
+
+      if (result.type === 'success')
+        feesOutAccountID = '';
     };
   };
 
@@ -468,6 +656,21 @@
     await loadHistory(accountID);
   }
 
+  async function toggleHoldingHistory(holdingID: string) {
+    if (openHistoryHoldingID === holdingID) {
+      openHistoryHoldingID = '';
+      delete historyByHoldingID[holdingID];
+      return;
+    }
+
+    openHistoryHoldingID = holdingID;
+
+    if (historyByHoldingID[holdingID])
+      return;
+
+    await loadHoldingHistory(holdingID);
+  }
+
   async function loadHistory(accountID: string) {
     historyByAccountID[accountID] = { events: [], error: '', loading: true };
 
@@ -498,11 +701,42 @@
     }
   }
 
+  async function loadHoldingHistory(holdingID: string) {
+    historyByHoldingID[holdingID] = { events: [], error: '', loading: true };
+
+    try {
+      const historyUrl = new URL('/Data/Reference/Holdings/History', window.location.origin);
+      historyUrl.searchParams.set('holdingID', holdingID);
+      historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
+
+      if (data.auditDateTime)
+        historyUrl.searchParams.set('auditDateTime', toApiDateTime(data.auditDateTime));
+
+      const response = await fetch(`${historyUrl.pathname}${historyUrl.search}`);
+
+      if (!response.ok)
+        throw new Error(`History request returned ${response.status} ${response.statusText}`);
+
+      historyByHoldingID[holdingID] = {
+        events: await response.json() as HoldingReferenceEvent[],
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      historyByHoldingID[holdingID] = {
+        events: [],
+        error: error instanceof Error ? error.message : 'Unable to load history.',
+        loading: false
+      };
+    }
+  }
+
   function createHistoryContextKey() {
     return [
       data.valuationDate,
       data.auditDateTime ?? '',
       data.accounts?.lastEventID ?? '',
+      data.holdings?.lastEventID ?? '',
       form?.status === 'success' ? form.eventID ?? '' : ''
     ].join('|');
   }
@@ -518,6 +752,17 @@
       typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
     ].filter(Boolean).join(' · ');
   }
+  function holdingEventSummary(event: HoldingReferenceEvent) {
+    if (event.$type === 'HoldingActiveModifiedEvent')
+      return event.active ? 'Activated' : 'Deactivated';
+
+    return [
+      event.name,
+      event.holdingKind,
+      typeof event.default === 'boolean' ? event.default ? 'Default' : 'Non-default' : ''
+    ].filter(Boolean).join(' Â· ');
+  }
+
   function cashInHoldingLabel(holding: Holding) {
     const account = accountByID.get(holding.accountID);
     return `${account?.name ?? holding.accountID} ${holdingDisplayName(holding)}`;
@@ -530,6 +775,14 @@
 
   function cashInHoldingsForAccount(accountID: string) {
     return cashInHoldings.filter((holding) => holding.accountID === accountID);
+  }
+
+  function feeCashHoldingsForAccount(accountID: string) {
+    return feeCashHoldings.filter((holding) => holding.accountID === accountID);
+  }
+
+  function feeHoldingsForAccount(accountID: string) {
+    return feeHoldings.filter((holding) => holding.accountID === accountID);
   }
 
   function holdingsForAccount(accountID: string) {
@@ -653,11 +906,17 @@
       .flatMap((card) => card.movements);
   }
 
-  function investableTransactionSubtotals(cards: TransactionSetCard[]) {
+  function holdingCurrency(holding: Holding) {
+    return instrumentByID.get(holding.instrumentID)?.priceCurrency ||
+      accountByID.get(holding.accountID)?.bookCurrency ||
+      'Unknown';
+  }
+
+  function currencyTransactionSubtotals(cards: TransactionSetCard[]) {
     const groups = new Map<string, {
       creditTotal: number;
       debitTotal: number;
-      investible: boolean;
+      currency: string;
       setIDs: Set<string>;
     }>();
 
@@ -669,12 +928,12 @@
       if (!holding)
         continue;
 
-      const investible = holding.holdingKind === 'CashInvestable';
-      const key = String(investible);
+      const currency = holdingCurrency(holding);
+      const key = currency;
       const group = groups.get(key) ?? {
         creditTotal: 0,
         debitTotal: 0,
-        investible,
+        currency,
         setIDs: new Set<string>()
       };
       const bookCost = event.bookCost ?? 0;
@@ -692,12 +951,30 @@
     return [...groups.values()]
       .map((group) => ({
         creditTotal: group.creditTotal,
+        currency: group.currency,
         debitTotal: group.debitTotal,
-        investible: group.investible,
         netTotal: group.creditTotal - group.debitTotal,
         setCount: group.setIDs.size
       }))
-      .sort((left, right) => Number(right.investible) - Number(left.investible));
+      .sort((left, right) => left.currency.localeCompare(right.currency));
+  }
+
+  function holdingQuantityTotal(cards: TransactionSetCard[], holdingID: string) {
+    return activeTransactionMovements(cards)
+      .filter((event) => event.holdingID === holdingID)
+      .reduce((total, event) => {
+        const quantity = event.quantity ?? 0;
+        return event.$type === 'TransactionDebitEvent'
+          ? total - quantity
+          : total + quantity;
+      }, 0);
+  }
+
+  function formatWholeQuantity(value: number) {
+    return value.toLocaleString(undefined, {
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    });
   }
 
   function formatTransactionTotal(value: number) {
@@ -719,6 +996,24 @@
       return cashOutFormValues.holdingID;
 
     return cashInHoldingsForAccount(accountID)[0]?.holdingID ?? '';
+  }
+
+  function selectedFeeCashHoldingID(accountID: string, mode: 'in' | 'out') {
+    const formValues = mode === 'out' ? feesOutFormValues : feesInFormValues;
+
+    if (formValues?.accountID === accountID && formValues.cashHoldingID)
+      return formValues.cashHoldingID;
+
+    return feeCashHoldingsForAccount(accountID)[0]?.holdingID ?? '';
+  }
+
+  function selectedFeeHoldingID(accountID: string, mode: 'in' | 'out') {
+    const formValues = mode === 'out' ? feesOutFormValues : feesInFormValues;
+
+    if (formValues?.accountID === accountID && formValues.feeHoldingID)
+      return formValues.feeHoldingID;
+
+    return feeHoldingsForAccount(accountID)[0]?.holdingID ?? '';
   }
 
   function selectedInspecieInInstrumentID(accountID: string) {
@@ -1002,7 +1297,14 @@
                 </tr>
               {/if}
 
-              {#each sortedAccounts as account}
+              {#each sortedAccounts as account, accountIndex (account.accountID)}
+                {#if accountIndex > 0}
+                  <tr aria-hidden="true">
+                    <td class="bg-slate-100 px-0 py-4" colspan="6">
+                      <div class="h-px border-t border-slate-300 shadow-sm"></div>
+                    </td>
+                  </tr>
+                {/if}
                 {#if editingAccountID === account.accountID}
                   <tr class="bg-teal-50/30 align-top">
                     <td class="px-3 py-2">
@@ -1141,6 +1443,7 @@
                       </div>
                     </td>
                   </tr>
+                  {@const rowTransactionCards = transactionSetCardsForAccount(account.accountID)}
                   {@const holdingGroups = groupedHoldingsForAccount(account.accountID)}
                   <tr class="bg-slate-50/60">
                     <td class="px-3 py-3" colspan="6">
@@ -1159,25 +1462,130 @@
                                   <span class="text-xs text-slate-500">{group.holdings.length}</span>
                                 </div>
                                 <ul class="divide-y divide-slate-100">
-                                  {#each group.holdings as holding}
-                                    <li class="grid gap-2 px-3 py-2 text-sm md:grid-cols-[minmax(160px,1fr)_minmax(180px,1fr)_auto] md:items-center">
-                                      <div>
-                                        <div class="font-medium text-slate-950">{holdingDisplayName(holding)}</div>
-                                        <div class="text-xs text-slate-500">{holding.holdingKind}</div>
-                                      </div>
-                                      <div class="truncate text-slate-600">{holdingInstrumentName(holding)}</div>
-                                      <div class="flex flex-wrap gap-1 md:justify-end">
-                                        {#if holding.default}
-                                          <span class="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">Default</span>
-                                        {/if}
-                                        {#if !holding.includeInValuation}
-                                          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Excluded</span>
-                                        {/if}
-                                        {#if !holding.active}
-                                          <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">Inactive</span>
-                                        {/if}
-                                      </div>
-                                    </li>
+                                  {#each group.holdings as holding (holding.holdingID)}
+                                    {#if editingHoldingID === holding.holdingID}
+                                      <li class="px-3 py-2">
+                                        <form class="grid min-w-0 gap-2 text-sm md:grid-cols-[minmax(0,1.4fr)_180px_auto] md:items-end" action="?/modifyHoldingCard" method="POST" use:enhance={enhanceHoldingCardEdit}>
+                                          <input name="holdingID" type="hidden" value={holding.holdingID} />
+                                          <input name="holdingKind" type="hidden" value={holding.holdingKind} />
+                                          <input name="originalName" type="hidden" value={holding.name} />
+                                          <input name="originalDefault" type="hidden" value={holding.default ? 'true' : 'false'} />
+                                          <input name="originalActive" type="hidden" value={holding.active ? 'true' : 'false'} />
+                                          <input name="bankName" type="hidden" value={holding.bankName ?? ''} />
+                                          <input name="accountName" type="hidden" value={holding.accountName ?? ''} />
+                                          <input name="sortCode" type="hidden" value={holding.sortCode ?? ''} />
+                                          <input name="accountNumber" type="hidden" value={holding.accountNumber ?? ''} />
+                                          <input name="bic" type="hidden" value={holding.bic ?? ''} />
+                                          <input name="iban" type="hidden" value={holding.iban ?? ''} />
+                                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                                            <span>Name</span>
+                                            <input class="h-8 min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" type="text" value={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.name ?? holding.name) : holding.name} required />
+                                          </label>
+                                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                                            <span>Event date</span>
+                                            <DateTimeInput class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
+                                          </label>
+                                          <div class="flex gap-2 md:justify-end">
+                                            <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelHoldingEdit} type="button">Cancel</button>
+                                            <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingHoldingID === holding.holdingID} type="submit">{submittingHoldingID === holding.holdingID ? 'Saving' : 'Save'}</button>
+                                          </div>
+                                          <div class="flex flex-wrap gap-4 md:col-span-3">
+                                            <label class="flex items-center gap-2 text-xs font-medium text-slate-600">
+                                              <span>Default</span>
+                                              <span class="trace-toggle">
+                                                <input checked={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.default ?? holding.default) : holding.default} name="default" type="checkbox" value="true" />
+                                                <span aria-hidden="true"></span>
+                                              </span>
+                                              <input name="default" type="hidden" value="false" />
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs font-medium text-slate-600">
+                                              <span>Active</span>
+                                              <span class="trace-toggle">
+                                                <input checked={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.active ?? holding.active) : holding.active} name="active" type="checkbox" value="true" />
+                                                <span aria-hidden="true"></span>
+                                              </span>
+                                              <input name="active" type="hidden" value="false" />
+                                            </label>
+                                          </div>
+                                        </form>
+                                      </li>
+                                    {:else}
+                                      <li class="grid min-w-0 gap-2 px-3 py-2 text-sm md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_104px_96px_144px] md:items-center">
+                                        <div class="min-w-0">
+                                          <div class="truncate font-medium text-slate-950">{holdingDisplayName(holding)}</div>
+                                          <div class="truncate text-xs text-slate-500">{holding.holdingKind}</div>
+                                        </div>
+                                        <div class="min-w-0 truncate text-slate-600">{holdingInstrumentName(holding)}</div>
+                                        <div class="flex md:justify-end">
+                                          <span class="whitespace-nowrap rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                                            Qty {formatWholeQuantity(holdingQuantityTotal(rowTransactionCards, holding.holdingID))}
+                                          </span>
+                                        </div>
+                                        <div class="flex min-w-0 flex-wrap gap-1 md:justify-end">
+                                          {#if holding.default}
+                                            <span class="whitespace-nowrap rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700">Default</span>
+                                          {/if}
+                                          {#if !holding.includeInValuation}
+                                            <span class="whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Excluded</span>
+                                          {/if}
+                                          {#if !holding.active}
+                                            <span class="whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">Inactive</span>
+                                          {/if}
+                                        </div>
+                                        <div class="flex gap-2 md:justify-end">
+                                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHoldingHistory(holding.holdingID)} type="button">{openHistoryHoldingID === holding.holdingID ? 'Hide' : 'History'}</button>
+                                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startHoldingEdit(holding.holdingID)} type="button">Edit</button>
+                                        </div>
+                                      </li>
+                                      {#if openHistoryHoldingID === holding.holdingID}
+                                        {@const history = historyByHoldingID[holding.holdingID]}
+                                        <li class="bg-slate-50/80 px-3 py-3">
+                                          <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
+                                            <div class="flex items-center justify-between gap-3">
+                                              <h2 class="text-sm font-semibold text-slate-950">{holdingDisplayName(holding)} history</h2>
+                                              <span class="text-xs text-slate-500">{history?.events.length ?? 0} events</span>
+                                            </div>
+
+                                            {#if history?.loading}
+                                              <div class="text-sm text-slate-600">Loading history...</div>
+                                            {:else if history?.error}
+                                              <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                                            {:else if history?.events.length}
+                                              <ol class="grid gap-2">
+                                                {#each history.events as event (event.eventID)}
+                                                  <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${event.applicationStatus === 'omitted' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200'}`}>
+                                                    <div class="text-xs text-slate-500">
+                                                      <div>{formatTableDateTime(event.eventDateTime)}</div>
+                                                      <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
+                                                    </div>
+                                                    <div class="grid gap-1">
+                                                      <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="font-medium text-slate-950">{event.$type}</span>
+                                                        {#if event.applicationStatus === 'omitted'}
+                                                          <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
+                                                        {:else if data.auditDateTime}
+                                                          <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
+                                                        {/if}
+                                                        <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
+                                                      </div>
+                                                      <div class="text-sm text-slate-700">{holdingEventSummary(event)}</div>
+                                                      {#if event.applicationStatus === 'omitted'}
+                                                        <div class="text-xs font-medium text-amber-900">
+                                                          Omitted from this view because its audit time is after the selected as-at date.
+                                                        </div>
+                                                      {/if}
+                                                      <div class="text-xs text-slate-500">{event.reason}</div>
+                                                    </div>
+                                                  </li>
+                                                {/each}
+                                              </ol>
+                                            {:else}
+                                              <div class="text-sm text-slate-600">No history found for this holding.</div>
+                                            {/if}
+                                          </div>
+                                        </li>
+                                      {/if}
+                                    {/if}
                                   {/each}
                                 </ul>
                               </section>
@@ -1189,9 +1597,8 @@
                       </div>
                     </td>
                   </tr>
-                  {@const rowTransactionCards = transactionSetCardsForAccount(account.accountID)}
                   {@const rowActiveTransactionMovements = activeTransactionMovements(rowTransactionCards)}
-                  {@const rowInvestableSubtotals = investableTransactionSubtotals(rowTransactionCards)}
+                  {@const rowCurrencySubtotals = currencyTransactionSubtotals(rowTransactionCards)}
                   <tr class="bg-slate-50/50">
                     <td class="px-3 py-3" colspan="6">
                       <div class="grid gap-3">
@@ -1201,12 +1608,12 @@
                         </div>
 
                         {#if rowTransactionCards.length}
-                          {#if rowInvestableSubtotals.length}
+                          {#if rowCurrencySubtotals.length}
                             <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
                               <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
                                 <thead class="bg-slate-50 text-slate-500">
                                   <tr>
-                                    <th class="px-3 py-2 font-semibold">Investible</th>
+                                    <th class="px-3 py-2 font-semibold">Currency</th>
                                     <th class="px-3 py-2 text-right font-semibold">Distinct sets</th>
                                     <th class="px-3 py-2 text-right font-semibold">Credit</th>
                                     <th class="px-3 py-2 text-right font-semibold">Debit</th>
@@ -1214,15 +1621,11 @@
                                   </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                  {#each rowInvestableSubtotals as subtotal}
+                                  {#each rowCurrencySubtotals as subtotal (subtotal.currency)}
                                     <tr>
                                       <td class="px-3 py-2 text-slate-700">
-                                        <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                          subtotal.investible
-                                            ? 'bg-teal-50 text-teal-700'
-                                            : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                          Investible = {subtotal.investible ? 'true' : 'false'}
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                                          {subtotal.currency}
                                         </span>
                                       </td>
                                       <td class="px-3 py-2 text-right font-mono text-slate-700">{subtotal.setCount}</td>
@@ -1309,10 +1712,16 @@
                     </td>
                   </tr>
                   {@const rowCashInHoldings = cashInHoldingsForAccount(account.accountID)}
+                  {@const rowFeeCashHoldings = feeCashHoldingsForAccount(account.accountID)}
+                  {@const rowFeeHoldings = feeHoldingsForAccount(account.accountID)}
                   {@const cashMovementMode = cashInAccountID === account.accountID ? 'in' : cashOutAccountID === account.accountID ? 'out' : ''}
+                  {@const feeMovementMode = feesInAccountID === account.accountID ? 'in' : feesOutAccountID === account.accountID ? 'out' : ''}
                   {@const inspecieMovementMode = inspecieInAccountID === account.accountID ? 'in' : inspecieOutAccountID === account.accountID ? 'out' : ''}
                   {@const rowCashMovementFormValues = cashMovementMode === 'out' ? cashOutFormValues : cashInFormValues}
                   {@const selectedCashMovementHoldingID = cashMovementMode === 'out' ? selectedCashOutHoldingID(account.accountID) : selectedCashInHoldingID(account.accountID)}
+                  {@const rowFeeFormValues = feeMovementMode === 'out' ? feesOutFormValues : feesInFormValues}
+                  {@const selectedFeeCashID = feeMovementMode ? selectedFeeCashHoldingID(account.accountID, feeMovementMode) : ''}
+                  {@const selectedFeeID = feeMovementMode ? selectedFeeHoldingID(account.accountID, feeMovementMode) : ''}
                   {@const rowInspecieFormValues = inspecieMovementMode === 'out' ? inspecieOutFormValues : inspecieInFormValues}
                   {@const selectedInspecieInstrumentID = inspecieMovementMode === 'out' ? selectedInspecieOutInstrumentID(account.accountID) : selectedInspecieInInstrumentID(account.accountID)}
                   <tr class="bg-slate-50/40">
@@ -1386,6 +1795,100 @@
                               type="submit"
                             >
                               {(cashMovementMode === 'out' ? submittingCashOut : submittingCashIn) ? 'Saving' : 'Save'}
+                            </button>
+                          </div>
+                        </form>
+                      {:else if feeMovementMode}
+                        <form
+                          action={feeMovementMode === 'out' ? '?/feesOut' : '?/feesIn'}
+                          class="grid gap-3 rounded-md border border-amber-100 bg-white p-3 md:grid-cols-[minmax(180px,220px)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(140px,180px)_auto] md:items-end"
+                          method="POST"
+                          use:enhance={feeMovementMode === 'out' ? enhanceFeesOut : enhanceFeesIn}
+                        >
+                          <input name="accountID" type="hidden" value={account.accountID} />
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Event date</span>
+                            <DateTimeInput
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              name="eventDateTime"
+                              required
+                              step="1"
+                              value={rowFeeFormValues?.accountID === account.accountID ? (rowFeeFormValues.eventDateTime ?? eventDateDefault) : eventDateDefault}
+                            />
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Cash holding</span>
+                            <select
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              name="cashHoldingID"
+                              required
+                            >
+                              <option disabled selected={!selectedFeeCashID} value="">Select cash holding</option>
+                              {#each rowFeeCashHoldings as holding (holding.holdingID)}
+                                <option
+                                  selected={selectedFeeCashID === holding.holdingID}
+                                  value={holding.holdingID}
+                                >
+                                  {cashInHoldingLabel(holding)}
+                                </option>
+                              {/each}
+                            </select>
+                            {#if !rowFeeCashHoldings.length}
+                              <span class="text-xs font-normal text-amber-700">No active Investable or Non-investable cash holding is available for this account.</span>
+                            {/if}
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Fee holding</span>
+                            <select
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              name="feeHoldingID"
+                              required
+                            >
+                              <option disabled selected={!selectedFeeID} value="">Select fee holding</option>
+                              {#each rowFeeHoldings as holding (holding.holdingID)}
+                                <option
+                                  selected={selectedFeeID === holding.holdingID}
+                                  value={holding.holdingID}
+                                >
+                                  {cashInHoldingLabel(holding)}
+                                </option>
+                              {/each}
+                            </select>
+                            {#if !rowFeeHoldings.length}
+                              <span class="text-xs font-normal text-amber-700">No active fee holding is available for this account.</span>
+                            {/if}
+                          </label>
+
+                          <label class="grid gap-1 text-xs font-medium text-slate-600">
+                            <span>Amount</span>
+                            <input
+                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              min="0.00000001"
+                              name="amount"
+                              required
+                              step="0.00000001"
+                              type="number"
+                              value={rowFeeFormValues?.accountID === account.accountID ? (rowFeeFormValues.amount ?? '') : ''}
+                            />
+                          </label>
+
+                          <div class="flex justify-end gap-2">
+                            <button
+                              class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                              onclick={feeMovementMode === 'out' ? cancelFeesOut : cancelFeesIn}
+                              type="button"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              class="h-9 rounded-md bg-amber-700 px-3 text-sm font-medium text-white hover:bg-amber-800 disabled:cursor-wait disabled:opacity-70"
+                              disabled={(feeMovementMode === 'out' ? submittingFeesOut : submittingFeesIn) || !rowFeeCashHoldings.length || !rowFeeHoldings.length}
+                              type="submit"
+                            >
+                              {(feeMovementMode === 'out' ? submittingFeesOut : submittingFeesIn) ? 'Saving' : 'Save'}
                             </button>
                           </div>
                         </form>
@@ -1490,6 +1993,24 @@
                             type="button"
                           >
                             Cash Out
+                          </button>
+                          <button
+                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            disabled={!account.active}
+                            onclick={() => startFeesIn(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create a fees-in transaction for ${account.name}`}
+                            type="button"
+                          >
+                            Fees In
+                          </button>
+                          <button
+                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            disabled={!account.active}
+                            onclick={() => startFeesOut(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create a fees-out transaction for ${account.name}`}
+                            type="button"
+                          >
+                            Fees Out
                           </button>
                           <button
                             class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"

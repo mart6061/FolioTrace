@@ -12,7 +12,7 @@ public sealed record InstrumentCreatedEvent : EventBase, IInstrumentEvent
     public Exchange Exchange { get; init; } = null!;
     public CFI CFI { get; init; } = null!;
     public InstrumentLogo? Logo { get; init; }
-    public bool Active { get; init; }
+    public Active Active { get; init; } = false;
     public Alpha2 IncomeCountry { get; init; } = null!;
     public Alpha2 PriceCountry { get; init; } = null!;
     public Alpha3 PriceCurrency { get; init; } = null!;
@@ -20,7 +20,7 @@ public sealed record InstrumentCreatedEvent : EventBase, IInstrumentEvent
     [JsonConstructor]
     private InstrumentCreatedEvent() : base(null!, null!, null!, null!, string.Empty) { }
 
-    internal InstrumentCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, bool active, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency)
+    internal InstrumentCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, Active active, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         InstrumentID = instrumentID;

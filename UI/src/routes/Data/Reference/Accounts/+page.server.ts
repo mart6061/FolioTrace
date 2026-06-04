@@ -7,7 +7,9 @@ import {
   getHoldings,
   getInstruments,
   getTransactionEvents,
+  postHoldingActiveModifiedEvent,
   postHoldingCreatedEvent,
+  postHoldingModifiedEvent,
   postAccountActiveModifiedEvent,
   postAccountCreatedEvent,
   postAccountModifiedEvent,
@@ -16,7 +18,9 @@ import {
   type AccountActiveModifiedRequest,
   type AccountCreatedRequest,
   type AccountModifiedRequest,
+  type HoldingActiveModifiedRequest,
   type HoldingCreatedRequest,
+  type HoldingModifiedRequest,
   type TransactionCancellationRequest,
   type TransactionSetRequest
 } from '$lib/server/api';
@@ -31,7 +35,7 @@ export const load = async ({ fetch, url }) => {
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
     const [accounts, holdings, instruments, transactionEvents] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
-      getHoldings(fetch, valuationDateTime, asAtDateTime, false),
+      getHoldings(fetch, valuationDateTime, asAtDateTime),
       getInstruments(fetch, valuationDateTime, asAtDateTime),
       getTransactionEvents(fetch)
     ]);
@@ -134,6 +138,62 @@ export const actions = {
       return { accountID, eventID: result.eventID, intent: 'modifyAccountActive', message: `${name || 'Account'} was ${active ? 'activated' : 'deactivated'} successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, { accountID, intent: 'modifyAccountActive', message: error instanceof Error ? error.message : 'Unable to update account status.', status: 'failure' });
+    }
+  },
+
+  modifyHoldingCard: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const values = readHoldingCardForm(formData);
+
+    if (!values.holdingID || !values.holdingKind || !values.name || !values.eventDateTime)
+      return fail(400, holdingCardFailure('Holding, kind, name, and event date are required.', values));
+
+    const eventIDs: string[] = [];
+
+    try {
+      if (values.name !== values.originalName || values.default !== values.originalDefault) {
+        const holdingModifiedRequest: HoldingModifiedRequest = {
+          accountName: values.accountName,
+          bankName: values.bankName,
+          default: values.default,
+          eventDateTime: toApiDateTime(values.eventDateTime),
+          holdingID: values.holdingID,
+          holdingKind: values.holdingKind,
+          name: values.name,
+          sortCode: values.sortCode,
+          accountNumber: values.accountNumber,
+          bic: values.bic,
+          iban: values.iban,
+          reason: `Modify holding ${values.name}`
+        };
+
+        const result = await postHoldingModifiedEvent(fetch, holdingModifiedRequest, currentUser.userID);
+        eventIDs.push(result.eventID);
+      }
+
+      if (values.active !== values.originalActive) {
+        const holdingActiveModifiedRequest: HoldingActiveModifiedRequest = {
+          active: values.active,
+          eventDateTime: toApiDateTime(values.eventDateTime),
+          holdingID: values.holdingID,
+          reason: `${values.active ? 'Activate' : 'Deactivate'} holding ${values.name || values.holdingID}`
+        };
+
+        const result = await postHoldingActiveModifiedEvent(fetch, holdingActiveModifiedRequest, currentUser.userID);
+        eventIDs.push(result.eventID);
+      }
+
+      return {
+        eventID: eventIDs.at(-1) ?? '',
+        eventIDs,
+        holdingID: values.holdingID,
+        intent: 'modifyHoldingCard',
+        message: eventIDs.length ? `${values.name} was updated successfully.` : `${values.name} was unchanged.`,
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, holdingCardFailure(error instanceof Error ? error.message : 'Unable to update holding.', values));
     }
   },
 
@@ -292,6 +352,164 @@ export const actions = {
       };
     } catch (error) {
       return fail(502, cashOutFailure(error instanceof Error ? error.message : 'Unable to create cash-out transaction.', values));
+    }
+  },
+
+  feesIn: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const values = readFeeForm(formData);
+
+    if (!values.accountID || !values.cashHoldingID || !values.feeHoldingID || !values.eventDateTime || !values.amount)
+      return fail(400, feeInFailure('Account, cash holding, fee holding, event date, and amount are required.', values));
+
+    const amountResult = parseCashAmount(values.amount);
+    if (!amountResult.valid)
+      return fail(400, feeInFailure(amountResult.message, values));
+
+    try {
+      const eventDateTime = toApiDateTime(values.eventDateTime);
+      const settlementDateTime = toApiDateTime(nextWorkingDayForInput(values.eventDateTime));
+      const [holdings, accounts] = await Promise.all([
+        getHoldings(fetch, eventDateTime, null, false),
+        getAccounts(fetch, eventDateTime, null)
+      ]);
+      const cashHolding = holdings.items.find((holding) =>
+        holding.holdingID === values.cashHoldingID &&
+        holding.accountID === values.accountID &&
+        isFeeCashHoldingKind(holding.holdingKind) &&
+        holding.active
+      );
+
+      if (!cashHolding)
+        return fail(400, feeInFailure('Select an active Investable or Non-investable cash holding.', values));
+
+      const feeHolding = holdings.items.find((holding) =>
+        holding.holdingID === values.feeHoldingID &&
+        holding.accountID === values.accountID &&
+        isFeeHoldingKind(holding.holdingKind) &&
+        holding.active
+      );
+
+      if (!feeHolding)
+        return fail(400, feeInFailure('Select an active fee holding.', values));
+
+      const account = accounts.items.find((item) => item.accountID === values.accountID);
+      const amount = amountResult.amount;
+      const amountLabel = `${formatAmount(amount)} ${account?.bookCurrency ?? ''}`.trim();
+      const transactionSetRequest: TransactionSetRequest = {
+        userID: currentUser.userID,
+        eventDateTime,
+        settlementDateTime,
+        reason: `Fees in ${amountLabel} from ${feeHolding.name || feeHolding.holdingKind} to ${cashHolding.name || cashHolding.holdingKind}`,
+        credits: [
+          {
+            accountID: cashHolding.accountID,
+            bookCost: amount,
+            holdingID: cashHolding.holdingID,
+            instrumentID: cashHolding.instrumentID,
+            quantity: amount
+          }
+        ],
+        debits: [
+          {
+            accountID: feeHolding.accountID,
+            bookCost: amount,
+            holdingID: feeHolding.holdingID,
+            instrumentID: feeHolding.instrumentID,
+            quantity: amount
+          }
+        ]
+      };
+
+      const result = await postTransactionSet(fetch, transactionSetRequest);
+      return {
+        eventIDs: result.eventIDs,
+        intent: 'feesIn',
+        message: `Fees in ${amountLabel} was created successfully.`,
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, feeInFailure(error instanceof Error ? error.message : 'Unable to create fees-in transaction.', values));
+    }
+  },
+
+  feesOut: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const values = readFeeForm(formData);
+
+    if (!values.accountID || !values.cashHoldingID || !values.feeHoldingID || !values.eventDateTime || !values.amount)
+      return fail(400, feeOutFailure('Account, cash holding, fee holding, event date, and amount are required.', values));
+
+    const amountResult = parseCashAmount(values.amount);
+    if (!amountResult.valid)
+      return fail(400, feeOutFailure(amountResult.message, values));
+
+    try {
+      const eventDateTime = toApiDateTime(values.eventDateTime);
+      const settlementDateTime = toApiDateTime(nextWorkingDayForInput(values.eventDateTime));
+      const [holdings, accounts] = await Promise.all([
+        getHoldings(fetch, eventDateTime, null, false),
+        getAccounts(fetch, eventDateTime, null)
+      ]);
+      const cashHolding = holdings.items.find((holding) =>
+        holding.holdingID === values.cashHoldingID &&
+        holding.accountID === values.accountID &&
+        isFeeCashHoldingKind(holding.holdingKind) &&
+        holding.active
+      );
+
+      if (!cashHolding)
+        return fail(400, feeOutFailure('Select an active Investable or Non-investable cash holding.', values));
+
+      const feeHolding = holdings.items.find((holding) =>
+        holding.holdingID === values.feeHoldingID &&
+        holding.accountID === values.accountID &&
+        isFeeHoldingKind(holding.holdingKind) &&
+        holding.active
+      );
+
+      if (!feeHolding)
+        return fail(400, feeOutFailure('Select an active fee holding.', values));
+
+      const account = accounts.items.find((item) => item.accountID === values.accountID);
+      const amount = amountResult.amount;
+      const amountLabel = `${formatAmount(amount)} ${account?.bookCurrency ?? ''}`.trim();
+      const transactionSetRequest: TransactionSetRequest = {
+        userID: currentUser.userID,
+        eventDateTime,
+        settlementDateTime,
+        reason: `Fees out ${amountLabel} from ${cashHolding.name || cashHolding.holdingKind} to ${feeHolding.name || feeHolding.holdingKind}`,
+        credits: [
+          {
+            accountID: feeHolding.accountID,
+            bookCost: amount,
+            holdingID: feeHolding.holdingID,
+            instrumentID: feeHolding.instrumentID,
+            quantity: amount
+          }
+        ],
+        debits: [
+          {
+            accountID: cashHolding.accountID,
+            bookCost: amount,
+            holdingID: cashHolding.holdingID,
+            instrumentID: cashHolding.instrumentID,
+            quantity: amount
+          }
+        ]
+      };
+
+      const result = await postTransactionSet(fetch, transactionSetRequest);
+      return {
+        eventIDs: result.eventIDs,
+        intent: 'feesOut',
+        message: `Fees out ${amountLabel} was created successfully.`,
+        status: 'success'
+      };
+    } catch (error) {
+      return fail(502, feeOutFailure(error instanceof Error ? error.message : 'Unable to create fees-out transaction.', values));
     }
   },
 
@@ -493,12 +711,46 @@ function failure(intent: string, message: string, values: ReturnType<typeof read
   return { accountID: values.accountID, intent, message, status: 'failure', values };
 }
 
+function readHoldingCardForm(formData: FormData) {
+  return {
+    accountName: getFormString(formData, 'accountName'),
+    accountNumber: getFormString(formData, 'accountNumber'),
+    active: getFormString(formData, 'active') === 'true',
+    bankName: getFormString(formData, 'bankName'),
+    bic: getFormString(formData, 'bic'),
+    default: getFormString(formData, 'default') === 'true',
+    eventDateTime: getFormString(formData, 'eventDateTime'),
+    holdingID: getFormString(formData, 'holdingID'),
+    holdingKind: getFormString(formData, 'holdingKind') as HoldingKind,
+    iban: getFormString(formData, 'iban'),
+    name: getFormString(formData, 'name'),
+    originalActive: getFormString(formData, 'originalActive') === 'true',
+    originalDefault: getFormString(formData, 'originalDefault') === 'true',
+    originalName: getFormString(formData, 'originalName'),
+    sortCode: getFormString(formData, 'sortCode')
+  };
+}
+
+function holdingCardFailure(message: string, values: ReturnType<typeof readHoldingCardForm>) {
+  return { holdingID: values.holdingID, intent: 'modifyHoldingCard', message, status: 'failure', values };
+}
+
 function readCashInForm(formData: FormData) {
   return {
     accountID: getFormString(formData, 'accountID'),
     amount: getFormString(formData, 'amount'),
     eventDateTime: getFormString(formData, 'eventDateTime'),
     holdingID: getFormString(formData, 'holdingID')
+  };
+}
+
+function readFeeForm(formData: FormData) {
+  return {
+    accountID: getFormString(formData, 'accountID'),
+    amount: getFormString(formData, 'amount'),
+    cashHoldingID: getFormString(formData, 'cashHoldingID'),
+    eventDateTime: getFormString(formData, 'eventDateTime'),
+    feeHoldingID: getFormString(formData, 'feeHoldingID')
   };
 }
 
@@ -520,6 +772,14 @@ function cashOutFailure(message: string, values: ReturnType<typeof readCashInFor
   return { intent: 'cashOut', message, status: 'failure', values };
 }
 
+function feeInFailure(message: string, values: ReturnType<typeof readFeeForm>) {
+  return { intent: 'feesIn', message, status: 'failure', values };
+}
+
+function feeOutFailure(message: string, values: ReturnType<typeof readFeeForm>) {
+  return { intent: 'feesOut', message, status: 'failure', values };
+}
+
 function inspecieInFailure(message: string, values: ReturnType<typeof readInspecieForm>) {
   return { intent: 'inspecieIn', message, status: 'failure', values };
 }
@@ -530,6 +790,14 @@ function inspecieOutFailure(message: string, values: ReturnType<typeof readInspe
 
 function parseCashAmount(value: string) {
   return parsePositiveDecimal(value, 'Amount');
+}
+
+function isFeeCashHoldingKind(holdingKind: HoldingKind) {
+  return holdingKind === 'CashInvestable' || holdingKind === 'CashNonInvestable';
+}
+
+function isFeeHoldingKind(holdingKind: HoldingKind) {
+  return holdingKind === 'FeesCustodian' || holdingKind === 'FeesAdministrator' || holdingKind === 'FeesBank';
 }
 
 function parsePositiveDecimal(value: string, label: string) {

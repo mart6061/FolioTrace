@@ -6,6 +6,8 @@
   import type { Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
+  type TicketEditContext = 'Proposal' | 'Trade';
+
   let { data, form } = $props();
 
   const eventDateDefault = $derived(data.valuationDate);
@@ -15,10 +17,10 @@
   let selectedSides = $state<TicketSide[]>([]);
   let selectedStages = $state<TicketStage[]>([]);
   let freeTextFilter = $state('');
-  let ticketViewMode = $state<'Detailed' | 'Compact'>('Detailed');
+  let ticketViewMode = $state<'Detailed' | 'Compact'>('Compact');
   let expandedTicketNumbers = $state<number[]>([]);
   let collapsedTicketNumbers = $state<number[]>([]);
-  let editingTicketNumber = $state(0);
+  let editingTicket = $state<{ ticketNumber: number; context: TicketEditContext | '' }>({ ticketNumber: 0, context: '' });
   let cancelConfirmingTicketNumber = $state(0);
   let cancelConfirmationInput = $state('');
   let openHistoryTicketNumber = $state(0);
@@ -343,8 +345,8 @@
       : expandedTicketNumbers.includes(ticketNumber);
   }
 
-  function isTicketEditing(ticketNumber: number) {
-    return editingTicketNumber === ticketNumber;
+  function isTicketEditing(ticketNumber: number, context?: TicketEditContext) {
+    return editingTicket.ticketNumber === ticketNumber && (!context || editingTicket.context === context);
   }
 
   function toggleTicketExpanded(ticketNumber: number) {
@@ -360,7 +362,7 @@
         : [...expandedTicketNumbers, ticketNumber];
     }
 
-    editingTicketNumber = 0;
+    stopTicketEdit();
     cancelTicketCancellation();
   }
 
@@ -418,13 +420,13 @@
     ].join('|');
   }
 
-  function startTicketEdit(ticketNumber: number) {
-    editingTicketNumber = ticketNumber;
+  function startTicketEdit(ticketNumber: number, context: TicketEditContext) {
+    editingTicket = { ticketNumber, context };
     cancelTicketCancellation();
   }
 
   function stopTicketEdit() {
-    editingTicketNumber = 0;
+    editingTicket = { ticketNumber: 0, context: '' };
   }
 
   function startTicketCancellation(ticketNumber: number) {
@@ -699,12 +701,12 @@
         </label>
         <div class="side-radio-group ticket-view-group" role="radiogroup" aria-label="Ticket display mode">
           <label class="side-radio-pill ticket-filter-pill">
-            <input checked={ticketViewMode === 'Detailed'} name="ticketViewMode" type="radio" value="Detailed" onchange={() => ticketViewMode = 'Detailed'} />
-            <span>Detailed</span>
-          </label>
-          <label class="side-radio-pill ticket-filter-pill">
             <input checked={ticketViewMode === 'Compact'} name="ticketViewMode" type="radio" value="Compact" onchange={() => ticketViewMode = 'Compact'} />
             <span>Compact</span>
+          </label>
+          <label class="side-radio-pill ticket-filter-pill">
+            <input checked={ticketViewMode === 'Detailed'} name="ticketViewMode" type="radio" value="Detailed" onchange={() => ticketViewMode = 'Detailed'} />
+            <span>Detailed</span>
           </label>
         </div>
       </div>
@@ -720,10 +722,14 @@
           {@const instrumentFacts = instrumentHeaderFacts(ticketInstrument)}
           {@const ticketExpanded = isTicketExpanded(ticket.ticketNumber)}
           {@const ticketEditing = isTicketEditing(ticket.ticketNumber)}
+          {@const ticketEditingProposal = isTicketEditing(ticket.ticketNumber, 'Proposal')}
+          {@const ticketEditingTrade = isTicketEditing(ticket.ticketNumber, 'Trade')}
           {@const ticketAwaitingProposalDecision = canApproveProposal(ticket)}
           {@const ticketAwaitingTradeDecision = canApproveTrade(ticket)}
           {@const ticketAwaitingDecision = ticketAwaitingProposalDecision || ticketAwaitingTradeDecision}
           {@const ticketCancelConfirming = cancelConfirmingTicketNumber === ticket.ticketNumber}
+          {@const proposalInputActive = ticketEditingProposal && !ticketCancelConfirming && !ticketAwaitingDecision}
+          {@const tradeInputActive = ticketEditingTrade && !ticketCancelConfirming && !ticketAwaitingDecision}
           {@const saveFormID = `ticket-save-${ticket.ticketNumber}`}
           <article
             class="ticket-card"
@@ -808,9 +814,14 @@
                     </button>
                   </form>
                 {/if}
-                {#if ticketExpanded && !ticketAwaitingDecision}
-                  <button class="ticket-action-button" onclick={() => ticketEditing ? stopTicketEdit() : startTicketEdit(ticket.ticketNumber)} type="button" disabled={ticketCancelConfirming}>
-                    {ticketEditing ? 'Cancel' : 'Edit'}
+                {#if ticketExpanded && !ticketAwaitingDecision && canSetProposalText(ticket)}
+                  <button class="ticket-action-button" onclick={() => ticketEditingProposal ? stopTicketEdit() : startTicketEdit(ticket.ticketNumber, 'Proposal')} type="button" disabled={ticketCancelConfirming || ticketEditingTrade}>
+                    {ticketEditingProposal ? 'Cancel' : 'Edit Proposal'}
+                  </button>
+                {/if}
+                {#if ticketExpanded && !ticketAwaitingDecision && canSetTradeText(ticket)}
+                  <button class="ticket-action-button" onclick={() => ticketEditingTrade ? stopTicketEdit() : startTicketEdit(ticket.ticketNumber, 'Trade')} type="button" disabled={ticketCancelConfirming || ticketEditingProposal}>
+                    {ticketEditingTrade ? 'Cancel' : 'Edit Trade'}
                   </button>
                 {/if}
                 {#if ticketExpanded && !ticketAwaitingDecision}
@@ -940,7 +951,7 @@
                   <div class="two-col">
                     <label class="field">
                       <span>Target price ({ticket.tradeCurrency})</span>
-                      {#if ticketEditing && canEditProposalTerms(ticket) && !ticketCancelConfirming}
+                      {#if proposalInputActive && canEditProposalTerms(ticket)}
                         <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="targetPrice" value={priceText(ticket.proposalTargetPrice, ticket.tradeCurrency)} oninput={cleanDecimalInput} />
                       {:else}
                         <span class="ticket-readonly-value">{targetPriceDisplay(ticket)}</span>
@@ -948,7 +959,7 @@
                     </label>
                     <label class="field">
                       <span>Total quantity</span>
-                      {#if ticketEditing && canEditProposalTerms(ticket) && !ticketCancelConfirming}
+                      {#if proposalInputActive && canEditProposalTerms(ticket)}
                         <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="totalAmount" value={quantityText(ticket.proposalTotalAmount)} oninput={cleanDecimalInput} />
                       {:else}
                         <span class="ticket-readonly-value">{formattedDisplay(quantityText(ticket.proposalTotalAmount))}</span>
@@ -960,13 +971,13 @@
                   <div class="ticket-text-set-form">
                     <label class="field ticket-textarea-field">
                       <span>Proposal reason</span>
-                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalReason" value={ticket.proposalReason} disabled={ticketCancelConfirming || !ticketEditing || !canSetProposalText(ticket)}></textarea>
+                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalReason" value={ticket.proposalReason} disabled={!proposalInputActive || !canSetProposalText(ticket)}></textarea>
                     </label>
                   </div>
                   <div class="ticket-text-set-form">
                     <label class="field ticket-textarea-field">
                       <span>Proposal allocation</span>
-                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalAllocation" value={ticket.proposalAllocation} disabled={ticketCancelConfirming || !ticketEditing || !canSetProposalText(ticket)}></textarea>
+                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalAllocation" value={ticket.proposalAllocation} disabled={!proposalInputActive || !canSetProposalText(ticket)}></textarea>
                     </label>
                   </div>
                 </div>
@@ -991,9 +1002,9 @@
                         </div>
                         <span class="account-allocation-currency">{accountCurrency(accountID)}</span>
                         <div class="account-allocation-quantity">
-                          <input form={saveFormID} type="hidden" name="proposalAllocationAccountID" value={accountID} disabled={ticketCancelConfirming || !ticketEditing || !canEditProposal(ticket)} />
-                          {#if ticketEditing && canEditProposal(ticket) && !ticketCancelConfirming}
-                            <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`proposalQuantity-${accountID}`} value={quantityText(allocation?.quantity)} placeholder="Qty" oninput={cleanDecimalInput} />
+                          <input form={saveFormID} type="hidden" name="proposalAllocationAccountID" value={accountID} disabled={!proposalInputActive || !canEditProposal(ticket)} />
+                          {#if proposalInputActive && canEditProposal(ticket)}
+                            <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`proposalQuantity-${accountID}`} value={quantityText(allocation?.quantity)} placeholder="Qty" oninput={cleanDecimalInput} />
                           {:else}
                             <span class="ticket-readonly-value">{formattedDisplay(quantityText(allocation?.quantity))}</span>
                           {/if}
@@ -1003,65 +1014,89 @@
                           <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                           <input type="hidden" name="accountID" value={accountID} />
                           <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                          <button class="account-remove-button" type="submit" title="Remove account" disabled={ticketCancelConfirming || !ticketEditing}>Remove</button>
+                          <button class="account-remove-button" type="submit" title="Remove account" disabled={!proposalInputActive}>Remove</button>
                         </form>
                       </div>
                     {:else}
                       <div class="account-allocation-empty">No accounts selected</div>
                     {/each}
                   </div>
-                  <form class="account-allocation-row account-allocation-add-row" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
-                    <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
-                    <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <select class="account-add-select h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="accountID" disabled={ticketCancelConfirming || !ticketEditing || availableAccounts(ticket).length === 0} required>
-                      <option value="">Add account</option>
-                      {#each availableAccounts(ticket) as account (account.accountID)}
-                        <option value={account.accountID}>{account.name} {account.bookCurrency}</option>
-                      {/each}
-                    </select>
-                    <span class="account-allocation-currency account-add-currency">-</span>
-                    <span class="account-add-quantity-hint">Quantity can be entered after the account is added</span>
-                    <span class="account-current-quantity-placeholder">-</span>
-                    <button class="btn btn-secondary account-add-button" type="submit" disabled={ticketCancelConfirming || !ticketEditing || availableAccounts(ticket).length === 0}>Add</button>
-                  </form>
+                  {#if canEditProposalTerms(ticket)}
+                    <form class="account-allocation-row account-allocation-add-row" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
+                      <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                      <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                      <select class="account-add-select h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="accountID" disabled={!proposalInputActive || availableAccounts(ticket).length === 0} required>
+                        <option value="">Add account</option>
+                        {#each availableAccounts(ticket) as account (account.accountID)}
+                          <option value={account.accountID}>{account.name} {account.bookCurrency}</option>
+                        {/each}
+                      </select>
+                      <span class="account-allocation-currency account-add-currency">-</span>
+                      <span class="account-add-quantity-hint">Quantity can be entered after the account is added</span>
+                      <span class="account-current-quantity-placeholder">-</span>
+                      <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || availableAccounts(ticket).length === 0}>Add</button>
+                    </form>
+                  {/if}
                 </div>
               </section>
 
-              {#if ticket.stage === 'Trade'}
+              {#if ticket.stage === 'Trade' && !ticketEditingProposal}
                 <div class="ticket-detail-row">
-                <section class="workflow-panel">
+                <section class="workflow-panel workflow-panel-wide">
                   <h2>Trade</h2>
-                  <form method="POST" action="?/saveTrade" use:enhance={enhanceAction(`trade-${ticket.ticketNumber}`)}>
+                  <form class="ticket-main-form trade-main-form" method="POST" action="?/saveTrade" use:enhance={enhanceAction(`trade-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
                     <input type="hidden" name="hasTrade" value={ticket.tradeAllocations.length > 0 ? 'true' : 'false'} />
-                    <label class="field">
-                      <span>Traded price ({ticket.tradeCurrency})</span>
-                      <input form={saveFormID} class="input" type="number" step="0.00000001" name="tradedPrice" value={decimalText(ticket.tradePrice)} disabled={ticketCancelConfirming || !ticketEditing || !canEditTrade(ticket)} />
-                    </label>
-                    <div class="allocation-list">
-                      {#each ticket.accountIDs as accountID (accountID)}
-                        {@const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID)}
-                        <input form={saveFormID} type="hidden" name="tradeAllocationAccountID" value={accountID} disabled={ticketCancelConfirming || !ticketEditing || !canEditTrade(ticket)} />
-                        <label class="allocation-row trade-row">
-                          <span>{accountName(accountID)}</span>
-                          <input form={saveFormID} class="input" type="number" step="0.00000001" name={`tradeQuantity-${accountID}`} value={decimalText(allocation?.quantity)} disabled={ticketCancelConfirming || !ticketEditing || !canEditTrade(ticket)} placeholder="Qty" />
-                          <input form={saveFormID} class="input" type="number" step="0.00000001" name={`tradeBookCost-${accountID}`} value={decimalText(allocation?.bookCost)} disabled={ticketCancelConfirming || !ticketEditing || !canEditTrade(ticket)} placeholder="Book" />
-                        </label>
-                      {/each}
+                    <div class="two-col">
+                      <label class="field">
+                        <span>Traded price ({ticket.tradeCurrency})</span>
+                        {#if tradeInputActive && canEditTrade(ticket)}
+                          <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="tradedPrice" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} oninput={cleanDecimalInput} />
+                        {:else}
+                          <span class="ticket-readonly-value">{formattedDisplay(priceText(ticket.tradePrice, ticket.tradeCurrency))}</span>
+                        {/if}
+                      </label>
+                    </div>
+                    <div class="account-allocation-table trade-allocation-table">
+                      <div class="account-allocation-header">
+                        <span>Account</span>
+                        <span>Trade allocation</span>
+                        <span>Book cost</span>
+                      </div>
+                      <div class="account-allocation-body">
+                        {#each ticket.accountIDs as accountID (accountID)}
+                          {@const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID)}
+                          <div class="account-allocation-row">
+                            <div class="account-allocation-account">
+                              <span>{accountName(accountID)}</span>
+                            </div>
+                            <input form={saveFormID} type="hidden" name="tradeAllocationAccountID" value={accountID} disabled={!tradeInputActive || !canEditTrade(ticket)} />
+                            {#if tradeInputActive && canEditTrade(ticket)}
+                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeQuantity-${accountID}`} value={quantityText(allocation?.quantity)} placeholder="Qty" oninput={cleanDecimalInput} />
+                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeBookCost-${accountID}`} value={quantityText(allocation?.bookCost)} placeholder="Book" oninput={cleanDecimalInput} />
+                            {:else}
+                              <span class="ticket-readonly-value">{formattedDisplay(quantityText(allocation?.quantity))}</span>
+                              <span class="ticket-readonly-value">{formattedDisplay(quantityText(allocation?.bookCost))}</span>
+                            {/if}
+                          </div>
+                        {:else}
+                          <div class="account-allocation-empty">No accounts selected</div>
+                        {/each}
+                      </div>
                     </div>
                   </form>
                   <div class="ticket-note-grid">
                     <div class="ticket-text-set-form">
                       <label class="field ticket-textarea-field">
                         <span>Instruction notes</span>
-                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeInstructionNotes" value={ticket.tradeInstructionNotes} disabled={ticketCancelConfirming || !ticketEditing || !canSetTradeText(ticket)}></textarea>
+                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeInstructionNotes" value={ticket.tradeInstructionNotes} disabled={!tradeInputActive || !canSetTradeText(ticket)}></textarea>
                       </label>
                     </div>
                     <div class="ticket-text-set-form">
                       <label class="field ticket-textarea-field">
                         <span>Progress notes</span>
-                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeProgressNotes" value={ticket.tradeProgressNotes} disabled={ticketCancelConfirming || !ticketEditing || !canSetTradeText(ticket)}></textarea>
+                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeProgressNotes" value={ticket.tradeProgressNotes} disabled={!tradeInputActive || !canSetTradeText(ticket)}></textarea>
                       </label>
                     </div>
                   </div>
@@ -1077,7 +1112,7 @@
                         <input type="hidden" name="fillID" value={fill.fillID} />
                         <span>{decimalDisplay(fill.quantity)} @ {decimalDisplay(fill.price)}</span>
                         <span class="muted">{fill.note}</span>
-                        <button type="submit" title="Remove fill" disabled={ticketCancelConfirming || !ticketEditing || !canEditFills(ticket)}>X</button>
+                        <button type="submit" title="Remove fill" disabled={!tradeInputActive || !canEditFills(ticket)}>X</button>
                       </form>
                     {/each}
                     {#if ticket.fills.length === 0}
@@ -1087,10 +1122,14 @@
                   <form class="fill-form" method="POST" action="?/addFill" use:enhance={enhanceAction(`add-fill-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <input class="input" type="number" step="0.00000001" name="fillPrice" placeholder="Price" disabled={ticketCancelConfirming || !ticketEditing || !canEditFills(ticket)} required />
-                    <input class="input" type="number" step="0.00000001" name="fillQuantity" placeholder="Qty" disabled={ticketCancelConfirming || !ticketEditing || !canEditFills(ticket)} required />
-                    <input class="input" name="fillNote" placeholder="Note" disabled={ticketCancelConfirming || !ticketEditing || !canEditFills(ticket)} />
-                    <button class="btn btn-secondary" type="submit" disabled={ticketCancelConfirming || !ticketEditing || !canEditFills(ticket)}>Add fill</button>
+                    {#if tradeInputActive && canEditFills(ticket)}
+                      <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillPrice" placeholder="Price" oninput={cleanDecimalInput} required />
+                      <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanDecimalInput} required />
+                      <input class="input" name="fillNote" placeholder="Note" />
+                      <button class="btn btn-secondary" type="submit">Add fill</button>
+                    {:else}
+                      <span class="ticket-readonly-value">Edit Trade to add fills</span>
+                    {/if}
                   </form>
                 </section>
                 </div>

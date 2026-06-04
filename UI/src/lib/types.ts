@@ -156,6 +156,8 @@ export type Holding = {
   accountName?: string | null;
   sortCode?: string | null;
   accountNumber?: string | null;
+  bic?: string | null;
+  iban?: string | null;
   includeInValuation: boolean;
   valuationDateTime: string;
   asOfDateTime: string;
@@ -207,6 +209,28 @@ export type Currencies = {
   lastEventID: string;
   lastAuditDateTime: string;
   items: Currency[];
+};
+
+export type Broker = {
+  name: string;
+  lei: string;
+  commission: number;
+  active: boolean;
+  approvedDateTime: string;
+  nextReview: string;
+  notes: string;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type Brokers = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: Broker[];
 };
 
 export type FX = {
@@ -457,6 +481,16 @@ export type CurrencyReferenceEvent = ReferenceEventBase & {
   name: string;
 };
 
+export type BrokerReferenceEvent = ReferenceEventBase & {
+  lei: string;
+  name?: string;
+  commission?: number;
+  active?: boolean;
+  approvedDateTime?: string;
+  nextReview?: string;
+  notes?: string;
+};
+
 export type AccountReferenceEvent = ReferenceEventBase & {
   accountID: string;
   name?: string;
@@ -544,6 +578,11 @@ export type MemoryDiagnostics = {
   accountService?: {
     cacheEntryCount: number;
     accountCount: number;
+    estimatedMemoryBytes: number;
+  };
+  brokerService?: {
+    cacheEntryCount: number;
+    brokerCount: number;
     estimatedMemoryBytes: number;
   };
   countryService: {
@@ -670,6 +709,7 @@ export type ApiExchangeSearchResponse = {
 
 export type AggregateKind =
   | 'Accounts'
+  | 'Brokers'
   | 'Countries'
   | 'Currencies'
   | 'FXs'

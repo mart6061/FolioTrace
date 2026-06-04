@@ -18,7 +18,7 @@ public sealed record Instrument : IModel
 
     public InstrumentLogo? Logo { get; init; }
 
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
 
     public required Alpha2 IncomeCountry { get; init; }
 
@@ -47,7 +47,7 @@ public sealed record Instrument : IModel
         Exchange exchange,
         CFI cfi,
         InstrumentLogo? logo,
-        bool active,
+        Active active,
         Alpha2 incomeCountry,
         Alpha2 priceCountry,
         Alpha3 priceCurrency,

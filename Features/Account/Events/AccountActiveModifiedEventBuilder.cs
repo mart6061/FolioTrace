@@ -13,14 +13,14 @@ public static class AccountActiveModifiedEventBuilder
         return Create(request.UserID, request.EventDateTime, request.Reason, request.AccountID, request.Active, accounts);
     }
 
-    public static Result<AccountActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, AccountID accountID, bool active, Accounts? accounts = null)
+    public static Result<AccountActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, AccountID accountID, Active active, Accounts? accounts = null)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
         EventID eventId = Guid.NewGuid();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, accountID, active, accounts);
     }
 
-    public static Result<AccountActiveModifiedEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, bool active, Accounts? accounts = null)
+    public static Result<AccountActiveModifiedEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, Active active, Accounts? accounts = null)
     {
         var validationErrors = new List<string>();
         if (eventId is null) validationErrors.Add("EventID is required.");

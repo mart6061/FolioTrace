@@ -12,7 +12,7 @@ public sealed record FXCreatedEvent : EventBase, IFXEvent
 
     public Alpha3 QuoteCurrency { get; init; } = null!;
 
-    public bool Active { get; init; }
+    public Active Active { get; init; } = false;
 
     [JsonConstructor]
     private FXCreatedEvent()
@@ -20,7 +20,7 @@ public sealed record FXCreatedEvent : EventBase, IFXEvent
     {
     }
 
-    internal FXCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, CurrencyPair pair, bool active)
+    internal FXCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, CurrencyPair pair, Active active)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         Pair = pair;

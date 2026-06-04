@@ -10,12 +10,12 @@ public sealed record AccountCreatedEvent : EventBase, IAccountEvent
     public string Name { get; init; } = string.Empty;
     public string FormalName { get; init; } = string.Empty;
     public Alpha3 BookCurrency { get; init; } = null!;
-    public bool Active { get; init; }
+    public Active Active { get; init; } = false;
 
     [JsonConstructor]
     private AccountCreatedEvent() : base(null!, null!, null!, null!, string.Empty) { }
 
-    internal AccountCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active)
+    internal AccountCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         AccountID = accountID;

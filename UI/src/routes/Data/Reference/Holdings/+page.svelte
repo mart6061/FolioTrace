@@ -414,6 +414,8 @@
                       <form id={`holding-edit-${holding.holdingID}`} action="?/modifyHolding" method="POST" use:enhance={enhanceHoldingEdit}>
                         <input name="holdingID" type="hidden" value={holding.holdingID} />
                         <input name="holdingKind" type="hidden" value={holding.holdingKind} />
+                        <input name="bic" type="hidden" value={holding.bic ?? ''} />
+                        <input name="iban" type="hidden" value={holding.iban ?? ''} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Name</span>
                           <input class="h-8 w-40 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.name ?? holding.name) : holding.name} />
