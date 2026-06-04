@@ -10,7 +10,7 @@ public sealed record Account : IModel
     public required string Name { get; init; }
     public required string FormalName { get; init; }
     public required Alpha3 BookCurrency { get; init; }
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
     public required DisplayOrder DisplayOrder { get; init; }
     public required EventDateTime ValuationDateTime { get; init; }
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -19,7 +19,7 @@ public sealed record Account : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active, DisplayOrder? displayOrder, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active, DisplayOrder? displayOrder, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         AccountID = accountID;
         Name = name;
@@ -34,7 +34,7 @@ public sealed record Account : IModel
     }
 
     [SetsRequiredMembers]
-    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, bool active, DisplayOrder displayOrder, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
+    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active, DisplayOrder displayOrder, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
         : this(accountID, name, formalName, bookCurrency, active, displayOrder, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
     {
     }

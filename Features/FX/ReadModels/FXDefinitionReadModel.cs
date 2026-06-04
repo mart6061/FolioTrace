@@ -1,3 +1,5 @@
+using FolioTrace.Types;
+
 namespace FolioTrace.Aggregates;
 
 public sealed record FXDefinitionReadModel
@@ -12,7 +14,7 @@ public sealed record FXDefinitionReadModel
 
     public required string DisplayPair { get; init; }
 
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
 
     public required DateTime ValidFrom { get; init; }
 

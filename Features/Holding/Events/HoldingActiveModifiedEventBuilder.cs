@@ -13,14 +13,14 @@ public static class HoldingActiveModifiedEventBuilder
         return Create(request.UserID, request.EventDateTime, request.Reason, request.HoldingID, request.Active, holdings);
     }
 
-    public static Result<HoldingActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, HoldingID holdingID, bool active, Holdings? holdings = null)
+    public static Result<HoldingActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, HoldingID holdingID, Active active, Holdings? holdings = null)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
         EventID eventId = Guid.NewGuid();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, holdingID, active, holdings);
     }
 
-    public static Result<HoldingActiveModifiedEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, HoldingID holdingID, bool active, Holdings? holdings = null)
+    public static Result<HoldingActiveModifiedEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, HoldingID holdingID, Active active, Holdings? holdings = null)
     {
         var validationErrors = HoldingEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, holdingID);
         HoldingEventValidation.ValidateActiveHolding(validationErrors, holdingID, holdings);

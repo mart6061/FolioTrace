@@ -14,7 +14,7 @@ public sealed record FX : IModel
 
     public required string DisplayPair { get; init; }
 
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
 
     public required EventDateTime ValuationDateTime { get; init; }
 
@@ -26,7 +26,7 @@ public sealed record FX : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public FX(CurrencyPair pair, Alpha3 baseCurrency, Alpha3 quoteCurrency, string displayPair, bool active, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public FX(CurrencyPair pair, Alpha3 baseCurrency, Alpha3 quoteCurrency, string displayPair, Active active, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         Pair = pair;
         BaseCurrency = baseCurrency;

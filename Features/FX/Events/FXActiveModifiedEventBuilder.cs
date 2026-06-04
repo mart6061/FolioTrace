@@ -13,7 +13,7 @@ public static class FXActiveModifiedEventBuilder
         return Create(request.UserID, request.EventDateTime, request.Reason, request.Pair, request.Active);
     }
 
-    public static Result<FXActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, CurrencyPair pair, bool active)
+    public static Result<FXActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, CurrencyPair pair, Active active)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
         EventID eventId = Guid.NewGuid();

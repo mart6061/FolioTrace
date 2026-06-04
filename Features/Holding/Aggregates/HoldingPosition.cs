@@ -13,7 +13,7 @@ public sealed record HoldingPosition : IModel
     public required string InstrumentName { get; init; }
     public required string HoldingKind { get; init; }
     public required string Name { get; init; }
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
     public required bool Default { get; init; }
     public required bool IncludeInValuation { get; init; }
     public required decimal Quantity { get; init; }

@@ -906,11 +906,17 @@
       .flatMap((card) => card.movements);
   }
 
-  function investableTransactionSubtotals(cards: TransactionSetCard[]) {
+  function holdingCurrency(holding: Holding) {
+    return instrumentByID.get(holding.instrumentID)?.priceCurrency ||
+      accountByID.get(holding.accountID)?.bookCurrency ||
+      'Unknown';
+  }
+
+  function currencyTransactionSubtotals(cards: TransactionSetCard[]) {
     const groups = new Map<string, {
       creditTotal: number;
       debitTotal: number;
-      investible: boolean;
+      currency: string;
       setIDs: Set<string>;
     }>();
 
@@ -922,12 +928,12 @@
       if (!holding)
         continue;
 
-      const investible = holding.holdingKind === 'CashInvestable';
-      const key = String(investible);
+      const currency = holdingCurrency(holding);
+      const key = currency;
       const group = groups.get(key) ?? {
         creditTotal: 0,
         debitTotal: 0,
-        investible,
+        currency,
         setIDs: new Set<string>()
       };
       const bookCost = event.bookCost ?? 0;
@@ -945,12 +951,12 @@
     return [...groups.values()]
       .map((group) => ({
         creditTotal: group.creditTotal,
+        currency: group.currency,
         debitTotal: group.debitTotal,
-        investible: group.investible,
         netTotal: group.creditTotal - group.debitTotal,
         setCount: group.setIDs.size
       }))
-      .sort((left, right) => Number(right.investible) - Number(left.investible));
+      .sort((left, right) => left.currency.localeCompare(right.currency));
   }
 
   function holdingQuantityTotal(cards: TransactionSetCard[], holdingID: string) {
@@ -1592,7 +1598,7 @@
                     </td>
                   </tr>
                   {@const rowActiveTransactionMovements = activeTransactionMovements(rowTransactionCards)}
-                  {@const rowInvestableSubtotals = investableTransactionSubtotals(rowTransactionCards)}
+                  {@const rowCurrencySubtotals = currencyTransactionSubtotals(rowTransactionCards)}
                   <tr class="bg-slate-50/50">
                     <td class="px-3 py-3" colspan="6">
                       <div class="grid gap-3">
@@ -1602,12 +1608,12 @@
                         </div>
 
                         {#if rowTransactionCards.length}
-                          {#if rowInvestableSubtotals.length}
+                          {#if rowCurrencySubtotals.length}
                             <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
                               <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
                                 <thead class="bg-slate-50 text-slate-500">
                                   <tr>
-                                    <th class="px-3 py-2 font-semibold">Investible</th>
+                                    <th class="px-3 py-2 font-semibold">Currency</th>
                                     <th class="px-3 py-2 text-right font-semibold">Distinct sets</th>
                                     <th class="px-3 py-2 text-right font-semibold">Credit</th>
                                     <th class="px-3 py-2 text-right font-semibold">Debit</th>
@@ -1615,15 +1621,11 @@
                                   </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                  {#each rowInvestableSubtotals as subtotal}
+                                  {#each rowCurrencySubtotals as subtotal (subtotal.currency)}
                                     <tr>
                                       <td class="px-3 py-2 text-slate-700">
-                                        <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                          subtotal.investible
-                                            ? 'bg-teal-50 text-teal-700'
-                                            : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                          Investible = {subtotal.investible ? 'true' : 'false'}
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                                          {subtotal.currency}
                                         </span>
                                       </td>
                                       <td class="px-3 py-2 text-right font-mono text-slate-700">{subtotal.setCount}</td>
@@ -1993,7 +1995,7 @@
                             Cash Out
                           </button>
                           <button
-                            class="h-8 rounded-md bg-amber-700 px-3 text-sm font-medium text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             disabled={!account.active}
                             onclick={() => startFeesIn(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create a fees-in transaction for ${account.name}`}
@@ -2002,7 +2004,7 @@
                             Fees In
                           </button>
                           <button
-                            class="h-8 rounded-md bg-orange-700 px-3 text-sm font-medium text-white hover:bg-orange-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             disabled={!account.active}
                             onclick={() => startFeesOut(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create a fees-out transaction for ${account.name}`}

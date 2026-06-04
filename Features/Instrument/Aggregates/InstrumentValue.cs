@@ -13,7 +13,7 @@ public sealed record InstrumentValue : IModel
     public required Exchange Exchange { get; init; }
     public required CFI CFI { get; init; }
     public InstrumentLogo? Logo { get; init; }
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
     public required Alpha2 IncomeCountry { get; init; }
     public required Alpha2 PriceCountry { get; init; }
     public required Alpha3 PriceCurrency { get; init; }

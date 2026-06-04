@@ -25,7 +25,7 @@ public abstract record Holding : IModel
     public required AccountID AccountID { get; init; }
     public required InstrumentID InstrumentID { get; init; }
     public required string Name { get; init; }
-    public required bool Active { get; init; }
+    public required Active Active { get; init; }
     public required bool Default { get; init; }
     public bool IncludeInValuation => this is IHoldingPosition;
     public required EventDateTime ValuationDateTime { get; init; }
@@ -34,7 +34,7 @@ public abstract record Holding : IModel
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
     [SetsRequiredMembers]
-    protected Holding(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    protected Holding(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         HoldingID = holdingID ?? throw new ArgumentNullException(nameof(holdingID));
         AccountID = accountID ?? throw new ArgumentNullException(nameof(accountID));
@@ -97,7 +97,7 @@ public sealed record HoldingPositionMemo : Holding, IHoldingPosition
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingPositionMemo(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingPositionMemo(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -107,7 +107,7 @@ public sealed record HoldingPositionCash : Holding, IHoldingPosition
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingPositionCash(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingPositionCash(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -123,7 +123,7 @@ public abstract record HoldingBank : Holding
     public required IBAN IBAN { get; init; }
 
     [SetsRequiredMembers]
-    protected HoldingBank(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
+    protected HoldingBank(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
         BankName = bankName?.Trim() ?? string.Empty;
@@ -143,7 +143,7 @@ public sealed record HoldingCashDebt : HoldingBank, IHoldingPosition
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingCashDebt(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
+    public HoldingCashDebt(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime, bankName, accountName, sortCode, accountNumber, bic, iban)
     {
     }
@@ -153,7 +153,7 @@ public sealed record HoldingCashInvestable : HoldingBank, IHoldingPosition
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingCashInvestable(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
+    public HoldingCashInvestable(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime, bankName, accountName, sortCode, accountNumber, bic, iban)
     {
     }
@@ -163,7 +163,7 @@ public sealed record HoldingCashNonInvestable : HoldingBank, IHoldingPosition
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingCashNonInvestable(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
+    public HoldingCashNonInvestable(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, string bankName, string accountName, SortCode sortCode, BankAccountNumber accountNumber, BIC bic, IBAN iban)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime, bankName, accountName, sortCode, accountNumber, bic, iban)
     {
     }
@@ -173,7 +173,7 @@ public sealed record HoldingInflow : Holding, IHoldingNominal
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingInflow(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingInflow(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -183,7 +183,7 @@ public sealed record HoldingOutflow : Holding, IHoldingNominal
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingOutflow(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingOutflow(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -193,7 +193,7 @@ public sealed record HoldingInspecieIn : Holding, IHoldingNominal
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingInspecieIn(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingInspecieIn(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -203,7 +203,7 @@ public sealed record HoldingInspecieOut : Holding, IHoldingNominal
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingInspecieOut(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingInspecieOut(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -212,7 +212,7 @@ public sealed record HoldingInspecieOut : Holding, IHoldingNominal
 public abstract record HoldingFees : Holding, IHoldingNominal
 {
     [SetsRequiredMembers]
-    protected HoldingFees(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    protected HoldingFees(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -222,7 +222,7 @@ public sealed record HoldingFeesCustodian : HoldingFees
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingFeesCustodian(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingFeesCustodian(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -232,7 +232,7 @@ public sealed record HoldingFeesAdministrator : HoldingFees
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingFeesAdministrator(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingFeesAdministrator(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -242,7 +242,7 @@ public sealed record HoldingFeesBank : HoldingFees
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingFeesBank(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingFeesBank(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -252,7 +252,7 @@ public sealed record HoldingIncome : Holding, IHoldingNominal
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingIncome(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingIncome(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }
@@ -262,7 +262,7 @@ public sealed record HoldingInterest : Holding, IHoldingNominal
 {
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingInterest(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, bool active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingInterest(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name, Active active, bool isDefault, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
         : base(holdingID, accountID, instrumentID, name, active, isDefault, valuationDateTime, asOfDateTime, lastEventID, lastAuditDateTime)
     {
     }

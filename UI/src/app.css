@@ -551,14 +551,14 @@ main {
 }
 
 .system-menu-pill-overlap {
-  margin-left: -24px;
+  margin-left: -42px;
   border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 70%, #ffffff);
   background: color-mix(in srgb, var(--menu-tint, var(--accent-soft)) 92%, #ffffff);
   box-shadow:
-    -9px 0 14px rgb(15 23 42 / 0.18),
+    -12px 0 16px rgb(15 23 42 / 0.2),
     inset 1px 0 0 rgb(255 255 255 / 0.58);
   color: var(--menu-tint-text, var(--accent-strong));
-  padding-left: 35px;
+  padding-left: 52px;
 }
 
 .system-menu-pill-overlap:hover,
