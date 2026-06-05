@@ -25,8 +25,4 @@ public sealed record InstrumentPriceCash : IInstrumentPrice
         if (Price.Amount != 1m)
             throw new ArgumentException("Cash price must be fixed at 1.", nameof(price));
     }
-
-    public string ToData() => Price.ToData();
-
-    public string ToDetail() => $"{nameof(InstrumentPriceCash)}: (Price: {Price.ToDetail()})";
 }

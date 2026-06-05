@@ -8,6 +8,7 @@ public sealed record TicketTradeFillRequest(
     string Reason,
     TicketNumber TicketNumber,
     Guid? FillID,
+    LegalEntityIdentifier BrokerLEI,
     decimal Price,
     decimal Quantity,
     string? Note);

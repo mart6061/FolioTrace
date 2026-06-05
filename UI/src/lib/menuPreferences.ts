@@ -9,6 +9,7 @@ export type MenuPreferenceDefinition = {
 export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'blotter', label: 'Blotter' },
+  { id: 'value-valuations', label: 'Valuations' },
   { id: 'account', label: 'Account' },
   { id: 'compliance', label: 'Compliance' },
   { id: 'administration', label: 'Administration' },

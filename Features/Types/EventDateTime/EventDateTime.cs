@@ -31,10 +31,6 @@ public sealed record EventDateTime : IType
     public static implicit operator EventDateTime(DateTime dt) => new EventDateTime(dt);
 
     public override string ToString() => Value.ToString("o");
-
-    public string ToData() => Value.ToString("o");
-
-    public string ToDetail() => $"{nameof(EventDateTime)}: {this}";
 }
 
 internal sealed class EventDateTimeJsonConverter : JsonConverter<EventDateTime>

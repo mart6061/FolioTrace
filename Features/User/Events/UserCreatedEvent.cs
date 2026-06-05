@@ -33,12 +33,6 @@ public sealed record UserCreatedEvent : EventBase, IUserEvent
 
     public override string Type => nameof(UserCreatedEvent); // TODO: Remind me to create a universal constant for this event type.
 
-    public override string ToData() =>
-        $"{base.ToData()}|{DisplayName}|{DisplayPreferences.ToData()}|{ValuationPreferences.ToData()}";
-
-    public override string ToDetail() =>
-        $"{nameof(UserCreatedEvent)}: ({base.ToDetail()}, DisplayName: {DisplayName}, DisplayPreferences: {DisplayPreferences.ToDetail()}, ValuationPreferences: {ValuationPreferences.ToDetail()})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, string? displayName, UserDisplayPreferences? displayPreferences, UserProfileValuationPreferences? valuationPreferences)
     {
         var messages = new List<string>();

@@ -15,6 +15,7 @@ public static class ApiEndpointRegistration
     private static readonly JsonSerializerOptions NotificationJsonOptions = new(JsonSerializerDefaults.Web);
 
     private const string AccountEventsRoute = "/API/Events/Account";
+    private const string BrokerEventsRoute = "/API/Events/Broker";
     private const string CountryEventsRoute = "/API/Events/Country";
     private const string CurrencyEventsRoute = "/API/Events/Currency";
     private const string FXEventsRoute = "/API/Events/FX";
@@ -34,16 +35,18 @@ public static class ApiEndpointRegistration
     {
         var api = app.MapGroup("");
 
-        api.MapGet("/HelloWorld", () => "Hello World!");
+        api.MapGet("/HelloWorld", () => "Hello World!").WithTags("System");
         api.MapDiagnosticsEndpoints();
         api.MapNotificationEndpoints();
         api.MapSystemEndpoints();
         api.MapAccountEndpoints();
+        api.MapBrokerEndpoints();
         api.MapCountryEndpoints();
         api.MapCurrencyEndpoints();
         api.MapFXEndpoints();
         api.MapFXRateEndpoints();
         api.MapHoldingEndpoints();
+        api.MapValuationEndpoints();
         api.MapInstrumentEndpoints();
         api.MapInstrumentValueEndpoints();
         api.MapTicketEndpoints();
@@ -52,6 +55,7 @@ public static class ApiEndpointRegistration
         api.MapUserValuationPreferencesEndpoints();
         api.MapUserBookmarksEndpoints();
         api.MapAccountEventEndpoints();
+        api.MapBrokerEventEndpoints();
         api.MapCountryEventEndpoints();
         api.MapCurrencyEventEndpoints();
         api.MapFXEventEndpoints();
@@ -72,7 +76,7 @@ public static class ApiEndpointRegistration
 
     private static void MapNotificationEndpoints(this RouteGroupBuilder api)
     {
-        var notifications = api.MapGroup("/Notifications");
+        var notifications = api.MapGroup("/Notifications").WithTags("Notifications");
 
         notifications.MapGet("/Aggregates", async (HttpContext context, AggregateUpdateNotificationService notificationService) =>
         {
@@ -135,12 +139,13 @@ public static class ApiEndpointRegistration
 
     private static void MapDiagnosticsEndpoints(this RouteGroupBuilder api)
     {
-        var diagnostics = api.MapGroup("/Diagnostics");
+        var diagnostics = api.MapGroup("/Diagnostics").WithTags("Diagnostics");
 
-        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, AccountService accountService, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, HoldingService holdingService, HoldingPositionService holdingPositionService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, UserService userService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
+        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, AccountService accountService, BrokerService brokerService, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, HoldingService holdingService, HoldingPositionService holdingPositionService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, UserService userService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
         {
             var repositoryDiagnostics = eventRepository.GetCacheDiagnostics();
             var accountDiagnostics = accountService.GetDiagnostics();
+            var brokerDiagnostics = brokerService.GetDiagnostics();
             var countryDiagnostics = countryService.GetDiagnostics();
             var currencyDiagnostics = currencyService.GetDiagnostics();
             var fxDiagnostics = fxService.GetDiagnostics();
@@ -167,6 +172,10 @@ public static class ApiEndpointRegistration
                     accountDiagnostics.CacheEntryCount,
                     accountDiagnostics.AccountCount,
                     accountDiagnostics.EstimatedMemoryBytes),
+                new BrokerServiceDiagnosticsResponse(
+                    brokerDiagnostics.CacheEntryCount,
+                    brokerDiagnostics.BrokerCount,
+                    brokerDiagnostics.EstimatedMemoryBytes),
                 new CountryServiceDiagnosticsResponse(
                     countryDiagnostics.CacheEntryCount,
                     countryDiagnostics.CountryCount,
@@ -347,7 +356,7 @@ public static class ApiEndpointRegistration
 
     private static void MapSystemEndpoints(this RouteGroupBuilder api)
     {
-        var system = api.MapGroup("/System");
+        var system = api.MapGroup("/System").WithTags("System");
 
         system.MapGet("/Health", () => Results.Ok(new
         {
@@ -419,7 +428,7 @@ public static class ApiEndpointRegistration
 
     private static void MapAccountEndpoints(this RouteGroupBuilder api)
     {
-        var accounts = api.MapGroup("/Accounts");
+        var accounts = api.MapGroup("/Accounts").WithTags("Accounts");
 
         accounts.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, AccountService accountService) =>
         {
@@ -431,9 +440,23 @@ public static class ApiEndpointRegistration
         });
     }
 
+    private static void MapBrokerEndpoints(this RouteGroupBuilder api)
+    {
+        var brokers = api.MapGroup("/Brokers").WithTags("Brokers");
+
+        brokers.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, BrokerService brokerService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await brokerService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await brokerService.Get(valuationDate));
+        });
+    }
+
     private static void MapHoldingEndpoints(this RouteGroupBuilder api)
     {
-        var holdings = api.MapGroup("/Holdings");
+        var holdings = api.MapGroup("/Holdings").WithTags("Holdings");
 
         holdings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, string? holdingKind, bool? includeInactive, HoldingService holdingService) =>
         {
@@ -453,10 +476,10 @@ public static class ApiEndpointRegistration
             return Results.Ok(aggregate with { Items = items });
         });
 
-        api.MapGet("/HoldingPositions", async (DateTime eventDateTime, DateTime? auditDateTime, ValuationDateBasis? valuationDateBasis, Guid? holdingID, Guid? accountID, Guid? instrumentID, bool? includeExcluded, bool? includeZero, HoldingPositionService holdingPositionService) =>
+        api.MapGet("/HoldingPositions", async (DateTime eventDateTime, DateTime? auditDateTime, HoldingDateBasis? holdingDateBasis, Guid? holdingID, Guid? accountID, Guid? instrumentID, bool? includeExcluded, bool? includeZero, HoldingPositionService holdingPositionService) =>
         {
             var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
-            var basis = valuationDateBasis ?? ValuationDateBasis.EventDateTime;
+            var basis = holdingDateBasis ?? HoldingDateBasis.EventDateTime;
             var asAt = auditDateTime.HasValue
                 ? AuditDateTimeBuilder.Create(auditDateTime.Value)
                 : AuditDateTimeBuilder.Create();
@@ -468,12 +491,42 @@ public static class ApiEndpointRegistration
                 includeZero == true);
 
             return Results.Ok(await holdingPositionService.Get(valuationDateTime, asAt, filter, basis));
+        }).WithTags("Holdings");
+    }
+
+    private static void MapValuationEndpoints(this RouteGroupBuilder api)
+    {
+        var valuations = api.MapGroup("/Valuations").WithTags("Valuations");
+
+        valuations.MapGet("/", async (
+            DateTime eventDateTime,
+            DateTime? auditDateTime,
+            HoldingDateBasis? holdingDateBasis,
+            InstrumentPriceBasis? instrumentPriceBasis,
+            string? valuationCurrency,
+            Guid? accountID,
+            ValuationService valuationService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+            var asAt = auditDateTime.HasValue
+                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
+                : AuditDateTimeBuilder.Create();
+            var currency = Alpha3Builder.Create(string.IsNullOrWhiteSpace(valuationCurrency) ? "GBP" : valuationCurrency);
+            var account = accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null;
+
+            return Results.Ok(await valuationService.Get(
+                valuationDate,
+                asAt,
+                holdingDateBasis ?? HoldingDateBasis.EventDateTime,
+                instrumentPriceBasis ?? InstrumentPriceBasis.Mid,
+                currency,
+                account));
         });
     }
 
     private static void MapCountryEndpoints(this RouteGroupBuilder api)
     {
-        var countries = api.MapGroup("/Countries");
+        var countries = api.MapGroup("/Countries").WithTags("Countries");
 
         countries.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, CountryService countryService) =>
         {
@@ -487,7 +540,7 @@ public static class ApiEndpointRegistration
 
     private static void MapCurrencyEndpoints(this RouteGroupBuilder api)
     {
-        var currencies = api.MapGroup("/Currencies");
+        var currencies = api.MapGroup("/Currencies").WithTags("Currencies");
 
         currencies.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, CurrencyService currencyService) =>
         {
@@ -501,7 +554,7 @@ public static class ApiEndpointRegistration
 
     private static void MapFXEndpoints(this RouteGroupBuilder api)
     {
-        var fxs = api.MapGroup("/FXs");
+        var fxs = api.MapGroup("/FXs").WithTags("FX");
 
         fxs.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, FXService fxService) =>
         {
@@ -515,7 +568,7 @@ public static class ApiEndpointRegistration
 
     private static void MapFXRateEndpoints(this RouteGroupBuilder api)
     {
-        var fxRates = api.MapGroup("/FXRates");
+        var fxRates = api.MapGroup("/FXRates").WithTags("FX Rates");
 
         fxRates.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, FXRateService fxRateService) =>
         {
@@ -529,7 +582,7 @@ public static class ApiEndpointRegistration
 
     private static void MapInstrumentEndpoints(this RouteGroupBuilder api)
     {
-        var instruments = api.MapGroup("/Instruments");
+        var instruments = api.MapGroup("/Instruments").WithTags("Instruments");
 
         instruments.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, InstrumentService instrumentService) =>
         {
@@ -543,7 +596,7 @@ public static class ApiEndpointRegistration
 
     private static void MapInstrumentValueEndpoints(this RouteGroupBuilder api)
     {
-        var instrumentValues = api.MapGroup("/InstrumentValues");
+        var instrumentValues = api.MapGroup("/InstrumentValues").WithTags("Instrument Values");
 
         instrumentValues.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, InstrumentValueService instrumentValueService) =>
         {
@@ -557,7 +610,7 @@ public static class ApiEndpointRegistration
 
     private static void MapTicketEndpoints(this RouteGroupBuilder api)
     {
-        var tickets = api.MapGroup("/Tickets");
+        var tickets = api.MapGroup("/Tickets").WithTags("Tickets");
 
         tickets.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, bool? includeClosed, TicketService ticketService) =>
         {
@@ -622,7 +675,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserEndpoints(this RouteGroupBuilder api)
     {
-        var users = api.MapGroup("/Users");
+        var users = api.MapGroup("/Users").WithTags("Users");
 
         var getUsers = async (DateTime eventDateTime, DateTime? auditDateTime, UserService userService) =>
         {
@@ -633,7 +686,7 @@ public static class ApiEndpointRegistration
                 : Results.Ok(await userService.Get(valuationDate));
         };
 
-        users.MapGet("", getUsers);
+        users.MapGet("", getUsers).ExcludeFromDescription();
         users.MapGet("/", getUsers);
 
         users.MapGet("/{userID:guid}", async (Guid userID, DateTime eventDateTime, DateTime? auditDateTime, UserService userService) =>
@@ -652,7 +705,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserMenuPreferencesEndpoints(this RouteGroupBuilder api)
     {
-        var userMenuPreferences = api.MapGroup("/UserMenuPreferences");
+        var userMenuPreferences = api.MapGroup("/UserMenuPreferences").WithTags("User Menu Preferences");
 
         userMenuPreferences.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserMenuPreferencesService userMenuPreferencesService) =>
         {
@@ -667,7 +720,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserValuationPreferencesEndpoints(this RouteGroupBuilder api)
     {
-        var userValuationPreferences = api.MapGroup("/UserValuationPreferences");
+        var userValuationPreferences = api.MapGroup("/UserValuationPreferences").WithTags("User Valuation Preferences");
 
         userValuationPreferences.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserValuationPreferencesService userValuationPreferencesService) =>
         {
@@ -682,7 +735,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserBookmarksEndpoints(this RouteGroupBuilder api)
     {
-        var userBookmarks = api.MapGroup("/UserBookmarks");
+        var userBookmarks = api.MapGroup("/UserBookmarks").WithTags("User Bookmarks");
 
         userBookmarks.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? userID, UserBookmarksService userBookmarksService) =>
         {
@@ -697,12 +750,15 @@ public static class ApiEndpointRegistration
 
     private static void MapAccountEventEndpoints(this RouteGroupBuilder api)
     {
-        var accountEvents = api.MapGroup("/Events/Account");
+        var accountEvents = api.MapGroup("/Events/Account").WithTags("Account Events");
 
-        accountEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        accountEvents.MapGet("/", async (Guid? accountID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IAccountEvent>(Constants.Initialisation.AccountsStreamId, cancellationToken);
-            return Results.Ok(events.Select(ToAccountEventResponse).ToList());
+            if (accountID.HasValue)
+                events = events.Where(@event => GetAccountID(@event) == accountID.Value).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToAccountEventResponse));
         });
 
         accountEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -774,14 +830,93 @@ public static class ApiEndpointRegistration
         });
     }
 
+    private static void MapBrokerEventEndpoints(this RouteGroupBuilder api)
+    {
+        var brokerEvents = api.MapGroup("/Events/Broker").WithTags("Broker Events");
+
+        brokerEvents.MapGet("/", async (string? lei, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IBrokerEvent>(Constants.Initialisation.BrokersStreamId, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(lei))
+                events = events.Where(@event => string.Equals(GetBrokerLEI(@event), lei, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToBrokerEventResponse));
+        });
+
+        brokerEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IBrokerEvent brokerEvent
+                ? Results.Ok(ToBrokerEventResponse(brokerEvent))
+                : Results.NotFound();
+        });
+
+        brokerEvents.MapPost($"/{nameof(BrokerCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerCreatedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.BrokersStreamId,
+                BrokerEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => BrokerCreatedEventBuilder.Create(request),
+                cancellationToken));
+
+        brokerEvents.MapPost($"/{nameof(BrokerModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerModifiedRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.BrokersStreamId,
+                BrokerEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => BrokerModifiedEventBuilder.Create(request),
+                cancellationToken));
+
+        brokerEvents.MapPost($"/{nameof(BrokerActiveSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerActiveSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.BrokersStreamId,
+                BrokerEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => BrokerActiveSetEventBuilder.Create(request),
+                cancellationToken));
+
+        brokerEvents.MapPost($"/{nameof(BrokerApprovedDateTimeSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerApprovedDateTimeSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.BrokersStreamId,
+                BrokerEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => BrokerApprovedDateTimeSetEventBuilder.Create(request),
+                cancellationToken));
+
+        brokerEvents.MapPost($"/{nameof(BrokerNextReviewSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerNextReviewSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.BrokersStreamId,
+                BrokerEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => BrokerNextReviewSetEventBuilder.Create(request),
+                cancellationToken));
+
+        brokerEvents.MapPost($"/{nameof(BrokerNotesSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerNotesSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.BrokersStreamId,
+                BrokerEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => BrokerNotesSetEventBuilder.Create(request),
+                cancellationToken));
+    }
+
     private static void MapCountryEventEndpoints(this RouteGroupBuilder api)
     {
-        var countryEvents = api.MapGroup("/Events/Country");
+        var countryEvents = api.MapGroup("/Events/Country").WithTags("Country Events");
 
-        countryEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        countryEvents.MapGet("/", async (string? alpha2, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<ICountryEvent>(Constants.Initialisation.CountriesStreamId, cancellationToken);
-            return Results.Ok(events.Select(ToCountryEventResponse).ToList());
+            if (!string.IsNullOrWhiteSpace(alpha2))
+                events = events.Where(@event => string.Equals(GetCountryAlpha2(@event), alpha2, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToCountryEventResponse));
         });
 
         countryEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -790,20 +925,6 @@ public static class ApiEndpointRegistration
             return @event is ICountryEvent
                 ? Results.Ok(@event)
                 : Results.NotFound();
-        });
-
-        countryEvents.MapPost("/", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IEnumerable<IEventBase> events, CancellationToken cancellationToken) =>
-        {
-            var eventData = events.ToList();
-            if (eventData.Any(@event => @event is not ICountryEvent))
-                return Results.BadRequest("All events must be country events.");
-
-            await eventRepository.AppendAsync(Constants.Initialisation.CountriesStreamId, eventData, cancellationToken);
-            cacheInvalidationService.Invalidate(eventData);
-
-            return Results.Accepted(
-                CountryEventsRoute,
-                eventData.Select(@event => EventEndpointFactory.CreateAcceptedEventResponse(CountryEventsRoute, @event)));
         });
 
         countryEvents.MapPost($"/{nameof(CountryCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, CountryCreatedRequest request, CancellationToken cancellationToken) =>
@@ -836,12 +957,15 @@ public static class ApiEndpointRegistration
 
     private static void MapCurrencyEventEndpoints(this RouteGroupBuilder api)
     {
-        var currencyEvents = api.MapGroup("/Events/Currency");
+        var currencyEvents = api.MapGroup("/Events/Currency").WithTags("Currency Events");
 
-        currencyEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        currencyEvents.MapGet("/", async (string? alphabeticCode, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<ICurrencyEvent>(Constants.Initialisation.CurrenciesStreamId, cancellationToken);
-            return Results.Ok(events.Select(ToCurrencyEventResponse).ToList());
+            if (!string.IsNullOrWhiteSpace(alphabeticCode))
+                events = events.Where(@event => string.Equals(GetCurrencyAlphabeticCode(@event), alphabeticCode, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToCurrencyEventResponse));
         });
 
         currencyEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -873,12 +997,15 @@ public static class ApiEndpointRegistration
 
     private static void MapFXEventEndpoints(this RouteGroupBuilder api)
     {
-        var fxEvents = api.MapGroup("/Events/FX");
+        var fxEvents = api.MapGroup("/Events/FX").WithTags("FX Events");
 
-        fxEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        fxEvents.MapGet("/", async (string? pair, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IFXEvent>(Constants.Initialisation.FXsStreamId, cancellationToken);
-            return Results.Ok(events.Select(ToFXEventResponse).ToList());
+            if (!string.IsNullOrWhiteSpace(pair))
+                events = events.Where(@event => string.Equals(GetFXPair(@event), pair, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToFXEventResponse));
         });
 
         fxEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -912,12 +1039,18 @@ public static class ApiEndpointRegistration
 
     private static void MapFXRateEventEndpoints(this RouteGroupBuilder api)
     {
-        var fxRateEvents = api.MapGroup("/Events/FXRate");
+        var fxRateEvents = api.MapGroup("/Events/FXRate").WithTags("FX Rate Events");
 
-        fxRateEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        fxRateEvents.MapGet("/", async (string? pair, DateTime? rateValuationDateTime, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IFXRateEvent>(Constants.Initialisation.FXRatesStreamId, cancellationToken);
-            return Results.Ok(events.Select(ToFXRateEventResponse).ToList());
+            if (!string.IsNullOrWhiteSpace(pair))
+                events = events.Where(@event => string.Equals(GetFXRatePair(@event), pair, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (rateValuationDateTime.HasValue)
+                events = events.Where(@event => @event.EventDateTime.Value == rateValuationDateTime.Value).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToFXRateEventResponse));
         });
 
         fxRateEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -941,9 +1074,9 @@ public static class ApiEndpointRegistration
 
     private static void MapHoldingEventEndpoints(this RouteGroupBuilder api)
     {
-        var holdingEvents = api.MapGroup("/Events/Holding");
+        var holdingEvents = api.MapGroup("/Events/Holding").WithTags("Holding Events");
 
-        holdingEvents.MapGet("/", async (Guid? holdingID, Guid? accountID, Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        holdingEvents.MapGet("/", async (Guid? holdingID, Guid? accountID, Guid? instrumentID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IHoldingEvent>(Constants.Initialisation.HoldingsStreamId, cancellationToken);
 
@@ -962,7 +1095,7 @@ public static class ApiEndpointRegistration
                     .Where(@event => @event is HoldingCreatedEvent createdEvent && createdEvent.InstrumentID.Value == instrumentID.Value)
                     .ToList();
 
-            return Results.Ok(events.Select(ToHoldingEventResponse).ToList());
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToHoldingEventResponse));
         });
 
         holdingEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -975,13 +1108,14 @@ public static class ApiEndpointRegistration
 
         MapHoldingCreatedEndpoint<HoldingPositionMemoCreatedRequest, HoldingPositionMemoCreatedEvent>(holdingEvents, nameof(HoldingPositionMemoCreatedEvent), HoldingPositionMemoCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingPositionCashCreatedRequest, HoldingPositionCashCreatedEvent>(holdingEvents, nameof(HoldingPositionCashCreatedEvent), HoldingPositionCashCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingPositionAssetCreatedRequest, HoldingPositionAssetCreatedEvent>(holdingEvents, nameof(HoldingPositionAssetCreatedEvent), HoldingPositionAssetCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashDebtCreatedRequest, HoldingCashDebtCreatedEvent>(holdingEvents, nameof(HoldingCashDebtCreatedEvent), HoldingCashDebtCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashInvestableCreatedRequest, HoldingCashInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashInvestableCreatedEvent), HoldingCashInvestableCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashNonInvestableCreatedRequest, HoldingCashNonInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashNonInvestableCreatedEvent), HoldingCashNonInvestableCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingInflowCreatedRequest, HoldingInflowCreatedEvent>(holdingEvents, nameof(HoldingInflowCreatedEvent), HoldingInflowCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingOutflowCreatedRequest, HoldingOutflowCreatedEvent>(holdingEvents, nameof(HoldingOutflowCreatedEvent), HoldingOutflowCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingInspecieInCreatedRequest, HoldingInspecieInCreatedEvent>(holdingEvents, nameof(HoldingInspecieInCreatedEvent), HoldingInspecieInCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingInspecieOutCreatedRequest, HoldingInspecieOutCreatedEvent>(holdingEvents, nameof(HoldingInspecieOutCreatedEvent), HoldingInspecieOutCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingInSpecieInCreatedRequest, HoldingInSpecieInCreatedEvent>(holdingEvents, nameof(HoldingInSpecieInCreatedEvent), HoldingInSpecieInCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingInSpecieOutCreatedRequest, HoldingInSpecieOutCreatedEvent>(holdingEvents, nameof(HoldingInSpecieOutCreatedEvent), HoldingInSpecieOutCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingFeesCustodianCreatedRequest, HoldingFeesCustodianCreatedEvent>(holdingEvents, nameof(HoldingFeesCustodianCreatedEvent), HoldingFeesCustodianCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingFeesAdministratorCreatedRequest, HoldingFeesAdministratorCreatedEvent>(holdingEvents, nameof(HoldingFeesAdministratorCreatedEvent), HoldingFeesAdministratorCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingFeesBankCreatedRequest, HoldingFeesBankCreatedEvent>(holdingEvents, nameof(HoldingFeesBankCreatedEvent), HoldingFeesBankCreatedEventBuilder.Create);
@@ -990,13 +1124,14 @@ public static class ApiEndpointRegistration
 
         MapHoldingModifiedEndpoint<HoldingPositionMemoModifiedRequest, HoldingPositionMemoModifiedEvent>(holdingEvents, nameof(HoldingPositionMemoModifiedEvent), HoldingPositionMemoModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingPositionCashModifiedRequest, HoldingPositionCashModifiedEvent>(holdingEvents, nameof(HoldingPositionCashModifiedEvent), HoldingPositionCashModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingPositionAssetModifiedRequest, HoldingPositionAssetModifiedEvent>(holdingEvents, nameof(HoldingPositionAssetModifiedEvent), HoldingPositionAssetModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashDebtModifiedRequest, HoldingCashDebtModifiedEvent>(holdingEvents, nameof(HoldingCashDebtModifiedEvent), HoldingCashDebtModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashInvestableModifiedRequest, HoldingCashInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashInvestableModifiedEvent), HoldingCashInvestableModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashNonInvestableModifiedRequest, HoldingCashNonInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashNonInvestableModifiedEvent), HoldingCashNonInvestableModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingInflowModifiedRequest, HoldingInflowModifiedEvent>(holdingEvents, nameof(HoldingInflowModifiedEvent), HoldingInflowModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingOutflowModifiedRequest, HoldingOutflowModifiedEvent>(holdingEvents, nameof(HoldingOutflowModifiedEvent), HoldingOutflowModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingInspecieInModifiedRequest, HoldingInspecieInModifiedEvent>(holdingEvents, nameof(HoldingInspecieInModifiedEvent), HoldingInspecieInModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingInspecieOutModifiedRequest, HoldingInspecieOutModifiedEvent>(holdingEvents, nameof(HoldingInspecieOutModifiedEvent), HoldingInspecieOutModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingInSpecieInModifiedRequest, HoldingInSpecieInModifiedEvent>(holdingEvents, nameof(HoldingInSpecieInModifiedEvent), HoldingInSpecieInModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingInSpecieOutModifiedRequest, HoldingInSpecieOutModifiedEvent>(holdingEvents, nameof(HoldingInSpecieOutModifiedEvent), HoldingInSpecieOutModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingFeesCustodianModifiedRequest, HoldingFeesCustodianModifiedEvent>(holdingEvents, nameof(HoldingFeesCustodianModifiedEvent), HoldingFeesCustodianModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingFeesAdministratorModifiedRequest, HoldingFeesAdministratorModifiedEvent>(holdingEvents, nameof(HoldingFeesAdministratorModifiedEvent), HoldingFeesAdministratorModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingFeesBankModifiedRequest, HoldingFeesBankModifiedEvent>(holdingEvents, nameof(HoldingFeesBankModifiedEvent), HoldingFeesBankModifiedEventBuilder.Create);
@@ -1067,12 +1202,15 @@ public static class ApiEndpointRegistration
 
     private static void MapInstrumentEventEndpoints(this RouteGroupBuilder api)
     {
-        var instrumentEvents = api.MapGroup("/Events/Instrument");
+        var instrumentEvents = api.MapGroup("/Events/Instrument").WithTags("Instrument Events");
 
-        instrumentEvents.MapGet("/", async (IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        instrumentEvents.MapGet("/", async (Guid? instrumentID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
-            return Results.Ok(events.Select(ToInstrumentEventResponse).ToList());
+            if (instrumentID.HasValue)
+                events = events.Where(@event => GetInstrumentID(@event) == instrumentID.Value).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToInstrumentEventResponse));
         });
 
         instrumentEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -1140,9 +1278,9 @@ public static class ApiEndpointRegistration
 
     private static void MapInstrumentPriceEventEndpoints(this RouteGroupBuilder api)
     {
-        var priceEvents = api.MapGroup("/Events/InstrumentPrice");
+        var priceEvents = api.MapGroup("/Events/InstrumentPrice").WithTags("Instrument Price Events");
 
-        priceEvents.MapGet("/", async (Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        priceEvents.MapGet("/", async (Guid? instrumentID, DateTime? priceValuationDateTime, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IInstrumentPriceEvent>(Constants.Initialisation.InstrumentPricesStreamId, cancellationToken);
             if (instrumentID.HasValue)
@@ -1150,7 +1288,10 @@ public static class ApiEndpointRegistration
                     .Where(@event => @event is InstrumentPriceSetEvent setEvent && setEvent.InstrumentID.Value == instrumentID.Value)
                     .ToList();
 
-            return Results.Ok(events.Select(ToInstrumentPriceEventResponse).ToList());
+            if (priceValuationDateTime.HasValue)
+                events = events.Where(@event => @event.EventDateTime.Value == priceValuationDateTime.Value).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToInstrumentPriceEventResponse));
         });
 
         priceEvents.MapPost($"/{nameof(InstrumentPriceSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentPriceSetRequest request, CancellationToken cancellationToken) =>
@@ -1171,9 +1312,9 @@ public static class ApiEndpointRegistration
 
     private static void MapInstrumentIncomeEventEndpoints(this RouteGroupBuilder api)
     {
-        var incomeEvents = api.MapGroup("/Events/InstrumentIncome");
+        var incomeEvents = api.MapGroup("/Events/InstrumentIncome").WithTags("Instrument Income Events");
 
-        incomeEvents.MapGet("/", async (Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        incomeEvents.MapGet("/", async (Guid? instrumentID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<IInstrumentIncomeEvent>(Constants.Initialisation.InstrumentIncomesStreamId, cancellationToken);
             if (instrumentID.HasValue)
@@ -1181,7 +1322,7 @@ public static class ApiEndpointRegistration
                     .Where(@event => @event is InstrumentIncomeSetEvent setEvent && setEvent.InstrumentID.Value == instrumentID.Value)
                     .ToList();
 
-            return Results.Ok(events.Select(ToInstrumentIncomeEventResponse).ToList());
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToInstrumentIncomeEventResponse));
         });
 
         incomeEvents.MapPost($"/{nameof(InstrumentIncomeSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentIncomeSetRequest request, CancellationToken cancellationToken) =>
@@ -1202,9 +1343,9 @@ public static class ApiEndpointRegistration
 
     private static void MapTransactionEventEndpoints(this RouteGroupBuilder api)
     {
-        var transactionEvents = api.MapGroup("/Events/Transaction");
+        var transactionEvents = api.MapGroup("/Events/Transaction").WithTags("Transaction Events");
 
-        transactionEvents.MapGet("/", async (Guid? eventSetID, Guid? holdingID, Guid? accountID, Guid? instrumentID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        transactionEvents.MapGet("/", async (Guid? eventSetID, Guid? holdingID, Guid? accountID, Guid? instrumentID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId, cancellationToken);
 
@@ -1219,11 +1360,23 @@ public static class ApiEndpointRegistration
                     .ToList();
 
             if (holdingID.HasValue)
-                events = events
+            {
+                var holdingMovementEventIds = events
                     .OfType<ITransactionMovementEvent>()
                     .Where(@event => @event.HoldingID?.Value == holdingID.Value)
-                    .Cast<ITransactionEvent>()
+                    .Select(@event => @event.EventID.Value)
+                    .ToHashSet();
+
+                events = events
+                    .Where(@event => @event switch
+                    {
+                        ITransactionMovementEvent movementEvent => movementEvent.HoldingID?.Value == holdingID.Value,
+                        TransactionCancellationEvent cancellationEvent => holdingMovementEventIds.Contains(cancellationEvent.CancelledEventID.Value) ||
+                            cancellationEvent.CancelledIDGroup.Any(cancelled => holdingMovementEventIds.Contains(cancelled.Value)),
+                        _ => false
+                    })
                     .ToList();
+            }
 
             if (accountID.HasValue)
             {
@@ -1251,7 +1404,7 @@ public static class ApiEndpointRegistration
                     .Cast<ITransactionEvent>()
                     .ToList();
 
-            return Results.Ok(events.Select(ToTransactionEventResponse).ToList());
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToTransactionEventResponse));
         });
 
         transactionEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -1303,15 +1456,15 @@ public static class ApiEndpointRegistration
 
     private static void MapTicketEventEndpoints(this RouteGroupBuilder api)
     {
-        var ticketEvents = api.MapGroup("/Events/Ticket");
+        var ticketEvents = api.MapGroup("/Events/Ticket").WithTags("Ticket Events");
 
-        ticketEvents.MapGet("/", async (int? ticketNumber, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        ticketEvents.MapGet("/", async (int? ticketNumber, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
             var events = await eventRepository.LoadStreamAsync<ITicket>(Constants.Initialisation.TicketsStreamId, cancellationToken);
             if (ticketNumber.HasValue)
                 events = events.Where(@event => @event.TicketNumber.Value == ticketNumber.Value).ToList();
 
-            return Results.Ok(events.Select(ToTicketEventResponse).ToList());
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToTicketEventResponse));
         });
 
         ticketEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
@@ -1477,7 +1630,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserEventEndpoints(this RouteGroupBuilder api)
     {
-        var userEvents = api.MapGroup("/Events/User");
+        var userEvents = api.MapGroup("/Events/User").WithTags("User Events");
 
         userEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
@@ -1575,7 +1728,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserMenuPreferencesEventEndpoints(this RouteGroupBuilder api)
     {
-        var userMenuPreferencesEvents = api.MapGroup("/Events/UserMenuPreferences");
+        var userMenuPreferencesEvents = api.MapGroup("/Events/UserMenuPreferences").WithTags("User Menu Preferences Events");
 
         userMenuPreferencesEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
@@ -1616,7 +1769,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserValuationPreferencesEventEndpoints(this RouteGroupBuilder api)
     {
-        var userValuationPreferencesEvents = api.MapGroup("/Events/UserValuationPreferences");
+        var userValuationPreferencesEvents = api.MapGroup("/Events/UserValuationPreferences").WithTags("User Valuation Preferences Events");
 
         userValuationPreferencesEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
@@ -1657,7 +1810,7 @@ public static class ApiEndpointRegistration
 
     private static void MapUserBookmarksEventEndpoints(this RouteGroupBuilder api)
     {
-        var userBookmarksEvents = api.MapGroup("/Events/UserBookmarks");
+        var userBookmarksEvents = api.MapGroup("/Events/UserBookmarks").WithTags("User Bookmark Events");
 
         userBookmarksEvents.MapGet("/", async (Guid? userID, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
@@ -1722,6 +1875,70 @@ public static class ApiEndpointRegistration
             EventDateTimeBuilder.Create(request.ValuationPreferences.ValuationDate),
             request.ValuationPreferences.ShowIncome,
             request.ValuationPreferences.ShowBook);
+
+    private static Guid? GetAccountID(IAccountEvent @event) =>
+        @event switch
+        {
+            AccountCreatedEvent createdEvent => createdEvent.AccountID.Value,
+            AccountModifiedEvent modifiedEvent => modifiedEvent.AccountID.Value,
+            AccountActiveModifiedEvent activeEvent => activeEvent.AccountID.Value,
+            AccountDisplayOrderSetEvent displayOrderSetEvent => displayOrderSetEvent.AccountID.Value,
+            _ => null
+        };
+
+    private static string? GetBrokerLEI(IBrokerEvent @event) =>
+        @event switch
+        {
+            BrokerCreatedEvent createdEvent => createdEvent.LEI.Value,
+            BrokerModifiedEvent modifiedEvent => modifiedEvent.LEI.Value,
+            BrokerActiveSetEvent activeEvent => activeEvent.LEI.Value,
+            BrokerApprovedDateTimeSetEvent approvedEvent => approvedEvent.LEI.Value,
+            BrokerNextReviewSetEvent nextReviewEvent => nextReviewEvent.LEI.Value,
+            BrokerNotesSetEvent notesEvent => notesEvent.LEI.Value,
+            _ => null
+        };
+
+    private static string? GetCountryAlpha2(ICountryEvent @event) =>
+        @event switch
+        {
+            CountryCreatedEvent createdEvent => createdEvent.Alpha2.Value,
+            CountryModifiedEvent modifiedEvent => modifiedEvent.Alpha2.Value,
+            CountryFlagModifiedEvent flagEvent => flagEvent.Alpha2.Value,
+            _ => null
+        };
+
+    private static string? GetCurrencyAlphabeticCode(ICurrencyEvent @event) =>
+        @event switch
+        {
+            CurrencyCreatedEvent createdEvent => createdEvent.AlphabeticCode.Value,
+            CurrencyModifiedEvent modifiedEvent => modifiedEvent.AlphabeticCode.Value,
+            _ => null
+        };
+
+    private static string? GetFXPair(IFXEvent @event) =>
+        @event switch
+        {
+            FXCreatedEvent createdEvent => createdEvent.Pair.Value,
+            FXActiveModifiedEvent activeEvent => activeEvent.Pair.Value,
+            _ => null
+        };
+
+    private static string? GetFXRatePair(IFXRateEvent @event) =>
+        @event is FXRateSetEvent setEvent
+            ? setEvent.Pair.Value
+            : null;
+
+    private static Guid? GetInstrumentID(IInstrumentEvent @event) =>
+        @event switch
+        {
+            InstrumentCreatedEvent createdEvent => createdEvent.InstrumentID.Value,
+            InstrumentModifiedEvent modifiedEvent => modifiedEvent.InstrumentID.Value,
+            InstrumentActiveModifiedEvent activeEvent => activeEvent.InstrumentID.Value,
+            InstrumentIdentifierSetEvent setEvent => setEvent.InstrumentID.Value,
+            InstrumentIdentifierUnsetEvent unsetEvent => unsetEvent.InstrumentID.Value,
+            InstrumentTermsSetEvent termsEvent => termsEvent.InstrumentID.Value,
+            _ => null
+        };
 
     private static object CreateAcceptedEventsResponse(string eventRoute, IReadOnlyList<IEventBase> events) =>
         new
@@ -1823,7 +2040,7 @@ public static class ApiEndpointRegistration
             statusCode: StatusCodes.Status503ServiceUnavailable);
 
     private static object ToAccountEventResponse(IAccountEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             AccountCreatedEvent createdEvent => new
             {
@@ -1882,10 +2099,96 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
+
+    private static object ToBrokerEventResponse(IBrokerEvent @event) =>
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
+        {
+            BrokerCreatedEvent createdEvent => new
+            {
+                Type = createdEvent.Type,
+                EventID = createdEvent.EventID.Value,
+                UserID = createdEvent.UserID.Value,
+                EventDateTime = createdEvent.EventDateTime.Value,
+                AuditDateTime = createdEvent.AuditDateTime.Value,
+                createdEvent.Reason,
+                createdEvent.Name,
+                LEI = createdEvent.LEI.Value,
+                Commission = createdEvent.Commission.Value,
+                createdEvent.Active,
+                ApprovedDateTime = createdEvent.ApprovedDateTime.Value,
+                NextReview = createdEvent.NextReview.Value,
+                createdEvent.Notes
+            },
+            BrokerModifiedEvent modifiedEvent => new
+            {
+                Type = modifiedEvent.Type,
+                EventID = modifiedEvent.EventID.Value,
+                UserID = modifiedEvent.UserID.Value,
+                EventDateTime = modifiedEvent.EventDateTime.Value,
+                AuditDateTime = modifiedEvent.AuditDateTime.Value,
+                modifiedEvent.Reason,
+                LEI = modifiedEvent.LEI.Value,
+                modifiedEvent.Name,
+                Commission = modifiedEvent.Commission.Value
+            },
+            BrokerActiveSetEvent activeSetEvent => new
+            {
+                Type = activeSetEvent.Type,
+                EventID = activeSetEvent.EventID.Value,
+                UserID = activeSetEvent.UserID.Value,
+                EventDateTime = activeSetEvent.EventDateTime.Value,
+                AuditDateTime = activeSetEvent.AuditDateTime.Value,
+                activeSetEvent.Reason,
+                LEI = activeSetEvent.LEI.Value,
+                activeSetEvent.Active
+            },
+            BrokerApprovedDateTimeSetEvent approvedDateTimeSetEvent => new
+            {
+                Type = approvedDateTimeSetEvent.Type,
+                EventID = approvedDateTimeSetEvent.EventID.Value,
+                UserID = approvedDateTimeSetEvent.UserID.Value,
+                EventDateTime = approvedDateTimeSetEvent.EventDateTime.Value,
+                AuditDateTime = approvedDateTimeSetEvent.AuditDateTime.Value,
+                approvedDateTimeSetEvent.Reason,
+                LEI = approvedDateTimeSetEvent.LEI.Value,
+                ApprovedDateTime = approvedDateTimeSetEvent.ApprovedDateTime.Value
+            },
+            BrokerNextReviewSetEvent nextReviewSetEvent => new
+            {
+                Type = nextReviewSetEvent.Type,
+                EventID = nextReviewSetEvent.EventID.Value,
+                UserID = nextReviewSetEvent.UserID.Value,
+                EventDateTime = nextReviewSetEvent.EventDateTime.Value,
+                AuditDateTime = nextReviewSetEvent.AuditDateTime.Value,
+                nextReviewSetEvent.Reason,
+                LEI = nextReviewSetEvent.LEI.Value,
+                NextReview = nextReviewSetEvent.NextReview.Value
+            },
+            BrokerNotesSetEvent notesSetEvent => new
+            {
+                Type = notesSetEvent.Type,
+                EventID = notesSetEvent.EventID.Value,
+                UserID = notesSetEvent.UserID.Value,
+                EventDateTime = notesSetEvent.EventDateTime.Value,
+                AuditDateTime = notesSetEvent.AuditDateTime.Value,
+                notesSetEvent.Reason,
+                LEI = notesSetEvent.LEI.Value,
+                notesSetEvent.Notes
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason
+            }
+        });
 
     private static object ToCountryEventResponse(ICountryEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             CountryCreatedEvent createdEvent => new
             {
@@ -1938,10 +2241,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToCurrencyEventResponse(ICurrencyEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             CurrencyCreatedEvent createdEvent => new
             {
@@ -1978,10 +2281,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToHoldingEventResponse(IHoldingEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             HoldingCreatedEvent createdEvent => new
             {
@@ -2044,10 +2347,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToFXEventResponse(IFXEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             FXCreatedEvent createdEvent => new
             {
@@ -2086,10 +2389,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToFXRateEventResponse(IFXRateEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             FXRateSetEvent setEvent => new
             {
@@ -2112,10 +2415,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToInstrumentEventResponse(IInstrumentEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             InstrumentCreatedEvent createdEvent => new
             {
@@ -2207,10 +2510,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToInstrumentPriceEventResponse(IInstrumentPriceEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             InstrumentPriceSetEvent setEvent => new
             {
@@ -2232,10 +2535,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToInstrumentIncomeEventResponse(IInstrumentIncomeEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             InstrumentIncomeSetEvent setEvent => new
             {
@@ -2257,10 +2560,10 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToTransactionEventResponse(ITransactionEvent @event) =>
-        @event switch
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
         {
             TransactionCreditEvent creditEvent => new
             {
@@ -2320,7 +2623,7 @@ public static class ApiEndpointRegistration
                 AuditDateTime = @event.AuditDateTime.Value,
                 @event.Reason
             }
-        };
+        });
 
     private static object ToTicketEventResponse(ITicket @event) =>
         @event switch
@@ -2374,6 +2677,7 @@ public static class ApiEndpointRegistration
             TicketTradeFillAddedEvent fillAddedEvent => WithTicketBase(fillAddedEvent, new
             {
                 fillAddedEvent.FillID,
+                fillAddedEvent.BrokerLEI,
                 fillAddedEvent.Price,
                 fillAddedEvent.Quantity,
                 fillAddedEvent.Note
@@ -2381,6 +2685,7 @@ public static class ApiEndpointRegistration
             TicketTradeFillModifiedEvent fillModifiedEvent => WithTicketBase(fillModifiedEvent, new
             {
                 fillModifiedEvent.FillID,
+                fillModifiedEvent.BrokerLEI,
                 fillModifiedEvent.Price,
                 fillModifiedEvent.Quantity,
                 fillModifiedEvent.Note
@@ -2400,8 +2705,9 @@ public static class ApiEndpointRegistration
             _ => WithTicketBase(@event, new { })
         };
 
-    private static object WithTicketBase(ITicket @event, object details) =>
-        new
+    private static object WithTicketBase(ITicket @event, object details)
+    {
+        var response = new
         {
             Type = @event.Type,
             EventID = @event.EventID.Value,
@@ -2412,6 +2718,9 @@ public static class ApiEndpointRegistration
             TicketNumber = @event.TicketNumber.Value,
             Details = details
         };
+
+        return EventPropertyDetailsFactory.WithPropertyDetails(@event, response, details);
+    }
 
     private static object ToResponse(TicketProposalAllocation allocation) =>
         new

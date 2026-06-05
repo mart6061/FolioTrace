@@ -35,10 +35,6 @@ public sealed record InstrumentIdentifier : IType
         Value = normalised;
     }
 
-    public string ToData() => $"{Type}|{Value}";
-
-    public string ToDetail() => $"{nameof(InstrumentIdentifier)}: ({Type}: {Value})";
-
     public override string ToString() => $"{Type}: {Value}";
 
     private static void ValidateTypedValue(InstrumentIdentifierType type, string value)

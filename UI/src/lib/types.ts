@@ -101,7 +101,7 @@ export type UserValuationDateOption =
 export type UserValuationPreferences = {
   userID: string;
   valuationDateOption: UserValuationDateOption;
-  valuationDateBasis: ValuationDateBasis;
+  holdingDateBasis: HoldingDateBasis;
   showZeroBalances: boolean;
   hasStoredPreferences: boolean;
   valuationDateTime: string;
@@ -134,10 +134,11 @@ export type HoldingKind =
   | 'CashNonInvestable'
   | 'PositionMemo'
   | 'PositionCash'
+  | 'PositionAsset'
   | 'Inflow'
   | 'Outflow'
-  | 'InspecieIn'
-  | 'InspecieOut'
+  | 'InSpecieIn'
+  | 'InSpecieOut'
   | 'FeesCustodian'
   | 'FeesAdministrator'
   | 'FeesBank'
@@ -178,18 +179,71 @@ export type HoldingPosition = Holding & {
   instrumentName: string;
   quantity: number;
   bookCost: number;
-  valuationDateBasis: ValuationDateBasis;
+  holdingDateBasis: HoldingDateBasis;
 };
 
-export type ValuationDateBasis = 'EventDateTime' | 'SettlementDateTime';
+export type HoldingDateBasis = 'EventDateTime' | 'SettlementDateTime';
+
+export type InstrumentPriceBasis = 'Bid' | 'Ask' | 'Mid' | 'NAV';
 
 export type HoldingPositions = {
   valuationDateTime: string;
-  valuationDateBasis: ValuationDateBasis;
+  holdingDateBasis: HoldingDateBasis;
   asOfDateTime: string;
   lastEventID: string;
   lastAuditDateTime: string;
   items: HoldingPosition[];
+};
+
+export type ValuationTotals = {
+  bookValue: number;
+  bookCost: number;
+  incompleteCount: number;
+};
+
+export type ValuationItem = {
+  accountID: string;
+  accountName: string;
+  holdingID: string;
+  holdingName: string;
+  holdingKind: HoldingKind | string;
+  instrumentID: string;
+  instrumentName: string;
+  name: string;
+  priceCurrency: string;
+  valuationCurrency: string;
+  fxPair?: string | null;
+  fxDisplayPair?: string | null;
+  fxRate?: number | null;
+  quantity: number;
+  localPrice?: number | null;
+  quotePrice?: number | null;
+  bookValue?: number | null;
+  bookCost: number;
+  complete: boolean;
+  incompleteReason?: string | null;
+};
+
+export type AccountValuation = {
+  accountID: string;
+  accountName: string;
+  bookCurrency: string;
+  valuationCurrency: string;
+  items: ValuationItem[];
+  totals: ValuationTotals;
+};
+
+export type Valuations = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  holdingDateBasis: HoldingDateBasis;
+  instrumentPriceBasis: InstrumentPriceBasis;
+  valuationCurrency: string;
+  accountID?: string | null;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  accounts: AccountValuation[];
+  totals: ValuationTotals;
 };
 
 export type Currency = {
@@ -404,6 +458,7 @@ export type TicketTradeAllocation = {
 
 export type TicketFill = {
   fillID: string;
+  brokerLEI: string;
   price: number;
   quantity: number;
   note: string;
@@ -464,6 +519,14 @@ export type ReferenceEventBase = {
   auditDateTime: string;
   reason: string;
   applicationStatus?: 'applied' | 'omitted';
+  propertyDetails?: EventPropertyDetail[];
+};
+
+export type EventPropertyDetail = {
+  name: string;
+  description: string;
+  order?: number;
+  value: unknown;
 };
 
 export type CountryReferenceEvent = ReferenceEventBase & {
@@ -525,6 +588,13 @@ export type TransactionReferenceEvent = ReferenceEventBase & {
   bookCost?: number;
   cancelledEventID?: string;
   cancelledIDGroup?: string[];
+};
+
+export type HoldingHistoryEvent = HoldingReferenceEvent | TransactionReferenceEvent;
+
+export type ValuationHistoryEvent = HoldingHistoryEvent & {
+  exclusionKind: 'valuationDate' | 'auditDate';
+  exclusionReason: string;
 };
 
 export type TicketReferenceEvent = ReferenceEventBase & {

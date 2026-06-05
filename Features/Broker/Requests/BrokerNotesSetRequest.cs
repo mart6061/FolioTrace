@@ -1,0 +1,11 @@
+using FolioTrace.Common;
+using FolioTrace.Types;
+
+namespace FolioTrace.Aggregates;
+
+public sealed record BrokerNotesSetRequest(
+    UserID UserID,
+    EventDateTime EventDateTime,
+    string Reason,
+    LegalEntityIdentifier LEI,
+    string Notes) : IEventRequest;

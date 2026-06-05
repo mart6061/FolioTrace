@@ -81,10 +81,6 @@ public sealed record Instruments : IAggregate
         LastAuditDateTime = GetLastAuditDateTime();
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Instruments)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
-
     private void ApplyExisting(InstrumentID instrumentID, Func<Instrument, Instrument> apply)
     {
         var index = Items.FindIndex(instrument => instrument.InstrumentID == instrumentID);

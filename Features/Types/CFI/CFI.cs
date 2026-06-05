@@ -64,10 +64,6 @@ public sealed record CFI : IType
     public static implicit operator CFI(string value) => new(value);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(CFI)}: {Value} ({Category.Name} / {Group.Name})";
 }
 
 internal sealed class CFIJsonConverter : JsonConverter<CFI>

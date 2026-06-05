@@ -74,10 +74,6 @@ public sealed record UserBookmarks : IModel
     public UserBookmarkItem? Find(UserBookmarkType bookmarkType, string url) =>
         Items.SingleOrDefault(item => item.BookmarkType == bookmarkType && string.Equals(item.Url, url, StringComparison.Ordinal));
 
-    public string ToData() => $"{UserID.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}|{string.Join(';', Items.Select(item => item.ToData()))}";
-
-    public string ToDetail() => $"{nameof(UserBookmarks)}: (UserID: {UserID.ToDetail()}, Items: {Items.Count})";
-
     private void Apply(IUserBookmarksEvent userBookmarksEvent)
     {
         switch (userBookmarksEvent)

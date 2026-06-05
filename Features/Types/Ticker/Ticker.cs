@@ -43,10 +43,6 @@ public sealed record Ticker : IType
     public static implicit operator Ticker(string s) => new Ticker(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(Ticker)}: {this}";
 }
 
 internal sealed class TickerJsonConverter : JsonConverter<Ticker>

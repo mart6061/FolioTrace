@@ -1,72 +1,27 @@
-import { getFXRateEvents } from '$lib/server/api';
+import { getFXRateEvents, readApplicationStatus, readEventPropertyDetails } from '$lib/server/api';
 import { json } from '@sveltejs/kit';
 
 export const GET = async ({ fetch, url }) => {
   const pair = (url.searchParams.get('pair') || '').trim();
-  const valuationDateTime = parseOptionalDate(url.searchParams.get('valuationDateTime'));
-  const rateValuationDateTime = parseOptionalDate(url.searchParams.get('rateValuationDateTime'));
-  const auditDateTime = parseOptionalDate(url.searchParams.get('auditDateTime'));
 
   if (!pair)
     return json({ message: 'Pair is required.' }, { status: 400 });
 
-  const events = await getFXRateEvents(fetch);
-  const history = events
-    .map((event) => normalizeFXRateEvent(event as Record<string, unknown>))
-    .filter((event) => event.pair.toLowerCase() === pair.toLowerCase())
-    .filter((event) => isInValuationScope(event, valuationDateTime))
-    .filter((event) => isDisplayedRateEvent(event, rateValuationDateTime))
-    .map((event) => addApplicationStatus(event, auditDateTime))
-    .sort(compareEvents);
+  const history = (await getFXRateEvents(fetch, {
+    pair,
+    valuationDateTime: url.searchParams.get('valuationDateTime'),
+    auditDateTime: url.searchParams.get('auditDateTime'),
+    rateValuationDateTime: url.searchParams.get('rateValuationDateTime')
+  }))
+    .map((event) => normalizeFXRateEvent(event as Record<string, unknown>));
 
   return json(history);
 };
 
-function compareEvents(left: { eventDateTime: string; auditDateTime: string; eventID: string }, right: { eventDateTime: string; auditDateTime: string; eventID: string }) {
-  return (
-    new Date(left.eventDateTime).getTime() - new Date(right.eventDateTime).getTime() ||
-    new Date(left.auditDateTime).getTime() - new Date(right.auditDateTime).getTime() ||
-    left.eventID.localeCompare(right.eventID)
-  );
-}
-
-function parseOptionalDate(value: string | null) {
-  if (!value)
-    return null;
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function isInValuationScope(event: { eventDateTime: string }, valuationDateTime: Date | null) {
-  if (!valuationDateTime)
-    return true;
-
-  return new Date(event.eventDateTime).getTime() <= valuationDateTime.getTime();
-}
-
-function isDisplayedRateEvent(event: { eventDateTime: string }, rateValuationDateTime: Date | null) {
-  if (!rateValuationDateTime)
-    return true;
-
-  return new Date(event.eventDateTime).getTime() === rateValuationDateTime.getTime();
-}
-
-function addApplicationStatus<TEvent extends { auditDateTime: string }>(event: TEvent, auditDateTime: Date | null) {
-  if (!auditDateTime)
-    return { ...event, applicationStatus: 'applied' as const };
-
-  return {
-    ...event,
-    applicationStatus: new Date(event.auditDateTime).getTime() <= auditDateTime.getTime()
-      ? 'applied' as const
-      : 'omitted' as const
-  };
-}
-
 function normalizeFXRateEvent(event: Record<string, unknown>) {
   return {
     $type: readString(event, '$type', 'type', 'Type'),
+    applicationStatus: readApplicationStatus(event),
     eventID: readString(event, 'eventID', 'eventId', 'EventID', 'id', 'Id'),
     userID: readString(event, 'userID', 'userId', 'UserID'),
     eventDateTime: readString(event, 'eventDateTime', 'EventDateTime'),
@@ -74,7 +29,8 @@ function normalizeFXRateEvent(event: Record<string, unknown>) {
     reason: readString(event, 'reason', 'Reason'),
     pair: readString(event, 'pair', 'Pair'),
     displayPair: readString(event, 'displayPair', 'DisplayPair'),
-    summary: summarizeFXRateEvent(event)
+    summary: summarizeFXRateEvent(event),
+    propertyDetails: readEventPropertyDetails(event)
   };
 }
 

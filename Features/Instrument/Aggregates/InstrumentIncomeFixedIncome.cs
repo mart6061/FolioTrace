@@ -16,8 +16,4 @@ public sealed record InstrumentIncomeFixedIncome : IInstrumentIncome
     {
         AccruedInterest = accruedInterest ?? throw new ArgumentNullException(nameof(accruedInterest));
     }
-
-    public string ToData() => AccruedInterest.ToData();
-
-    public string ToDetail() => $"{nameof(InstrumentIncomeFixedIncome)}: (AccruedInterest: {AccruedInterest.ToDetail()})";
 }

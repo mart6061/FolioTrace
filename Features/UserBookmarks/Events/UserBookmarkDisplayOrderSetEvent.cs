@@ -24,8 +24,4 @@ public sealed record UserBookmarkDisplayOrderSetEvent : EventBase, IUserBookmark
     }
 
     public override string Type => nameof(UserBookmarkDisplayOrderSetEvent);
-
-    public override string ToData() => $"{base.ToData()}|{BookmarkID}|{DisplayOrder}";
-
-    public override string ToDetail() => $"{nameof(UserBookmarkDisplayOrderSetEvent)}: ({base.ToDetail()}, BookmarkID: {BookmarkID}, DisplayOrder: {DisplayOrder})";
 }

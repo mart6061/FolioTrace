@@ -40,8 +40,4 @@ public sealed record Account : IModel
     }
 
     public override string ToString() => Name;
-
-    public string ToData() => $"{AccountID.ToData()}|{Name}|{FormalName}|{BookCurrency.ToData()}|{Active}|{DisplayOrder.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Account)}: {Name} ({AccountID}, BookCurrency: {BookCurrency}, Active: {Active}, DisplayOrder: {DisplayOrder.ToDetail()}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

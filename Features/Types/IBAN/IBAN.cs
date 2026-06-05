@@ -68,10 +68,6 @@ public sealed record IBAN : IType
     public static implicit operator IBAN(string s) => new(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(IBAN)}: {this}";
 }
 
 internal sealed class IBANJsonConverter : JsonConverter<IBAN>

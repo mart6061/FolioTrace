@@ -11,7 +11,7 @@ internal static class UserValuationPreferencesEventValidation
         AuditDateTime? auditDateTime,
         string? reason,
         UserValuationDateOption valuationDateOption,
-        ValuationDateBasis valuationDateBasis)
+        HoldingDateBasis holdingDateBasis)
     {
         var messages = new List<string>();
 
@@ -33,8 +33,8 @@ internal static class UserValuationPreferencesEventValidation
         if (!Enum.IsDefined(valuationDateOption))
             messages.Add($"ValuationDateOption '{valuationDateOption}' is not supported.");
 
-        if (!Enum.IsDefined(valuationDateBasis))
-            messages.Add($"ValuationDateBasis '{valuationDateBasis}' is not supported.");
+        if (!Enum.IsDefined(holdingDateBasis))
+            messages.Add($"HoldingDateBasis '{holdingDateBasis}' is not supported.");
 
         return messages;
     }

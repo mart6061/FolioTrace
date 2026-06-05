@@ -14,6 +14,7 @@ public sealed class ReferenceDataServiceTests
         var repository = new FakeEventRepository();
 
         AssertReferenceService<Accounts, AccountServiceDiagnostics>(new AccountService(repository));
+        AssertReferenceService<Brokers, BrokerServiceDiagnostics>(new BrokerService(repository));
         AssertReferenceService<Countries, CountryServiceDiagnostics>(new CountryService(repository));
         AssertReferenceService<Currencies, CurrencyServiceDiagnostics>(new CurrencyService(repository));
         AssertReferenceService<FXs, FXServiceDiagnostics>(new FXService(repository));

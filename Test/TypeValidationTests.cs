@@ -175,8 +175,9 @@ public sealed class TypeValidationTests
         Assert.Equal("Shares", cfi.Group.Name);
         Assert.Equal('V', cfi.Attribute1);
         Assert.Equal('R', cfi.Attribute4);
-        Assert.Equal("ESVUFR", cfi.ToData());
-        Assert.Contains("Equities / Shares", cfi.ToDetail());
+        Assert.Equal("ESVUFR", cfi.Value);
+        Assert.Equal("Equities", cfi.Category.Name);
+        Assert.Equal("Shares", cfi.Group.Name);
     }
 
     [Fact]

@@ -21,8 +21,4 @@ public sealed record UserMenuPreferencesCreatedEvent : EventBase, IUserMenuPrefe
     }
 
     public override string Type => nameof(UserMenuPreferencesCreatedEvent);
-
-    public override string ToData() => $"{base.ToData()}|{string.Join(';', Items.Select(item => item.ToData()))}";
-
-    public override string ToDetail() => $"{nameof(UserMenuPreferencesCreatedEvent)}: ({base.ToDetail()}, Items: {Items.Count})";
 }

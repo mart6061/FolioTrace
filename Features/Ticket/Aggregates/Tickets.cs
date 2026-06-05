@@ -122,7 +122,7 @@ public sealed record Tickets : IAggregate
                 {
                     Stage = TicketStage.Trade,
                     TradeDecision = TicketDecision.PendingApproval,
-                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.Price, @event.Quantity, @event.Note)]
+                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.Note)]
                 });
                 break;
             case TicketTradeFillModifiedEvent @event:
@@ -130,7 +130,7 @@ public sealed record Tickets : IAggregate
                 {
                     Stage = TicketStage.Trade,
                     TradeDecision = TicketDecision.PendingApproval,
-                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.Price, @event.Quantity, @event.Note)]
+                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.Note)]
                 });
                 break;
             case TicketTradeFillRemovedEvent @event:
@@ -211,10 +211,6 @@ public sealed record Tickets : IAggregate
         LastEventID = @event.EventID;
         LastAuditDateTime = LastAuditDateTimeBuilder.Create(Items.Max(ticket => ticket.LastAuditDateTime.Value));
     }
-
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}|{Items.Count}";
-
-    public string ToDetail() => $"{nameof(Tickets)}: (Items: {Items.Count})";
 
     private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<ITicket> items)
     {

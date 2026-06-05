@@ -8,6 +8,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddFolioTraceServices(this IServiceCollection services)
     {
         services.AddSingleton<AccountService>();
+        services.AddSingleton<BrokerService>();
         services.AddSingleton<CountryService>();
         services.AddSingleton<CurrencyService>();
         services.AddSingleton<FXService>();
@@ -16,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<HoldingPositionService>();
         services.AddSingleton<InstrumentService>();
         services.AddSingleton<InstrumentValueService>();
+        services.AddSingleton<ValuationService>();
         services.AddSingleton<TicketService>();
         services.AddSingleton<UserService>();
         services.AddSingleton<UserMenuPreferencesService>();
@@ -31,6 +33,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>(provider => new AggregateCacheInvalidator<AccountDisplayOrderSetEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<IBrokerEvent>>(provider => new AggregateCacheInvalidator<IBrokerEvent>(provider.GetRequiredService<BrokerService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<CountryCreatedEvent>>(provider => new AggregateCacheInvalidator<CountryCreatedEvent>(provider.GetRequiredService<CountryService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<CountryModifiedEvent>>(provider => new AggregateCacheInvalidator<CountryModifiedEvent>(provider.GetRequiredService<CountryService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<CountryFlagModifiedEvent>>(provider => new AggregateCacheInvalidator<CountryFlagModifiedEvent>(provider.GetRequiredService<CountryService>().Invalidate));
@@ -71,6 +74,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountActiveModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IBrokerEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryFlagModifiedEvent>>());

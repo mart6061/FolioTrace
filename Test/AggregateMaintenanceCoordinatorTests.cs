@@ -164,6 +164,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
 
         var countryService = new CountryService(eventRepository);
         var accountService = new AccountService(eventRepository);
+        var brokerService = new BrokerService(eventRepository);
         var currencyService = new CurrencyService(eventRepository);
         var fxService = new FXService(eventRepository);
         var fxRateService = new FXRateService(eventRepository, new NullFXRateReadModelRepository());
@@ -175,6 +176,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         return new AggregateMaintenanceCoordinator(
             options,
             accountService,
+            brokerService,
             countryService,
             currencyService,
             fxService,

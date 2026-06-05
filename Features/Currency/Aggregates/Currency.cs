@@ -48,8 +48,4 @@ public sealed record Currency : IModel
     }
 
     public override string ToString() => AlphabeticCode.ToString();
-
-    public string ToData() => $"{AlphabeticCode.ToData()}|{NumericCode}|{DecimalPlace}|{Name}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Currency)}: {Name} ({AlphabeticCode}, {NumericCode:D3}, {DecimalPlace}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

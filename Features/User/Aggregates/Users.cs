@@ -117,10 +117,6 @@ public sealed record Users : IAggregate
         LastAuditDateTime = LastAuditDateTimeBuilder.Create(Items.Max(user => user.LastAuditDateTime.Value));
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}|{Items.Count}";
-
-    public string ToDetail() => $"{nameof(Users)}: (Items: {Items.Count})";
-
     private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<IUserEvent> items)
     {
         if (valuationDateTime is null)

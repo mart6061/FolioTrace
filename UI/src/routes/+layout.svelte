@@ -91,6 +91,7 @@
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.tickets },
+    { id: 'value-valuations', label: 'Valuations', path: '/Valuations', tone: menuTones.value },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
     { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
@@ -107,6 +108,7 @@
     { id: 'value-instruments', label: 'Instruments', path: '/Value/InstrumentValues', tone: menuTones.value }
   ];
   const referenceItems: MenuItem[] = [
+    { id: 'reference-broker', label: 'Broker', path: '/Data/Reference/Brokers', tone: menuTones.reference },
     { id: 'reference-country', label: 'Country', path: '/Data/Reference/Countries', tone: menuTones.reference },
     { id: 'reference-currency', label: 'Currency', path: '/Data/Reference/Currencies', tone: menuTones.reference },
     { id: 'reference-fx', label: 'FX', path: '/Value/FXs', tone: menuTones.reference },
@@ -373,7 +375,7 @@
       return true;
 
     if (valueItems.includes(item))
-      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('value');
+      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('value') && isConfiguredMenuVisible(item.id);
 
     if (referenceItems.includes(item))
       return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('reference');

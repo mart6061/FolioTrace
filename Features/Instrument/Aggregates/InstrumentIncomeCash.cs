@@ -25,8 +25,4 @@ public sealed record InstrumentIncomeCash : IInstrumentIncome
         if (Income.Value != 0m)
             throw new ArgumentException("Cash income yield must be zero.", nameof(income));
     }
-
-    public string ToData() => Income.ToData();
-
-    public string ToDetail() => $"{nameof(InstrumentIncomeCash)}: (Income: {Income.ToDetail()})";
 }

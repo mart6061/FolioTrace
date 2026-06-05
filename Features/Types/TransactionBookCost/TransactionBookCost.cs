@@ -24,11 +24,11 @@ public sealed record TransactionBookCost : IType
 
     internal static TransactionBookCost FromJson(decimal value) => new(value);
 
+    public static implicit operator decimal(TransactionBookCost bookCost) => bookCost?.Value ?? 0m;
+
+    public static implicit operator TransactionBookCost(decimal value) => new(value);
+
     public override string ToString() => Value.ToString("0.########");
-
-    public string ToData() => Value.ToString("0.########");
-
-    public string ToDetail() => $"{nameof(TransactionBookCost)}: {this}";
 }
 
 internal sealed class TransactionBookCostJsonConverter : JsonConverter<TransactionBookCost>

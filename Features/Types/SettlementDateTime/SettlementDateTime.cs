@@ -27,10 +27,6 @@ public sealed record SettlementDateTime : IType
     public static implicit operator SettlementDateTime(DateTime dt) => new(dt);
 
     public override string ToString() => Value.ToString("o");
-
-    public string ToData() => Value.ToString("o");
-
-    public string ToDetail() => $"{nameof(SettlementDateTime)}: {this}";
 }
 
 internal sealed class SettlementDateTimeJsonConverter : JsonConverter<SettlementDateTime>

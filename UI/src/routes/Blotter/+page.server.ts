@@ -2,6 +2,7 @@ import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
+  getBrokers,
   getInstrumentValues,
   getInstruments,
   getTicketStageOptions,
@@ -39,9 +40,10 @@ export const load = async ({ fetch, url }) => {
   const asOfDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
 
   try {
-    const [tickets, accounts, instruments, instrumentValues, ticketStageOptions] = await Promise.all([
+    const [tickets, accounts, brokers, instruments, instrumentValues, ticketStageOptions] = await Promise.all([
       getTickets(fetch, eventDateTime, asOfDateTime),
       getAccounts(fetch, eventDateTime, asOfDateTime),
+      getBrokers(fetch, eventDateTime, asOfDateTime),
       getInstruments(fetch, eventDateTime, asOfDateTime),
       getInstrumentValues(fetch, eventDateTime, asOfDateTime),
       getTicketStageOptions(fetch)
@@ -50,6 +52,7 @@ export const load = async ({ fetch, url }) => {
     return {
       accounts,
       auditDateTime,
+      brokers,
       error: '',
       instruments,
       instrumentValues,
@@ -61,6 +64,7 @@ export const load = async ({ fetch, url }) => {
     return {
       accounts: null,
       auditDateTime,
+      brokers: null,
       error: error instanceof Error ? error.message : 'Unable to load the blotter.',
       instruments: null,
       instrumentValues: null,
@@ -167,6 +171,10 @@ export const actions = {
     if (!ticketNumber || !eventDateTime || !targetPrice || !totalAmount || allocations.length === 0)
       return fail(400, responseFailure('saveProposal', 'Proposal price, quantity, and allocations are required.'));
 
+    const proposalTotalError = validateAllocationTotal(allocations, totalAmount, 'Proposal allocations');
+    if (proposalTotalError)
+      return fail(400, responseFailure('saveProposal', proposalTotalError));
+
     const ticketProposalRequest: TicketProposalRequest = {
       allocations,
       eventDateTime: toApiDateTime(eventDateTime),
@@ -222,6 +230,10 @@ export const actions = {
           if (!targetPrice || !totalAmount || allocations.length === 0)
             return fail(400, responseFailure('saveTicketFields', 'Proposal price, quantity, and allocations are required.'));
 
+          const proposalTotalError = validateAllocationTotal(allocations, totalAmount, 'Proposal allocations');
+          if (proposalTotalError)
+            return fail(400, responseFailure('saveTicketFields', proposalTotalError));
+
           const proposalRequest: TicketProposalRequest = {
             allocations,
             eventDateTime: apiEventDateTime,
@@ -274,6 +286,11 @@ export const actions = {
             !tradeAllocationsEqual(allocations, ticket.tradeAllocations)) {
           if (!tradedPrice || allocations.length === 0)
             return fail(400, responseFailure('saveTicketFields', 'Trade price and allocations are required.'));
+
+          const tradeTotal = ticket.proposalTotalAmount;
+          const tradeTotalError = validateAllocationTotal(allocations, tradeTotal ?? 0, 'Trade allocations');
+          if (tradeTotalError)
+            return fail(400, responseFailure('saveTicketFields', tradeTotalError));
 
           const tradeRequest: TicketTradeRequest = {
             allocations,
@@ -363,16 +380,27 @@ export const actions = {
     if (!ticketNumber || !eventDateTime || !tradedPrice || allocations.length === 0)
       return fail(400, responseFailure('saveTrade', 'Trade price and allocations are required.'));
 
-    const ticketTradeRequest: TicketTradeRequest = {
-      allocations,
-      eventDateTime: toApiDateTime(eventDateTime),
-      reason: `${hasTrade ? 'Modify' : 'Create'} trade for ticket ${ticketNumber}`,
-      ticketNumber,
-      tradedPrice,
-      userID: currentUser.userID
-    };
-
     try {
+      const apiEventDateTime = toApiDateTime(eventDateTime);
+      const tickets = await getTickets(fetch, apiEventDateTime, null, true);
+      const ticket = tickets.items.find((item) => item.ticketNumber === ticketNumber);
+
+      if (!ticket)
+        return fail(404, responseFailure('saveTrade', `No matching ticket found for TicketNumber '${ticketNumber}'.`));
+
+      const tradeTotalError = validateAllocationTotal(allocations, ticket.proposalTotalAmount ?? 0, 'Trade allocations');
+      if (tradeTotalError)
+        return fail(400, responseFailure('saveTrade', tradeTotalError));
+
+      const ticketTradeRequest: TicketTradeRequest = {
+        allocations,
+        eventDateTime: apiEventDateTime,
+        reason: `${hasTrade ? 'Modify' : 'Create'} trade for ticket ${ticketNumber}`,
+        ticketNumber,
+        tradedPrice,
+        userID: currentUser.userID
+      };
+
       const result = hasTrade
         ? await postTicketTradeModifiedEvent(fetch, ticketTradeRequest)
         : await postTicketTradeCreatedEvent(fetch, ticketTradeRequest);
@@ -388,16 +416,33 @@ export const actions = {
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
+    const brokerLEI = getFormString(formData, 'brokerLEI');
     const price = getFormNumber(formData, 'fillPrice');
     const quantity = getFormNumber(formData, 'fillQuantity');
     const note = getFormString(formData, 'fillNote');
 
-    if (!ticketNumber || !eventDateTime || !price || !quantity)
-      return fail(400, responseFailure('addFill', 'Fill price and quantity are required.'));
+    if (!ticketNumber || !eventDateTime || !brokerLEI || !price || !quantity)
+      return fail(400, responseFailure('addFill', 'Fill broker, price, and quantity are required.'));
 
     try {
+      const apiEventDateTime = toApiDateTime(eventDateTime);
+      const tickets = await getTickets(fetch, apiEventDateTime, null, true);
+      const ticket = tickets.items.find((item) => item.ticketNumber === ticketNumber);
+
+      if (!ticket)
+        return fail(404, responseFailure('addFill', `No matching ticket found for TicketNumber '${ticketNumber}'.`));
+
+      const brokers = await getBrokers(fetch, apiEventDateTime, null);
+      if (!brokers.items.some((broker) => broker.active && broker.lei === brokerLEI))
+        return fail(400, responseFailure('addFill', 'Select an active broker.'));
+
+      const remainingQuantity = allocationTotal(ticket.tradeAllocations) - allocationTotal(ticket.fills);
+      if (quantity > remainingQuantity + 0.00000001)
+        return fail(400, responseFailure('addFill', `Fill quantity exceeds the remaining trade quantity of ${formatValidationNumber(remainingQuantity)}.`));
+
       const result = await postTicketTradeFillAddedEvent(fetch, {
-        eventDateTime: toApiDateTime(eventDateTime),
+        brokerLEI,
+        eventDateTime: apiEventDateTime,
         note,
         price,
         quantity,
@@ -527,6 +572,18 @@ async function approveProposal(fetchApi: typeof fetch, request: Request, approve
     return fail(400, responseFailure(approved ? 'proposalApprove' : 'proposalNotApprove', 'Ticket and event date are required.'));
 
   try {
+    if (approved) {
+      const tickets = await getTickets(fetchApi, toApiDateTime(eventDateTime), null, true);
+      const ticket = tickets.items.find((item) => item.ticketNumber === ticketNumber);
+
+      if (!ticket)
+        return fail(404, responseFailure('proposalApprove', `No matching ticket found for TicketNumber '${ticketNumber}'.`));
+
+      const proposalTotalError = validateAllocationTotal(ticket.proposalAllocations, ticket.proposalTotalAmount ?? 0, 'Proposal allocations');
+      if (proposalTotalError)
+        return fail(400, responseFailure('proposalApprove', proposalTotalError));
+    }
+
     const submit = approved ? postTicketProposalApprovedEvent : postTicketProposalNotApprovedEvent;
     const result = await submit(fetchApi, {
       eventDateTime: toApiDateTime(eventDateTime),
@@ -550,6 +607,16 @@ async function requestProposalDecision(fetchApi: typeof fetch, request: Request,
     return fail(400, responseFailure('proposalRequestDecision', 'Ticket and event date are required.'));
 
   try {
+    const tickets = await getTickets(fetchApi, toApiDateTime(eventDateTime), null, true);
+    const ticket = tickets.items.find((item) => item.ticketNumber === ticketNumber);
+
+    if (!ticket)
+      return fail(404, responseFailure('proposalRequestDecision', `No matching ticket found for TicketNumber '${ticketNumber}'.`));
+
+    const proposalTotalError = validateAllocationTotal(ticket.proposalAllocations, ticket.proposalTotalAmount ?? 0, 'Proposal allocations');
+    if (proposalTotalError)
+      return fail(400, responseFailure('proposalRequestDecision', proposalTotalError));
+
     const result = await postTicketProposalDecisionRequestedEvent(fetchApi, {
       eventDateTime: toApiDateTime(eventDateTime),
       reason: `Request proposal decision for ticket ${ticketNumber}`,
@@ -572,6 +639,22 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
     return fail(400, responseFailure(approved ? 'tradeApprove' : 'tradeNotApprove', 'Ticket and event date are required.'));
 
   try {
+    if (approved) {
+      const tickets = await getTickets(fetchApi, toApiDateTime(eventDateTime), null, true);
+      const ticket = tickets.items.find((item) => item.ticketNumber === ticketNumber);
+
+      if (!ticket)
+        return fail(404, responseFailure('tradeApprove', `No matching ticket found for TicketNumber '${ticketNumber}'.`));
+
+      const tradeTotalError = validateAllocationTotal(ticket.tradeAllocations, ticket.proposalTotalAmount ?? 0, 'Trade allocations');
+      if (tradeTotalError)
+        return fail(400, responseFailure('tradeApprove', tradeTotalError));
+
+      const fillTotalError = validateAllocationTotal(ticket.fills, allocationTotal(ticket.tradeAllocations), 'Fills');
+      if (fillTotalError)
+        return fail(400, responseFailure('tradeApprove', fillTotalError));
+    }
+
     const submit = approved ? postTicketTradeApprovedEvent : postTicketTradeNotApprovedEvent;
     const result = await submit(fetchApi, {
       eventDateTime: toApiDateTime(eventDateTime),
@@ -675,6 +758,28 @@ function getTradeAllocations(formData: FormData, accountIDField = 'allocationAcc
       quantity: parseFormNumber(getFormStrings(formData, `tradeQuantity-${accountID}`)[0] || '')
     }))
     .filter((allocation) => allocation.accountID && allocation.quantity > 0 && allocation.bookCost > 0);
+}
+
+function allocationTotal(allocations: { quantity: number }[]) {
+  return allocations.reduce((total, allocation) => total + allocation.quantity, 0);
+}
+
+function validateAllocationTotal(allocations: { quantity: number }[], expectedTotal: number, label: string) {
+  if (!expectedTotal || expectedTotal <= 0)
+    return `${label} need a positive total quantity.`;
+
+  const total = allocationTotal(allocations);
+
+  return numbersEqual(total, expectedTotal)
+    ? ''
+    : `${label} must sum to ${formatValidationNumber(expectedTotal)}. Current total is ${formatValidationNumber(total)}.`;
+}
+
+function formatValidationNumber(value: number) {
+  if (!Number.isFinite(value))
+    return '0';
+
+  return value.toLocaleString(undefined, { maximumFractionDigits: 8 });
 }
 
 function getFormString(formData: FormData, key: string) {

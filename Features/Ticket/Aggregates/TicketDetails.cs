@@ -52,8 +52,4 @@ public sealed record TicketDetails : IAggregate
 
     public TicketDetail? Find(TicketNumber ticketNumber) =>
         Items.SingleOrDefault(ticket => ticket.TicketNumber == ticketNumber);
-
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}|{Items.Count}";
-
-    public string ToDetail() => $"{nameof(TicketDetails)}: (Items: {Items.Count})";
 }

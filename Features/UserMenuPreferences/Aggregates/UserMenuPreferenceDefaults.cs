@@ -4,6 +4,7 @@ public static class UserMenuPreferenceDefaults
 {
     public const string Bookmarks = "bookmarks";
     public const string Blotter = "blotter";
+    public const string ValueValuations = "value-valuations";
     public const string Account = "account";
     public const string Compliance = "compliance";
     public const string Administration = "administration";
@@ -19,6 +20,7 @@ public static class UserMenuPreferenceDefaults
     [
         Bookmarks,
         Blotter,
+        ValueValuations,
         Account,
         Compliance,
         Administration,

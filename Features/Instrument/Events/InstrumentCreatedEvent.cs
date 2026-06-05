@@ -36,8 +36,4 @@ public sealed record InstrumentCreatedEvent : EventBase, IInstrumentEvent
     }
 
     public override string Type => nameof(InstrumentCreatedEvent);
-
-    public override string ToData() => $"{base.ToData()}|{InstrumentID.ToData()}|{Name}|{FormalName}|{Exchange.ToData()}|{CFI.ToData()}|{Active}|{IncomeCountry.ToData()}|{PriceCountry.ToData()}|{PriceCurrency.ToData()}";
-
-    public override string ToDetail() => $"{nameof(InstrumentCreatedEvent)}: ({base.ToDetail()}, InstrumentID: {InstrumentID.ToDetail()}, Name: {Name}, FormalName: {FormalName}, Exchange: {Exchange.ToDetail()}, CFI: {CFI.ToDetail()}, Active: {Active})";
 }

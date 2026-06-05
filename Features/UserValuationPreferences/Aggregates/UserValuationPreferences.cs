@@ -11,7 +11,7 @@ public sealed record UserValuationPreferences : IModel
 
     public UserValuationDateOption ValuationDateOption { get; private set; }
 
-    public ValuationDateBasis ValuationDateBasis { get; private set; }
+    public HoldingDateBasis HoldingDateBasis { get; private set; }
 
     public bool ShowZeroBalances { get; private set; }
 
@@ -30,7 +30,7 @@ public sealed record UserValuationPreferences : IModel
     public UserValuationPreferences(
         UserID userID,
         UserValuationDateOption valuationDateOption,
-        ValuationDateBasis valuationDateBasis,
+        HoldingDateBasis holdingDateBasis,
         bool showZeroBalances,
         bool hasStoredPreferences,
         EventDateTime valuationDateTime,
@@ -40,7 +40,7 @@ public sealed record UserValuationPreferences : IModel
     {
         UserID = userID;
         ValuationDateOption = valuationDateOption;
-        ValuationDateBasis = valuationDateBasis;
+        HoldingDateBasis = holdingDateBasis;
         ShowZeroBalances = showZeroBalances;
         HasStoredPreferences = hasStoredPreferences;
         ValuationDateTime = valuationDateTime;
@@ -72,7 +72,7 @@ public sealed record UserValuationPreferences : IModel
 
         UserID = userID;
         ValuationDateOption = UserValuationPreferenceDefaults.ValuationDateOption;
-        ValuationDateBasis = UserValuationPreferenceDefaults.ValuationDateBasis;
+        HoldingDateBasis = UserValuationPreferenceDefaults.HoldingDateBasis;
         ShowZeroBalances = UserValuationPreferenceDefaults.ShowZeroBalances;
         HasStoredPreferences = false;
         ValuationDateTime = valuationDateTime;
@@ -83,10 +83,6 @@ public sealed record UserValuationPreferences : IModel
         foreach (var item in orderedItems)
             Apply(item);
     }
-
-    public string ToData() => $"{UserID.ToData()}|{ValuationDateOption}|{ValuationDateBasis}|{ShowZeroBalances}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(UserValuationPreferences)}: (UserID: {UserID.ToDetail()}, ValuationDateOption: {ValuationDateOption}, ValuationDateBasis: {ValuationDateBasis}, ShowZeroBalances: {ShowZeroBalances})";
 
     private void Apply(IUserValuationPreferencesEvent userValuationPreferencesEvent)
     {
@@ -106,7 +102,7 @@ public sealed record UserValuationPreferences : IModel
     private void Apply(UserValuationPreferencesCreatedEvent createdEvent)
     {
         ValuationDateOption = createdEvent.ValuationDateOption;
-        ValuationDateBasis = createdEvent.ValuationDateBasis;
+        HoldingDateBasis = createdEvent.HoldingDateBasis;
         ShowZeroBalances = createdEvent.ShowZeroBalances;
         HasStoredPreferences = true;
         UpdateProvenance(createdEvent);
@@ -115,7 +111,7 @@ public sealed record UserValuationPreferences : IModel
     private void Apply(UserValuationPreferencesModifiedEvent modifiedEvent)
     {
         ValuationDateOption = modifiedEvent.ValuationDateOption;
-        ValuationDateBasis = modifiedEvent.ValuationDateBasis;
+        HoldingDateBasis = modifiedEvent.HoldingDateBasis;
         ShowZeroBalances = modifiedEvent.ShowZeroBalances;
         HasStoredPreferences = true;
         UpdateProvenance(modifiedEvent);

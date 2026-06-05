@@ -2,6 +2,7 @@ namespace Services;
 
 public sealed class AggregateCacheClearService(
     AccountService accountService,
+    BrokerService brokerService,
     CountryService countryService,
     CurrencyService currencyService,
     FXService fxService,
@@ -19,6 +20,7 @@ public sealed class AggregateCacheClearService(
     public AggregateCacheClearResult ClearAll()
     {
         var accounts = accountService.InvalidateAll();
+        var brokers = brokerService.InvalidateAll();
         var countries = countryService.InvalidateAll();
         var currencies = currencyService.InvalidateAll();
         var fxs = fxService.InvalidateAll();
@@ -33,12 +35,13 @@ public sealed class AggregateCacheClearService(
         var userValuationPreferences = userValuationPreferencesService.InvalidateAll();
         var userBookmarks = userBookmarksService.InvalidateAll();
 
-        return new AggregateCacheClearResult(accounts, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks);
+        return new AggregateCacheClearResult(accounts, brokers, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks);
     }
 }
 
 public sealed record AggregateCacheClearResult(
     int Accounts,
+    int Brokers,
     int Countries,
     int Currencies,
     int FXs,

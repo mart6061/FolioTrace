@@ -18,9 +18,5 @@ public sealed record CFICategory(char Code, string Name) : IType
 
     public bool IsKnown => Name != "Unknown";
 
-    public string ToData() => Code.ToString();
-
-    public string ToDetail() => $"{nameof(CFICategory)}: {Name} ({Code})";
-
     public override string ToString() => Name;
 }

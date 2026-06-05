@@ -8,7 +8,7 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
 {
     public UserValuationDateOption ValuationDateOption { get; init; }
 
-    public ValuationDateBasis ValuationDateBasis { get; init; }
+    public HoldingDateBasis HoldingDateBasis { get; init; }
 
     public bool ShowZeroBalances { get; init; }
 
@@ -18,17 +18,13 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
     {
     }
 
-    internal UserValuationPreferencesModifiedEvent(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption valuationDateOption, ValuationDateBasis valuationDateBasis, bool showZeroBalances)
+    internal UserValuationPreferencesModifiedEvent(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
         : base(eventID, userID, eventDateTime, auditDateTime, reason)
     {
         ValuationDateOption = valuationDateOption;
-        ValuationDateBasis = valuationDateBasis;
+        HoldingDateBasis = holdingDateBasis;
         ShowZeroBalances = showZeroBalances;
     }
 
     public override string Type => nameof(UserValuationPreferencesModifiedEvent);
-
-    public override string ToData() => $"{base.ToData()}|{ValuationDateOption}|{ValuationDateBasis}|{ShowZeroBalances}";
-
-    public override string ToDetail() => $"{nameof(UserValuationPreferencesModifiedEvent)}: ({base.ToDetail()}, ValuationDateOption: {ValuationDateOption}, ValuationDateBasis: {ValuationDateBasis}, ShowZeroBalances: {ShowZeroBalances})";
 }

@@ -33,10 +33,6 @@ public sealed record LastAuditDateTime : IType
     public static implicit operator LastAuditDateTime(AuditDateTime auditDateTime) => new LastAuditDateTime(auditDateTime?.Value ?? default);
 
     public override string ToString() => Value.ToString("o");
-
-    public string ToData() => Value.ToString("o");
-
-    public string ToDetail() => $"{nameof(LastAuditDateTime)}: {this}";
 }
 
 internal sealed class LastAuditDateTimeJsonConverter : JsonConverter<LastAuditDateTime>

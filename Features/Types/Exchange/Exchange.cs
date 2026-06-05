@@ -30,10 +30,6 @@ public sealed record Exchange : IType
     public static implicit operator Exchange(string value) => new(value);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(Exchange)}: {Value}";
 }
 
 public static class ExchangeBuilder

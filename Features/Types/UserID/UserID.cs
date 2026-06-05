@@ -30,10 +30,6 @@ public sealed record UserID : IType
     public static implicit operator UserID(Guid g) => new UserID(g);
 
     public override string ToString() => Value.ToString();
-
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(UserID)}: {this}";
 }
 
 internal sealed class UserIDJsonConverter : JsonConverter<UserID>

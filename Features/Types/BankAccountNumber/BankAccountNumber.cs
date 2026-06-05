@@ -32,10 +32,6 @@ public sealed record BankAccountNumber : IType
     public static implicit operator BankAccountNumber(string s) => new(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(BankAccountNumber)}: {this}";
 }
 
 internal sealed class BankAccountNumberJsonConverter : JsonConverter<BankAccountNumber>

@@ -7,5 +7,5 @@ public sealed record UserValuationPreferencesRequest(
     EventDateTime EventDateTime,
     string Reason,
     UserValuationDateOption ValuationDateOption,
-    ValuationDateBasis ValuationDateBasis,
+    HoldingDateBasis HoldingDateBasis,
     bool ShowZeroBalances);

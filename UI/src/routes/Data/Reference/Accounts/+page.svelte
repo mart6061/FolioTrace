@@ -3,8 +3,9 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import type { AccountReferenceEvent, Holding, HoldingKind, HoldingReferenceEvent, Instrument, TransactionReferenceEvent } from '$lib/types';
+  import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -35,7 +36,7 @@
     eventDateTime: string;
     feeHoldingID: string;
   };
-  type InspecieMovementFormValues = {
+  type InSpecieMovementFormValues = {
     accountID: string;
     bookCost: string;
     eventDateTime: string;
@@ -70,26 +71,26 @@
   let cashOutAccountID = $state('');
   let feesInAccountID = $state('');
   let feesOutAccountID = $state('');
-  let inspecieInAccountID = $state('');
-  let inspecieOutAccountID = $state('');
+  let inSpecieInAccountID = $state('');
+  let inSpecieOutAccountID = $state('');
   let submittingCashIn = $state(false);
   let submittingCashOut = $state(false);
   let submittingFeesIn = $state(false);
   let submittingFeesOut = $state(false);
-  let submittingInspecieIn = $state(false);
-  let submittingInspecieOut = $state(false);
+  let submittingInSpecieIn = $state(false);
+  let submittingInSpecieOut = $state(false);
   let submittingCancelTransactionSetID = $state('');
   let editingHoldingID = $state('');
   let submittingHoldingID = $state('');
   let openHistoryAccountID = $state('');
   let openHistoryHoldingID = $state('');
   let historyByAccountID = $state<Record<string, { events: AccountReferenceEvent[]; error: string; loading: boolean }>>({});
-  let historyByHoldingID = $state<Record<string, { events: HoldingReferenceEvent[]; error: string; loading: boolean }>>({});
+  let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
   const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
   const holdingByID = $derived(new Map((data.holdings?.items ?? []).map((holding) => [holding.holdingID, holding])));
-  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InspecieIn', 'InspecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InSpecieIn', 'InSpecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
   const accountFormValues = $derived(
     (form?.intent === 'createAccount' || form?.intent === 'modifyAccount') && form.values
       ? form.values as AccountFormValues
@@ -115,14 +116,14 @@
       ? form.values as FeeMovementFormValues
       : null
   );
-  const inspecieInFormValues = $derived(
-    form?.intent === 'inspecieIn' && form.values
-      ? form.values as InspecieMovementFormValues
+  const inSpecieInFormValues = $derived(
+    form?.intent === 'inSpecieIn' && form.values
+      ? form.values as InSpecieMovementFormValues
       : null
   );
-  const inspecieOutFormValues = $derived(
-    form?.intent === 'inspecieOut' && form.values
-      ? form.values as InspecieMovementFormValues
+  const inSpecieOutFormValues = $derived(
+    form?.intent === 'inSpecieOut' && form.values
+      ? form.values as InSpecieMovementFormValues
       : null
   );
   const holdingCardFormValues = $derived(
@@ -217,49 +218,49 @@
       cashOutAccountID = '';
       feesInAccountID = '';
       feesOutAccountID = '';
-      inspecieInAccountID = '';
-      inspecieOutAccountID = '';
+      inSpecieInAccountID = '';
+      inSpecieOutAccountID = '';
       cashInAccountID = cashInFormValues?.accountID ?? '';
     }
     if (form?.intent === 'cashOut' && form.status === 'failure') {
       cashInAccountID = '';
       feesInAccountID = '';
       feesOutAccountID = '';
-      inspecieInAccountID = '';
-      inspecieOutAccountID = '';
+      inSpecieInAccountID = '';
+      inSpecieOutAccountID = '';
       cashOutAccountID = cashOutFormValues?.accountID ?? '';
     }
     if (form?.intent === 'feesIn' && form.status === 'failure') {
       cashInAccountID = '';
       cashOutAccountID = '';
       feesOutAccountID = '';
-      inspecieInAccountID = '';
-      inspecieOutAccountID = '';
+      inSpecieInAccountID = '';
+      inSpecieOutAccountID = '';
       feesInAccountID = feesInFormValues?.accountID ?? '';
     }
     if (form?.intent === 'feesOut' && form.status === 'failure') {
       cashInAccountID = '';
       cashOutAccountID = '';
       feesInAccountID = '';
-      inspecieInAccountID = '';
-      inspecieOutAccountID = '';
+      inSpecieInAccountID = '';
+      inSpecieOutAccountID = '';
       feesOutAccountID = feesOutFormValues?.accountID ?? '';
     }
-    if (form?.intent === 'inspecieIn' && form.status === 'failure') {
+    if (form?.intent === 'inSpecieIn' && form.status === 'failure') {
       cashInAccountID = '';
       cashOutAccountID = '';
       feesInAccountID = '';
       feesOutAccountID = '';
-      inspecieOutAccountID = '';
-      inspecieInAccountID = inspecieInFormValues?.accountID ?? '';
+      inSpecieOutAccountID = '';
+      inSpecieInAccountID = inSpecieInFormValues?.accountID ?? '';
     }
-    if (form?.intent === 'inspecieOut' && form.status === 'failure') {
+    if (form?.intent === 'inSpecieOut' && form.status === 'failure') {
       cashInAccountID = '';
       cashOutAccountID = '';
       feesInAccountID = '';
       feesOutAccountID = '';
-      inspecieInAccountID = '';
-      inspecieOutAccountID = inspecieOutFormValues?.accountID ?? '';
+      inSpecieInAccountID = '';
+      inSpecieOutAccountID = inSpecieOutFormValues?.accountID ?? '';
     }
     if (form?.intent === 'modifyHoldingCard' && form.status === 'failure') {
       editingAccountID = '';
@@ -402,8 +403,8 @@
     cashOutAccountID = '';
     feesInAccountID = '';
     feesOutAccountID = '';
-    inspecieInAccountID = '';
-    inspecieOutAccountID = '';
+    inSpecieInAccountID = '';
+    inSpecieOutAccountID = '';
     cashInAccountID = accountID;
   }
 
@@ -418,8 +419,8 @@
     cashInAccountID = '';
     feesInAccountID = '';
     feesOutAccountID = '';
-    inspecieInAccountID = '';
-    inspecieOutAccountID = '';
+    inSpecieInAccountID = '';
+    inSpecieOutAccountID = '';
     cashOutAccountID = accountID;
   }
 
@@ -434,8 +435,8 @@
     cashInAccountID = '';
     cashOutAccountID = '';
     feesOutAccountID = '';
-    inspecieInAccountID = '';
-    inspecieOutAccountID = '';
+    inSpecieInAccountID = '';
+    inSpecieOutAccountID = '';
     feesInAccountID = accountID;
   }
 
@@ -450,8 +451,8 @@
     cashInAccountID = '';
     cashOutAccountID = '';
     feesInAccountID = '';
-    inspecieInAccountID = '';
-    inspecieOutAccountID = '';
+    inSpecieInAccountID = '';
+    inSpecieOutAccountID = '';
     feesOutAccountID = accountID;
   }
 
@@ -459,7 +460,7 @@
     feesOutAccountID = '';
   }
 
-  function startInspecieIn(accountID: string) {
+  function startInSpecieIn(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
     editingHoldingID = '';
@@ -467,15 +468,15 @@
     cashOutAccountID = '';
     feesInAccountID = '';
     feesOutAccountID = '';
-    inspecieOutAccountID = '';
-    inspecieInAccountID = accountID;
+    inSpecieOutAccountID = '';
+    inSpecieInAccountID = accountID;
   }
 
-  function cancelInspecieIn() {
-    inspecieInAccountID = '';
+  function cancelInSpecieIn() {
+    inSpecieInAccountID = '';
   }
 
-  function startInspecieOut(accountID: string) {
+  function startInSpecieOut(accountID: string) {
     addingAccount = false;
     editingAccountID = '';
     editingHoldingID = '';
@@ -483,12 +484,12 @@
     cashOutAccountID = '';
     feesInAccountID = '';
     feesOutAccountID = '';
-    inspecieInAccountID = '';
-    inspecieOutAccountID = accountID;
+    inSpecieInAccountID = '';
+    inSpecieOutAccountID = accountID;
   }
 
-  function cancelInspecieOut() {
-    inspecieOutAccountID = '';
+  function cancelInSpecieOut() {
+    inSpecieOutAccountID = '';
   }
 
   function startHoldingEdit(holdingID: string) {
@@ -498,8 +499,8 @@
     cashOutAccountID = '';
     feesInAccountID = '';
     feesOutAccountID = '';
-    inspecieInAccountID = '';
-    inspecieOutAccountID = '';
+    inSpecieInAccountID = '';
+    inSpecieOutAccountID = '';
     editingHoldingID = holdingID;
   }
 
@@ -606,27 +607,27 @@
     };
   };
 
-  const enhanceInspecieIn: SubmitFunction = () => {
-    submittingInspecieIn = true;
+  const enhanceInSpecieIn: SubmitFunction = () => {
+    submittingInSpecieIn = true;
 
     return async ({ result, update }) => {
       await update({ reset: false });
-      submittingInspecieIn = false;
+      submittingInSpecieIn = false;
 
       if (result.type === 'success')
-        inspecieInAccountID = '';
+        inSpecieInAccountID = '';
     };
   };
 
-  const enhanceInspecieOut: SubmitFunction = () => {
-    submittingInspecieOut = true;
+  const enhanceInSpecieOut: SubmitFunction = () => {
+    submittingInSpecieOut = true;
 
     return async ({ result, update }) => {
       await update({ reset: false });
-      submittingInspecieOut = false;
+      submittingInSpecieOut = false;
 
       if (result.type === 'success')
-        inspecieOutAccountID = '';
+        inSpecieOutAccountID = '';
     };
   };
 
@@ -718,7 +719,7 @@
         throw new Error(`History request returned ${response.status} ${response.statusText}`);
 
       historyByHoldingID[holdingID] = {
-        events: await response.json() as HoldingReferenceEvent[],
+        events: await response.json() as HoldingHistoryEvent[],
         error: '',
         loading: false
       };
@@ -752,7 +753,10 @@
       typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
     ].filter(Boolean).join(' · ');
   }
-  function holdingEventSummary(event: HoldingReferenceEvent) {
+  function holdingEventSummary(event: HoldingHistoryEvent) {
+    if (isTransactionHistoryEvent(event))
+      return '';
+
     if (event.$type === 'HoldingActiveModifiedEvent')
       return event.active ? 'Activated' : 'Deactivated';
 
@@ -760,7 +764,13 @@
       event.name,
       event.holdingKind,
       typeof event.default === 'boolean' ? event.default ? 'Default' : 'Non-default' : ''
-    ].filter(Boolean).join(' Â· ');
+    ].filter(Boolean).join(' - ');
+  }
+
+  function isTransactionHistoryEvent(event: HoldingHistoryEvent): event is TransactionReferenceEvent {
+    return event.$type === 'TransactionCreditEvent' ||
+      event.$type === 'TransactionDebitEvent' ||
+      event.$type === 'TransactionCancellationEvent';
   }
 
   function cashInHoldingLabel(holding: Holding) {
@@ -815,6 +825,8 @@
         return 'Position cash';
       case 'PositionMemo':
         return 'Position memo';
+      case 'PositionAsset':
+        return 'Position asset';
       default:
         return holdingKind;
     }
@@ -891,8 +903,30 @@
       return 'Credit';
     if (event.$type === 'TransactionDebitEvent')
       return 'Debit';
+    if (event.$type === 'TransactionCancellationEvent')
+      return 'Cancellation';
 
     return event.$type || 'Transaction';
+  }
+
+  function transactionEventSummary(event: TransactionReferenceEvent) {
+    if (event.$type === 'TransactionCancellationEvent')
+      return `Cancelled ${event.cancelledEventID ?? 'transaction'} from set ${event.eventSetID}`;
+
+    return [
+      `Quantity ${formatTransactionTotal(event.quantity ?? 0)}`,
+      `Book cost ${formatTransactionTotal(event.bookCost ?? 0)}`,
+      `Settlement ${formatTableDateTime(event.settlementDateTime)}`
+    ].join(' - ');
+  }
+
+  function transactionEventDetail(event: TransactionReferenceEvent) {
+    if (event.$type === 'TransactionCancellationEvent')
+      return event.cancelledIDGroup?.length
+        ? `Cancelled group ${event.cancelledIDGroup.join(', ')}`
+        : '';
+
+    return `Event set ${event.eventSetID}`;
   }
 
   function transactionHoldingName(event: TransactionReferenceEvent) {
@@ -1016,16 +1050,16 @@
     return feeHoldingsForAccount(accountID)[0]?.holdingID ?? '';
   }
 
-  function selectedInspecieInInstrumentID(accountID: string) {
-    if (inspecieInFormValues?.accountID === accountID && inspecieInFormValues.instrumentID)
-      return instrumentInputValue(inspecieInFormValues.instrumentID);
+  function selectedInSpecieInInstrumentID(accountID: string) {
+    if (inSpecieInFormValues?.accountID === accountID && inSpecieInFormValues.instrumentID)
+      return instrumentInputValue(inSpecieInFormValues.instrumentID);
 
     return '';
   }
 
-  function selectedInspecieOutInstrumentID(accountID: string) {
-    if (inspecieOutFormValues?.accountID === accountID && inspecieOutFormValues.instrumentID)
-      return instrumentInputValue(inspecieOutFormValues.instrumentID);
+  function selectedInSpecieOutInstrumentID(accountID: string) {
+    if (inSpecieOutFormValues?.accountID === accountID && inSpecieOutFormValues.instrumentID)
+      return instrumentInputValue(inSpecieOutFormValues.instrumentID);
 
     return '';
   }
@@ -1560,7 +1594,14 @@
                                                     </div>
                                                     <div class="grid gap-1">
                                                       <div class="flex flex-wrap items-center gap-2">
-                                                        <span class="font-medium text-slate-950">{event.$type}</span>
+                                                        <span class="font-medium text-slate-950">
+                                                          {isTransactionHistoryEvent(event) ? transactionEventLabel(event) : event.$type}
+                                                        </span>
+                                                        {#if isTransactionHistoryEvent(event)}
+                                                          <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-800">Transaction</span>
+                                                        {:else}
+                                                          <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">Holding</span>
+                                                        {/if}
                                                         {#if event.applicationStatus === 'omitted'}
                                                           <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
                                                         {:else if data.auditDateTime}
@@ -1568,7 +1609,15 @@
                                                         {/if}
                                                         <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
                                                       </div>
-                                                      <div class="text-sm text-slate-700">{holdingEventSummary(event)}</div>
+                                                      {#if isTransactionHistoryEvent(event)}
+                                                        <div class="text-sm text-slate-700">{transactionEventSummary(event)}</div>
+                                                        {#if transactionEventDetail(event)}
+                                                          <div class="break-all text-xs text-slate-500">{transactionEventDetail(event)}</div>
+                                                        {/if}
+                                                      {:else}
+                                                        <div class="text-sm text-slate-700">{holdingEventSummary(event)}</div>
+                                                      {/if}
+                                                      <EventPropertyDetails details={event.propertyDetails} />
                                                       {#if event.applicationStatus === 'omitted'}
                                                         <div class="text-xs font-medium text-amber-900">
                                                           Omitted from this view because its audit time is after the selected as-at date.
@@ -1716,14 +1765,14 @@
                   {@const rowFeeHoldings = feeHoldingsForAccount(account.accountID)}
                   {@const cashMovementMode = cashInAccountID === account.accountID ? 'in' : cashOutAccountID === account.accountID ? 'out' : ''}
                   {@const feeMovementMode = feesInAccountID === account.accountID ? 'in' : feesOutAccountID === account.accountID ? 'out' : ''}
-                  {@const inspecieMovementMode = inspecieInAccountID === account.accountID ? 'in' : inspecieOutAccountID === account.accountID ? 'out' : ''}
+                  {@const inSpecieMovementMode = inSpecieInAccountID === account.accountID ? 'in' : inSpecieOutAccountID === account.accountID ? 'out' : ''}
                   {@const rowCashMovementFormValues = cashMovementMode === 'out' ? cashOutFormValues : cashInFormValues}
                   {@const selectedCashMovementHoldingID = cashMovementMode === 'out' ? selectedCashOutHoldingID(account.accountID) : selectedCashInHoldingID(account.accountID)}
                   {@const rowFeeFormValues = feeMovementMode === 'out' ? feesOutFormValues : feesInFormValues}
                   {@const selectedFeeCashID = feeMovementMode ? selectedFeeCashHoldingID(account.accountID, feeMovementMode) : ''}
                   {@const selectedFeeID = feeMovementMode ? selectedFeeHoldingID(account.accountID, feeMovementMode) : ''}
-                  {@const rowInspecieFormValues = inspecieMovementMode === 'out' ? inspecieOutFormValues : inspecieInFormValues}
-                  {@const selectedInspecieInstrumentID = inspecieMovementMode === 'out' ? selectedInspecieOutInstrumentID(account.accountID) : selectedInspecieInInstrumentID(account.accountID)}
+                  {@const rowInSpecieFormValues = inSpecieMovementMode === 'out' ? inSpecieOutFormValues : inSpecieInFormValues}
+                  {@const selectedInSpecieInstrumentID = inSpecieMovementMode === 'out' ? selectedInSpecieOutInstrumentID(account.accountID) : selectedInSpecieInInstrumentID(account.accountID)}
                   <tr class="bg-slate-50/40">
                     <td class="px-3 py-2" colspan="6">
                       {#if cashMovementMode}
@@ -1892,12 +1941,12 @@
                             </button>
                           </div>
                         </form>
-                      {:else if inspecieMovementMode}
+                      {:else if inSpecieMovementMode}
                         <form
-                          action={inspecieMovementMode === 'out' ? '?/inspecieOut' : '?/inspecieIn'}
+                          action={inSpecieMovementMode === 'out' ? '?/inSpecieOut' : '?/inSpecieIn'}
                           class="grid gap-3 rounded-md border border-indigo-100 bg-white p-3 md:grid-cols-[minmax(180px,220px)_minmax(260px,1fr)_minmax(130px,160px)_minmax(130px,160px)_auto] md:items-end"
                           method="POST"
-                          use:enhance={inspecieMovementMode === 'out' ? enhanceInspecieOut : enhanceInspecieIn}
+                          use:enhance={inSpecieMovementMode === 'out' ? enhanceInSpecieOut : enhanceInSpecieIn}
                         >
                           <input name="accountID" type="hidden" value={account.accountID} />
 
@@ -1908,7 +1957,7 @@
                               name="eventDateTime"
                               required
                               step="1"
-                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.eventDateTime ?? eventDateDefault) : eventDateDefault}
+                              value={rowInSpecieFormValues?.accountID === account.accountID ? (rowInSpecieFormValues.eventDateTime ?? eventDateDefault) : eventDateDefault}
                             />
                           </label>
 
@@ -1920,7 +1969,7 @@
                               name="instrumentID"
                               placeholder="Search instruments"
                               required
-                              value={selectedInspecieInstrumentID}
+                              value={selectedInSpecieInstrumentID}
                             />
                             <datalist id={`instrument-options-${account.accountID}`}>
                               {#each sortedInstruments as instrument}
@@ -1941,7 +1990,7 @@
                               required
                               step="0.00000001"
                               type="number"
-                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.quantity ?? '') : ''}
+                              value={rowInSpecieFormValues?.accountID === account.accountID ? (rowInSpecieFormValues.quantity ?? '') : ''}
                             />
                           </label>
 
@@ -1953,24 +2002,24 @@
                               name="bookCost"
                               step="0.00000001"
                               type="number"
-                              value={rowInspecieFormValues?.accountID === account.accountID ? (rowInspecieFormValues.bookCost ?? '') : ''}
+                              value={rowInSpecieFormValues?.accountID === account.accountID ? (rowInSpecieFormValues.bookCost ?? '') : ''}
                             />
                           </label>
 
                           <div class="flex justify-end gap-2">
                             <button
                               class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
-                              onclick={inspecieMovementMode === 'out' ? cancelInspecieOut : cancelInspecieIn}
+                              onclick={inSpecieMovementMode === 'out' ? cancelInSpecieOut : cancelInSpecieIn}
                               type="button"
                             >
                               Cancel
                             </button>
                             <button
                               class="h-9 rounded-md bg-indigo-700 px-3 text-sm font-medium text-white hover:bg-indigo-800 disabled:cursor-wait disabled:opacity-70"
-                              disabled={(inspecieMovementMode === 'out' ? submittingInspecieOut : submittingInspecieIn) || !sortedInstruments.length}
+                              disabled={(inSpecieMovementMode === 'out' ? submittingInSpecieOut : submittingInSpecieIn) || !sortedInstruments.length}
                               type="submit"
                             >
-                              {(inspecieMovementMode === 'out' ? submittingInspecieOut : submittingInspecieIn) ? 'Saving' : 'Save'}
+                              {(inSpecieMovementMode === 'out' ? submittingInSpecieOut : submittingInSpecieIn) ? 'Saving' : 'Save'}
                             </button>
                           </div>
                         </form>
@@ -2015,20 +2064,20 @@
                           <button
                             class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             disabled={!account.active}
-                            onclick={() => startInspecieIn(account.accountID)}
-                            title={!account.active ? 'Account is inactive' : `Create an inspecie-in transaction for ${account.name}`}
+                            onclick={() => startInSpecieIn(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create an InSpecie-in transaction for ${account.name}`}
                             type="button"
                           >
-                            Inspecie In
+                            InSpecie In
                           </button>
                           <button
                             class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             disabled={!account.active}
-                            onclick={() => startInspecieOut(account.accountID)}
-                            title={!account.active ? 'Account is inactive' : `Create an inspecie-out transaction for ${account.name}`}
+                            onclick={() => startInSpecieOut(account.accountID)}
+                            title={!account.active ? 'Account is inactive' : `Create an InSpecie-out transaction for ${account.name}`}
                             type="button"
                           >
-                            Inspecie Out
+                            InSpecie Out
                           </button>
                         </div>
                       {/if}
@@ -2076,6 +2125,7 @@
                                       <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
                                     </div>
                                     <div class="text-sm text-slate-700">{accountEventSummary(event)}</div>
+                                    <EventPropertyDetails details={event.propertyDetails} />
                                     {#if event.applicationStatus === 'omitted'}
                                       <div class="text-xs font-medium text-amber-900">
                                         Omitted from this view because its audit time is after the selected as-at date.

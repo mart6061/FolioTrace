@@ -31,8 +31,4 @@ public sealed record InstrumentIncomeEquity : IInstrumentIncome
         Record = record ?? throw new ArgumentNullException(nameof(record));
         Payable = payable ?? throw new ArgumentNullException(nameof(payable));
     }
-
-    public string ToData() => $"{DividendAmount.ToData()}|{DividendType}|{ExDividend.ToData()}|{Declaration.ToData()}|{Record.ToData()}|{Payable.ToData()}";
-
-    public string ToDetail() => $"{nameof(InstrumentIncomeEquity)}: (DividendAmount: {DividendAmount.ToDetail()}, DividendType: {DividendType}, ExDividend: {ExDividend.ToDetail()}, Declaration: {Declaration.ToDetail()}, Record: {Record.ToDetail()}, Payable: {Payable.ToDetail()})";
 }

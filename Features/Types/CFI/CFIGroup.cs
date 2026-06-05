@@ -7,10 +7,6 @@ public sealed record CFIGroup(char CategoryCode, char Code, string Name) : IType
 
     public bool IsKnown => Name != "Unknown";
 
-    public string ToData() => Code.ToString();
-
-    public string ToDetail() => $"{nameof(CFIGroup)}: {Name} ({CategoryCode}{Code})";
-
     public override string ToString() => Name;
 
     private static string GetName(char categoryCode, char groupCode) =>

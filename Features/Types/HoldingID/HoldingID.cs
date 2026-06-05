@@ -26,10 +26,6 @@ public sealed record HoldingID : IType
     public static implicit operator HoldingID(Guid g) => new(g);
 
     public override string ToString() => Value.ToString();
-
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(HoldingID)}: {this}";
 }
 
 internal sealed class HoldingIDJsonConverter : JsonConverter<HoldingID>

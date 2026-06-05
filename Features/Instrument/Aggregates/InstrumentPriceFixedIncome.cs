@@ -16,8 +16,4 @@ public sealed record InstrumentPriceFixedIncome : IInstrumentPrice
     {
         CleanPrice = cleanPrice ?? throw new ArgumentNullException(nameof(cleanPrice));
     }
-
-    public string ToData() => CleanPrice.ToData();
-
-    public string ToDetail() => $"{nameof(InstrumentPriceFixedIncome)}: (CleanPrice: {CleanPrice.ToDetail()})";
 }

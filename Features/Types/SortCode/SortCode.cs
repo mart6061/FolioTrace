@@ -48,10 +48,6 @@ public sealed record SortCode : IType
     public static implicit operator SortCode(string s) => new(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(SortCode)}: {this}";
 }
 
 internal sealed class SortCodeJsonConverter : JsonConverter<SortCode>

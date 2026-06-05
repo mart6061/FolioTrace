@@ -36,12 +36,6 @@ public sealed record CountryCreatedEvent : EventBase, ICountryEvent
 
     public override string Type => nameof(CountryCreatedEvent); // TODO: Remind me to create a universal constant for this event type.
 
-    public override string ToData() =>
-        $"{base.ToData()}|{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}|{Name}";
-
-    public override string ToDetail() =>
-        $"{nameof(CountryCreatedEvent)}: ({base.ToDetail()}, Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric}, Name: {Name})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, Alpha2? alpha2, Alpha3? alpha3, short numeric, string? name)
     {
         var messages = new List<string>();

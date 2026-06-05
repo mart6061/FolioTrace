@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using FolioTrace;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
@@ -34,8 +33,4 @@ public sealed record Ticket : IModel
     [JsonConstructor]
     [SetsRequiredMembers]
     public Ticket() { }
-
-    public string ToData() => $"{TicketNumber.ToData()}|{Side}|{InstrumentID.ToData()}|{TradeCurrency.ToData()}|{Stage}|{ProposalDecision}|{TradeDecision}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Ticket)}: ({TicketNumber.ToDetail()}, Side: {Side}, InstrumentID: {InstrumentID.ToDetail()}, TradeCurrency: {TradeCurrency.ToDetail()}, Stage: {Stage}, ProposalDecision: {ProposalDecision}, TradeDecision: {TradeDecision})";
 }

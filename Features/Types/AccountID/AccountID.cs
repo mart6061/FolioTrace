@@ -26,10 +26,6 @@ public sealed record AccountID : IType
     public static implicit operator AccountID(Guid g) => new(g);
 
     public override string ToString() => Value.ToString();
-
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(AccountID)}: {this}";
 }
 
 internal sealed class AccountIDJsonConverter : JsonConverter<AccountID>

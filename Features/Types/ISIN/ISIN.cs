@@ -93,10 +93,6 @@ public sealed record ISIN : IType
     public static implicit operator ISIN(string s) => new ISIN(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(ISIN)}: {this}";
 }
 
 internal sealed class ISINJsonConverter : JsonConverter<ISIN>

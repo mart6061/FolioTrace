@@ -18,7 +18,7 @@ flowchart LR
 
     Capture --> Reference["Reference data"]
     Capture --> Cash["Cash movements"]
-    Capture --> Inspecie["In-specie movements"]
+    Capture --> InSpecie["InSpecie movements"]
     Capture --> Cancellations["Controlled cancellations"]
 ```
 
@@ -43,7 +43,7 @@ flowchart TB
     Holdings --> HoldingsB["Instrument positions"]
 
     Operations --> OpsA["Cash in and cash out"]
-    Operations --> OpsB["Inspecie in and out"]
+    Operations --> OpsB["InSpecie in and out"]
     Operations --> OpsC["Set-level cancellation"]
 ```
 

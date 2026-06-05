@@ -1,21 +1,26 @@
-import { getHoldingEvents } from '$lib/server/api';
+import { getHoldingEvents, getTransactionEvents, readApplicationStatus, readEventPropertyDetails } from '$lib/server/api';
 import { json } from '@sveltejs/kit';
 
 export const GET = async ({ fetch, url }) => {
-  const holdingID = (url.searchParams.get('holdingID') || '').trim().toLowerCase();
-  const valuationDateTime = parseOptionalDate(url.searchParams.get('valuationDateTime'));
-  const auditDateTime = parseOptionalDate(url.searchParams.get('auditDateTime'));
+  const holdingID = (url.searchParams.get('holdingID') || '').trim();
 
   if (!holdingID)
     return json({ message: 'Holding ID is required.' }, { status: 400 });
 
-  const events = await getHoldingEvents(fetch);
-  const history = events
-    .map(normalizeHoldingEvent)
-    .filter((event) => event.holdingID.toLowerCase() === holdingID)
-    .filter((event) => isInValuationScope(event, valuationDateTime))
-    .map((event) => addApplicationStatus(event, auditDateTime))
-    .sort(compareEvents);
+  const historyFilters = {
+    holdingID,
+    valuationDateTime: url.searchParams.get('valuationDateTime'),
+    auditDateTime: url.searchParams.get('auditDateTime')
+  };
+  const [holdingEvents, transactionEvents] = await Promise.all([
+    getHoldingEvents(fetch, historyFilters),
+    getTransactionEvents(fetch, historyFilters)
+  ]);
+
+  const holdingHistory = holdingEvents
+    .map(normalizeHoldingEvent);
+  const transactionHistory = transactionEvents;
+  const history = [...holdingHistory, ...transactionHistory].sort(compareEvents);
 
   return json(history);
 };
@@ -28,36 +33,10 @@ function compareEvents(left: { eventDateTime: string; auditDateTime: string; eve
   );
 }
 
-function parseOptionalDate(value: string | null) {
-  if (!value)
-    return null;
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function isInValuationScope(event: { eventDateTime: string }, valuationDateTime: Date | null) {
-  if (!valuationDateTime)
-    return true;
-
-  return new Date(event.eventDateTime).getTime() <= valuationDateTime.getTime();
-}
-
-function addApplicationStatus<TEvent extends { auditDateTime: string }>(event: TEvent, auditDateTime: Date | null) {
-  if (!auditDateTime)
-    return { ...event, applicationStatus: 'applied' as const };
-
-  return {
-    ...event,
-    applicationStatus: new Date(event.auditDateTime).getTime() <= auditDateTime.getTime()
-      ? 'applied' as const
-      : 'omitted' as const
-  };
-}
-
 function normalizeHoldingEvent(event: Record<string, unknown>) {
   return {
     $type: readString(event, '$type', 'type', 'Type'),
+    applicationStatus: readApplicationStatus(event),
     eventID: readString(event, 'eventID', 'eventId', 'EventID', 'id', 'Id'),
     userID: readString(event, 'userID', 'userId', 'UserID'),
     eventDateTime: readString(event, 'eventDateTime', 'EventDateTime'),
@@ -73,7 +52,8 @@ function normalizeHoldingEvent(event: Record<string, unknown>) {
     bankName: readString(event, 'bankName', 'BankName'),
     accountName: readString(event, 'accountName', 'AccountName'),
     sortCode: readString(event, 'sortCode', 'SortCode'),
-    accountNumber: readString(event, 'accountNumber', 'AccountNumber')
+    accountNumber: readString(event, 'accountNumber', 'AccountNumber'),
+    propertyDetails: readEventPropertyDetails(event)
   };
 }
 

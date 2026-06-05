@@ -31,8 +31,4 @@ public sealed record InstrumentTermsBond : IInstrumentTerms
         IssueDate = issueDate;
         DayCount = dayCount;
     }
-
-    public string ToData() => $"{TermsType}|{ParAmount.ToData()}|{CouponRate.ToData()}|{CouponFrequency}|{MaturityDate:O}|{IssueDate:O}|{DayCount}";
-
-    public string ToDetail() => $"{nameof(InstrumentTermsBond)}: (ParAmount: {ParAmount.ToDetail()}, CouponRate: {CouponRate.ToDetail()}, CouponFrequency: {CouponFrequency}, MaturityDate: {MaturityDate:O}, IssueDate: {IssueDate:O}, DayCount: {DayCount})";
 }

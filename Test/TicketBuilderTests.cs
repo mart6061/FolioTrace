@@ -163,10 +163,10 @@ public sealed class TicketBuilderTests
             new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, 12m, 9m, "Done"),
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, 12m, 9m, "Done"),
             new Tickets(EventDate, [.. events, approved, trade])).Value!;
         var modified = TicketEventBuilder.ModifyFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Modify fill", TicketOne, FillID, 12.5m, 8m, "Partial"),
+            new TicketTradeFillRequest(UserID, EventDate, "Modify fill", TicketOne, FillID, BrokerLEI, 12.5m, 8m, "Partial"),
             new Tickets(EventDate, [.. events, approved, trade, fill])).Value!;
         var removed = TicketEventBuilder.RemoveFill(
             new TicketTradeFillRemovedRequest(UserID, EventDate, "Remove fill", TicketOne, FillID),
@@ -177,7 +177,9 @@ public sealed class TicketBuilderTests
 
         Assert.Equal(TicketStage.Trade, withFill.Stage);
         Assert.Equal(TicketDecision.PendingApproval, withFill.TradeDecision);
-        Assert.Equal(12.5m, Assert.Single(withFill.Fills).Price);
+        var rebuiltFill = Assert.Single(withFill.Fills);
+        Assert.Equal(BrokerLEI, rebuiltFill.BrokerLEI);
+        Assert.Equal(12.5m, rebuiltFill.Price);
         Assert.Empty(withoutFill.Fills);
         Assert.Equal(TicketDecision.PendingApproval, withoutFill.TradeDecision);
     }
@@ -264,6 +266,7 @@ public sealed class TicketBuilderTests
     private static readonly TicketNumber TicketOne = new(1);
     private static readonly TicketNumber TicketTwo = new(2);
     private static readonly Guid FillID = Guid.NewGuid();
+    private static readonly LegalEntityIdentifier BrokerLEI = new("5493001KJTIIGC8Y1R12");
 
     private static TicketCreatedRequest CreateRequest(TicketSide side) =>
         new(UserID, EventDate, "Create ticket", side, InstrumentID);

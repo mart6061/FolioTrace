@@ -25,10 +25,6 @@ public sealed record FXRateSetEvent : EventBase, IFXRateEvent
 
     public override string Type => nameof(FXRateSetEvent);
 
-    public override string ToData() => $"{base.ToData()}|{Pair.ToData()}|{Price.ToData()}";
-
-    public override string ToDetail() => $"{nameof(FXRateSetEvent)}: ({base.ToDetail()}, Pair: {Pair.ToDetail()}, Price: {Price.ToDetail()})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, CurrencyPair? pair, FXPrice? price)
     {
         var messages = FXCreatedEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, pair).ToList();

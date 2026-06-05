@@ -24,11 +24,11 @@ public sealed record TransactionQuantity : IType
 
     internal static TransactionQuantity FromJson(decimal value) => new(value);
 
+    public static implicit operator decimal(TransactionQuantity quantity) => quantity?.Value ?? 0m;
+
+    public static implicit operator TransactionQuantity(decimal value) => new(value);
+
     public override string ToString() => Value.ToString("0.########");
-
-    public string ToData() => Value.ToString("0.########");
-
-    public string ToDetail() => $"{nameof(TransactionQuantity)}: {this}";
 }
 
 internal sealed class TransactionQuantityJsonConverter : JsonConverter<TransactionQuantity>

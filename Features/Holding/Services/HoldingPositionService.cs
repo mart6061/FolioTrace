@@ -30,11 +30,11 @@ public sealed class HoldingPositionService(
 
     public int Invalidate(IEventBase @event) => InvalidateFrom(GetInvalidationDate(@event));
 
-    public bool IsCached(EventDateTime valuationDate) => IsCached(valuationDate, ValuationDateBasis.EventDateTime);
+    public bool IsCached(EventDateTime valuationDate) => IsCached(valuationDate, HoldingDateBasis.EventDateTime);
 
-    public bool IsCached(EventDateTime valuationDate, ValuationDateBasis valuationDateBasis)
+    public bool IsCached(EventDateTime valuationDate, HoldingDateBasis holdingDateBasis)
     {
-        var cacheKey = HoldingPositionCacheKey.ForAllAuditHistory(valuationDate, valuationDateBasis);
+        var cacheKey = HoldingPositionCacheKey.ForAllAuditHistory(valuationDate, holdingDateBasis);
         lock (cacheLock)
         {
             return cache.ContainsKey(cacheKey);
@@ -52,11 +52,11 @@ public sealed class HoldingPositionService(
     }
 
     public Task<HoldingPositions> Get(EventDateTime valuationDate) =>
-        Get(valuationDate, ValuationDateBasis.EventDateTime);
+        Get(valuationDate, HoldingDateBasis.EventDateTime);
 
-    public async Task<HoldingPositions> Get(EventDateTime valuationDate, ValuationDateBasis valuationDateBasis)
+    public async Task<HoldingPositions> Get(EventDateTime valuationDate, HoldingDateBasis holdingDateBasis)
     {
-        var cacheKey = HoldingPositionCacheKey.ForAllAuditHistory(valuationDate, valuationDateBasis);
+        var cacheKey = HoldingPositionCacheKey.ForAllAuditHistory(valuationDate, holdingDateBasis);
         lock (cacheLock)
         {
             if (cache.TryGetValue(cacheKey, out var cached))
@@ -64,7 +64,7 @@ public sealed class HoldingPositionService(
         }
 
         var asAt = AuditDateTimeBuilder.Create();
-        var current = await Build(valuationDate, asAt, HoldingPositionFilter.Default, valuationDateBasis);
+        var current = await Build(valuationDate, asAt, HoldingPositionFilter.Default, holdingDateBasis);
         lock (cacheLock)
         {
             cache[cacheKey] = current;
@@ -73,18 +73,18 @@ public sealed class HoldingPositionService(
     }
 
     public Task<HoldingPositions> Get(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter) =>
-        Get(valuationDate, asAt, filter, ValuationDateBasis.EventDateTime);
+        Get(valuationDate, asAt, filter, HoldingDateBasis.EventDateTime);
 
-    public async Task<HoldingPositions> Get(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter, ValuationDateBasis valuationDateBasis)
+    public async Task<HoldingPositions> Get(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter, HoldingDateBasis holdingDateBasis)
     {
-        var cacheKey = HoldingPositionCacheKey.ForFilter(valuationDate, asAt, filter, valuationDateBasis);
+        var cacheKey = HoldingPositionCacheKey.ForFilter(valuationDate, asAt, filter, holdingDateBasis);
         lock (cacheLock)
         {
             if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
-        var current = await Build(valuationDate, asAt, filter, valuationDateBasis);
+        var current = await Build(valuationDate, asAt, filter, holdingDateBasis);
         lock (cacheLock)
         {
             cache[cacheKey] = current;
@@ -92,13 +92,13 @@ public sealed class HoldingPositionService(
         }
     }
 
-    private async Task<HoldingPositions> Build(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter, ValuationDateBasis valuationDateBasis)
+    private async Task<HoldingPositions> Build(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter, HoldingDateBasis holdingDateBasis)
     {
         var holdings = await holdingService.Get(valuationDate, asAt);
         var accounts = await accountService.Get(valuationDate, asAt);
         var instruments = await instrumentService.Get(valuationDate, asAt);
         var transactionEvents = await eventRepository.LoadStreamAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId);
-        return new HoldingPositions(valuationDate, asAt, holdings, accounts, instruments, transactionEvents, filter, valuationDateBasis);
+        return new HoldingPositions(valuationDate, asAt, holdings, accounts, instruments, transactionEvents, filter, holdingDateBasis);
     }
 
     private int InvalidateFrom(DateTime eventDateTime)
@@ -118,7 +118,7 @@ public sealed class HoldingPositionService(
 
     private readonly record struct HoldingPositionCacheKey(
         DateTime ValuationDateTime,
-        ValuationDateBasis ValuationDateBasis,
+        HoldingDateBasis HoldingDateBasis,
         DateTime? AsAtDateTime,
         Guid? HoldingID,
         Guid? AccountID,
@@ -126,13 +126,13 @@ public sealed class HoldingPositionService(
         bool IncludeExcluded,
         bool IncludeZero)
     {
-        public static HoldingPositionCacheKey ForAllAuditHistory(EventDateTime valuationDate, ValuationDateBasis valuationDateBasis) =>
-            new(valuationDate.Value, valuationDateBasis, null, null, null, null, false, false);
+        public static HoldingPositionCacheKey ForAllAuditHistory(EventDateTime valuationDate, HoldingDateBasis holdingDateBasis) =>
+            new(valuationDate.Value, holdingDateBasis, null, null, null, null, false, false);
 
-        public static HoldingPositionCacheKey ForFilter(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter, ValuationDateBasis valuationDateBasis) =>
+        public static HoldingPositionCacheKey ForFilter(EventDateTime valuationDate, AuditDateTime asAt, HoldingPositionFilter filter, HoldingDateBasis holdingDateBasis) =>
             new(
                 valuationDate.Value,
-                valuationDateBasis,
+                holdingDateBasis,
                 asAt.Value,
                 filter.HoldingID?.Value,
                 filter.AccountID?.Value,

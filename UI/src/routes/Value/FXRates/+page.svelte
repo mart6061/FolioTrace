@@ -3,6 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
   import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { FXRate, FXRateHistoryEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -434,6 +435,7 @@
                                       <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
                                     </div>
                                     <div class="text-sm text-slate-700">{event.summary}</div>
+                                    <EventPropertyDetails details={event.propertyDetails} />
                                     {#if event.applicationStatus === 'omitted'}
                                       <div class="text-xs font-medium text-amber-900">
                                         Omitted from this view because its audit time is after the selected as-at date.
