@@ -36,12 +36,6 @@ public sealed record CurrencyCreatedEvent : EventBase, ICurrencyEvent
 
     public override string Type => nameof(CurrencyCreatedEvent); // TODO: Remind me to create a universal constant for this event type.
 
-    public override string ToData() =>
-        $"{base.ToData()}|{AlphabeticCode.ToData()}|{NumericCode}|{DecimalPlace}|{Name}";
-
-    public override string ToDetail() =>
-        $"{nameof(CurrencyCreatedEvent)}: ({base.ToDetail()}, AlphabeticCode: {AlphabeticCode.ToDetail()}, NumericCode: {NumericCode}, DecimalPlace: {DecimalPlace}, Name: {Name})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, Alpha3? alphabeticCode, int numericCode, short decimalPlace, string? name)
     {
         var messages = new List<string>();

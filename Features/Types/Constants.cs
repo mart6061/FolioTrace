@@ -13,6 +13,8 @@ public static class Constants
 
         public static readonly Guid AccountsStreamId = Guid.Parse("425f51c3-6886-4bfe-a7a9-f34de60bd916");
 
+        public static readonly Guid BrokersStreamId = Guid.Parse("97706d8f-7d28-414d-9a64-c830341ccf4c");
+
         public static readonly Guid CountriesStreamId = Guid.Parse("6b9326f8-5d39-4f56-9817-b86cf8ed1e5a");
 
         public static readonly Guid CurrenciesStreamId = Guid.Parse("dc34cb31-f7f8-4c0d-88b1-f6f60413bc55");

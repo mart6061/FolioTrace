@@ -15,9 +15,9 @@ public sealed record InstrumentPrice : IType
         Amount = amount;
     }
 
+    public static implicit operator decimal?(InstrumentPrice price) => price?.Amount;
+
+    public static implicit operator InstrumentPrice(decimal? amount) => new(amount);
+
     public override string ToString() => $"{Amount:0.########}";
-
-    public string ToData() => $"{Amount:0.########}";
-
-    public string ToDetail() => $"{nameof(InstrumentPrice)}: {this}";
 }

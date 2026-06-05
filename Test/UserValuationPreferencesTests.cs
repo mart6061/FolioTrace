@@ -23,13 +23,13 @@ public sealed class UserValuationPreferencesTests
             AuditDate,
             "Create valuation preferences",
             UserValuationPreferenceDefaults.ValuationDateOption,
-            UserValuationPreferenceDefaults.ValuationDateBasis,
+            UserValuationPreferenceDefaults.HoldingDateBasis,
             UserValuationPreferenceDefaults.ShowZeroBalances);
 
         Assert.True(result.IsValid);
         Assert.NotNull(result.Value);
         Assert.Equal(UserValuationDateOption.TodayEndOfDay, result.Value!.ValuationDateOption);
-        Assert.Equal(ValuationDateBasis.EventDateTime, result.Value.ValuationDateBasis);
+        Assert.Equal(HoldingDateBasis.EventDateTime, result.Value.HoldingDateBasis);
         Assert.False(result.Value.ShowZeroBalances);
     }
 
@@ -43,7 +43,7 @@ public sealed class UserValuationPreferencesTests
             AuditDate,
             "Modify valuation preferences",
             (UserValuationDateOption)999,
-            (ValuationDateBasis)999,
+            (HoldingDateBasis)999,
             true);
 
         Assert.False(result.IsValid);
@@ -58,7 +58,7 @@ public sealed class UserValuationPreferencesTests
 
         Assert.False(preferences.HasStoredPreferences);
         Assert.Equal(UserValuationPreferenceDefaults.ValuationDateOption, preferences.ValuationDateOption);
-        Assert.Equal(UserValuationPreferenceDefaults.ValuationDateBasis, preferences.ValuationDateBasis);
+        Assert.Equal(UserValuationPreferenceDefaults.HoldingDateBasis, preferences.HoldingDateBasis);
         Assert.Equal(UserValuationPreferenceDefaults.ShowZeroBalances, preferences.ShowZeroBalances);
         Assert.Equal(Constants.Initialisation.EmptyViewEventID, preferences.LastEventID);
     }
@@ -75,7 +75,7 @@ public sealed class UserValuationPreferencesTests
             firstAudit,
             "Create valuation preferences",
             UserValuationDateOption.TodayEndOfDay,
-            ValuationDateBasis.EventDateTime,
+            HoldingDateBasis.EventDateTime,
             false).Value!;
         var modified = UserValuationPreferencesModifiedEventBuilder.CreateSeed(
             Guid.NewGuid(),
@@ -84,7 +84,7 @@ public sealed class UserValuationPreferencesTests
             secondAudit,
             "Modify valuation preferences",
             UserValuationDateOption.LastMonthEndOfDay,
-            ValuationDateBasis.SettlementDateTime,
+            HoldingDateBasis.SettlementDateTime,
             true).Value!;
         var service = new UserValuationPreferencesService(new FakeEventRepository(created, modified));
 
@@ -94,7 +94,7 @@ public sealed class UserValuationPreferencesTests
         Assert.Equal(UserValuationDateOption.TodayEndOfDay, beforeModification.ValuationDateOption);
         Assert.False(beforeModification.ShowZeroBalances);
         Assert.Equal(UserValuationDateOption.LastMonthEndOfDay, afterModification.ValuationDateOption);
-        Assert.Equal(ValuationDateBasis.SettlementDateTime, afterModification.ValuationDateBasis);
+        Assert.Equal(HoldingDateBasis.SettlementDateTime, afterModification.HoldingDateBasis);
         Assert.True(afterModification.ShowZeroBalances);
         Assert.True(afterModification.HasStoredPreferences);
     }

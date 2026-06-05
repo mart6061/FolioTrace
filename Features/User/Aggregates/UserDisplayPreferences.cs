@@ -17,8 +17,4 @@ public sealed record UserDisplayPreferences : IType
         DarkMode = darkMode;
         RememberTraceDate = rememberTraceDate;
     }
-
-    public string ToData() => $"{DarkMode}|{RememberTraceDate}";
-
-    public string ToDetail() => $"{nameof(UserDisplayPreferences)}: (DarkMode: {DarkMode}, RememberTraceDate: {RememberTraceDate})";
 }

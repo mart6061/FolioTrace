@@ -35,10 +35,6 @@ public sealed record Alpha3 : IType
     public static implicit operator Alpha3(string s) => new Alpha3(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(Alpha3)}: {this}";
 }
 
 internal sealed class Alpha3JsonConverter : JsonConverter<Alpha3>

@@ -37,7 +37,10 @@ import type {
   UserValuationPreferences,
   UserBookmarks,
   UserBookmarkType,
-  ValuationDateBasis
+  HoldingDateBasis,
+  EventPropertyDetail,
+  InstrumentPriceBasis,
+  Valuations
 } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
@@ -345,6 +348,7 @@ export type TicketTradeFillRequest = {
   reason: string;
   ticketNumber: number;
   fillID?: string;
+  brokerLEI: string;
   price: number;
   quantity: number;
   note: string;
@@ -372,7 +376,7 @@ export type UserValuationPreferencesRequest = {
   eventDateTime: string;
   reason: string;
   valuationDateOption: UserValuationDateOption;
-  valuationDateBasis: ValuationDateBasis;
+  holdingDateBasis: HoldingDateBasis;
   showZeroBalances: boolean;
 };
 
@@ -511,11 +515,11 @@ export async function getHoldingPositions(
   fetchApi: typeof fetch,
   eventDateTime: string,
   auditDateTime: string | null,
-  valuationDateBasis: ValuationDateBasis = 'EventDateTime'
+  holdingDateBasis: HoldingDateBasis = 'EventDateTime'
 ) {
   const url = new URL(`${getApiBaseUrl()}/HoldingPositions`);
   url.searchParams.set('eventDateTime', eventDateTime);
-  url.searchParams.set('valuationDateBasis', valuationDateBasis);
+  url.searchParams.set('holdingDateBasis', holdingDateBasis);
 
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
@@ -526,6 +530,35 @@ export async function getHoldingPositions(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as HoldingPositions;
+}
+
+export async function getValuations(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  holdingDateBasis: HoldingDateBasis,
+  instrumentPriceBasis: InstrumentPriceBasis,
+  valuationCurrency: string,
+  accountID: string | null = null
+) {
+  const url = new URL(`${getApiBaseUrl()}/Valuations/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  url.searchParams.set('holdingDateBasis', holdingDateBasis);
+  url.searchParams.set('instrumentPriceBasis', instrumentPriceBasis);
+  url.searchParams.set('valuationCurrency', valuationCurrency);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  if (accountID)
+    url.searchParams.set('accountID', accountID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as Valuations;
 }
 
 export async function getCurrencies(
@@ -566,8 +599,26 @@ export async function getBrokers(
   return (await response.json()) as Brokers;
 }
 
-export async function getCountryEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Country/`);
+type EventQueryFilters = Record<string, string | number | null | undefined>;
+
+function createApiUrl(path: string, filters?: EventQueryFilters) {
+  const url = new URL(`${getApiBaseUrl()}${path}`);
+
+  if (!filters)
+    return url;
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === null || value === undefined || value === '')
+      continue;
+
+    url.searchParams.set(key, String(value));
+  }
+
+  return url;
+}
+
+export async function getCountryEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/Country/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -575,8 +626,8 @@ export async function getCountryEvents(fetchApi: typeof fetch) {
   return (await response.json()) as CountryReferenceEvent[];
 }
 
-export async function getCurrencyEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Currency/`);
+export async function getCurrencyEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/Currency/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -584,8 +635,8 @@ export async function getCurrencyEvents(fetchApi: typeof fetch) {
   return (await response.json()) as CurrencyReferenceEvent[];
 }
 
-export async function getBrokerEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Broker/`);
+export async function getBrokerEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/Broker/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -593,8 +644,8 @@ export async function getBrokerEvents(fetchApi: typeof fetch) {
   return (await response.json()) as BrokerReferenceEvent[];
 }
 
-export async function getAccountEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Account/`);
+export async function getAccountEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/Account/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -602,8 +653,8 @@ export async function getAccountEvents(fetchApi: typeof fetch) {
   return (await response.json()) as AccountReferenceEvent[];
 }
 
-export async function getHoldingEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Holding/`);
+export async function getHoldingEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/Holding/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -611,11 +662,22 @@ export async function getHoldingEvents(fetchApi: typeof fetch) {
   return (await response.json()) as HoldingReferenceEvent[];
 }
 
-export async function getTransactionEvents(fetchApi: typeof fetch, accountID?: string) {
-  const url = new URL(`${getApiBaseUrl()}/Events/Transaction/`);
+export async function getTransactionEvents(fetchApi: typeof fetch, filters?: string | EventQueryFilters) {
+  const url = createApiUrl('/Events/Transaction/');
+  const normalizedFilters = typeof filters === 'string' ? { accountID: filters } : filters;
 
-  if (accountID)
-    url.searchParams.set('accountID', accountID);
+  if (normalizedFilters?.accountID)
+    url.searchParams.set('accountID', String(normalizedFilters.accountID));
+  if (normalizedFilters?.eventSetID)
+    url.searchParams.set('eventSetID', String(normalizedFilters.eventSetID));
+  if (normalizedFilters?.holdingID)
+    url.searchParams.set('holdingID', String(normalizedFilters.holdingID));
+  if (normalizedFilters?.instrumentID)
+    url.searchParams.set('instrumentID', String(normalizedFilters.instrumentID));
+  if (normalizedFilters?.valuationDateTime)
+    url.searchParams.set('valuationDateTime', String(normalizedFilters.valuationDateTime));
+  if (normalizedFilters?.auditDateTime)
+    url.searchParams.set('auditDateTime', String(normalizedFilters.auditDateTime));
 
   const response = await fetchApi(url);
 
@@ -625,8 +687,8 @@ export async function getTransactionEvents(fetchApi: typeof fetch, accountID?: s
   return ((await response.json()) as Record<string, unknown>[]).map(normalizeTransactionEvent);
 }
 
-export async function getInstrumentEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/`);
+export async function getInstrumentEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/Instrument/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -634,11 +696,9 @@ export async function getInstrumentEvents(fetchApi: typeof fetch) {
   return (await response.json()) as InstrumentReferenceEvent[];
 }
 
-export async function getInstrumentPriceEvents(fetchApi: typeof fetch, instrumentID?: string) {
-  const url = new URL(`${getApiBaseUrl()}/Events/InstrumentPrice/`);
-
-  if (instrumentID)
-    url.searchParams.set('instrumentID', instrumentID);
+export async function getInstrumentPriceEvents(fetchApi: typeof fetch, filters?: string | EventQueryFilters) {
+  const normalizedFilters = typeof filters === 'string' ? { instrumentID: filters } : filters;
+  const url = createApiUrl('/Events/InstrumentPrice/', normalizedFilters);
 
   const response = await fetchApi(url);
 
@@ -648,11 +708,9 @@ export async function getInstrumentPriceEvents(fetchApi: typeof fetch, instrumen
   return (await response.json()) as InstrumentValueHistoryEvent[];
 }
 
-export async function getInstrumentIncomeEvents(fetchApi: typeof fetch, instrumentID?: string) {
-  const url = new URL(`${getApiBaseUrl()}/Events/InstrumentIncome/`);
-
-  if (instrumentID)
-    url.searchParams.set('instrumentID', instrumentID);
+export async function getInstrumentIncomeEvents(fetchApi: typeof fetch, filters?: string | EventQueryFilters) {
+  const normalizedFilters = typeof filters === 'string' ? { instrumentID: filters } : filters;
+  const url = createApiUrl('/Events/InstrumentIncome/', normalizedFilters);
 
   const response = await fetchApi(url);
 
@@ -662,8 +720,8 @@ export async function getInstrumentIncomeEvents(fetchApi: typeof fetch, instrume
   return (await response.json()) as InstrumentValueHistoryEvent[];
 }
 
-export async function getFXRateEvents(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Events/FXRate/`);
+export async function getFXRateEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/FXRate/', filters));
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
@@ -874,11 +932,9 @@ export async function getUserEvents(fetchApi: typeof fetch, userID?: string) {
   return (await response.json()) as UserReferenceEvent[];
 }
 
-export async function getTicketEvents(fetchApi: typeof fetch, ticketNumber?: number) {
-  const url = new URL(`${getApiBaseUrl()}/Events/Ticket/`);
-
-  if (ticketNumber)
-    url.searchParams.set('ticketNumber', String(ticketNumber));
+export async function getTicketEvents(fetchApi: typeof fetch, filters?: number | EventQueryFilters) {
+  const normalizedFilters = typeof filters === 'number' ? { ticketNumber: filters } : filters;
+  const url = createApiUrl('/Events/Ticket/', normalizedFilters);
 
   const response = await fetchApi(url);
 
@@ -1589,6 +1645,8 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
     }));
   if (request.fillID)
     body.FillID = request.fillID;
+  if (typeof request.brokerLEI === 'string')
+    body.BrokerLEI = request.brokerLEI;
   if (typeof request.price === 'number')
     body.Price = request.price;
   if (typeof request.quantity === 'number')
@@ -1686,7 +1744,7 @@ async function postUserValuationPreferencesEvent(fetchApi: typeof fetch, eventTy
       EventDateTime: request.eventDateTime,
       Reason: request.reason,
       ValuationDateOption: request.valuationDateOption,
-      ValuationDateBasis: request.valuationDateBasis,
+      HoldingDateBasis: request.holdingDateBasis,
       ShowZeroBalances: request.showZeroBalances
     })
   });
@@ -1828,6 +1886,8 @@ function holdingEventPrefix(holdingKind: HoldingKind) {
       return 'HoldingPositionMemo';
     case 'PositionCash':
       return 'HoldingPositionCash';
+    case 'PositionAsset':
+      return 'HoldingPositionAsset';
     case 'CashDebt':
       return 'HoldingCashDebt';
     case 'CashInvestable':
@@ -1838,10 +1898,10 @@ function holdingEventPrefix(holdingKind: HoldingKind) {
       return 'HoldingInflow';
     case 'Outflow':
       return 'HoldingOutflow';
-    case 'InspecieIn':
-      return 'HoldingInspecieIn';
-    case 'InspecieOut':
-      return 'HoldingInspecieOut';
+    case 'InSpecieIn':
+      return 'HoldingInSpecieIn';
+    case 'InSpecieOut':
+      return 'HoldingInSpecieOut';
     case 'FeesCustodian':
       return 'HoldingFeesCustodian';
     case 'FeesAdministrator':
@@ -1869,13 +1929,14 @@ function isHoldingKind(value: string): value is HoldingKind {
   return [
     'PositionMemo',
     'PositionCash',
+    'PositionAsset',
     'CashDebt',
     'CashInvestable',
     'CashNonInvestable',
     'Inflow',
     'Outflow',
-    'InspecieIn',
-    'InspecieOut',
+    'InSpecieIn',
+    'InSpecieOut',
     'FeesCustodian',
     'FeesAdministrator',
     'FeesBank',
@@ -1891,6 +1952,7 @@ function isBankHoldingKind(holdingKind: HoldingKind) {
 function normalizeTransactionEvent(event: Record<string, unknown>): TransactionReferenceEvent {
   return {
     $type: readString(event, '$type', 'type', 'Type'),
+    applicationStatus: readApplicationStatus(event),
     auditDateTime: readString(event, 'auditDateTime', 'AuditDateTime'),
     bookCost: readOptionalNumber(event, 'bookCost', 'BookCost'),
     cancelledEventID: readString(event, 'cancelledEventID', 'cancelledEventId', 'CancelledEventID') || undefined,
@@ -1905,8 +1967,50 @@ function normalizeTransactionEvent(event: Record<string, unknown>): TransactionR
     quantity: readOptionalNumber(event, 'quantity', 'Quantity'),
     reason: readString(event, 'reason', 'Reason'),
     settlementDateTime: readString(event, 'settlementDateTime', 'SettlementDateTime'),
-    userID: readString(event, 'userID', 'userId', 'UserID')
+    userID: readString(event, 'userID', 'userId', 'UserID'),
+    propertyDetails: readEventPropertyDetails(event)
   };
+}
+
+export function readEventPropertyDetails(source: Record<string, unknown>): EventPropertyDetail[] | undefined {
+  const details = source.propertyDetails ?? source.PropertyDetails;
+
+  if (!Array.isArray(details))
+    return undefined;
+
+  return details
+    .map((detail) => {
+      if (!detail || typeof detail !== 'object')
+        return null;
+
+      const record = detail as Record<string, unknown>;
+      const name = record.name ?? record.Name;
+      const description = record.description ?? record.Description;
+      const order = record.order ?? record.Order;
+      const value = Object.prototype.hasOwnProperty.call(record, 'value')
+        ? record.value
+        : record.Value;
+
+      if (typeof name !== 'string' || typeof description !== 'string')
+        return null;
+
+      const propertyDetail: EventPropertyDetail = {
+        name,
+        description,
+        value
+      };
+
+      if (typeof order === 'number')
+        propertyDetail.order = order;
+
+      return propertyDetail;
+    })
+    .filter((detail): detail is EventPropertyDetail => detail !== null);
+}
+
+export function readApplicationStatus(source: Record<string, unknown>) {
+  const value = source.applicationStatus ?? source.ApplicationStatus;
+  return value === 'omitted' ? 'omitted' as const : 'applied' as const;
 }
 
 function readString(source: Record<string, unknown>, ...keys: string[]) {

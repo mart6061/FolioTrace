@@ -23,11 +23,9 @@ public abstract record FXPriceValue : IType
     {
     }
 
+    public static implicit operator decimal(FXPriceValue price) => price?.Value ?? 0m;
+
     public override string ToString() => Value.ToString("0.########");
-
-    public string ToData() => Value.ToString("0.########");
-
-    public string ToDetail() => $"{GetType().Name}: {this}";
 }
 
 [JsonConverter(typeof(BidJsonConverter))]

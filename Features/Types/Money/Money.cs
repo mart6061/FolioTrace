@@ -37,10 +37,6 @@ public sealed record Money : IType
 
     public override string ToString() => $"{Amount:0.########} {Currency.Value}";
 
-    public string ToData() => $"{Amount:0.########}|{Currency.ToData()}";
-
-    public string ToDetail() => $"{nameof(Money)}: {this}";
-
     private static void EnsureSameCurrency(Money left, Money right)
     {
         if (left is null)

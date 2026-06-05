@@ -1,7 +1,7 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
-import { defaultUserValuationPreferences, normalizeValuationDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
+import { defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
@@ -77,16 +77,16 @@ export const actions = {
       visible: getFormString(formData, `originalMenu:${item.id}`) !== 'false'
     }));
     const valuationDateOption = normalizeValuationDateOption(getFormString(formData, 'valuationDateOption'));
-    const valuationDateBasis = normalizeValuationDateBasis(getFormString(formData, 'valuationDateBasis'));
+    const holdingDateBasis = normalizeHoldingDateBasis(getFormString(formData, 'holdingDateBasis'));
     const showZeroBalances = getFormString(formData, 'showZeroBalances') === 'true';
     const originalValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalValuationDateOption'));
-    const originalValuationDateBasis = normalizeValuationDateBasis(getFormString(formData, 'originalValuationDateBasis'));
+    const originalHoldingDateBasis = normalizeHoldingDateBasis(getFormString(formData, 'originalHoldingDateBasis'));
     const originalShowZeroBalances = getFormString(formData, 'originalShowZeroBalances') === 'true';
     const bookmarks = parseBookmarks(getFormString(formData, 'bookmarks'));
     const originalBookmarks = parseBookmarks(getFormString(formData, 'originalBookmarks'));
     const menuChanged = !areMenuItemsEqual(items, originalItems);
     const valuationChanged = valuationDateOption !== originalValuationDateOption
-      || valuationDateBasis !== originalValuationDateBasis
+      || holdingDateBasis !== originalHoldingDateBasis
       || showZeroBalances !== originalShowZeroBalances;
     const bookmarkChanges = getBookmarkChanges(bookmarks, originalBookmarks);
 
@@ -116,7 +116,7 @@ export const actions = {
           eventDateTime,
           reason: 'Modify user valuation preferences',
           valuationDateOption,
-          valuationDateBasis,
+          holdingDateBasis,
           showZeroBalances
         };
         const result = hasStoredValuationPreferences

@@ -30,12 +30,6 @@ public sealed record CountryFlagModifiedEvent : EventBase, ICountryEvent
 
     public override string Type => nameof(CountryFlagModifiedEvent); // TODO: Remind me to create a universal constant for this event type.
 
-    public override string ToData() =>
-        $"{base.ToData()}|{Alpha2.ToData()}|{Flag.ToData()}";
-
-    public override string ToDetail() =>
-        $"{nameof(CountryFlagModifiedEvent)}: ({base.ToDetail()}, Alpha2: {Alpha2.ToDetail()}, Flag: {Flag.ToDetail()})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, Alpha2? alpha2, CountryFlag? flag)
     {
         var messages = new List<string>();

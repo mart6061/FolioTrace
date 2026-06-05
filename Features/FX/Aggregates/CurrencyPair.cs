@@ -48,10 +48,6 @@ public sealed record CurrencyPair : IType
     }
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(CurrencyPair)}: {DisplayValue}";
 }
 
 internal sealed class CurrencyPairJsonConverter : JsonConverter<CurrencyPair>

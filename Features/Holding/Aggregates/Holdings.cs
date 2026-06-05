@@ -113,10 +113,6 @@ public sealed record Holdings : IAggregate
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Holdings)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
-
     private static LastAuditDateTime GetLastAuditDateTime(List<Holding> items) =>
         new(items.Max(holding => holding.LastAuditDateTime.Value));
 

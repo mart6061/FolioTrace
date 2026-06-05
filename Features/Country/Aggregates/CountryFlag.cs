@@ -18,8 +18,4 @@ public sealed record CountryFlag
     }
 
     public override string ToString() => Svg;
-
-    public string ToData() => Svg;
-
-    public string ToDetail() => $"{nameof(CountryFlag)}: (Svg: {Svg})";
 }

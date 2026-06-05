@@ -31,6 +31,36 @@ public sealed class HoldingBuilderTests
     }
 
     [Fact]
+    public void HoldingPositionAssetCreatedEventBuilder_CreatesAssetPositionHolding()
+    {
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments();
+        var result = HoldingPositionAssetCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.NewGuid()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create holding",
+            HoldingIDBuilder.Create(),
+            AccountID,
+            EquityInstrumentID,
+            "Asset position",
+            true,
+            true,
+            accounts,
+            instruments,
+            null);
+
+        Assert.True(result.IsValid);
+        Assert.NotNull(result.Value);
+
+        var holdings = CreateHoldings(accounts, instruments, result.Value!);
+        var holding = Assert.IsType<HoldingPositionAsset>(holdings.Items.Single(item => item.HoldingID == result.Value!.HoldingID));
+        Assert.True(holding.IncludeInValuation);
+        Assert.Equal("Asset position", holding.Name);
+    }
+
+    [Fact]
     public void HoldingCreatedEventBuilder_RejectsDuplicateDefaultForSameKind()
     {
         var accounts = CreateAccounts();
@@ -112,15 +142,18 @@ public sealed class HoldingBuilderTests
         string[] custodianNames = ["Bank of New Year", "Royal Bank of Canada", "Bank of America"];
         string[] administratorNames = ["Capita", "Fundrock", "Gallium tailors"];
         string[] bankNames = ["HSBC", "Barclays"];
-        string[] investableCurrencies = ["GBP", "EUR", "USD", "JPY"];
+        string[] investableCurrencies = ["GBP", "EUR", "USD", "JPY", "CHF"];
 
-        Assert.Equal(208, events.Count);
+        Assert.Equal(328, events.Count);
         Assert.Equal(10, events.OfType<HoldingPositionCashCreatedEvent>().Count(@event => @event.Name == "Capital" && @event.Default));
+        Assert.Equal(30, events.OfType<HoldingPositionAssetCreatedEvent>().Count(@event => @event.Name.StartsWith("Asset ") && !@event.Default));
         Assert.Equal(10, events.OfType<HoldingCashDebtCreatedEvent>().Count(@event => @event.Name == "Debt" && !@event.Default));
-        Assert.Equal(40, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name.StartsWith("Investable ") && !@event.Default));
+        Assert.Equal(50, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name.StartsWith("Investable ") && !@event.Default));
         Assert.Equal(10, events.OfType<HoldingCashNonInvestableCreatedEvent>().Count(@event => @event.Name == "Income" && !@event.Default));
-        Assert.Equal(40, events.OfType<HoldingInflowCreatedEvent>().Count());
-        Assert.Equal(40, events.OfType<HoldingOutflowCreatedEvent>().Count());
+        Assert.Equal(50, events.OfType<HoldingInflowCreatedEvent>().Count());
+        Assert.Equal(50, events.OfType<HoldingOutflowCreatedEvent>().Count());
+        Assert.Equal(30, events.OfType<HoldingInSpecieInCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie In ") && !@event.Default));
+        Assert.Equal(30, events.OfType<HoldingInSpecieOutCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie Out ") && !@event.Default));
         Assert.All(investableCurrencies, currency =>
         {
             Assert.Equal(10, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name == $"Investable {currency}"));
@@ -273,15 +306,15 @@ public sealed class HoldingBuilderTests
             [new TransactionRequest(inflowHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(100m))]), holdings).Value!.Cast<ITransactionEvent>().ToList();
         var betweenExecutionAndSettlement = EventDateTimeBuilder.Create(EventDate.Value.AddHours(1));
 
-        var executionPositions = new HoldingPositions(betweenExecutionAndSettlement, AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, valuationDateBasis: ValuationDateBasis.EventDateTime);
-        var settlementPositions = new HoldingPositions(betweenExecutionAndSettlement, AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, valuationDateBasis: ValuationDateBasis.SettlementDateTime);
-        var settledPositions = new HoldingPositions(EventDateTimeBuilder.Create(SettlementDate.Value), AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, valuationDateBasis: ValuationDateBasis.SettlementDateTime);
+        var executionPositions = new HoldingPositions(betweenExecutionAndSettlement, AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, holdingDateBasis: HoldingDateBasis.EventDateTime);
+        var settlementPositions = new HoldingPositions(betweenExecutionAndSettlement, AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, holdingDateBasis: HoldingDateBasis.SettlementDateTime);
+        var settledPositions = new HoldingPositions(EventDateTimeBuilder.Create(SettlementDate.Value), AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, holdingDateBasis: HoldingDateBasis.SettlementDateTime);
 
         Assert.Single(executionPositions.Items);
         Assert.Empty(settlementPositions.Items);
         Assert.Single(settledPositions.Items);
-        Assert.Equal(ValuationDateBasis.SettlementDateTime, settledPositions.ValuationDateBasis);
-        Assert.All(settledPositions.Items, position => Assert.Equal(ValuationDateBasis.SettlementDateTime, position.ValuationDateBasis));
+        Assert.Equal(HoldingDateBasis.SettlementDateTime, settledPositions.HoldingDateBasis);
+        Assert.All(settledPositions.Items, position => Assert.Equal(HoldingDateBasis.SettlementDateTime, position.HoldingDateBasis));
     }
 
     [Fact]
@@ -459,8 +492,8 @@ public sealed class HoldingBuilderTests
         {
             nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
             nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInspecieIn) => HoldingInspecieInCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInspecieOut) => HoldingInspecieOutCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingInSpecieIn) => HoldingInSpecieInCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingInSpecieOut) => HoldingInSpecieOutCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
             nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
             nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
             nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,

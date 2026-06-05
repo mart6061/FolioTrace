@@ -25,10 +25,6 @@ public sealed record Price : IType
     internal static Price FromJson(decimal amount) => new(amount);
 
     public override string ToString() => Amount.ToString("0.########");
-
-    public string ToData() => Amount.ToString("0.########");
-
-    public string ToDetail() => $"{nameof(Price)}: {this}";
 }
 
 internal sealed class PriceJsonConverter : JsonConverter<Price>

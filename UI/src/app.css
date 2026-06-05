@@ -1889,6 +1889,10 @@ main {
   margin-top: 10px;
 }
 
+.menu-preference-card + #preferences-form {
+  margin-top: 10px;
+}
+
 #preferences-form + .menu-preference-card {
   margin-top: 10px;
 }
@@ -2929,9 +2933,46 @@ fieldset.field legend {
   font-size: 0.875rem;
 }
 
+.input {
+  min-height: 2.25rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 0.875rem;
+  outline: none;
+  padding: 0.375rem 0.625rem;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.input:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+}
+
+select.input {
+  appearance: auto;
+}
+
 input[type='number'],
 input[inputmode='decimal'] {
   text-align: right;
+}
+
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 .ticket-term-input {
@@ -3081,6 +3122,30 @@ input[inputmode='decimal'] {
   justify-self: end;
 }
 
+.quantity-balance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 720;
+}
+
+.quantity-balance span {
+  min-height: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-muted);
+  padding: 0.3rem 0.625rem;
+}
+
+.quantity-balance-mismatch span:last-child {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+  background: color-mix(in srgb, var(--danger-soft) 44%, var(--panel));
+  color: var(--danger);
+}
+
 .ticket-note-grid {
   display: grid;
   gap: 0.625rem;
@@ -3138,7 +3203,6 @@ input[inputmode='decimal'] {
 
 .chip-row,
 .allocation-list,
-.fill-list,
 .action-row,
 .inline-form,
 .fill-form {
@@ -3152,8 +3216,7 @@ input[inputmode='decimal'] {
   align-items: end;
 }
 
-.account-chip,
-.fill-row {
+.account-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -3173,6 +3236,72 @@ input[inputmode='decimal'] {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fill-table {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.fill-table-header,
+.fill-row {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(7rem, 0.5fr) minmax(9rem, 1fr) minmax(2.5rem, auto);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.fill-table-header {
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel-muted) 82%, var(--panel));
+  padding: 0.5rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.fill-list {
+  display: grid;
+}
+
+.fill-row {
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+}
+
+.fill-row + .fill-row {
+  border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+}
+
+.fill-row .ticket-readonly-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fill-row button {
+  display: grid;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--danger) 48%, var(--line));
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--danger-soft) 42%, var(--panel));
+  cursor: pointer;
+}
+
+.fill-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.fill-empty {
+  padding: 0.75rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 
 .workflow-panel-wide > .trade-main-form {
@@ -3233,11 +3362,23 @@ input[inputmode='decimal'] {
   .trade-allocation-table .account-allocation-account {
     grid-column: 1 / -1;
   }
+
+  .fill-table-header {
+    display: none;
+  }
+
+  .fill-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fill-row .ticket-readonly-value:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
 }
 
 .fill-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(12rem, 1fr) minmax(7rem, 0.55fr);
 }
 
 .fill-form input[name='fillNote'],
@@ -3248,4 +3389,19 @@ input[inputmode='decimal'] {
 .fill-form .btn {
   justify-self: start;
   min-width: 7rem;
+}
+
+@media (max-width: 720px) {
+  .fill-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fill-form input[name='fillNote'],
+  .fill-form button {
+    grid-column: auto;
+  }
+
+  .fill-form .btn {
+    justify-self: stretch;
+  }
 }

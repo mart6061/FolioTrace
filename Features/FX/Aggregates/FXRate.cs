@@ -41,8 +41,4 @@ public sealed record FXRate : IModel
         LastEventID = lastEventID;
         LastAuditDateTime = lastAuditDateTime;
     }
-
-    public string ToData() => $"{Pair.ToData()}|{Price.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(FXRate)}: (Pair: {Pair.ToDetail()}, Price: {Price.ToDetail()}, Active: {Active}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

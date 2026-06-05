@@ -9,6 +9,12 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(AccountModifiedEvent), nameof(AccountModifiedEvent))]
 [JsonDerivedType(typeof(AccountActiveModifiedEvent), nameof(AccountActiveModifiedEvent))]
 [JsonDerivedType(typeof(AccountDisplayOrderSetEvent), nameof(AccountDisplayOrderSetEvent))]
+[JsonDerivedType(typeof(BrokerCreatedEvent), nameof(BrokerCreatedEvent))]
+[JsonDerivedType(typeof(BrokerModifiedEvent), nameof(BrokerModifiedEvent))]
+[JsonDerivedType(typeof(BrokerActiveSetEvent), nameof(BrokerActiveSetEvent))]
+[JsonDerivedType(typeof(BrokerApprovedDateTimeSetEvent), nameof(BrokerApprovedDateTimeSetEvent))]
+[JsonDerivedType(typeof(BrokerNextReviewSetEvent), nameof(BrokerNextReviewSetEvent))]
+[JsonDerivedType(typeof(BrokerNotesSetEvent), nameof(BrokerNotesSetEvent))]
 [JsonDerivedType(typeof(CountryCreatedEvent), nameof(CountryCreatedEvent))]
 [JsonDerivedType(typeof(CountryModifiedEvent), nameof(CountryModifiedEvent))]
 [JsonDerivedType(typeof(CountryFlagModifiedEvent), nameof(CountryFlagModifiedEvent))]
@@ -19,13 +25,14 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(FXRateSetEvent), nameof(FXRateSetEvent))]
 [JsonDerivedType(typeof(HoldingPositionMemoCreatedEvent), nameof(HoldingPositionMemoCreatedEvent))]
 [JsonDerivedType(typeof(HoldingPositionCashCreatedEvent), nameof(HoldingPositionCashCreatedEvent))]
+[JsonDerivedType(typeof(HoldingPositionAssetCreatedEvent), nameof(HoldingPositionAssetCreatedEvent))]
 [JsonDerivedType(typeof(HoldingCashDebtCreatedEvent), nameof(HoldingCashDebtCreatedEvent))]
 [JsonDerivedType(typeof(HoldingCashInvestableCreatedEvent), nameof(HoldingCashInvestableCreatedEvent))]
 [JsonDerivedType(typeof(HoldingCashNonInvestableCreatedEvent), nameof(HoldingCashNonInvestableCreatedEvent))]
 [JsonDerivedType(typeof(HoldingInflowCreatedEvent), nameof(HoldingInflowCreatedEvent))]
 [JsonDerivedType(typeof(HoldingOutflowCreatedEvent), nameof(HoldingOutflowCreatedEvent))]
-[JsonDerivedType(typeof(HoldingInspecieInCreatedEvent), nameof(HoldingInspecieInCreatedEvent))]
-[JsonDerivedType(typeof(HoldingInspecieOutCreatedEvent), nameof(HoldingInspecieOutCreatedEvent))]
+[JsonDerivedType(typeof(HoldingInSpecieInCreatedEvent), nameof(HoldingInSpecieInCreatedEvent))]
+[JsonDerivedType(typeof(HoldingInSpecieOutCreatedEvent), nameof(HoldingInSpecieOutCreatedEvent))]
 [JsonDerivedType(typeof(HoldingFeesCustodianCreatedEvent), nameof(HoldingFeesCustodianCreatedEvent))]
 [JsonDerivedType(typeof(HoldingFeesAdministratorCreatedEvent), nameof(HoldingFeesAdministratorCreatedEvent))]
 [JsonDerivedType(typeof(HoldingFeesBankCreatedEvent), nameof(HoldingFeesBankCreatedEvent))]
@@ -33,13 +40,14 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(HoldingInterestCreatedEvent), nameof(HoldingInterestCreatedEvent))]
 [JsonDerivedType(typeof(HoldingPositionMemoModifiedEvent), nameof(HoldingPositionMemoModifiedEvent))]
 [JsonDerivedType(typeof(HoldingPositionCashModifiedEvent), nameof(HoldingPositionCashModifiedEvent))]
+[JsonDerivedType(typeof(HoldingPositionAssetModifiedEvent), nameof(HoldingPositionAssetModifiedEvent))]
 [JsonDerivedType(typeof(HoldingCashDebtModifiedEvent), nameof(HoldingCashDebtModifiedEvent))]
 [JsonDerivedType(typeof(HoldingCashInvestableModifiedEvent), nameof(HoldingCashInvestableModifiedEvent))]
 [JsonDerivedType(typeof(HoldingCashNonInvestableModifiedEvent), nameof(HoldingCashNonInvestableModifiedEvent))]
 [JsonDerivedType(typeof(HoldingInflowModifiedEvent), nameof(HoldingInflowModifiedEvent))]
 [JsonDerivedType(typeof(HoldingOutflowModifiedEvent), nameof(HoldingOutflowModifiedEvent))]
-[JsonDerivedType(typeof(HoldingInspecieInModifiedEvent), nameof(HoldingInspecieInModifiedEvent))]
-[JsonDerivedType(typeof(HoldingInspecieOutModifiedEvent), nameof(HoldingInspecieOutModifiedEvent))]
+[JsonDerivedType(typeof(HoldingInSpecieInModifiedEvent), nameof(HoldingInSpecieInModifiedEvent))]
+[JsonDerivedType(typeof(HoldingInSpecieOutModifiedEvent), nameof(HoldingInSpecieOutModifiedEvent))]
 [JsonDerivedType(typeof(HoldingFeesCustodianModifiedEvent), nameof(HoldingFeesCustodianModifiedEvent))]
 [JsonDerivedType(typeof(HoldingFeesAdministratorModifiedEvent), nameof(HoldingFeesAdministratorModifiedEvent))]
 [JsonDerivedType(typeof(HoldingFeesBankModifiedEvent), nameof(HoldingFeesBankModifiedEvent))]
@@ -91,15 +99,21 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(UserBookmarkDeletedEvent), nameof(UserBookmarkDeletedEvent))]
 public interface IEventBase : IType
 {
+    [EventProperty(Description = "Event type", Order = 0)]
     string Type { get; }
 
+    [EventProperty(Description = "Event ID", Order = 10)]
     EventID EventID { get; }
 
+    [EventProperty(Description = "User ID", Order = 20)]
     UserID UserID { get; }
 
+    [EventProperty(Description = "Event time", Order = 30)]
     EventDateTime EventDateTime { get; }
 
+    [EventProperty(Description = "Audit time", Order = 40)]
     AuditDateTime AuditDateTime { get; }
 
+    [EventProperty(Description = "Reason", Order = 50)]
     string Reason { get; }
 }

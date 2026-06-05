@@ -3,8 +3,9 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import type { Holding, HoldingKind, HoldingReferenceEvent } from '$lib/types';
+  import type { Holding, HoldingHistoryEvent, HoldingKind, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -12,7 +13,7 @@
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   type SortKey = 'name' | 'type' | 'account' | 'instrument' | 'status' | 'lastAudit';
 
-  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InspecieIn', 'InspecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InSpecieIn', 'InSpecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
   const holdingCount = $derived(data.holdings?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.holdings ? formatDisplayDateTime(data.holdings.asOfDateTime) : 'now');
   const accountsByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account.name])));
@@ -26,7 +27,7 @@
   let submittingHoldingID = $state('');
   let submittingCreate = $state(false);
   let openHistoryHoldingID = $state('');
-  let historyByHoldingID = $state<Record<string, { events: HoldingReferenceEvent[]; error: string; loading: boolean }>>({});
+  let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
 
   const filteredHoldings = $derived(
@@ -204,7 +205,7 @@
         throw new Error(`History request returned ${response.status} ${response.statusText}`);
 
       historyByHoldingID[holdingID] = {
-        events: await response.json() as HoldingReferenceEvent[],
+        events: await response.json() as HoldingHistoryEvent[],
         error: '',
         loading: false
       };
@@ -226,7 +227,10 @@
     ].join('|');
   }
 
-  function holdingEventSummary(event: HoldingReferenceEvent) {
+  function holdingEventSummary(event: HoldingHistoryEvent) {
+    if (isTransactionHistoryEvent(event))
+      return '';
+
     if (event.$type === 'HoldingActiveModifiedEvent')
       return event.active ? 'Activated' : 'Deactivated';
 
@@ -235,6 +239,53 @@
       event.holdingKind,
       typeof event.default === 'boolean' ? event.default ? 'Default' : 'Non-default' : ''
     ].filter(Boolean).join(' · ');
+  }
+
+  function isTransactionHistoryEvent(event: HoldingHistoryEvent): event is TransactionReferenceEvent {
+    return event.$type === 'TransactionCreditEvent' ||
+      event.$type === 'TransactionDebitEvent' ||
+      event.$type === 'TransactionCancellationEvent';
+  }
+
+  function transactionEventLabel(event: TransactionReferenceEvent) {
+    if (event.$type === 'TransactionCreditEvent')
+      return 'Credit';
+    if (event.$type === 'TransactionDebitEvent')
+      return 'Debit';
+    if (event.$type === 'TransactionCancellationEvent')
+      return 'Cancellation';
+
+    return event.$type || 'Transaction';
+  }
+
+  function transactionEventSummary(event: TransactionReferenceEvent) {
+    if (event.$type === 'TransactionCancellationEvent')
+      return `Cancelled ${event.cancelledEventID ?? 'transaction'} from set ${event.eventSetID}`;
+
+    return [
+      `Quantity ${formatNumber(event.quantity)}`,
+      `Book cost ${formatNumber(event.bookCost)}`,
+      `Settlement ${formatTableDateTime(event.settlementDateTime)}`
+    ].join(' - ');
+  }
+
+  function transactionEventDetail(event: TransactionReferenceEvent) {
+    if (event.$type === 'TransactionCancellationEvent')
+      return event.cancelledIDGroup?.length
+        ? `Cancelled group ${event.cancelledIDGroup.join(', ')}`
+        : '';
+
+    return `Event set ${event.eventSetID}`;
+  }
+
+  function formatNumber(value: number | null | undefined) {
+    if (value === null || value === undefined || !Number.isFinite(value))
+      return '-';
+
+    return new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 8,
+      minimumFractionDigits: 0
+    }).format(value);
   }
 </script>
 
@@ -333,7 +384,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Type</span>
                       <select class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="holdingKind">
-                        {#each holdingKinds as holdingKind}
+                        {#each holdingKinds as holdingKind (holdingKind)}
                           <option value={holdingKind}>{holdingKind}</option>
                         {/each}
                       </select>
@@ -354,7 +405,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Account</span>
                       <select class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="accountID" required>
-                        {#each data.accounts?.items ?? [] as account}
+                        {#each data.accounts?.items ?? [] as account (account.accountID)}
                           <option value={account.accountID}>{account.name}</option>
                         {/each}
                       </select>
@@ -364,7 +415,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Instrument</span>
                       <select class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="instrumentID" required>
-                        {#each data.instruments?.items ?? [] as instrument}
+                        {#each data.instruments?.items ?? [] as instrument (instrument.instrumentID)}
                           <option value={instrument.instrumentID}>{instrument.name}</option>
                         {/each}
                       </select>
@@ -407,7 +458,7 @@
                 </tr>
               {/if}
 
-              {#each sortedHoldings as holding}
+              {#each sortedHoldings as holding (holding.holdingID)}
                 {#if editingHoldingID === holding.holdingID}
                   <tr class="bg-teal-50/30 align-top">
                     <td class="px-3 py-2">
@@ -503,7 +554,7 @@
                             <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
                           {:else if history?.events.length}
                             <ol class="grid gap-2">
-                              {#each history.events as event}
+                              {#each history.events as event (event.eventID)}
                                 <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${event.applicationStatus === 'omitted' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200'}`}>
                                   <div class="text-xs text-slate-500">
                                     <div>{formatTableDateTime(event.eventDateTime)}</div>
@@ -511,7 +562,14 @@
                                   </div>
                                   <div class="grid gap-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                      <span class="font-medium text-slate-950">{event.$type}</span>
+                                      <span class="font-medium text-slate-950">
+                                        {isTransactionHistoryEvent(event) ? transactionEventLabel(event) : event.$type}
+                                      </span>
+                                      {#if isTransactionHistoryEvent(event)}
+                                        <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-800">Transaction</span>
+                                      {:else}
+                                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">Holding</span>
+                                      {/if}
                                       {#if event.applicationStatus === 'omitted'}
                                         <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
                                       {:else if data.auditDateTime}
@@ -519,7 +577,15 @@
                                       {/if}
                                       <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
                                     </div>
-                                    <div class="text-sm text-slate-700">{holdingEventSummary(event)}</div>
+                                    {#if isTransactionHistoryEvent(event)}
+                                      <div class="text-sm text-slate-700">{transactionEventSummary(event)}</div>
+                                      {#if transactionEventDetail(event)}
+                                        <div class="break-all text-xs text-slate-500">{transactionEventDetail(event)}</div>
+                                      {/if}
+                                    {:else}
+                                      <div class="text-sm text-slate-700">{holdingEventSummary(event)}</div>
+                                    {/if}
+                                    <EventPropertyDetails details={event.propertyDetails} />
                                     <div class="text-xs text-slate-500">{event.reason}</div>
                                   </div>
                                 </li>

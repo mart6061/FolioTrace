@@ -28,10 +28,6 @@ public sealed record InstrumentDate : IType
     public static implicit operator InstrumentDate(DateOnly? date) => new InstrumentDate(date);
 
     public override string ToString() => Value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
-
-    public string ToData() => ToString();
-
-    public string ToDetail() => $"{nameof(InstrumentDate)}: {this}";
 }
 
 internal sealed class InstrumentDateJsonConverter : JsonConverter<InstrumentDate>

@@ -27,10 +27,6 @@ public sealed record Yield : IType
     internal static Yield FromJson(decimal value) => new(value);
 
     public override string ToString() => Value.ToString("0.########");
-
-    public string ToData() => Value.ToString("0.########");
-
-    public string ToDetail() => $"{nameof(Yield)}: {this}";
 }
 
 internal sealed class YieldJsonConverter : JsonConverter<Yield>

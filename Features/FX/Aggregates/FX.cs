@@ -38,8 +38,4 @@ public sealed record FX : IModel
         LastEventID = lastEventID;
         LastAuditDateTime = lastAuditDateTime;
     }
-
-    public string ToData() => $"{Pair.ToData()}|{BaseCurrency.ToData()}|{QuoteCurrency.ToData()}|{Active}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(FX)}: (Pair: {Pair.ToDetail()}, Active: {Active}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

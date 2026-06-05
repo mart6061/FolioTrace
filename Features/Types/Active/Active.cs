@@ -20,10 +20,6 @@ public sealed record Active : IType
 
     public override string ToString() => Value.ToString();
 
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(Active)}: {Value}";
-
     public static implicit operator Active(bool value) => new(value);
 
     public static implicit operator bool(Active active) => active?.Value ?? false;

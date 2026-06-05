@@ -129,10 +129,6 @@ public sealed record FXRates : IAggregate
         LastAuditDateTime = setEvent.AuditDateTime;
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(FXRates)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
-
     private LastAuditDateTime GetLastAuditDateTime() =>
         Items.Count == 0 ? new LastAuditDateTime(AsOfDateTime.Value) : new LastAuditDateTime(Items.Max(rate => rate.LastAuditDateTime.Value));
 

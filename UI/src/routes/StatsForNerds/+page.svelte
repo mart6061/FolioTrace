@@ -169,6 +169,12 @@
           </article>
 
           <article class="metric-card">
+            <span class="metric-label">Brokers</span>
+            <strong>Brokers</strong>
+            <a href="/Data/Reference/Brokers">Open broker data</a>
+          </article>
+
+          <article class="metric-card">
             <span class="metric-label">Countries</span>
             <strong>Countries</strong>
             <a href="/Data/Reference/Countries">Open country data</a>
@@ -338,6 +344,13 @@
             <strong>{formatCount(data.memoryDiagnostics?.countryService.countryCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.countryService.cacheEntryCount)} cached views</span>
             <span>{formatBytes(data.memoryDiagnostics?.countryService.estimatedMemoryBytes)} estimated memory</span>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">Broker Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.brokerService?.brokerCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.brokerService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.brokerService?.estimatedMemoryBytes)} estimated memory</span>
           </article>
 
           <article class="metric-card">

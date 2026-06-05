@@ -75,8 +75,4 @@ public sealed record Instrument : IModel
         LastEventID = lastEventID ?? throw new ArgumentNullException(nameof(lastEventID));
         LastAuditDateTime = lastAuditDateTime ?? throw new ArgumentNullException(nameof(lastAuditDateTime));
     }
-
-    public string ToData() => $"{InstrumentID.ToData()}|{Name}|{FormalName}|{Exchange.ToData()}|{CFI.ToData()}|{Active}|{IncomeCountry.ToData()}|{PriceCountry.ToData()}|{PriceCurrency.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Instrument)}: (InstrumentID: {InstrumentID.ToDetail()}, Name: {Name}, FormalName: {FormalName}, Exchange: {Exchange.ToDetail()}, CFI: {CFI.ToDetail()}, Active: {Active}, IncomeCountry: {IncomeCountry.ToDetail()}, PriceCountry: {PriceCountry.ToDetail()}, PriceCurrency: {PriceCurrency.ToDetail()}, Identifiers: {Identifiers.Count}, Terms: {Terms?.ToDetail()}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

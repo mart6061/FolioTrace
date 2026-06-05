@@ -77,10 +77,6 @@ public sealed record UserMenuPreferences : IModel
     public bool IsVisible(string menuItemID) =>
         !UserMenuPreferenceDefaults.IsControlled(menuItemID) || Items.Single(item => item.MenuItemID == menuItemID).Visible;
 
-    public string ToData() => $"{UserID.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(UserMenuPreferences)}: (UserID: {UserID.ToDetail()}, Items: {Items.Count})";
-
     private void Apply(IUserMenuPreferencesEvent userMenuPreferencesEvent)
     {
         switch (userMenuPreferencesEvent)

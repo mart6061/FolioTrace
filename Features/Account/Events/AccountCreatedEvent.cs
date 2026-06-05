@@ -9,6 +9,7 @@ public sealed record AccountCreatedEvent : EventBase, IAccountEvent
     public AccountID AccountID { get; init; } = null!;
     public string Name { get; init; } = string.Empty;
     public string FormalName { get; init; } = string.Empty;
+    [EventProperty(Order = 40, Description = "Book currency")]
     public Alpha3 BookCurrency { get; init; } = null!;
     public Active Active { get; init; } = false;
 

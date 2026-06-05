@@ -127,10 +127,6 @@ public sealed record Countries : IAggregate
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Countries)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
-
     private static LastAuditDateTime GetLastAuditDateTime(List<Country> items) =>
         new LastAuditDateTime(items.Max(country => country.LastAuditDateTime.Value));
 

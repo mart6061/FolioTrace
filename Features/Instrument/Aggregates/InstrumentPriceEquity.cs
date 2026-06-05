@@ -31,8 +31,4 @@ public sealed record InstrumentPriceEquity : IInstrumentPrice
         if (Mid.Amount.HasValue && Ask.Amount.HasValue && Mid.Amount > Ask.Amount)
             throw new ArgumentException("Mid must be less than or equal to ask.", nameof(mid));
     }
-
-    public string ToData() => $"{Bid.ToData()}|{Mid.ToData()}|{Ask.ToData()}|{Nav.ToData()}";
-
-    public string ToDetail() => $"{nameof(InstrumentPriceEquity)}: (Bid: {Bid.ToDetail()}, Mid: {Mid.ToDetail()}, Ask: {Ask.ToDetail()}, Nav: {Nav.ToDetail()})";
 }

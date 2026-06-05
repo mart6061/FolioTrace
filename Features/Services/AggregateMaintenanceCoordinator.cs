@@ -6,6 +6,7 @@ namespace Services;
 public sealed class AggregateMaintenanceCoordinator(
     AggregateMaintenanceOptions options,
     AccountService accountService,
+    BrokerService brokerService,
     CountryService countryService,
     CurrencyService currencyService,
     FXService fxService,
@@ -110,6 +111,7 @@ public sealed class AggregateMaintenanceCoordinator(
                 cancellationToken.ThrowIfCancellationRequested();
 
                 await WarmAggregate("Accounts", valuationDate, accountService.IsCached, accountService.Get, result);
+                await WarmAggregate("Brokers", valuationDate, brokerService.IsCached, brokerService.Get, result);
                 await WarmAggregate("Countries", valuationDate, countryService.IsCached, countryService.Get, result);
                 await WarmAggregate("Currencies", valuationDate, currencyService.IsCached, currencyService.Get, result);
                 await WarmAggregate("FXs", valuationDate, fxService.IsCached, fxService.Get, result);
@@ -117,8 +119,8 @@ public sealed class AggregateMaintenanceCoordinator(
                 await WarmAggregate("Holdings", valuationDate, holdingService.IsCached, holdingService.Get, result);
                 await WarmAggregate("Instruments", valuationDate, instrumentService.IsCached, instrumentService.Get, result);
                 await WarmAggregate("InstrumentValues", valuationDate, instrumentValueService.IsCached, instrumentValueService.Get, result);
-                await WarmAggregate("HoldingPositions", valuationDate, ValuationDateBasis.EventDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
-                await WarmAggregate("HoldingPositions", valuationDate, ValuationDateBasis.SettlementDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
+                await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.EventDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
+                await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.SettlementDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
             }
 
             SetCompleted(runID, trigger, startedAtUtc, result);
@@ -184,27 +186,27 @@ public sealed class AggregateMaintenanceCoordinator(
     private static async Task WarmAggregate<TAggregate>(
         string aggregateKind,
         EventDateTime valuationDate,
-        ValuationDateBasis valuationDateBasis,
-        Func<EventDateTime, ValuationDateBasis, bool> isCached,
-        Func<EventDateTime, ValuationDateBasis, Task<TAggregate>> get,
+        HoldingDateBasis holdingDateBasis,
+        Func<EventDateTime, HoldingDateBasis, bool> isCached,
+        Func<EventDateTime, HoldingDateBasis, Task<TAggregate>> get,
         AggregateMaintenanceRunResult result)
     {
         result.ScannedAggregates++;
 
-        if (isCached(valuationDate, valuationDateBasis))
+        if (isCached(valuationDate, holdingDateBasis))
             return;
 
         result.MissingAggregates++;
 
         try
         {
-            await get(valuationDate, valuationDateBasis);
+            await get(valuationDate, holdingDateBasis);
             result.FixedAggregates++;
         }
         catch (Exception exception)
         {
             result.FailedAggregates++;
-            result.Errors.Add($"{aggregateKind} {valuationDate.Value:O} {valuationDateBasis}: {exception.Message}");
+            result.Errors.Add($"{aggregateKind} {valuationDate.Value:O} {holdingDateBasis}: {exception.Message}");
         }
     }
 

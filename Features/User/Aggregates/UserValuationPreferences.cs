@@ -23,8 +23,4 @@ public sealed record UserProfileValuationPreferences : IType
         ShowIncome = showIncome;
         ShowBook = showBook;
     }
-
-    public string ToData() => $"{ValuationDate.ToData()}|{ShowIncome}|{ShowBook}";
-
-    public string ToDetail() => $"{nameof(UserProfileValuationPreferences)}: (ValuationDate: {ValuationDate.ToDetail()}, ShowIncome: {ShowIncome}, ShowBook: {ShowBook})";
 }

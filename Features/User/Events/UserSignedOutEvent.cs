@@ -24,9 +24,6 @@ public sealed record UserSignedOutEvent : EventBase, IUserEvent
 
     public override string Type => nameof(UserSignedOutEvent);
 
-    public override string ToDetail() =>
-        $"{nameof(UserSignedOutEvent)}: ({base.ToDetail()})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason)
     {
         var messages = new List<string>();

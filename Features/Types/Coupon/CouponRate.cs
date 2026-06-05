@@ -25,10 +25,6 @@ public sealed record CouponRate : IType
     internal static CouponRate FromJson(decimal value) => new(value);
 
     public override string ToString() => Value.ToString("0.########");
-
-    public string ToData() => Value.ToString("0.########");
-
-    public string ToDetail() => $"{nameof(CouponRate)}: {this}";
 }
 
 public enum CouponFrequency

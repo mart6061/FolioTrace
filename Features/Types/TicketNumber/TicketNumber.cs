@@ -23,10 +23,6 @@ public sealed record TicketNumber : IType
 
     public override string ToString() => Value.ToString();
 
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(TicketNumber)}: {Value}";
-
     public static implicit operator TicketNumber(int value) => new(value);
 }
 

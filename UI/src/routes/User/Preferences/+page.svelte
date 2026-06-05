@@ -4,8 +4,8 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
-  import { defaultShowZeroBalances, defaultValuationDateBasis, defaultValuationDateOption, normalizeValuationDateBasis, normalizeValuationDateOption, valuationDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
-  import type { UserBookmarkItem, UserValuationDateOption, ValuationDateBasis } from '$lib/types';
+  import { defaultHoldingDateBasis, defaultShowZeroBalances, defaultValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
+  import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -14,10 +14,10 @@
   let visibleByID = $state<Record<string, boolean>>(createVisibleByID());
   let originalVisibleByID = $state<Record<string, boolean>>(createVisibleByID());
   let valuationDateOption = $state<UserValuationDateOption>(defaultValuationDateOption);
-  let valuationDateBasis = $state<ValuationDateBasis>(defaultValuationDateBasis);
+  let holdingDateBasis = $state<HoldingDateBasis>(defaultHoldingDateBasis);
   let showZeroBalances = $state(defaultShowZeroBalances);
   let originalValuationDateOption = $state<UserValuationDateOption>(defaultValuationDateOption);
-  let originalValuationDateBasis = $state<ValuationDateBasis>(defaultValuationDateBasis);
+  let originalHoldingDateBasis = $state<HoldingDateBasis>(defaultHoldingDateBasis);
   let originalShowZeroBalances = $state(defaultShowZeroBalances);
   let bookmarks = $state<UserBookmarkItem[]>(createBookmarks());
   let originalBookmarks = $state<UserBookmarkItem[]>(createBookmarks());
@@ -40,10 +40,10 @@
 
     if (nextValuationSignature !== syncedValuationSignature) {
       valuationDateOption = normalizeValuationDateOption(data.valuationPreferences.valuationDateOption);
-      valuationDateBasis = normalizeValuationDateBasis(data.valuationPreferences.valuationDateBasis);
+      holdingDateBasis = normalizeHoldingDateBasis(data.valuationPreferences.holdingDateBasis);
       showZeroBalances = Boolean(data.valuationPreferences.showZeroBalances);
       originalValuationDateOption = valuationDateOption;
-      originalValuationDateBasis = valuationDateBasis;
+      originalHoldingDateBasis = holdingDateBasis;
       originalShowZeroBalances = showZeroBalances;
       syncedValuationSignature = nextValuationSignature;
     }
@@ -66,7 +66,7 @@
       if (result.type === 'success') {
         originalVisibleByID = { ...visibleByID };
         originalValuationDateOption = valuationDateOption;
-        originalValuationDateBasis = valuationDateBasis;
+        originalHoldingDateBasis = holdingDateBasis;
         originalShowZeroBalances = showZeroBalances;
         originalBookmarks = cloneBookmarks(bookmarks);
       }
@@ -101,7 +101,7 @@
   function valuationSignature() {
     return [
       data.valuationPreferences.valuationDateOption,
-      data.valuationPreferences.valuationDateBasis,
+      data.valuationPreferences.holdingDateBasis,
       String(data.valuationPreferences.showZeroBalances)
     ].join('|');
   }
@@ -250,7 +250,7 @@
 
         <input type="hidden" name="hasStoredValuationPreferences" value={String(data.valuationPreferences.hasStoredPreferences)} />
         <input type="hidden" name="originalValuationDateOption" value={originalValuationDateOption} />
-        <input type="hidden" name="originalValuationDateBasis" value={originalValuationDateBasis} />
+        <input type="hidden" name="originalHoldingDateBasis" value={originalHoldingDateBasis} />
         <input type="hidden" name="originalShowZeroBalances" value={String(originalShowZeroBalances)} />
 
         <div class="menu-preference-list">
@@ -269,14 +269,14 @@
           </label>
 
           <label class="menu-preference-row">
-            <span>Valuation Date Basis</span>
+            <span>Holding Date Basis</span>
             <select
               class="menu-preference-select"
-              name="valuationDateBasis"
-              value={valuationDateBasis}
-              onchange={(event) => valuationDateBasis = normalizeValuationDateBasis(event.currentTarget.value)}
+              name="holdingDateBasis"
+              value={holdingDateBasis}
+              onchange={(event) => holdingDateBasis = normalizeHoldingDateBasis(event.currentTarget.value)}
             >
-              {#each valuationDateBasisOptions as option (option.value)}
+              {#each holdingDateBasisOptions as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>

@@ -1,12 +1,12 @@
-import type { UserValuationDateOption, UserValuationPreferences, ValuationDateBasis } from '$lib/types';
+import type { HoldingDateBasis, UserValuationDateOption, UserValuationPreferences } from '$lib/types';
 
 export type ValuationDateOptionDefinition = {
   value: UserValuationDateOption;
   label: string;
 };
 
-export type ValuationDateBasisDefinition = {
-  value: ValuationDateBasis;
+export type HoldingDateBasisDefinition = {
+  value: HoldingDateBasis;
   label: string;
 };
 
@@ -20,10 +20,10 @@ export const valuationDateOptions: ValuationDateOptionDefinition[] = [
 ];
 
 export const defaultValuationDateOption: UserValuationDateOption = 'TodayEndOfDay';
-export const defaultValuationDateBasis: ValuationDateBasis = 'EventDateTime';
+export const defaultHoldingDateBasis: HoldingDateBasis = 'EventDateTime';
 export const defaultShowZeroBalances = false;
 
-export const valuationDateBasisOptions: ValuationDateBasisDefinition[] = [
+export const holdingDateBasisOptions: HoldingDateBasisDefinition[] = [
   { value: 'EventDateTime', label: 'Execution' },
   { value: 'SettlementDateTime', label: 'Settlement' }
 ];
@@ -32,7 +32,7 @@ export function defaultUserValuationPreferences(userID = ''): UserValuationPrefe
   return {
     userID,
     valuationDateOption: defaultValuationDateOption,
-    valuationDateBasis: defaultValuationDateBasis,
+    holdingDateBasis: defaultHoldingDateBasis,
     showZeroBalances: defaultShowZeroBalances,
     hasStoredPreferences: false,
     valuationDateTime: '',
@@ -46,6 +46,6 @@ export function normalizeValuationDateOption(value: string | null | undefined): 
   return valuationDateOptions.some((option) => option.value === value) ? value as UserValuationDateOption : defaultValuationDateOption;
 }
 
-export function normalizeValuationDateBasis(value: string | null | undefined): ValuationDateBasis {
-  return value === 'SettlementDateTime' ? 'SettlementDateTime' : defaultValuationDateBasis;
+export function normalizeHoldingDateBasis(value: string | null | undefined): HoldingDateBasis {
+  return value === 'SettlementDateTime' ? 'SettlementDateTime' : defaultHoldingDateBasis;
 }

@@ -71,8 +71,4 @@ public sealed record TicketDetail : IModel
             LastAuditDateTime = ticket.LastAuditDateTime
         };
     }
-
-    public string ToData() => $"{TicketNumber.ToData()}|{Side}|{InstrumentID.ToData()}|{TradeCurrency.ToData()}|{Stage}|{ProposalDecision}|{TradeDecision}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(TicketDetail)}: ({TicketNumber.ToDetail()}, Side: {Side}, InstrumentID: {InstrumentID.ToDetail()}, Stage: {Stage}, ProposalDecision: {ProposalDecision}, TradeDecision: {TradeDecision}, Instrument: {Instrument?.Name ?? "(missing)"}, Accounts: {Accounts.Count})";
 }

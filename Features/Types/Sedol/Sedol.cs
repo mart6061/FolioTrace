@@ -43,10 +43,6 @@ public sealed record Sedol : IType
     public static implicit operator Sedol(string s) => new Sedol(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(Sedol)}: {this}";
 }
 
 internal sealed class SedolJsonConverter : JsonConverter<Sedol>

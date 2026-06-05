@@ -30,10 +30,6 @@ public sealed record EventID : IType
     public static implicit operator EventID(Guid g) => new EventID(g);
 
     public override string ToString() => Value.ToString();
-
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(EventID)}: {this}";
 }
 
 internal sealed class EventIDJsonConverter : JsonConverter<EventID>

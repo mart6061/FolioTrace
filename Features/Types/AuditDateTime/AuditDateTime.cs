@@ -34,10 +34,6 @@ public sealed record AuditDateTime : IType
     public static implicit operator AuditDateTime(DateTime dt) => new AuditDateTime(dt);
 
     public override string ToString() => Value.ToString("o");
-
-    public string ToData() => Value.ToString("o");
-
-    public string ToDetail() => $"{nameof(AuditDateTime)}: {this}";
 }
 
 internal sealed class AuditDateTimeJsonConverter : JsonConverter<AuditDateTime>

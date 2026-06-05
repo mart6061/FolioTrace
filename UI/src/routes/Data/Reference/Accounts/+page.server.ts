@@ -513,21 +513,21 @@ export const actions = {
     }
   },
 
-  inspecieIn: async ({ fetch, locals, request }) => {
+  inSpecieIn: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
-    const values = readInspecieForm(formData);
+    const values = readInSpecieForm(formData);
 
     if (!values.accountID || !values.instrumentID || !values.eventDateTime || !values.quantity)
-      return fail(400, inspecieInFailure('Account, instrument, event date, and quantity are required.', values));
+      return fail(400, inSpecieInFailure('Account, instrument, event date, and quantity are required.', values));
 
     const quantityResult = parsePositiveDecimal(values.quantity, 'Quantity');
     if (!quantityResult.valid)
-      return fail(400, inspecieInFailure(quantityResult.message, values));
+      return fail(400, inSpecieInFailure(quantityResult.message, values));
 
     const bookCostResult = parseBookCost(values.bookCost);
     if (!bookCostResult.valid)
-      return fail(400, inspecieInFailure(bookCostResult.message, values));
+      return fail(400, inSpecieInFailure(bookCostResult.message, values));
 
     try {
       const eventDateTime = toApiDateTime(values.eventDateTime);
@@ -541,19 +541,19 @@ export const actions = {
       const instrument = resolveInstrument(instruments.items, values.instrumentID);
 
       if (!account)
-        return fail(400, inspecieInFailure('Select a valid account.', values));
+        return fail(400, inSpecieInFailure('Select a valid account.', values));
       if (!instrument)
-        return fail(400, inspecieInFailure('Select a valid instrument.', values));
+        return fail(400, inSpecieInFailure('Select a valid instrument.', values));
 
-      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionMemo', instrument.name || 'Position', currentUser.userID);
-      const inspecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InspecieIn', 'Inspecie In', currentUser.userID);
+      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionAsset', instrument.name || 'Asset', currentUser.userID);
+      const inSpecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InSpecieIn', 'InSpecie In', currentUser.userID);
       const quantity = quantityResult.amount;
       const bookCost = bookCostResult.amount;
       const transactionSetRequest: TransactionSetRequest = {
         userID: currentUser.userID,
         eventDateTime,
         settlementDateTime,
-        reason: `Inspecie in ${formatAmount(quantity)} ${instrument.name} to ${account.name}`,
+        reason: `InSpecie in ${formatAmount(quantity)} ${instrument.name} to ${account.name}`,
         credits: [
           {
             accountID: positionHolding.accountID,
@@ -565,10 +565,10 @@ export const actions = {
         ],
         debits: [
           {
-            accountID: inspecieHolding.accountID,
+            accountID: inSpecieHolding.accountID,
             bookCost,
-            holdingID: inspecieHolding.holdingID,
-            instrumentID: inspecieHolding.instrumentID,
+            holdingID: inSpecieHolding.holdingID,
+            instrumentID: inSpecieHolding.instrumentID,
             quantity
           }
         ]
@@ -577,30 +577,30 @@ export const actions = {
       const result = await postTransactionSet(fetch, transactionSetRequest);
       return {
         eventIDs: result.eventIDs,
-        intent: 'inspecieIn',
-        message: `Inspecie in ${formatAmount(quantity)} ${instrument.name} was created successfully.`,
+        intent: 'inSpecieIn',
+        message: `InSpecie in ${formatAmount(quantity)} ${instrument.name} was created successfully.`,
         status: 'success'
       };
     } catch (error) {
-      return fail(502, inspecieInFailure(error instanceof Error ? error.message : 'Unable to create inspecie-in transaction.', values));
+      return fail(502, inSpecieInFailure(error instanceof Error ? error.message : 'Unable to create InSpecie-in transaction.', values));
     }
   },
 
-  inspecieOut: async ({ fetch, locals, request }) => {
+  inSpecieOut: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
-    const values = readInspecieForm(formData);
+    const values = readInSpecieForm(formData);
 
     if (!values.accountID || !values.instrumentID || !values.eventDateTime || !values.quantity)
-      return fail(400, inspecieOutFailure('Account, instrument, event date, and quantity are required.', values));
+      return fail(400, inSpecieOutFailure('Account, instrument, event date, and quantity are required.', values));
 
     const quantityResult = parsePositiveDecimal(values.quantity, 'Quantity');
     if (!quantityResult.valid)
-      return fail(400, inspecieOutFailure(quantityResult.message, values));
+      return fail(400, inSpecieOutFailure(quantityResult.message, values));
 
     const bookCostResult = parseBookCost(values.bookCost);
     if (!bookCostResult.valid)
-      return fail(400, inspecieOutFailure(bookCostResult.message, values));
+      return fail(400, inSpecieOutFailure(bookCostResult.message, values));
 
     try {
       const eventDateTime = toApiDateTime(values.eventDateTime);
@@ -614,25 +614,25 @@ export const actions = {
       const instrument = resolveInstrument(instruments.items, values.instrumentID);
 
       if (!account)
-        return fail(400, inspecieOutFailure('Select a valid account.', values));
+        return fail(400, inSpecieOutFailure('Select a valid account.', values));
       if (!instrument)
-        return fail(400, inspecieOutFailure('Select a valid instrument.', values));
+        return fail(400, inSpecieOutFailure('Select a valid instrument.', values));
 
-      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionMemo', instrument.name || 'Position', currentUser.userID);
-      const inspecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InspecieOut', 'Inspecie Out', currentUser.userID);
+      const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionAsset', instrument.name || 'Asset', currentUser.userID);
+      const inSpecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InSpecieOut', 'InSpecie Out', currentUser.userID);
       const quantity = quantityResult.amount;
       const bookCost = bookCostResult.amount;
       const transactionSetRequest: TransactionSetRequest = {
         userID: currentUser.userID,
         eventDateTime,
         settlementDateTime,
-        reason: `Inspecie out ${formatAmount(quantity)} ${instrument.name} from ${account.name}`,
+        reason: `InSpecie out ${formatAmount(quantity)} ${instrument.name} from ${account.name}`,
         credits: [
           {
-            accountID: inspecieHolding.accountID,
+            accountID: inSpecieHolding.accountID,
             bookCost,
-            holdingID: inspecieHolding.holdingID,
-            instrumentID: inspecieHolding.instrumentID,
+            holdingID: inSpecieHolding.holdingID,
+            instrumentID: inSpecieHolding.instrumentID,
             quantity
           }
         ],
@@ -650,12 +650,12 @@ export const actions = {
       const result = await postTransactionSet(fetch, transactionSetRequest);
       return {
         eventIDs: result.eventIDs,
-        intent: 'inspecieOut',
-        message: `Inspecie out ${formatAmount(quantity)} ${instrument.name} was created successfully.`,
+        intent: 'inSpecieOut',
+        message: `InSpecie out ${formatAmount(quantity)} ${instrument.name} was created successfully.`,
         status: 'success'
       };
     } catch (error) {
-      return fail(502, inspecieOutFailure(error instanceof Error ? error.message : 'Unable to create inspecie-out transaction.', values));
+      return fail(502, inSpecieOutFailure(error instanceof Error ? error.message : 'Unable to create InSpecie-out transaction.', values));
     }
   },
 
@@ -754,7 +754,7 @@ function readFeeForm(formData: FormData) {
   };
 }
 
-function readInspecieForm(formData: FormData) {
+function readInSpecieForm(formData: FormData) {
   return {
     accountID: getFormString(formData, 'accountID'),
     bookCost: getFormString(formData, 'bookCost'),
@@ -780,12 +780,12 @@ function feeOutFailure(message: string, values: ReturnType<typeof readFeeForm>) 
   return { intent: 'feesOut', message, status: 'failure', values };
 }
 
-function inspecieInFailure(message: string, values: ReturnType<typeof readInspecieForm>) {
-  return { intent: 'inspecieIn', message, status: 'failure', values };
+function inSpecieInFailure(message: string, values: ReturnType<typeof readInSpecieForm>) {
+  return { intent: 'inSpecieIn', message, status: 'failure', values };
 }
 
-function inspecieOutFailure(message: string, values: ReturnType<typeof readInspecieForm>) {
-  return { intent: 'inspecieOut', message, status: 'failure', values };
+function inSpecieOutFailure(message: string, values: ReturnType<typeof readInSpecieForm>) {
+  return { intent: 'inSpecieOut', message, status: 'failure', values };
 }
 
 function parseCashAmount(value: string) {
@@ -919,7 +919,7 @@ async function ensureMovementHolding(
     default: false,
     holdingID,
     holdingKind,
-    includeInValuation: holdingKind === 'PositionMemo' || holdingKind === 'PositionCash',
+    includeInValuation: holdingKind === 'PositionMemo' || holdingKind === 'PositionCash' || holdingKind === 'PositionAsset',
     instrumentID: instrument.instrumentID,
     lastAuditDateTime: eventDateTime,
     lastEventID: '',

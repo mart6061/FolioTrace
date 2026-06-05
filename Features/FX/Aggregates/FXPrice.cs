@@ -35,8 +35,4 @@ public sealed record FXPrice : IType
         Mid = mid;
         Ask = ask;
     }
-
-    public string ToData() => $"{Bid.ToData()}|{Mid.ToData()}|{Ask.ToData()}";
-
-    public string ToDetail() => $"{nameof(FXPrice)}: (Bid: {Bid}, Mid: {Mid}, Ask: {Ask})";
 }

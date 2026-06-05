@@ -57,10 +57,6 @@ public sealed record InstrumentValue : IModel
         LastAuditDateTime = lastAuditDateTime;
     }
 
-    public string ToData() => $"{InstrumentID.ToData()}|{Name}|{Price?.ToData()}|{Income?.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(InstrumentValue)}: (InstrumentID: {InstrumentID.ToDetail()}, Name: {Name}, Price: {Price?.ToDetail()}, Income: {Income?.ToDetail()})";
-
     private static void EnsureValidValuePair(IInstrumentPrice? price, IInstrumentIncome? income)
     {
         if (price is null && income is null)

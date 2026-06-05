@@ -53,8 +53,4 @@ public sealed record User : IModel
     }
 
     public override string ToString() => DisplayName;
-
-    public string ToData() => $"{UserID.ToData()}|{DisplayName}|{DisplayPreferences.ToData()}|{ValuationPreferences.ToData()}|{LastSignedIn?.ToData() ?? string.Empty}|{LastSignedOut?.ToData() ?? string.Empty}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(User)}: (UserID: {UserID.ToDetail()}, DisplayName: {DisplayName}, DisplayPreferences: {DisplayPreferences.ToDetail()}, ValuationPreferences: {ValuationPreferences.ToDetail()}, LastSignedIn: {LastSignedIn?.ToDetail() ?? string.Empty}, LastSignedOut: {LastSignedOut?.ToDetail() ?? string.Empty}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

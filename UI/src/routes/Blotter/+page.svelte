@@ -2,8 +2,9 @@
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
-  import type { Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
+  import type { Broker, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   type TicketEditContext = 'Proposal' | 'Trade';
@@ -29,12 +30,14 @@
   const tickets = $derived(data.tickets?.items ?? []);
   const filteredTickets = $derived(tickets.filter(ticketMatchesFilters));
   const accounts = $derived(data.accounts?.items ?? []);
+  const brokers = $derived(data.brokers?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
   const instrumentValues = $derived(data.instrumentValues?.items ?? []);
   const ticketSideOptions: TicketSide[] = ['Buy', 'Sell'];
   const decimalInputPattern = '(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?';
   const ticketStageOptions = $derived(data.ticketStageOptions ?? []);
   const activeAccounts = $derived(accounts.filter((account) => account.active));
+  const activeBrokers = $derived([...brokers.filter((broker) => broker.active)].sort((left, right) => brokerLabel(left).localeCompare(brokerLabel(right))));
   const activeInstruments = $derived(instruments.filter((instrument) => instrument.active));
   const sortedInstruments = $derived(
     [...activeInstruments].sort((left, right) => instrumentLabel(left).localeCompare(instrumentLabel(right)))
@@ -162,6 +165,17 @@
     return accounts.find((account) => account.accountID === accountID)?.bookCurrency ?? '';
   }
 
+  function brokerLabel(broker: Broker) {
+    return [broker.name, broker.lei].filter(Boolean).join(' - ');
+  }
+
+  function brokerName(brokerLEI: string | null | undefined) {
+    if (!brokerLEI)
+      return 'Not set';
+
+    return brokers.find((broker) => broker.lei === brokerLEI)?.name ?? brokerLEI;
+  }
+
   function availableAccounts(ticket: Ticket) {
     const selected = new Set(ticket.accountIDs);
     return activeAccounts.filter((account) => !selected.has(account.accountID));
@@ -273,6 +287,18 @@
     return groupedDecimalText(value);
   }
 
+  function quantityTotal(items: { quantity: number }[]) {
+    return items.reduce((total, item) => total + item.quantity, 0);
+  }
+
+  function quantityDifference(expected: number | null | undefined, actual: number) {
+    return (expected ?? 0) - actual;
+  }
+
+  function quantitiesMatch(expected: number | null | undefined, actual: number) {
+    return expected != null && Math.abs(expected - actual) < 0.00000001;
+  }
+
   function formattedDisplay(text: string) {
     return text || 'Not set';
   }
@@ -312,7 +338,10 @@
   }
 
   function canApproveProposal(ticket: Ticket) {
-    return ticket.stage === 'Proposal' && ticket.proposalDecision === 'PendingApproval' && ticket.proposalAllocations.length > 0;
+    return ticket.stage === 'Proposal' &&
+      ticket.proposalDecision === 'PendingApproval' &&
+      ticket.proposalAllocations.length > 0 &&
+      quantitiesMatch(ticket.proposalTotalAmount, quantityTotal(ticket.proposalAllocations));
   }
 
   function canRequestProposalDecision(ticket: Ticket) {
@@ -320,7 +349,8 @@
       ticket.proposalDecision === 'InProgress' &&
       ticket.proposalTargetPrice != null &&
       ticket.proposalTotalAmount != null &&
-      ticket.proposalAllocations.length > 0;
+      ticket.proposalAllocations.length > 0 &&
+      quantitiesMatch(ticket.proposalTotalAmount, quantityTotal(ticket.proposalAllocations));
   }
 
   function canEditTrade(ticket: Ticket) {
@@ -336,7 +366,13 @@
   }
 
   function canApproveTrade(ticket: Ticket) {
-    return ticket.stage === 'Trade' && ticket.tradeDecision === 'PendingApproval' && ticket.tradeAllocations.length > 0;
+    const tradeTotal = quantityTotal(ticket.tradeAllocations);
+
+    return ticket.stage === 'Trade' &&
+      ticket.tradeDecision === 'PendingApproval' &&
+      ticket.tradeAllocations.length > 0 &&
+      quantitiesMatch(ticket.proposalTotalAmount, tradeTotal) &&
+      quantitiesMatch(tradeTotal, quantityTotal(ticket.fills));
   }
 
   function isTicketExpanded(ticketNumber: number) {
@@ -731,6 +767,12 @@
           {@const proposalInputActive = ticketEditingProposal && !ticketCancelConfirming && !ticketAwaitingDecision}
           {@const tradeInputActive = ticketEditingTrade && !ticketCancelConfirming && !ticketAwaitingDecision}
           {@const saveFormID = `ticket-save-${ticket.ticketNumber}`}
+          {@const proposalAllocationTotal = quantityTotal(ticket.proposalAllocations)}
+          {@const proposalAllocationRemaining = quantityDifference(ticket.proposalTotalAmount, proposalAllocationTotal)}
+          {@const tradeAllocationTotal = quantityTotal(ticket.tradeAllocations)}
+          {@const tradeAllocationRemaining = quantityDifference(ticket.proposalTotalAmount, tradeAllocationTotal)}
+          {@const fillTotal = quantityTotal(ticket.fills)}
+          {@const fillRemaining = quantityDifference(tradeAllocationTotal, fillTotal)}
           <article
             class="ticket-card"
             class:ticket-card-buy={ticket.side === 'Buy'}
@@ -890,6 +932,7 @@
                             {#if ticketHistorySummary(event)}
                               <div class="ticket-history-summary">{ticketHistorySummary(event)}</div>
                             {/if}
+                            <EventPropertyDetails details={event.propertyDetails} />
                             {#if event.applicationStatus === 'omitted'}
                               <div class="ticket-history-omitted-note">
                                 Omitted from this view because its audit time is after the selected as-at date.
@@ -918,7 +961,7 @@
                 <input type="hidden" name="eventDateTime" value={eventDateDefault} />
                 <label>
                   <span>Type Delete to confirm</span>
-                  <input autocomplete="off" bind:value={cancelConfirmationInput} spellcheck="false" />
+                  <input class="input" autocomplete="off" bind:value={cancelConfirmationInput} spellcheck="false" />
                 </label>
                 <div class="danger-confirmation-actions">
                   <button disabled={!canConfirmTicketCancel || submitting === `delete-${ticket.ticketNumber}`} type="submit">Delete</button>
@@ -1025,7 +1068,7 @@
                     <form class="account-allocation-row account-allocation-add-row" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
                       <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                       <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                      <select class="account-add-select h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="accountID" disabled={!proposalInputActive || availableAccounts(ticket).length === 0} required>
+                      <select class="input account-add-select" name="accountID" disabled={!proposalInputActive || availableAccounts(ticket).length === 0} required>
                         <option value="">Add account</option>
                         {#each availableAccounts(ticket) as account (account.accountID)}
                           <option value={account.accountID}>{account.name} {account.bookCurrency}</option>
@@ -1037,6 +1080,11 @@
                       <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || availableAccounts(ticket).length === 0}>Add</button>
                     </form>
                   {/if}
+                </div>
+                <div class="quantity-balance" class:quantity-balance-mismatch={!quantitiesMatch(ticket.proposalTotalAmount, proposalAllocationTotal)}>
+                  <span>Proposal allocated {formattedDisplay(quantityText(proposalAllocationTotal))}</span>
+                  <span>Total {formattedDisplay(quantityText(ticket.proposalTotalAmount))}</span>
+                  <span>Remaining {formattedDisplay(quantityText(proposalAllocationRemaining))}</span>
                 </div>
               </section>
 
@@ -1085,6 +1133,11 @@
                         {/each}
                       </div>
                     </div>
+                    <div class="quantity-balance" class:quantity-balance-mismatch={!quantitiesMatch(ticket.proposalTotalAmount, tradeAllocationTotal)}>
+                      <span>Trade allocated {formattedDisplay(quantityText(tradeAllocationTotal))}</span>
+                      <span>Total {formattedDisplay(quantityText(ticket.proposalTotalAmount))}</span>
+                      <span>Remaining {formattedDisplay(quantityText(tradeAllocationRemaining))}</span>
+                    </div>
                   </form>
                   <div class="ticket-note-grid">
                     <div class="ticket-text-set-form">
@@ -1104,29 +1157,48 @@
 
                 <section class="workflow-panel">
                   <h2>Fills</h2>
-                  <div class="fill-list">
-                    {#each ticket.fills as fill (fill.fillID)}
-                      <form class="fill-row" method="POST" action="?/removeFill" use:enhance={enhanceAction(`fill-${ticket.ticketNumber}-${fill.fillID}`)}>
-                        <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
-                        <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                        <input type="hidden" name="fillID" value={fill.fillID} />
-                        <span>{decimalDisplay(fill.quantity)} @ {decimalDisplay(fill.price)}</span>
-                        <span class="muted">{fill.note}</span>
-                        <button type="submit" title="Remove fill" disabled={!tradeInputActive || !canEditFills(ticket)}>X</button>
-                      </form>
-                    {/each}
-                    {#if ticket.fills.length === 0}
-                      <span class="muted">No fills</span>
-                    {/if}
+                  <div class="fill-table">
+                    <div class="fill-table-header">
+                      <span>Broker</span>
+                      <span>Quantity</span>
+                      <span>Note</span>
+                      <span></span>
+                    </div>
+                    <div class="fill-list">
+                      {#each ticket.fills as fill (fill.fillID)}
+                        <form class="fill-row" method="POST" action="?/removeFill" use:enhance={enhanceAction(`fill-${ticket.ticketNumber}-${fill.fillID}`)}>
+                          <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                          <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                          <input type="hidden" name="fillID" value={fill.fillID} />
+                          <span class="ticket-readonly-value">{brokerName(fill.brokerLEI)}</span>
+                          <span class="ticket-readonly-value">{decimalDisplay(fill.quantity)}</span>
+                          <span class="ticket-readonly-value">{fill.note || '-'}</span>
+                          <button type="submit" title="Remove fill" disabled={!tradeInputActive || !canEditFills(ticket)}>X</button>
+                        </form>
+                      {:else}
+                        <div class="fill-empty">No fills</div>
+                      {/each}
+                    </div>
+                  </div>
+                  <div class="quantity-balance" class:quantity-balance-mismatch={!quantitiesMatch(tradeAllocationTotal, fillTotal)}>
+                    <span>Filled {formattedDisplay(quantityText(fillTotal))}</span>
+                    <span>Trade total {formattedDisplay(quantityText(tradeAllocationTotal))}</span>
+                    <span>Remaining {formattedDisplay(quantityText(fillRemaining))}</span>
                   </div>
                   <form class="fill-form" method="POST" action="?/addFill" use:enhance={enhanceAction(`add-fill-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
                     {#if tradeInputActive && canEditFills(ticket)}
-                      <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillPrice" placeholder="Price" oninput={cleanDecimalInput} required />
+                      <input type="hidden" name="fillPrice" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} />
+                      <select class="input" name="brokerLEI" disabled={activeBrokers.length === 0} required>
+                        <option value="">Broker</option>
+                        {#each activeBrokers as broker (broker.lei)}
+                          <option value={broker.lei}>{brokerLabel(broker)}</option>
+                        {/each}
+                      </select>
                       <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanDecimalInput} required />
                       <input class="input" name="fillNote" placeholder="Note" />
-                      <button class="btn btn-secondary" type="submit">Add fill</button>
+                      <button class="btn btn-secondary" type="submit" disabled={activeBrokers.length === 0 || fillRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
                     {:else}
                       <span class="ticket-readonly-value">Edit Trade to add fills</span>
                     {/if}

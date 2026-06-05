@@ -248,10 +248,6 @@ public sealed record InstrumentValues : IAggregate
         }
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(InstrumentValues)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
-
     private static Dictionary<InstrumentID, TEvent> LatestByInstrument<TEvent>(IEnumerable<TEvent> events, EventDateTime valuationDateTime, AuditDateTime asOfDateTime)
         where TEvent : IEventBase
     {
@@ -308,7 +304,5 @@ public sealed record InstrumentValues : IAggregate
         public UserID UserID => Constants.Initialisation.UserID;
         public AuditDateTime AuditDateTime => new(AuditDate);
         public string Reason => string.Empty;
-        public string ToData() => string.Empty;
-        public string ToDetail() => string.Empty;
     }
 }

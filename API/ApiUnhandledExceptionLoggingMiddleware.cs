@@ -19,9 +19,12 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
         {
             var errorId = Guid.NewGuid();
             await WriteExceptionLogAsync(context, exception, errorId);
-            var statusCode = exception is BadHttpRequestException badRequestException
-                ? badRequestException.StatusCode
-                : StatusCodes.Status500InternalServerError;
+            var statusCode = exception switch
+            {
+                BadHttpRequestException badRequestException => badRequestException.StatusCode,
+                ArgumentException argumentException when IsRequestValidationException(argumentException) => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status500InternalServerError
+            };
             var title = statusCode == StatusCodes.Status400BadRequest
                 ? "Invalid request."
                 : "An unexpected error occurred.";
@@ -39,11 +42,15 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
                 type = $"https://httpstatuses.com/{statusCode}",
                 title,
                 status = statusCode,
+                detail = statusCode == StatusCodes.Status400BadRequest ? exception.Message : null,
                 traceId = context.TraceIdentifier,
                 errorId
             }));
         }
     }
+
+    private static bool IsRequestValidationException(ArgumentException exception) =>
+        exception.Message.Contains("Value must not be in the future.", StringComparison.Ordinal);
 
     private async Task WriteExceptionLogAsync(HttpContext context, Exception exception, Guid errorId)
     {

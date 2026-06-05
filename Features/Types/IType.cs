@@ -1,8 +1,6 @@
-using FolioTrace.Common;
-
 namespace FolioTrace.Types;
 
 // Marker interface for lightweight type markers
-public interface IType : IDisplayFor
+public interface IType
 {
 }

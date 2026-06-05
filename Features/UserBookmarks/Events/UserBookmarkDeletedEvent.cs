@@ -21,8 +21,4 @@ public sealed record UserBookmarkDeletedEvent : EventBase, IUserBookmarksEvent
     }
 
     public override string Type => nameof(UserBookmarkDeletedEvent);
-
-    public override string ToData() => $"{base.ToData()}|{BookmarkID}";
-
-    public override string ToDetail() => $"{nameof(UserBookmarkDeletedEvent)}: ({base.ToDetail()}, BookmarkID: {BookmarkID})";
 }

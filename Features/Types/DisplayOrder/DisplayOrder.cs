@@ -23,10 +23,6 @@ public sealed record DisplayOrder : IType
 
     public override string ToString() => Value.ToString();
 
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(DisplayOrder)}: {Value}";
-
     public static implicit operator DisplayOrder(int value) => new(value);
 
     public static implicit operator int(DisplayOrder displayOrder) => displayOrder?.Value ?? 0;

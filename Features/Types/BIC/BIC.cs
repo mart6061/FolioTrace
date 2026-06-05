@@ -49,10 +49,6 @@ public sealed record BIC : IType
     public static implicit operator BIC(string s) => new(s);
 
     public override string ToString() => Value;
-
-    public string ToData() => Value;
-
-    public string ToDetail() => $"{nameof(BIC)}: {this}";
 }
 
 internal sealed class BICJsonConverter : JsonConverter<BIC>

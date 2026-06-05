@@ -17,8 +17,4 @@ public sealed record UserMenuPreferenceItem : IType
         MenuItemID = menuItemID;
         Visible = visible;
     }
-
-    public string ToData() => $"{MenuItemID}|{Visible}";
-
-    public string ToDetail() => $"{nameof(UserMenuPreferenceItem)}: (MenuItemID: {MenuItemID}, Visible: {Visible})";
 }

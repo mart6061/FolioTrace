@@ -8,7 +8,9 @@ namespace Repository;
 
 public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository) : ISeedRepository
 {
-    private const int TotalBuildSteps = 12;
+    private const int TotalBuildSteps = 14;
+    private const int SeedTransactionMonths = 12;
+    private const int SeedStocksPerAccount = 3;
 
     public async Task Build(CancellationToken cancellationToken = default)
     {
@@ -35,10 +37,12 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     {
         await CreateCountrySetupEvents(progress, cancellationToken);
         await CreateCurrencySetupEvents(progress, cancellationToken);
+        await CreateBrokerSetupEvents(progress, cancellationToken);
         await CreateAccountSetupEvents(progress, cancellationToken);
         await CreateFXSetupEvents(progress, cancellationToken);
         await CreateInstrumentSetupEvents(progress, cancellationToken);
         await CreateHoldingSetupEvents(progress, cancellationToken);
+        await CreateTransactionSetupEvents(progress, cancellationToken);
     }
 
     private async Task CreateCountrySetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
@@ -182,6 +186,52 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             .ToList();
     }
 
+    private static readonly (string Name, string LEI, decimal Commission, bool Active, DateTime ApprovedDateTime, DateTime NextReview, string Notes)[] SeedBrokers =
+    [
+        ("Northbridge Stockbrokers", "BROKERSEED0000000001", 0.0012m, true, new DateTime(2024, 1, 15, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 1, 15, 9, 0, 0, DateTimeKind.Utc), "Primary UK execution broker."),
+        ("Harbourview Brokers", "BROKERSEED0000000002", 0.0010m, true, new DateTime(2024, 2, 20, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 2, 20, 9, 0, 0, DateTimeKind.Utc), "European equities coverage."),
+        ("Cedar Lane Stockbrokers", "BROKERSEED0000000003", 0.0015m, true, new DateTime(2024, 3, 12, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 3, 12, 9, 0, 0, DateTimeKind.Utc), "Small and mid cap desk."),
+        ("Meridian Brokers", "BROKERSEED0000000004", 0.0009m, true, new DateTime(2024, 4, 8, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 4, 8, 9, 0, 0, DateTimeKind.Utc), "Low touch electronic execution."),
+        ("Kingsway Stockbrokers", "BROKERSEED0000000005", 0.0013m, true, new DateTime(2024, 5, 17, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 5, 17, 9, 0, 0, DateTimeKind.Utc), "UK retail execution venue access."),
+        ("Albion Brokers", "BROKERSEED0000000006", 0.0011m, true, new DateTime(2024, 6, 5, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 6, 5, 9, 0, 0, DateTimeKind.Utc), "Sterling market coverage."),
+        ("Summit Ridge Stockbrokers", "BROKERSEED0000000007", 0.0014m, true, new DateTime(2024, 7, 22, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 7, 22, 9, 0, 0, DateTimeKind.Utc), "Block execution support."),
+        ("Greenfield Brokers", "BROKERSEED0000000008", 0.0008m, true, new DateTime(2024, 8, 14, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 8, 14, 9, 0, 0, DateTimeKind.Utc), "ETF and index flow."),
+        ("Westhaven Stockbrokers", "BROKERSEED0000000009", 0.0016m, true, new DateTime(2024, 9, 3, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 9, 3, 9, 0, 0, DateTimeKind.Utc), "Special situations broker."),
+        ("Sterling Gate Brokers", "BROKERSEED0000000010", 0.0010m, true, new DateTime(2024, 10, 11, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 10, 11, 9, 0, 0, DateTimeKind.Utc), "International execution desk.")
+    ];
+
+    private async Task CreateBrokerSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var createdEvents = CreateInitialBrokerCreatedEvents();
+        var eventCount = createdEvents.Count;
+
+        progress("Brokers", $"Seeding {eventCount:N0} broker events.", 0, false);
+
+        await StoreEvents<Brokers, BrokerCreatedEvent>(
+            Constants.Initialisation.BrokersStreamId,
+            createdEvents,
+            cancellationToken);
+
+        progress("Brokers", $"Seeded {eventCount:N0} broker events.", eventCount, true);
+    }
+
+    public static IReadOnlyList<BrokerCreatedEvent> CreateInitialBrokerCreatedEvents() =>
+        SeedBrokers
+            .Select((broker, index) => BrokerCreatedEventBuilder.CreateSeed(
+                Guid.NewGuid(),
+                Constants.Initialisation.UserID,
+                EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(10 + index)),
+                AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(10 + index)),
+                Constants.Initialisation.Reason,
+                broker.Name,
+                new LegalEntityIdentifier(broker.LEI),
+                new FeeRate(broker.Commission),
+                broker.Active,
+                EventDateTimeBuilder.Create(broker.ApprovedDateTime),
+                EventDateTimeBuilder.Create(broker.NextReview),
+                broker.Notes).Value!)
+            .ToList();
+
     private static readonly (AccountID AccountID, string Name, string FormalName, string BookCurrency, bool Active)[] SeedAccounts =
     [
         (AccountIDBuilder.Create(Guid.Parse("0d394930-9b8d-4f97-b358-52307f77bb7b")), "General Investment", "General Investment Account", "GBP", true),
@@ -196,7 +246,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         (AccountIDBuilder.Create(Guid.Parse("38b8fdcb-b95e-4a44-a6cf-8bed4b9dbd52")), "Model Portfolio", "Model Portfolio Account", "GBP", true)
     ];
 
-    private static readonly string[] SeedInvestableCashCurrencies = ["GBP", "EUR", "USD", "JPY"];
+    private static readonly string[] SeedInvestableCashCurrencies = ["GBP", "EUR", "USD", "JPY", "CHF"];
 
     private async Task CreateAccountSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
@@ -325,10 +375,215 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             }
 
             AddNonValuationSeedHoldings(events, ref index, account, cashInstrument.InstrumentID);
+
+            foreach (var equity in SelectSeedEquitiesForAccount(instrumentSeeds, accountIndex))
+            {
+                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingPositionAsset), $"Asset {equity.Ticker}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingInSpecieIn), $"InSpecie In {equity.Ticker}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingInSpecieOut), $"InSpecie Out {equity.Ticker}", true, false));
+            }
         }
 
         return events;
     }
+
+    private async Task CreateTransactionSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var transactionEvents = CreateInitialTransactionEvents();
+
+        progress("Transactions", $"Seeding {transactionEvents.Count:N0} transaction events.", 0, false);
+
+        var storedEvents = 0;
+        await AppendEventsInBatches(
+            Constants.Initialisation.TransactionsStreamId,
+            transactionEvents,
+            cancellationToken,
+            eventCount =>
+            {
+                storedEvents += eventCount;
+                progress("Transactions", $"Seeded {storedEvents:N0} of {transactionEvents.Count:N0} transaction events.", eventCount, false);
+            });
+
+        progress("Transactions", $"Seeded {transactionEvents.Count:N0} transaction events.", 0, true);
+    }
+
+    public static IReadOnlyList<ITransactionEvent> CreateInitialTransactionEvents()
+    {
+        var instrumentSeeds = SeedInstrumentData.CreateInstrumentSeeds();
+        var holdingEvents = CreateInitialHoldingCreatedEvents(instrumentSeeds);
+        return CreateInitialTransactionEvents(instrumentSeeds, holdingEvents);
+    }
+
+    private static IReadOnlyList<ITransactionEvent> CreateInitialTransactionEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds, IReadOnlyList<HoldingCreatedEvent> holdingEvents)
+    {
+        var holdings = new Holdings(
+            EventDateTimeBuilder.Create(DateTime.UtcNow),
+            AuditDateTimeBuilder.Create(),
+            holdingEvents.Cast<IHoldingEvent>().ToList());
+        var events = new List<ITransactionEvent>();
+        var startDate = DateTime.UtcNow.Date.AddYears(-1);
+        var endDate = startDate.AddYears(1);
+
+        foreach (var account in SeedAccounts)
+        {
+            var accountIndex = Array.FindIndex(SeedAccounts, seed => seed.AccountID == account.AccountID);
+            var random = CreateSeedRandom(account.AccountID);
+            var cashInstrument = instrumentSeeds.Single(seed => seed.Kind is InstrumentSeedKind.Cash && seed.Currency == account.BookCurrency);
+            var cashHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashInvestable), $"Investable {account.BookCurrency}");
+            var inflowHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingInflow), $"Inflow {account.BookCurrency}");
+            var outflowHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingOutflow), $"Outflow {account.BookCurrency}");
+            var selectedEquities = SelectSeedEquitiesForAccount(instrumentSeeds, accountIndex);
+            var positionStates = selectedEquities.ToDictionary(equity => equity.InstrumentID, _ => new SeedPositionState());
+            var previousInflow = RoundMoney(random.Next(10_000, 2_000_001));
+
+            for (var month = 0; month < SeedTransactionMonths; month++)
+            {
+                var monthDate = startDate.AddMonths(month);
+                var monthEnd = monthDate.AddMonths(1).AddDays(-1);
+                var inflowAmount = month == 0
+                    ? previousInflow
+                    : RoundMoney(Math.Max(100m, previousInflow * (decimal)(random.NextDouble() * 2d)));
+                previousInflow = inflowAmount;
+
+                events.AddRange(CreateSeedTransactionSet(
+                    holdings,
+                    cashHolding,
+                    inflowHolding,
+                    cashInstrument.InstrumentID,
+                    inflowAmount,
+                    inflowAmount,
+                    monthDate.AddHours(9),
+                    $"Seed monthly cash in {month + 1}"));
+
+                var outflowAmount = RoundMoney(inflowAmount * (0.01m + ((decimal)random.NextDouble() * 0.04m)));
+                events.AddRange(CreateSeedTransactionSet(
+                    holdings,
+                    outflowHolding,
+                    cashHolding,
+                    cashInstrument.InstrumentID,
+                    outflowAmount,
+                    outflowAmount,
+                    monthDate.AddDays(2).AddHours(9),
+                    $"Seed monthly cash out {month + 1}"));
+
+                for (var weekDate = startDate; weekDate < endDate; weekDate = weekDate.AddDays(7))
+                {
+                    if (weekDate < monthDate || weekDate >= monthDate.AddMonths(1))
+                        continue;
+
+                    foreach (var equity in selectedEquities.Select((seed, index) => (Seed: seed, Index: index)))
+                    {
+                        var bookCost = RoundMoney(inflowAmount * 0.10m);
+                        var quantity = RoundQuantity(bookCost / equity.Seed.BasePrice);
+                        if (quantity <= 0m || bookCost <= 0m)
+                            continue;
+
+                        var assetHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingPositionAsset), $"Asset {equity.Seed.Ticker}");
+                        var inSpecieInHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingInSpecieIn), $"InSpecie In {equity.Seed.Ticker}");
+                        var positionState = positionStates[equity.Seed.InstrumentID];
+
+                        events.AddRange(CreateSeedTransactionSet(
+                            holdings,
+                            assetHolding,
+                            inSpecieInHolding,
+                            equity.Seed.InstrumentID,
+                            quantity,
+                            bookCost,
+                            weekDate.AddHours(10 + equity.Index),
+                            $"Seed weekly InSpecie in {equity.Seed.Ticker}"));
+
+                        positionState.Quantity += quantity;
+                        positionState.BookCost += bookCost;
+                    }
+                }
+
+                var outEquity = selectedEquities[(accountIndex + month) % selectedEquities.Count];
+                var state = positionStates[outEquity.InstrumentID];
+                var outQuantity = RoundQuantity(state.Quantity * 0.25m);
+                var outBookCost = RoundMoney(state.BookCost * 0.25m);
+                if (outQuantity <= 0m || outBookCost <= 0m)
+                    continue;
+
+                var outAssetHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingPositionAsset), $"Asset {outEquity.Ticker}");
+                var inSpecieOutHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingInSpecieOut), $"InSpecie Out {outEquity.Ticker}");
+
+                events.AddRange(CreateSeedTransactionSet(
+                    holdings,
+                    inSpecieOutHolding,
+                    outAssetHolding,
+                    outEquity.InstrumentID,
+                    outQuantity,
+                    outBookCost,
+                    monthEnd.AddHours(15),
+                    $"Seed monthly InSpecie out {outEquity.Ticker}"));
+
+                state.Quantity -= outQuantity;
+                state.BookCost -= outBookCost;
+            }
+        }
+
+        return events
+            .OrderBy(@event => @event.EventDateTime.Value)
+            .ThenBy(@event => @event.AuditDateTime.Value)
+            .ThenBy(@event => @event.EventID.Value)
+            .ToList();
+    }
+
+    private static IReadOnlyList<ITransactionEvent> CreateSeedTransactionSet(Holdings holdings, Holding creditHolding, Holding debitHolding, InstrumentID instrumentID, decimal quantity, decimal bookCost, DateTime eventDateTime, string reason)
+    {
+        var request = new TransactionSetRequest(
+            Constants.Initialisation.UserID,
+            EventDateTimeBuilder.Create(eventDateTime),
+            SettlementDateTimeBuilder.Create(eventDateTime.AddDays(2)),
+            reason,
+            [new TransactionRequest(creditHolding.HoldingID, instrumentID, creditHolding.AccountID, new TransactionQuantity(quantity), new TransactionBookCost(bookCost))],
+            [new TransactionRequest(debitHolding.HoldingID, instrumentID, debitHolding.AccountID, new TransactionQuantity(quantity), new TransactionBookCost(bookCost))]);
+        var result = TransactionBuilder.Create(request, holdings);
+
+        if (result.IsValid && result.Value is not null)
+            return result.Value.Cast<ITransactionEvent>().ToList();
+
+        throw new InvalidOperationException($"Unable to create seed transaction '{reason}': {string.Join("; ", result.ValidationErrors)}");
+    }
+
+    private static Holding FindSeedHolding(Holdings holdings, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name)
+    {
+        var holdingKind = HoldingKindRuntime.GetKindName(holdingType);
+        return holdings.Items.Single(holding =>
+            holding.AccountID == accountID
+            && holding.InstrumentID == instrumentID
+            && holding.GetHoldingKindName() == holdingKind
+            && holding.Name == name);
+    }
+
+    private static IReadOnlyList<InstrumentSeed> SelectSeedEquitiesForAccount(IReadOnlyList<InstrumentSeed> instrumentSeeds, int accountIndex)
+    {
+        var equities = instrumentSeeds
+            .Where(seed => seed.Kind is InstrumentSeedKind.Equity)
+            .OrderBy(seed => seed.Ticker, StringComparer.Ordinal)
+            .ToList();
+        var selected = new List<InstrumentSeed>();
+        var offset = Math.Abs(accountIndex * 7) % equities.Count;
+
+        for (var index = 0; selected.Count < SeedStocksPerAccount; index++)
+        {
+            var equity = equities[(offset + (index * 11)) % equities.Count];
+            if (!selected.Any(seed => seed.InstrumentID == equity.InstrumentID))
+                selected.Add(equity);
+        }
+
+        return selected;
+    }
+
+    private static Random CreateSeedRandom(AccountID accountID)
+    {
+        var bytes = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes($"seed-transactions-{accountID.Value}"));
+        return new Random(BitConverter.ToInt32(bytes, 0) & int.MaxValue);
+    }
+
+    private static decimal RoundMoney(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private static decimal RoundQuantity(decimal value) => Math.Round(value, 8, MidpointRounding.AwayFromZero);
 
     private static void AddNonValuationSeedHoldings(List<HoldingCreatedEvent> events, ref int index, (AccountID AccountID, string Name, string FormalName, string BookCurrency, bool Active) account, InstrumentID cashInstrumentID)
     {
@@ -360,10 +615,11 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         {
             nameof(HoldingPositionMemo) => HoldingPositionMemoCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingPositionCash) => HoldingPositionCashCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingPositionAsset) => HoldingPositionAssetCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingInspecieIn) => HoldingInspecieInCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingInspecieOut) => HoldingInspecieOutCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingInSpecieIn) => HoldingInSpecieInCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingInSpecieOut) => HoldingInSpecieOutCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
@@ -646,6 +902,18 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             await eventRepository.AppendAsync(streamId, @event, cancellationToken);
     }
 
+    private async Task AppendEventsInBatches(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken, Action<int>? batchStored = null)
+    {
+        if (events is null)
+            throw new ArgumentNullException(nameof(events));
+
+        foreach (var batch in events.Chunk(5_000))
+        {
+            await eventRepository.AppendAsync(streamId, batch, cancellationToken);
+            batchStored?.Invoke(batch.Length);
+        }
+    }
+
     private static Action<string, string, int, bool> CreateBuildProgress(IProgress<BuildProgress>? progress, int totalEvents)
     {
         var completedSteps = 0;
@@ -681,6 +949,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             + CreateInitialCountryModifiedEvents().Count;
         var currencyEvents = CreateInitialCurrencyCreatedEvents().Count
             + CreateInitialCurrencyModifiedEvents().Count;
+        var brokerEvents = CreateInitialBrokerCreatedEvents().Count;
         var accountEvents = CreateInitialAccountCreatedEvents().Count
             + CreateInitialAccountModifiedEvents().Count
             + CreateInitialAccountActiveModifiedEvents().Count;
@@ -693,8 +962,17 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             + CreateInitialInstrumentTermsSetEvents(instrumentSeeds).Count
             + CreateInitialInstrumentPriceSetEvents(instrumentSeeds).Count()
             + CreateInitialInstrumentIncomeSetEvents(instrumentSeeds).Count;
-        var holdingEvents = CreateInitialHoldingCreatedEvents(instrumentSeeds).Count;
+        var holdingCreatedEvents = CreateInitialHoldingCreatedEvents(instrumentSeeds);
+        var holdingEvents = holdingCreatedEvents.Count;
+        var transactionEvents = CreateInitialTransactionEvents(instrumentSeeds, holdingCreatedEvents).Count;
 
-        return countryEvents + currencyEvents + accountEvents + fxEvents + instrumentEvents + holdingEvents;
+        return countryEvents + currencyEvents + brokerEvents + accountEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents;
+    }
+
+    private sealed class SeedPositionState
+    {
+        public decimal Quantity { get; set; }
+
+        public decimal BookCost { get; set; }
     }
 }

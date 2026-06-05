@@ -40,8 +40,4 @@ public sealed record Country : IModel
     }
 
     public override string ToString() => Name;
-
-    public string ToData() => $"{Alpha2.ToData()}|{Alpha3.ToData()}|{Numeric}|{Name}|{Flag?.ToData()}|{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Country)}: (Alpha2: {Alpha2.ToDetail()}, Alpha3: {Alpha3.ToDetail()}, Numeric: {Numeric}, Name: {Name}, Flag: {Flag?.ToDetail()}, ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()})";
 }

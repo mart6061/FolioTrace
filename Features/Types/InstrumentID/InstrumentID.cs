@@ -30,10 +30,6 @@ public sealed record InstrumentID : IType
     public static implicit operator InstrumentID(Guid g) => new InstrumentID(g);
 
     public override string ToString() => Value.ToString();
-
-    public string ToData() => Value.ToString();
-
-    public string ToDetail() => $"{nameof(InstrumentID)}: {this}";
 }
 
 internal sealed class InstrumentIDJsonConverter : JsonConverter<InstrumentID>

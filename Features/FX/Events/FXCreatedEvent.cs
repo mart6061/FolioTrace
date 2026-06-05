@@ -31,10 +31,6 @@ public sealed record FXCreatedEvent : EventBase, IFXEvent
 
     public override string Type => nameof(FXCreatedEvent);
 
-    public override string ToData() => $"{base.ToData()}|{Pair.ToData()}|{Active}";
-
-    public override string ToDetail() => $"{nameof(FXCreatedEvent)}: ({base.ToDetail()}, Pair: {Pair.ToDetail()}, Active: {Active})";
-
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, CurrencyPair? pair)
     {
         var messages = new List<string>();

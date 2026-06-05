@@ -1,63 +1,25 @@
-import { getInstrumentEvents } from '$lib/server/api';
+import { getInstrumentEvents, readApplicationStatus, readEventPropertyDetails } from '$lib/server/api';
 import { json } from '@sveltejs/kit';
 
 export const GET = async ({ fetch, url }) => {
-  const instrumentID = (url.searchParams.get('instrumentID') || '').trim().toLowerCase();
-  const valuationDateTime = parseOptionalDate(url.searchParams.get('valuationDateTime'));
-  const auditDateTime = parseOptionalDate(url.searchParams.get('auditDateTime'));
+  const instrumentID = (url.searchParams.get('instrumentID') || '').trim();
 
   if (!instrumentID)
     return json({ message: 'Instrument ID is required.' }, { status: 400 });
 
-  const events = await getInstrumentEvents(fetch);
-  const history = events
-    .map(normalizeInstrumentEvent)
-    .filter((event) => event.instrumentID.toLowerCase() === instrumentID)
-    .filter((event) => isInValuationScope(event, valuationDateTime))
-    .map((event) => addApplicationStatus(event, auditDateTime))
-    .sort(compareEvents);
+  const history = (await getInstrumentEvents(fetch, {
+    instrumentID,
+    valuationDateTime: url.searchParams.get('valuationDateTime'),
+    auditDateTime: url.searchParams.get('auditDateTime')
+  })).map(normalizeInstrumentEvent);
 
   return json(history);
 };
 
-function compareEvents(left: { eventDateTime: string; auditDateTime: string; eventID: string }, right: { eventDateTime: string; auditDateTime: string; eventID: string }) {
-  return (
-    new Date(left.eventDateTime).getTime() - new Date(right.eventDateTime).getTime() ||
-    new Date(left.auditDateTime).getTime() - new Date(right.auditDateTime).getTime() ||
-    left.eventID.localeCompare(right.eventID)
-  );
-}
-
-function parseOptionalDate(value: string | null) {
-  if (!value)
-    return null;
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function isInValuationScope(event: { eventDateTime: string }, valuationDateTime: Date | null) {
-  if (!valuationDateTime)
-    return true;
-
-  return new Date(event.eventDateTime).getTime() <= valuationDateTime.getTime();
-}
-
-function addApplicationStatus<TEvent extends { auditDateTime: string }>(event: TEvent, auditDateTime: Date | null) {
-  if (!auditDateTime)
-    return { ...event, applicationStatus: 'applied' as const };
-
-  return {
-    ...event,
-    applicationStatus: new Date(event.auditDateTime).getTime() <= auditDateTime.getTime()
-      ? 'applied' as const
-      : 'omitted' as const
-  };
-}
-
 function normalizeInstrumentEvent(event: Record<string, unknown>) {
   return {
     $type: readString(event, '$type', 'type', 'Type'),
+    applicationStatus: readApplicationStatus(event),
     eventID: readString(event, 'eventID', 'eventId', 'EventID', 'id', 'Id'),
     userID: readString(event, 'userID', 'userId', 'UserID'),
     eventDateTime: readString(event, 'eventDateTime', 'EventDateTime'),
@@ -75,7 +37,8 @@ function normalizeInstrumentEvent(event: Record<string, unknown>) {
     priceCurrency: readString(event, 'priceCurrency', 'PriceCurrency'),
     identifier: readIdentifier(event),
     identifierType: readIdentifierType(event),
-    terms: readOptionalObject(event, 'terms', 'Terms')
+    terms: readOptionalObject(event, 'terms', 'Terms'),
+    propertyDetails: readEventPropertyDetails(event)
   };
 }
 

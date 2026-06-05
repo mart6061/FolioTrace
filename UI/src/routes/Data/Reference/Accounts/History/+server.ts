@@ -1,63 +1,25 @@
-import { getAccountEvents } from '$lib/server/api';
+import { getAccountEvents, readApplicationStatus, readEventPropertyDetails } from '$lib/server/api';
 import { json } from '@sveltejs/kit';
 
 export const GET = async ({ fetch, url }) => {
-  const accountID = (url.searchParams.get('accountID') || '').trim().toLowerCase();
-  const valuationDateTime = parseOptionalDate(url.searchParams.get('valuationDateTime'));
-  const auditDateTime = parseOptionalDate(url.searchParams.get('auditDateTime'));
+  const accountID = (url.searchParams.get('accountID') || '').trim();
 
   if (!accountID)
     return json({ message: 'Account ID is required.' }, { status: 400 });
 
-  const events = await getAccountEvents(fetch);
-  const history = events
-    .map(normalizeAccountEvent)
-    .filter((event) => event.accountID.toLowerCase() === accountID)
-    .filter((event) => isInValuationScope(event, valuationDateTime))
-    .map((event) => addApplicationStatus(event, auditDateTime))
-    .sort(compareEvents);
+  const history = (await getAccountEvents(fetch, {
+    accountID,
+    valuationDateTime: url.searchParams.get('valuationDateTime'),
+    auditDateTime: url.searchParams.get('auditDateTime')
+  })).map(normalizeAccountEvent);
 
   return json(history);
 };
 
-function compareEvents(left: { eventDateTime: string; auditDateTime: string; eventID: string }, right: { eventDateTime: string; auditDateTime: string; eventID: string }) {
-  return (
-    new Date(left.eventDateTime).getTime() - new Date(right.eventDateTime).getTime() ||
-    new Date(left.auditDateTime).getTime() - new Date(right.auditDateTime).getTime() ||
-    left.eventID.localeCompare(right.eventID)
-  );
-}
-
-function parseOptionalDate(value: string | null) {
-  if (!value)
-    return null;
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function isInValuationScope(event: { eventDateTime: string }, valuationDateTime: Date | null) {
-  if (!valuationDateTime)
-    return true;
-
-  return new Date(event.eventDateTime).getTime() <= valuationDateTime.getTime();
-}
-
-function addApplicationStatus<TEvent extends { auditDateTime: string }>(event: TEvent, auditDateTime: Date | null) {
-  if (!auditDateTime)
-    return { ...event, applicationStatus: 'applied' as const };
-
-  return {
-    ...event,
-    applicationStatus: new Date(event.auditDateTime).getTime() <= auditDateTime.getTime()
-      ? 'applied' as const
-      : 'omitted' as const
-  };
-}
-
 function normalizeAccountEvent(event: Record<string, unknown>) {
   return {
     $type: readString(event, '$type', 'type', 'Type'),
+    applicationStatus: readApplicationStatus(event),
     eventID: readString(event, 'eventID', 'eventId', 'EventID', 'id', 'Id'),
     userID: readString(event, 'userID', 'userId', 'UserID'),
     eventDateTime: readString(event, 'eventDateTime', 'EventDateTime'),
@@ -67,7 +29,8 @@ function normalizeAccountEvent(event: Record<string, unknown>) {
     name: readString(event, 'name', 'Name'),
     formalName: readString(event, 'formalName', 'FormalName'),
     bookCurrency: readString(event, 'bookCurrency', 'BookCurrency'),
-    active: readOptionalBoolean(event, 'active', 'Active')
+    active: readOptionalBoolean(event, 'active', 'Active'),
+    propertyDetails: readEventPropertyDetails(event)
   };
 }
 

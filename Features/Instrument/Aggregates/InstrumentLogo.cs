@@ -20,8 +20,4 @@ public sealed record InstrumentLogo
     }
 
     public override string ToString() => Svg;
-
-    public string ToData() => Svg;
-
-    public string ToDetail() => $"{nameof(InstrumentLogo)}: (Svg: {Svg})";
 }

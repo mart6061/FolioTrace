@@ -127,10 +127,6 @@ public sealed record Accounts : IAggregate
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
-    public string ToData() => $"{ValuationDateTime.ToData()}|{AsOfDateTime.ToData()}|{LastEventID.ToData()}|{LastAuditDateTime.ToData()}";
-
-    public string ToDetail() => $"{nameof(Accounts)}: (ValuationDateTime: {ValuationDateTime.ToDetail()}, AsOfDateTime: {AsOfDateTime.ToDetail()}, LastEventID: {LastEventID.ToDetail()}, LastAuditDateTime: {LastAuditDateTime.ToDetail()}, Items: {Items.Count})";
-
     private static LastAuditDateTime GetLastAuditDateTime(List<Account> items) =>
         new(items.Max(account => account.LastAuditDateTime.Value));
 

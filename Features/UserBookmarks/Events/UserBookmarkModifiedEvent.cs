@@ -30,8 +30,4 @@ public sealed record UserBookmarkModifiedEvent : EventBase, IUserBookmarksEvent
     }
 
     public override string Type => nameof(UserBookmarkModifiedEvent);
-
-    public override string ToData() => $"{base.ToData()}|{BookmarkID}|{BookmarkType}|{Url}|{DisplayOrder}";
-
-    public override string ToDetail() => $"{nameof(UserBookmarkModifiedEvent)}: ({base.ToDetail()}, BookmarkID: {BookmarkID}, BookmarkType: {BookmarkType}, Url: {Url}, DisplayOrder: {DisplayOrder})";
 }
