@@ -1,0 +1,130 @@
+using FolioTrace;
+using FolioTrace.Aggregates;
+using FolioTrace.Types;
+using Repository;
+
+namespace Services;
+
+public sealed class ValuationSettingService(IEventRepository eventRepository) : IReferenceDataService<ValuationSettings, ValuationSettingServiceDiagnostics>
+{
+    private readonly Lock cacheLock = new();
+    private readonly Dictionary<ValuationSettingCacheKey, ValuationSettings> cache = [];
+
+    public Task<ValuationSettings> Current => Get(ReferenceDataCurrent.EndOfToday());
+
+    public ValuationSettingServiceDiagnostics GetDiagnostics()
+    {
+        lock (cacheLock)
+        {
+            var valuationSettingCount = cache.Values
+                .OrderByDescending(settings => settings.LastAuditDateTime.Value)
+                .FirstOrDefault()
+                ?.Items.Count ?? 0;
+
+            return new ValuationSettingServiceDiagnostics(cache.Count, valuationSettingCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
+        }
+    }
+
+    public int Invalidate(IValuationSettingEvent @event) => InvalidateFrom(@event.EventDateTime);
+
+    public bool IsCached(EventDateTime valuationDate)
+    {
+        if (valuationDate is null)
+            throw new ArgumentNullException(nameof(valuationDate));
+
+        var cacheKey = ValuationSettingCacheKey.ForAllAuditHistory(valuationDate);
+
+        lock (cacheLock)
+        {
+            return cache.ContainsKey(cacheKey);
+        }
+    }
+
+    public int InvalidateAll()
+    {
+        lock (cacheLock)
+        {
+            var removedCount = cache.Count;
+            cache.Clear();
+            return removedCount;
+        }
+    }
+
+    public async Task<ValuationSettings> Get(EventDateTime valuationDate)
+    {
+        if (valuationDate is null)
+            throw new ArgumentNullException(nameof(valuationDate));
+
+        var cacheKey = ValuationSettingCacheKey.ForAllAuditHistory(valuationDate);
+        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.ValuationSettingsStreamId, valuationDate.Value);
+
+        lock (cacheLock)
+        {
+            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == lastEventID)
+                return cached;
+        }
+
+        var events = await eventRepository.LoadStreamAsync<IValuationSettingEvent>(Constants.Initialisation.ValuationSettingsStreamId);
+        var current = new ValuationSettings(valuationDate, events.ToList());
+
+        lock (cacheLock)
+        {
+            cache[cacheKey] = current;
+            return current;
+        }
+    }
+
+    public async Task<ValuationSettings> Get(EventDateTime valuationDate, AuditDateTime asAt)
+    {
+        if (valuationDate is null)
+            throw new ArgumentNullException(nameof(valuationDate));
+
+        if (asAt is null)
+            throw new ArgumentNullException(nameof(asAt));
+
+        var cacheKey = ValuationSettingCacheKey.ForAsAt(valuationDate, asAt);
+
+        lock (cacheLock)
+        {
+            if (cache.TryGetValue(cacheKey, out var cached))
+                return cached;
+        }
+
+        var events = await eventRepository.LoadStreamAsync<IValuationSettingEvent>(Constants.Initialisation.ValuationSettingsStreamId);
+        var current = new ValuationSettings(valuationDate, asAt, events.ToList());
+
+        lock (cacheLock)
+        {
+            cache[cacheKey] = current;
+            return current;
+        }
+    }
+
+    private readonly record struct ValuationSettingCacheKey(DateTime ValuationDateTime, DateTime? AsAtDateTime)
+    {
+        public static ValuationSettingCacheKey ForAllAuditHistory(EventDateTime valuationDate) =>
+            new(valuationDate.Value, null);
+
+        public static ValuationSettingCacheKey ForAsAt(EventDateTime valuationDate, AuditDateTime asAt) =>
+            new(valuationDate.Value, asAt.Value);
+    }
+
+    private int InvalidateFrom(EventDateTime eventDateTime)
+    {
+        if (eventDateTime is null)
+            throw new ArgumentNullException(nameof(eventDateTime));
+
+        lock (cacheLock)
+        {
+            var removedCount = 0;
+
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            {
+                if (cache.Remove(cacheKey))
+                    removedCount++;
+            }
+
+            return removedCount;
+        }
+    }
+}

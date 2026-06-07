@@ -16,6 +16,7 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'data', label: 'Data' },
   { id: 'value', label: 'Value', parentID: 'data' },
   { id: 'reference', label: 'Reference', parentID: 'data' },
+  { id: 'reference-valuation-setting', label: 'Valuation Setting', parentID: 'reference' },
   { id: 'system', label: 'System' },
   { id: 'system-logs', label: 'Logs', parentID: 'system' },
   { id: 'system-stats', label: 'Stats for Nerds', parentID: 'system' },
