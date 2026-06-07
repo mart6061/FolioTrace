@@ -103,7 +103,7 @@ public sealed record Tickets : IAggregate
                 Update(@event, ticket => ticket with
                 {
                     Stage = TicketStage.Trade,
-                    TradeDecision = TicketDecision.PendingApproval,
+                    TradeDecision = TicketDecision.InProgress,
                     TradePrice = @event.TradedPrice,
                     TradeAllocations = @event.Allocations.ToList()
                 });
@@ -112,7 +112,7 @@ public sealed record Tickets : IAggregate
                 Update(@event, ticket => ticket with
                 {
                     Stage = TicketStage.Trade,
-                    TradeDecision = TicketDecision.PendingApproval,
+                    TradeDecision = TicketDecision.InProgress,
                     TradePrice = @event.TradedPrice,
                     TradeAllocations = @event.Allocations.ToList()
                 });
@@ -121,26 +121,29 @@ public sealed record Tickets : IAggregate
                 Update(@event, ticket => ticket with
                 {
                     Stage = TicketStage.Trade,
-                    TradeDecision = TicketDecision.PendingApproval,
-                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.Note)]
+                    TradeDecision = TicketDecision.InProgress,
+                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.BookCost, @event.Note)]
                 });
                 break;
             case TicketTradeFillModifiedEvent @event:
                 Update(@event, ticket => ticket with
                 {
                     Stage = TicketStage.Trade,
-                    TradeDecision = TicketDecision.PendingApproval,
-                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.Note)]
+                    TradeDecision = TicketDecision.InProgress,
+                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.BookCost, @event.Note)]
                 });
                 break;
             case TicketTradeFillRemovedEvent @event:
-                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.PendingApproval, Fills = ticket.Fills.Where(fill => fill.FillID != @event.FillID).ToList() });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.InProgress, Fills = ticket.Fills.Where(fill => fill.FillID != @event.FillID).ToList() });
+                break;
+            case TicketTradeDecisionRequestedEvent @event:
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.PendingApproval });
                 break;
             case TicketTradeApprovedEvent @event:
                 Update(@event, ticket => ticket with { Stage = TicketStage.Completed, TradeDecision = TicketDecision.Approved });
                 break;
             case TicketTradeNotApprovedEvent @event:
-                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.NotApproved });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.InProgress });
                 break;
             case TicketTradeInstructionNotesSetEvent @event:
                 Update(@event, ticket => ticket with { TradeInstructionNotes = @event.TradeInstructionNotes });

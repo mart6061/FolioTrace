@@ -1,0 +1,50 @@
+@model FoleoTraderMonitorViewModel
+
+@if (Model.Messages.Count == 0)
+{
+    <p class="muted">No FIX messages have been sent or received.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Time UTC</th>
+                <th>Direction</th>
+                <th>Session</th>
+                <th>Type</th>
+                <th>Human readable</th>
+                <th>Raw</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var message in Model.Messages)
+            {
+                <tr>
+                    <td>@message.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@message.Direction</td>
+                    <td><code>@message.SessionID</code></td>
+                    <td><code>@message.MessageType</code></td>
+                    <td>
+                        <details>
+                            <summary>@message.Fields.Count fields</summary>
+                            <table>
+                                <tbody>
+                                    @foreach (var field in message.Fields)
+                                    {
+                                        <tr>
+                                            <td><code>@field.Tag</code></td>
+                                            <td>@field.Name</td>
+                                            <td><code>@field.Value</code></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </details>
+                    </td>
+                    <td><code>@message.Raw</code></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

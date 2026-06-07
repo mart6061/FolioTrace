@@ -23,6 +23,8 @@ public static class Constants
 
         public static readonly Guid FXRatesStreamId = Guid.Parse("f7a242f1-96ad-4328-a903-670a78c8b2f4");
 
+        public static readonly Guid FoleoTraderOrdersStreamId = Guid.Parse("42dbe999-9cd5-4c73-bd40-976ad6fed1fb");
+
         public static readonly Guid HoldingsStreamId = Guid.Parse("44a970fc-bd46-4cd8-96a2-6eb023b0e5c6");
 
         public static readonly Guid InstrumentsStreamId = Guid.Parse("ba970d3e-fad9-4fc6-9d42-432630f3dcb0");

@@ -36,7 +36,7 @@ public static partial class TicketEventBuilder
             : Result<TEvent>.Success(create());
     }
 
-    private static Result<TEvent> CreateTradeDecisionEvent<TEvent>(TicketApprovalRequest request, Tickets tickets, Func<TEvent> create)
+    private static Result<TEvent> CreateTradeDecisionEvent<TEvent>(TicketApprovalRequest request, Tickets tickets, Func<TEvent> create, Holdings? holdings = null, Instruments? instruments = null)
         where TEvent : class, ITicket
     {
         var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
@@ -48,6 +48,8 @@ public static partial class TicketEventBuilder
                 messages.Add("Trade decision must be pending.");
             if (ticket.TradeAllocations.Count == 0)
                 messages.Add("Trade allocations are required before trade approval.");
+            else
+                ValidateTradeAllocations(ticket.TradeAllocations, ticket, holdings, instruments, messages);
         }
 
         return messages.Count > 0
@@ -155,6 +157,20 @@ public static partial class TicketEventBuilder
         ValidatePositiveDecimal(value.Value, name, messages);
     }
 
+    private static void ValidateTransactionBookCost(TransactionBookCost? value, string name, List<string> messages)
+    {
+        if (value is null)
+        {
+            messages.Add($"{name} is required.");
+            return;
+        }
+
+        if (value.Value <= 0)
+            messages.Add($"{name} must be greater than zero.");
+        if (decimal.Round(value.Value, 8) != value.Value)
+            messages.Add($"{name} can have at most 8 decimal places.");
+    }
+
     private static Alpha3? ResolveTradeCurrency(TicketProposalRequest request, Ticket? ticket, List<string> messages)
     {
         var tradeCurrency = request.TradeCurrency ?? ticket?.TradeCurrency;
@@ -178,7 +194,7 @@ public static partial class TicketEventBuilder
             ValidatePositiveDecimal(allocation.Quantity, "Proposal allocation quantity", messages);
     }
 
-    private static void ValidateTradeAllocations(IReadOnlyList<TicketTradeAllocation>? allocations, Ticket? ticket, List<string> messages)
+    private static void ValidateTradeAllocations(IReadOnlyList<TicketTradeAllocation>? allocations, Ticket? ticket, Holdings? holdings, Instruments? instruments, List<string> messages)
     {
         if (allocations is null || allocations.Count == 0)
         {
@@ -191,7 +207,45 @@ public static partial class TicketEventBuilder
         {
             ValidatePositiveDecimal(allocation.Quantity, "Trade allocation quantity", messages);
             ValidatePositiveDecimal(allocation.BookCost, "Trade allocation book cost", messages);
+            ValidateTradeCashHolding(allocation, ticket, holdings, instruments, messages);
         }
+    }
+
+    private static void ValidateTradeCashHolding(TicketTradeAllocation allocation, Ticket? ticket, Holdings? holdings, Instruments? instruments, List<string> messages)
+    {
+        if (allocation.CashHoldingID is null)
+        {
+            messages.Add($"Trade allocation cash holding is required for AccountID '{allocation.AccountID}'.");
+            return;
+        }
+
+        if (holdings is null || instruments is null || ticket is null)
+            return;
+
+        var holding = holdings.Items.SingleOrDefault(item => item.HoldingID == allocation.CashHoldingID);
+        if (holding is null)
+        {
+            messages.Add($"No matching cash holding found for HoldingID '{allocation.CashHoldingID}'.");
+            return;
+        }
+
+        if (!holding.Active)
+            messages.Add($"Cash holding '{allocation.CashHoldingID}' is inactive.");
+        var cashInvestableKind = HoldingKindRuntime.GetKindName<HoldingCashInvestable>();
+        if (holding.GetHoldingKindName() != cashInvestableKind)
+            messages.Add($"Cash holding '{allocation.CashHoldingID}' must be a {cashInvestableKind} holding.");
+        if (holding.AccountID != allocation.AccountID)
+            messages.Add($"Cash holding '{allocation.CashHoldingID}' is not on allocation AccountID '{allocation.AccountID}'.");
+
+        var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == holding.InstrumentID);
+        if (instrument is null)
+        {
+            messages.Add($"No matching instrument found for cash holding '{allocation.CashHoldingID}'.");
+            return;
+        }
+
+        if (instrument.PriceCurrency != ticket.TradeCurrency)
+            messages.Add($"Cash holding '{allocation.CashHoldingID}' currency '{instrument.PriceCurrency}' does not match trade currency '{ticket.TradeCurrency}'.");
     }
 
     private static void ValidateAllocationAccounts(IEnumerable<AccountID> allocationAccountIDs, Ticket? ticket, List<string> messages)
@@ -211,5 +265,5 @@ public static partial class TicketEventBuilder
 
     private static Result<T> CreateResult<T>(Func<Result<T>> create) => create();
 
-    private static EventID NewEventID() => new(Guid.NewGuid());
+    private static EventID NewEventID() => new(Guid.CreateGuid7());
 }
