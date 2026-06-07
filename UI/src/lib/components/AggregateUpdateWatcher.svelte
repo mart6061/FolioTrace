@@ -4,7 +4,8 @@
   import type { AggregateKind, AggregateUpdateNotification } from '$lib/types';
 
   type Props = {
-    aggregateKind: AggregateKind;
+    aggregateKind: AggregateKind | AggregateKind[];
+    autoReload?: boolean;
     auditDateTime?: string | null;
     lastEventID?: string | null;
     valuationDate: string;
@@ -12,6 +13,7 @@
 
   let {
     aggregateKind,
+    autoReload = false,
     auditDateTime = '',
     lastEventID = '',
     valuationDate
@@ -19,7 +21,8 @@
 
   let stale = $state(false);
   let updateReason = $state('');
-  const viewKey = $derived(`${aggregateKind}|${valuationDate}|${auditDateTime ?? ''}|${lastEventID ?? ''}`);
+  const aggregateKinds = $derived(Array.isArray(aggregateKind) ? aggregateKind : [aggregateKind]);
+  const viewKey = $derived(`${aggregateKinds.join(',')}|${valuationDate}|${auditDateTime ?? ''}|${lastEventID ?? ''}`);
 
   $effect(() => {
     viewKey;
@@ -37,6 +40,11 @@
 
       if (!notification || !appliesToCurrentView(notification))
         return;
+
+      if (autoReload) {
+        void reload();
+        return;
+      }
 
       stale = true;
       updateReason = notification.reason;
@@ -61,7 +69,7 @@
   }
 
   function appliesToCurrentView(notification: AggregateUpdateNotification) {
-    if (notification.kind !== 'All' && notification.kind !== aggregateKind)
+    if (notification.kind !== 'All' && !aggregateKinds.includes(notification.kind as AggregateKind))
       return false;
 
     if (notification.notificationType === 'AggregatesInvalidated')

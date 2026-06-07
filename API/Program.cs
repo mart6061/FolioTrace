@@ -1,4 +1,5 @@
 using API;
+using API.FoleoTrader;
 using Repository;
 using Services;
 
@@ -16,6 +17,10 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services.AddSingleton<ApiVersionInfo>();
 builder.Services.AddSingleton<BuildCoordinator>();
+builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
+builder.Services.AddSingleton<FoleoTraderOrderProcessor>();
+builder.Services.AddSingleton<FoleoTraderFixClient>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<FoleoTraderFixClient>());
 builder.Services.AddSingleton(
     builder.Configuration
         .GetSection(AggregateMaintenanceOptions.SectionName)

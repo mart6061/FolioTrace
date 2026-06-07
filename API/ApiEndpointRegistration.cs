@@ -2,6 +2,7 @@ using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
+using API.FoleoTrader;
 using Repository;
 using Services;
 using System.ComponentModel;
@@ -45,6 +46,7 @@ public static class ApiEndpointRegistration
         api.MapCurrencyEndpoints();
         api.MapFXEndpoints();
         api.MapFXRateEndpoints();
+        api.MapFoleoTraderEndpoints();
         api.MapHoldingEndpoints();
         api.MapValuationEndpoints();
         api.MapInstrumentEndpoints();
@@ -577,6 +579,33 @@ public static class ApiEndpointRegistration
             return auditDateTime.HasValue
                 ? Results.Ok(await fxRateService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await fxRateService.Get(valuationDate));
+        });
+    }
+
+    private static void MapFoleoTraderEndpoints(this RouteGroupBuilder api)
+    {
+        var foleoTrader = api.MapGroup("/Trading/FoleoTrader").WithTags("FoleoTrader");
+
+        foleoTrader.MapGet("/Orders", async (DateTime eventDateTime, DateTime? auditDateTime, FoleoTraderOrderService foleoTraderOrderService, CancellationToken cancellationToken) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await foleoTraderOrderService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value), cancellationToken))
+                : Results.Ok(await foleoTraderOrderService.Get(valuationDate, cancellationToken));
+        });
+
+        foleoTrader.MapPost("/Orders", async (FoleoTraderOrderRequest request, FoleoTraderOrderProcessor processor, FoleoTraderFixClient fixClient, CancellationToken cancellationToken) =>
+        {
+            var result = await processor.SubmitOrderAsync(request, fixClient, cancellationToken);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            return Results.Accepted("/API/Trading/FoleoTrader/Orders", new
+            {
+                EventID = result.Value.EventID.Value,
+                result.Value.ClOrdID
+            });
         });
     }
 
@@ -1557,18 +1586,32 @@ public static class ApiEndpointRegistration
                 async () => TicketEventBuilder.SetProposalAllocation(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
                 cancellationToken));
 
-        ticketEvents.MapPost($"/{nameof(TicketTradeCreatedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeRequest request, CancellationToken cancellationToken) =>
+        ticketEvents.MapPost($"/{nameof(TicketTradeCreatedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeRequest request, CancellationToken cancellationToken) =>
             await AppendTicketEvent(
                 eventRepository,
                 cacheInvalidationService,
-                async () => TicketEventBuilder.CreateTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
+                    var holdings = await holdingService.Get(request.EventDateTime, asAt);
+                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.CreateTrade(request, tickets, holdings, instruments);
+                },
                 cancellationToken));
 
-        ticketEvents.MapPost($"/{nameof(TicketTradeModifiedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeRequest request, CancellationToken cancellationToken) =>
+        ticketEvents.MapPost($"/{nameof(TicketTradeModifiedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeRequest request, CancellationToken cancellationToken) =>
             await AppendTicketEvent(
                 eventRepository,
                 cacheInvalidationService,
-                async () => TicketEventBuilder.ModifyTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
+                    var holdings = await holdingService.Get(request.EventDateTime, asAt);
+                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.ModifyTrade(request, tickets, holdings, instruments);
+                },
                 cancellationToken));
 
         ticketEvents.MapPost($"/{nameof(TicketTradeFillAddedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeFillRequest request, CancellationToken cancellationToken) =>
@@ -1592,18 +1635,46 @@ public static class ApiEndpointRegistration
                 async () => TicketEventBuilder.RemoveFill(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
                 cancellationToken));
 
-        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+        ticketEvents.MapPost($"/{nameof(TicketTradeDecisionRequestedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
             await AppendTicketEvent(
                 eventRepository,
                 cacheInvalidationService,
-                async () => TicketEventBuilder.ApproveTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
+                    var holdings = await holdingService.Get(request.EventDateTime, asAt);
+                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.RequestTradeDecision(request, tickets, holdings, instruments);
+                },
                 cancellationToken));
 
-        ticketEvents.MapPost($"/{nameof(TicketTradeNotApprovedEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
             await AppendTicketEvent(
                 eventRepository,
                 cacheInvalidationService,
-                async () => TicketEventBuilder.NotApproveTrade(request, await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create())),
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
+                    var holdings = await holdingService.Get(request.EventDateTime, asAt);
+                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.ApproveTrade(request, tickets, holdings, instruments);
+                },
+                cancellationToken));
+
+        ticketEvents.MapPost($"/{nameof(TicketTradeNotApprovedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
+            await AppendTicketEvent(
+                eventRepository,
+                cacheInvalidationService,
+                async () =>
+                {
+                    var asAt = AuditDateTimeBuilder.Create();
+                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
+                    var holdings = await holdingService.Get(request.EventDateTime, asAt);
+                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+                    return TicketEventBuilder.NotApproveTrade(request, tickets, holdings, instruments);
+                },
                 cancellationToken));
 
         ticketEvents.MapPost($"/{nameof(TicketTradeInstructionNotesSetEvent)}", async (TicketService ticketService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTextSetRequest request, CancellationToken cancellationToken) =>
@@ -2680,6 +2751,7 @@ public static class ApiEndpointRegistration
                 fillAddedEvent.BrokerLEI,
                 fillAddedEvent.Price,
                 fillAddedEvent.Quantity,
+                fillAddedEvent.BookCost,
                 fillAddedEvent.Note
             }),
             TicketTradeFillModifiedEvent fillModifiedEvent => WithTicketBase(fillModifiedEvent, new
@@ -2688,12 +2760,14 @@ public static class ApiEndpointRegistration
                 fillModifiedEvent.BrokerLEI,
                 fillModifiedEvent.Price,
                 fillModifiedEvent.Quantity,
+                fillModifiedEvent.BookCost,
                 fillModifiedEvent.Note
             }),
             TicketTradeFillRemovedEvent fillRemovedEvent => WithTicketBase(fillRemovedEvent, new
             {
                 fillRemovedEvent.FillID
             }),
+            TicketTradeDecisionRequestedEvent tradeDecisionRequestedEvent => WithTicketBase(tradeDecisionRequestedEvent, new { }),
             TicketTradeInstructionNotesSetEvent tradeInstructionNotesSetEvent => WithTicketBase(tradeInstructionNotesSetEvent, new
             {
                 tradeInstructionNotesSetEvent.TradeInstructionNotes
@@ -2733,6 +2807,7 @@ public static class ApiEndpointRegistration
         new
         {
             AccountID = allocation.AccountID.Value,
+            CashHoldingID = allocation.CashHoldingID?.Value,
             allocation.Quantity,
             allocation.BookCost
         };

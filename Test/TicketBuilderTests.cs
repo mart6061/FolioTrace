@@ -160,13 +160,13 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents();
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, 12m, 9m, "Done"),
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
             new Tickets(EventDate, [.. events, approved, trade])).Value!;
         var modified = TicketEventBuilder.ModifyFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Modify fill", TicketOne, FillID, BrokerLEI, 12.5m, 8m, "Partial"),
+            new TicketTradeFillRequest(UserID, EventDate, "Modify fill", TicketOne, FillID, BrokerLEI, new Price(12.5m), 8m, new TransactionBookCost(100m), "Partial"),
             new Tickets(EventDate, [.. events, approved, trade, fill])).Value!;
         var removed = TicketEventBuilder.RemoveFill(
             new TicketTradeFillRemovedRequest(UserID, EventDate, "Remove fill", TicketOne, FillID),
@@ -176,12 +176,82 @@ public sealed class TicketBuilderTests
         var withoutFill = Assert.Single(new Tickets(EventDate, [.. events, approved, trade, fill, modified, removed]).Items);
 
         Assert.Equal(TicketStage.Trade, withFill.Stage);
-        Assert.Equal(TicketDecision.PendingApproval, withFill.TradeDecision);
+        Assert.Equal(TicketDecision.InProgress, withFill.TradeDecision);
         var rebuiltFill = Assert.Single(withFill.Fills);
         Assert.Equal(BrokerLEI, rebuiltFill.BrokerLEI);
-        Assert.Equal(12.5m, rebuiltFill.Price);
+        Assert.Equal(12.5m, rebuiltFill.Price.Amount);
+        Assert.Equal(8m, rebuiltFill.Quantity);
+        Assert.Equal(100m, rebuiltFill.BookCost.Value);
         Assert.Empty(withoutFill.Fills);
-        Assert.Equal(TicketDecision.PendingApproval, withoutFill.TradeDecision);
+        Assert.Equal(TicketDecision.InProgress, withoutFill.TradeDecision);
+    }
+
+    [Fact]
+    public void Trade_PreservesCashHoldingAllocation()
+    {
+        var events = CreateProposalEvents();
+        var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
+        var trade = TicketEventBuilder.CreateTrade(
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
+            new Tickets(EventDate, [.. events, approved]),
+            CreateHoldings(),
+            CreateInstruments()).Value!;
+
+        var ticket = Assert.Single(new Tickets(EventDate, [.. events, approved, trade]).Items);
+        Assert.Equal(CashHoldingID, Assert.Single(ticket.TradeAllocations).CashHoldingID);
+    }
+
+    [Fact]
+    public void Trade_RejectsMissingCashHoldingAllocation()
+    {
+        var events = CreateProposalEvents();
+        var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
+
+        var result = TicketEventBuilder.CreateTrade(
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
+            new Tickets(EventDate, [.. events, approved]),
+            CreateHoldings(),
+            CreateInstruments());
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationErrors, error => error.Contains("cash holding", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Trade_RejectsCashHoldingWithDifferentCurrency()
+    {
+        var events = CreateProposalEvents();
+        var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
+
+        var result = TicketEventBuilder.CreateTrade(
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, UsdCashHoldingID)]),
+            new Tickets(EventDate, [.. events, approved]),
+            CreateHoldings(),
+            CreateInstruments());
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationErrors, error => error.Contains("trade currency", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void TradeDecisionRequest_MarksTradePendingApproval()
+    {
+        var events = CreateProposalEvents();
+        var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
+        var trade = TicketEventBuilder.CreateTrade(
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
+            new Tickets(EventDate, [.. events, approved])).Value!;
+        var fill = TicketEventBuilder.AddFill(
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
+            new Tickets(EventDate, [.. events, approved, trade])).Value!;
+
+        var requested = TicketEventBuilder.RequestTradeDecision(
+            new TicketApprovalRequest(UserID, EventDate, "Request trade decision", TicketOne),
+            new Tickets(EventDate, [.. events, approved, trade, fill])).Value!;
+
+        var ticket = Assert.Single(new Tickets(EventDate, [.. events, approved, trade, fill, requested]).Items);
+        Assert.Equal(TicketStage.Trade, ticket.Stage);
+        Assert.Equal(TicketDecision.PendingApproval, ticket.TradeDecision);
     }
 
     [Fact]
@@ -199,7 +269,7 @@ public sealed class TicketBuilderTests
         Assert.Equal(TicketDecision.Approved, ticket.TradeDecision);
         Assert.False(ticket.IsActive);
         Assert.Equal(TicketStage.Trade, notApprovedTicket.Stage);
-        Assert.Equal(TicketDecision.NotApproved, notApprovedTicket.TradeDecision);
+        Assert.Equal(TicketDecision.InProgress, notApprovedTicket.TradeDecision);
         Assert.True(notApprovedTicket.IsActive);
     }
 
@@ -263,9 +333,12 @@ public sealed class TicketBuilderTests
     private static readonly AuditDateTime AuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-9));
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
     private static readonly InstrumentID InstrumentID = InstrumentIDBuilder.Create();
+    private static readonly InstrumentID UsdInstrumentID = InstrumentIDBuilder.Create();
+    private static readonly HoldingID CashHoldingID = HoldingIDBuilder.Create();
+    private static readonly HoldingID UsdCashHoldingID = HoldingIDBuilder.Create();
     private static readonly TicketNumber TicketOne = new(1);
     private static readonly TicketNumber TicketTwo = new(2);
-    private static readonly Guid FillID = Guid.NewGuid();
+    private static readonly Guid FillID = Guid.CreateGuid7();
     private static readonly LegalEntityIdentifier BrokerLEI = new("5493001KJTIIGC8Y1R12");
 
     private static TicketCreatedRequest CreateRequest(TicketSide side) =>
@@ -297,16 +370,22 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents(number);
         var proposalApproved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve proposal", number), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", number, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", number, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, proposalApproved])).Value!;
+        var fill = TicketEventBuilder.AddFill(
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", number, Guid.CreateGuid7(), BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
+            new Tickets(EventDate, [.. events, proposalApproved, trade])).Value!;
+        var requestTradeDecision = TicketEventBuilder.RequestTradeDecision(
+            new TicketApprovalRequest(UserID, EventDate, "Request trade decision", number),
+            new Tickets(EventDate, [.. events, proposalApproved, trade, fill])).Value!;
 
-        return [.. events, proposalApproved, trade];
+        return [.. events, proposalApproved, trade, fill, requestTradeDecision];
     }
 
     private static Accounts CreateAccounts()
     {
         var created = AccountCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,
@@ -323,7 +402,7 @@ public sealed class TicketBuilderTests
     private static Instruments CreateInstruments()
     {
         var created = InstrumentCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,
@@ -338,7 +417,65 @@ public sealed class TicketBuilderTests
             Alpha2Builder.Create("GB"),
             Alpha2Builder.Create("GB"),
             Alpha3Builder.Create("GBP")).Value!;
+        var usdCreated = InstrumentCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create USD instrument",
+            UsdInstrumentID,
+            "USD cash",
+            "US dollar cash",
+            ExchangeBuilder.Create("XOFF"),
+            CFIBuilder.Create("MRCXXX"),
+            null,
+            true,
+            Alpha2Builder.Create("US"),
+            Alpha2Builder.Create("US"),
+            Alpha3Builder.Create("USD")).Value!;
 
-        return new Instruments(EventDate, AuditDate, [created]);
+        return new Instruments(EventDate, AuditDate, [created, usdCreated]);
+    }
+
+    private static Holdings CreateHoldings()
+    {
+        var cash = HoldingCashInvestableCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create cash holding",
+            CashHoldingID,
+            AccountID,
+            InstrumentID,
+            "Investable GBP",
+            true,
+            true,
+            "HSBC",
+            "Investable",
+            SortCodeBuilder.Create("12-34-56"),
+            BankAccountNumberBuilder.Create("12345678"),
+            BICBuilder.Create("HBUKGB4B"),
+            IBANBuilder.Create("GB82WEST12345698765432")).Value!;
+        var usdCash = HoldingCashInvestableCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create USD cash holding",
+            UsdCashHoldingID,
+            AccountID,
+            UsdInstrumentID,
+            "Investable USD",
+            true,
+            true,
+            "HSBC",
+            "USD Investable",
+            SortCodeBuilder.Create("12-34-56"),
+            BankAccountNumberBuilder.Create("12345678"),
+            BICBuilder.Create("HBUKGB4B"),
+            IBANBuilder.Create("GB82WEST12345698765432")).Value!;
+
+        return new Holdings(EventDate, AuditDate, [cash, usdCash]);
     }
 }

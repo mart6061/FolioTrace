@@ -75,7 +75,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     public static IReadOnlyList<CountryCreatedEvent> CreateInitialCountryCreatedEvents() =>
         SeedCountryCodes.Items
             .Select(country => CountryCreatedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 Constants.Initialisation.EventDateTime,
                 Constants.Initialisation.AuditDateTime,
@@ -93,7 +93,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
         return SeedCountryFlags.Items
             .Select(country => CountryFlagModifiedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 auditDateTime,
@@ -115,7 +115,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
         return names
             .Select((name, index) => CountryModifiedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(2 + index)),
                 AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(2 + index)),
@@ -151,7 +151,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     public static IReadOnlyList<CurrencyCreatedEvent> CreateInitialCurrencyCreatedEvents() =>
         SeedCurrencyCodes.Items
             .Select(currency => CurrencyCreatedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 Constants.Initialisation.EventDateTime,
                 Constants.Initialisation.AuditDateTime,
@@ -174,7 +174,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
         return names
             .Select((name, index) => CurrencyModifiedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(2 + index)),
                 AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(2 + index)),
@@ -188,6 +188,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private static readonly (string Name, string LEI, decimal Commission, bool Active, DateTime ApprovedDateTime, DateTime NextReview, string Notes)[] SeedBrokers =
     [
+        ("FoleoTrader", "FOLEOTRADER000000001", 0m, true, new DateTime(2024, 1, 2, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 1, 2, 9, 0, 0, DateTimeKind.Utc), "Automated FIX execution endpoint."),
         ("Northbridge Stockbrokers", "BROKERSEED0000000001", 0.0012m, true, new DateTime(2024, 1, 15, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 1, 15, 9, 0, 0, DateTimeKind.Utc), "Primary UK execution broker."),
         ("Harbourview Brokers", "BROKERSEED0000000002", 0.0010m, true, new DateTime(2024, 2, 20, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 2, 20, 9, 0, 0, DateTimeKind.Utc), "European equities coverage."),
         ("Cedar Lane Stockbrokers", "BROKERSEED0000000003", 0.0015m, true, new DateTime(2024, 3, 12, 9, 0, 0, DateTimeKind.Utc), new DateTime(2027, 3, 12, 9, 0, 0, DateTimeKind.Utc), "Small and mid cap desk."),
@@ -218,7 +219,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     public static IReadOnlyList<BrokerCreatedEvent> CreateInitialBrokerCreatedEvents() =>
         SeedBrokers
             .Select((broker, index) => BrokerCreatedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(10 + index)),
                 AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(10 + index)),
@@ -278,7 +279,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     public static IReadOnlyList<AccountCreatedEvent> CreateInitialAccountCreatedEvents() =>
         SeedAccounts
             .Select((account, index) => AccountCreatedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(10 + index)),
                 AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(10 + index)),
@@ -301,7 +302,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
         return modifications
             .Select((account, index) => AccountModifiedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(30 + index)),
                 AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(30 + index)),
@@ -323,7 +324,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
         return activeChanges
             .Select((account, index) => AccountActiveModifiedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(40 + index)),
                 AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(40 + index)),
@@ -605,7 +606,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private static HoldingCreatedEvent CreateSeedHolding(int index, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name, bool active, bool isDefault)
     {
-        var eventId = new EventID(Guid.NewGuid());
+        var eventId = new EventID(Guid.CreateGuid7());
         var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(50 + index));
         var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(50 + index));
         var holdingKind = HoldingKindRuntime.GetKindName(holdingType);
@@ -631,7 +632,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private static HoldingCreatedEvent CreateSeedBankHolding(int index, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name, bool active, bool isDefault, (AccountID AccountID, string Name, string FormalName, string BookCurrency, bool Active) account, int accountIndex)
     {
-        var eventId = new EventID(Guid.NewGuid());
+        var eventId = new EventID(Guid.CreateGuid7());
         var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(50 + index));
         var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(50 + index));
         var holdingKind = HoldingKindRuntime.GetKindName(holdingType);
@@ -686,7 +687,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private static IReadOnlyList<FXCreatedEvent> CreateInitialFXCreatedEvents(IReadOnlyList<FXPairSeed> pairSeeds) =>
         pairSeeds
             .Select(pair => FXCreatedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(SeedFXData.RateStartDate),
                 AuditDateTimeBuilder.Create(SeedFXData.RateStartDate.AddMinutes(1)),
@@ -699,7 +700,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private static IEnumerable<FXRateSetEvent> CreateInitialFXRateSetEvents(IReadOnlyList<FXPairSeed> pairSeeds) =>
         SeedFXData.CreateRateSeeds(pairSeeds)
             .Select(rate => FXRateSetEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(rate.Timestamp),
                 AuditDateTimeBuilder.Create(rate.Timestamp.AddMinutes(1)),
@@ -767,7 +768,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private static IReadOnlyList<InstrumentCreatedEvent> CreateInitialInstrumentCreatedEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds) =>
         instrumentSeeds
             .Select(seed => InstrumentCreatedEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1)),
                 AuditDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(1)),
@@ -793,7 +794,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         foreach (var seed in instrumentSeeds)
         {
             events.Add(InstrumentIdentifierSetEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 auditDateTime,
@@ -802,7 +803,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 new InstrumentIdentifier(InstrumentIdentifierType.Ticker, seed.Ticker)).Value!);
 
             events.Add(InstrumentIdentifierSetEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 auditDateTime,
@@ -822,7 +823,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         return instrumentSeeds
             .Where(seed => seed.Terms is not null)
             .Select(seed => InstrumentTermsSetEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 auditDateTime,
@@ -835,7 +836,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private static IEnumerable<InstrumentPriceSetEvent> CreateInitialInstrumentPriceSetEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds) =>
         SeedInstrumentData.CreatePriceSeeds(instrumentSeeds)
             .Select(seed => InstrumentPriceSetEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(seed.Timestamp),
                 AuditDateTimeBuilder.Create(seed.Timestamp.AddMinutes(1)),
@@ -846,7 +847,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private static IReadOnlyList<InstrumentIncomeSetEvent> CreateInitialInstrumentIncomeSetEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds) =>
         SeedInstrumentData.CreateIncomeSeeds(instrumentSeeds)
             .Select(seed => InstrumentIncomeSetEventBuilder.CreateSeed(
-                Guid.NewGuid(),
+                Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(seed.Timestamp),
                 AuditDateTimeBuilder.Create(seed.Timestamp.AddMinutes(1)),

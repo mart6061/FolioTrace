@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="UI/UI.csproj" />
   <Project Path="API/API.csproj" />
+  <Project Path="FoleoTrader/FoleoTrader.csproj" />
   <Project Path="Repository/Repository.csproj" />
   <Project Path="Features/Features.csproj" />
   <Project Path="Test/Test.csproj" Id="64f922e9-a1fe-4d42-8cdb-4eb96858fa02" />

@@ -9,6 +9,7 @@ public sealed record TicketTradeFillRequest(
     TicketNumber TicketNumber,
     Guid? FillID,
     LegalEntityIdentifier BrokerLEI,
-    decimal Price,
+    Price Price,
     decimal Quantity,
+    TransactionBookCost BookCost,
     string? Note);
