@@ -10,13 +10,13 @@ public static class UserBookmarkCreatedEventBuilder
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        return Create(request.UserID, request.EventDateTime, request.Reason, request.BookmarkID ?? Guid.NewGuid(), request.BookmarkType, request.Url, request.DisplayOrder);
+        return Create(request.UserID, request.EventDateTime, request.Reason, request.BookmarkID ?? Guid.CreateGuid7(), request.BookmarkType, request.Url, request.DisplayOrder);
     }
 
     public static Result<UserBookmarkCreatedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, Guid bookmarkID, UserBookmarkType bookmarkType, string url, DisplayOrder displayOrder)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventID = Guid.NewGuid();
+        EventID eventID = Guid.CreateGuid7();
         return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, bookmarkID, bookmarkType, url, displayOrder);
     }
 

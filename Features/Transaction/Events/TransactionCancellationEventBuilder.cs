@@ -46,7 +46,7 @@ public static class TransactionCancellationEventBuilder
         var auditDateTime = AuditDateTimeBuilder.Create();
         var cancellationEventSetID = EventSetIDBuilder.Create();
         var eventIDGroup = Enumerable.Range(0, originalEvents.Count)
-            .Select(_ => new EventID(Guid.NewGuid()))
+            .Select(_ => new EventID(Guid.CreateGuid7()))
             .ToList();
         var cancelledIDGroup = originalEvents.Select(@event => @event.EventID).ToList();
 

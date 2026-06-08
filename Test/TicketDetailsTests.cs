@@ -63,7 +63,7 @@ public sealed class TicketDetailsTests
 
     private static InstrumentCreatedEvent CreateInstrument(InstrumentID instrumentID, string name) =>
         InstrumentCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,
@@ -84,7 +84,7 @@ public sealed class TicketDetailsTests
 
     private static AccountCreatedEvent CreateAccount(AccountID accountID, string name) =>
         AccountCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,

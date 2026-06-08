@@ -16,7 +16,7 @@ public static class UserValuationPreferencesModifiedEventBuilder
     public static Result<UserValuationPreferencesModifiedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventID = Guid.NewGuid();
+        EventID eventID = Guid.CreateGuid7();
         return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, valuationDateOption, holdingDateBasis, showZeroBalances);
     }
 

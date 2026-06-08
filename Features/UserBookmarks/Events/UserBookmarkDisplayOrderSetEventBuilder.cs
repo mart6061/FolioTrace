@@ -16,7 +16,7 @@ public static class UserBookmarkDisplayOrderSetEventBuilder
     public static Result<UserBookmarkDisplayOrderSetEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, Guid bookmarkID, DisplayOrder displayOrder)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventID = Guid.NewGuid();
+        EventID eventID = Guid.CreateGuid7();
         return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, bookmarkID, displayOrder);
     }
 

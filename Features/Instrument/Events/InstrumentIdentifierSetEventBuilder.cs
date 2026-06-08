@@ -11,7 +11,7 @@ public static class InstrumentIdentifierSetEventBuilder
             throw new ArgumentNullException(nameof(request));
 
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         return CreateSeed(eventId, request.UserID, request.EventDateTime, auditDateTime, request.Reason, request.InstrumentID, request.Identifier);
     }
 

@@ -24,7 +24,7 @@ public sealed class BuildCoordinator(
             return BuildCoordinatorResult.Rejected(rejected);
         }
 
-        var buildID = Guid.NewGuid();
+        var buildID = Guid.CreateGuid7();
         var startedAtUtc = DateTime.UtcNow;
 
         try
@@ -107,7 +107,7 @@ public sealed class BuildCoordinator(
         var current = currentBuild;
         return new BuildProgressNotification(
             "BuildProgress",
-            current?.BuildID ?? Guid.NewGuid(),
+            current?.BuildID ?? Guid.CreateGuid7(),
             "Rejected",
             current?.Stage ?? "Build",
             "A database build is already running.",

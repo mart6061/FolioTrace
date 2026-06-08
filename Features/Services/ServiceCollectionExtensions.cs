@@ -13,6 +13,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<CurrencyService>();
         services.AddSingleton<FXService>();
         services.AddSingleton<FXRateService>();
+        services.AddSingleton<FoleoTraderOrderService>();
         services.AddSingleton<HoldingService>();
         services.AddSingleton<HoldingPositionService>();
         services.AddSingleton<InstrumentService>();
@@ -45,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<FXActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<FXActiveModifiedEvent>(@event =>
             provider.GetRequiredService<FXService>().Invalidate(@event) + provider.GetRequiredService<FXRateService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<FXRateSetEvent>>(provider => new AggregateCacheInvalidator<FXRateSetEvent>(provider.GetRequiredService<FXRateService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IFoleoTraderOrderEvent>>(provider => new AggregateCacheInvalidator<IFoleoTraderOrderEvent>(provider.GetRequiredService<FoleoTraderOrderService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IHoldingEvent>>(provider => new AggregateCacheInvalidator<IHoldingEvent>(@event =>
             provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<HoldingActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<HoldingActiveModifiedEvent>(@event =>
@@ -85,6 +87,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<FXCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<FXActiveModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<FXRateSetEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IFoleoTraderOrderEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IHoldingEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<InstrumentCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<InstrumentModifiedEvent>>());

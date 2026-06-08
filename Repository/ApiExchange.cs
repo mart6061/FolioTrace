@@ -2,7 +2,7 @@ namespace Repository;
 
 public sealed record ApiExchange
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateGuid7();
 
     public DateTime StartedAtUtc { get; init; }
 

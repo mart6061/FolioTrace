@@ -16,7 +16,7 @@ public static class AccountDisplayOrderSetEventBuilder
     public static Result<AccountDisplayOrderSetEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, AccountID accountID, DisplayOrder displayOrder, Accounts? accounts = null)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, accountID, displayOrder, accounts);
     }
 

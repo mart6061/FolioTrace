@@ -85,20 +85,21 @@
     path?: string;
     tone: MenuTone;
   };
-  type TopMenuID = 'bookmarks' | 'data' | 'system' | '';
-  type DataBranchID = 'value' | 'reference' | '';
+  type TopMenuID = 'bookmarks' | 'system' | '';
+  type DataBranchID = 'data' | 'value' | 'reference' | '';
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.tickets },
-    { id: 'value-valuations', label: 'Valuations', path: '/Valuations', tone: menuTones.value },
+    { id: 'asset', label: 'Asset', path: '/Asset', tone: menuTones.value },
+    { id: 'report', label: 'Report', path: '/Report', tone: menuTones.value },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
     { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
-    { id: 'data', label: 'Data', tone: menuTones.value },
     { id: 'system', label: 'System', tone: menuTones.logs },
     { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
   ];
+  const dataMenuItem: MenuItem = { id: 'data', label: 'Data', tone: menuTones.value };
   const dataBranchItems: MenuItem[] = [
     { id: 'value', label: 'Value', tone: menuTones.value },
     { id: 'reference', label: 'Reference', tone: menuTones.reference }
@@ -294,13 +295,13 @@
     selectedMenuItemID = item.id;
 
     if (valueItems.includes(item)) {
-      openTopMenu = 'data';
+      openTopMenu = 'system';
       openDataBranch = 'value';
       return;
     }
 
     if (referenceItems.includes(item)) {
-      openTopMenu = 'data';
+      openTopMenu = 'system';
       openDataBranch = 'reference';
       return;
     }
@@ -331,10 +332,7 @@
     if (!activeItem)
       return '';
 
-    if (valueItems.includes(activeItem) || referenceItems.includes(activeItem))
-      return 'data';
-
-    if (systemItems.includes(activeItem))
+    if (valueItems.includes(activeItem) || referenceItems.includes(activeItem) || systemItems.includes(activeItem))
       return 'system';
 
     if (bookmarkMenuItems.includes(activeItem))
@@ -376,16 +374,19 @@
       return true;
 
     if (valueItems.includes(item))
-      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('value') && isConfiguredMenuVisible(item.id);
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible('value') && isConfiguredMenuVisible(item.id);
 
     if (referenceItems.includes(item))
-      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible('reference');
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible('reference');
 
     if (systemItems.includes(item))
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible(item.id);
 
     if (item.id === 'value' || item.id === 'reference')
-      return isConfiguredMenuVisible('data') && isConfiguredMenuVisible(item.id);
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible(item.id);
+
+    if (item.id === 'data')
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data');
 
     return isConfiguredMenuVisible(item.id);
   }
@@ -477,7 +478,7 @@
                 </a>
             {:else}
               <button
-                aria-expanded={item.id === 'data' ? openTopMenu === 'data' : openTopMenu === 'system'}
+                aria-expanded={openTopMenu === 'system'}
                 class={`system-menu-pill system-menu-pill-top ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`}
                 onclick={() => toggleTopMenu(item.id as TopMenuID)}
                 style={menuStyle(item.tone, 40 - topIndex)}
@@ -487,77 +488,81 @@
               </button>
             {/if}
 
-            {#if item.id === 'data' && openTopMenu === 'data'}
-              {#if openDataBranch === 'value' && isMenuItemVisible(dataBranchItems[0])}
-                {@const valueItem = dataBranchItems[0]}
+          {#if item.id === 'system' && openTopMenu === 'system'}
+              {#if openDataBranch && isMenuItemVisible(dataMenuItem)}
                 <button
                   aria-expanded="true"
                   class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
-                  onclick={() => toggleDataBranch('value')}
-                  style={menuStyle(valueItem.tone, 39 - topIndex)}
+                  onclick={() => toggleDataBranch('data')}
+                  style={menuStyle(dataMenuItem.tone, 39 - topIndex)}
                   type="button"
                 >
-                  {valueItem.label}
+                  {dataMenuItem.label}
                 </button>
-                {#each visibleSubmenuItems(visibleValueItems) as valueLeaf, valueIndex (valueLeaf.id)}
-                  <a
-                    aria-current={isActiveMenuItem(valueLeaf) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
-                    href={menuHref(valueLeaf)}
-                    onclick={() => handleLeafClick(valueLeaf)}
-                    style={menuStyle(valueLeaf.tone, 38 - topIndex - valueIndex)}
-                  >
-                    {valueLeaf.label}
-                  </a>
-                {/each}
-              {:else if openDataBranch === 'reference' && isMenuItemVisible(dataBranchItems[1])}
-                {@const referenceItem = dataBranchItems[1]}
-                <button
-                  aria-expanded="true"
-                  class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
-                  onclick={() => toggleDataBranch('reference')}
-                  style={menuStyle(referenceItem.tone, 39 - topIndex)}
-                  type="button"
-                >
-                  {referenceItem.label}
-                </button>
-                {#each visibleSubmenuItems(visibleReferenceItems) as referenceLeaf, referenceIndex (referenceLeaf.id)}
-                  <a
-                    aria-current={isActiveMenuItem(referenceLeaf) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
-                    href={menuHref(referenceLeaf)}
-                    onclick={() => handleLeafClick(referenceLeaf)}
-                    style={menuStyle(referenceLeaf.tone, 38 - topIndex - referenceIndex)}
-                  >
-                    {referenceLeaf.label}
-                  </a>
-                {/each}
+
+                {#if openDataBranch === 'value' && isMenuItemVisible(dataBranchItems[0])}
+                  {#each visibleSubmenuItems(visibleValueItems) as valueLeaf, valueIndex (valueLeaf.id)}
+                    <a
+                      aria-current={isActiveMenuItem(valueLeaf) ? 'page' : undefined}
+                      class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
+                      href={menuHref(valueLeaf)}
+                      onclick={() => handleLeafClick(valueLeaf)}
+                      style={menuStyle(valueLeaf.tone, 38 - topIndex - valueIndex)}
+                    >
+                      {valueLeaf.label}
+                    </a>
+                  {/each}
+                {:else if openDataBranch === 'reference' && isMenuItemVisible(dataBranchItems[1])}
+                  {#each visibleSubmenuItems(visibleReferenceItems) as referenceLeaf, referenceIndex (referenceLeaf.id)}
+                    <a
+                      aria-current={isActiveMenuItem(referenceLeaf) ? 'page' : undefined}
+                      class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
+                      href={menuHref(referenceLeaf)}
+                      onclick={() => handleLeafClick(referenceLeaf)}
+                      style={menuStyle(referenceLeaf.tone, 38 - topIndex - referenceIndex)}
+                    >
+                      {referenceLeaf.label}
+                    </a>
+                  {/each}
+                {:else}
+                  {#each visibleDataBranchItems as branchItem, branchIndex (branchItem.id)}
+                    <button
+                      aria-expanded="false"
+                      class="system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap"
+                      onclick={() => toggleDataBranch(branchItem.id as DataBranchID)}
+                      style={menuStyle(branchItem.tone, 38 - topIndex - branchIndex)}
+                      type="button"
+                    >
+                      {branchItem.label}
+                    </button>
+                  {/each}
+                {/if}
               {:else}
-                {#each visibleDataBranchItems as branchItem, branchIndex (branchItem.id)}
+                {#if isMenuItemVisible(dataMenuItem)}
                   <button
                     aria-expanded="false"
                     class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
-                    onclick={() => toggleDataBranch(branchItem.id as DataBranchID)}
-                    style={menuStyle(branchItem.tone, 39 - topIndex - branchIndex)}
+                    onclick={() => toggleDataBranch('data')}
+                    style={menuStyle(dataMenuItem.tone, 39 - topIndex)}
                     type="button"
                   >
-                    {branchItem.label}
+                    {dataMenuItem.label}
                   </button>
+                {/if}
+
+                {#each visibleSubmenuItems(visibleSystemItems) as systemItem, systemIndex (systemItem.id)}
+                  <a
+                    aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
+                    class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
+                    href={menuHref(systemItem)}
+                    onclick={() => handleLeafClick(systemItem)}
+                    style={menuStyle(systemItem.tone, 38 - topIndex - systemIndex)}
+                  >
+                    {systemItem.label}
+                  </a>
                 {/each}
-            {/if}
-          {:else if item.id === 'system' && openTopMenu === 'system'}
-              {#each visibleSubmenuItems(visibleSystemItems) as systemItem, systemIndex (systemItem.id)}
-                <a
-                  aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
-                  href={menuHref(systemItem)}
-                  onclick={() => handleLeafClick(systemItem)}
-                  style={menuStyle(systemItem.tone, 39 - topIndex - systemIndex)}
-                >
-                  {systemItem.label}
-                </a>
-              {/each}
-            {/if}
+              {/if}
+          {/if}
           {/each}
         </nav>
 

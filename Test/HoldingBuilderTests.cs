@@ -36,7 +36,7 @@ public sealed class HoldingBuilderTests
         var accounts = CreateAccounts();
         var instruments = CreateInstruments();
         var result = HoldingPositionAssetCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,
@@ -353,7 +353,7 @@ public sealed class HoldingBuilderTests
     private static Accounts CreateAccounts()
     {
         var created = AccountCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,
@@ -370,7 +370,7 @@ public sealed class HoldingBuilderTests
     private static Instruments CreateInstruments()
     {
         var cash = InstrumentCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,
@@ -386,7 +386,7 @@ public sealed class HoldingBuilderTests
             Alpha2Builder.Create("GB"),
             Alpha3Builder.Create("GBP")).Value!;
         var equity = InstrumentCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)),
@@ -411,7 +411,7 @@ public sealed class HoldingBuilderTests
     private static HoldingCreatedEvent CreateCashHolding(HoldingID holdingID, bool isDefault, bool active = true) =>
         isDefault
             ? HoldingPositionCashCreatedEventBuilder.CreateSeed(
-                new EventID(Guid.NewGuid()),
+                new EventID(Guid.CreateGuid7()),
                 UserID,
                 EventDate,
                 AuditDate,
@@ -428,7 +428,7 @@ public sealed class HoldingBuilderTests
         holdingType.Name switch
         {
             nameof(HoldingCashDebt) => HoldingCashDebtCreatedEventBuilder.CreateSeed(
-                new EventID(Guid.NewGuid()),
+                new EventID(Guid.CreateGuid7()),
                 UserID,
                 EventDate,
                 AuditDate,
@@ -446,7 +446,7 @@ public sealed class HoldingBuilderTests
                 BICBuilder.Create("HBUKGB4B"),
                 IBANBuilder.Create("GB82WEST12345698765432")).Value!,
             nameof(HoldingCashInvestable) => HoldingCashInvestableCreatedEventBuilder.CreateSeed(
-                new EventID(Guid.NewGuid()),
+                new EventID(Guid.CreateGuid7()),
                 UserID,
                 EventDate,
                 AuditDate,
@@ -464,7 +464,7 @@ public sealed class HoldingBuilderTests
                 BICBuilder.Create("HBUKGB4B"),
                 IBANBuilder.Create("GB82WEST12345698765432")).Value!,
             nameof(HoldingCashNonInvestable) => HoldingCashNonInvestableCreatedEventBuilder.CreateSeed(
-                new EventID(Guid.NewGuid()),
+                new EventID(Guid.CreateGuid7()),
                 UserID,
                 EventDate,
                 AuditDate,
@@ -490,22 +490,22 @@ public sealed class HoldingBuilderTests
 
         return holdingType.Name switch
         {
-            nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInSpecieIn) => HoldingInSpecieInCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInSpecieOut) => HoldingInSpecieOutCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingIncome) => HoldingIncomeCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInterest) => HoldingInterestCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingInSpecieIn) => HoldingInSpecieInCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingInSpecieOut) => HoldingInSpecieOutCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingIncome) => HoldingIncomeCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingInterest) => HoldingInterestCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
             _ => throw new ArgumentException($"Unsupported nominal holding type '{holdingType}'.", nameof(holdingType))
         };
     }
 
     private static HoldingCreatedEvent CreatePositionHolding(HoldingID holdingID) =>
         HoldingPositionMemoCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDate,

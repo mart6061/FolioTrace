@@ -26,6 +26,7 @@
   let syncedBookmarkSignature = $state('');
   let draggedBookmarkID = $state<string | null>(null);
   let dragOverBookmarkID = $state<string | null>(null);
+  const menuPreferenceParentByID = new Map(menuPreferenceDefinitions.map((item) => [item.id, item.parentID]));
 
   $effect(() => {
     const nextMenuSignature = menuSignature();
@@ -83,8 +84,11 @@
     return sortBookmarks(data.userBookmarks?.items ?? []);
   }
 
-  function isChildDisabled(parentID: string | undefined) {
-    return parentID ? visibleByID[parentID] === false : false;
+  function isChildDisabled(parentID: string | undefined): boolean {
+    if (!parentID)
+      return false;
+
+    return visibleByID[parentID] === false || isChildDisabled(menuPreferenceParentByID.get(parentID));
   }
 
   function setMenuVisibility(menuItemID: string, visible: boolean) {

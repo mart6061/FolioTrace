@@ -9,9 +9,9 @@ public sealed class EventHistoryResponseFactoryTests
     [Fact]
     public void Create_FiltersOrdersAndAddsApplicationStatus()
     {
-        var firstEventID = new EventID(Guid.NewGuid());
-        var secondEventID = new EventID(Guid.NewGuid());
-        var excludedEventID = new EventID(Guid.NewGuid());
+        var firstEventID = new EventID(Guid.CreateGuid7());
+        var secondEventID = new EventID(Guid.CreateGuid7());
+        var excludedEventID = new EventID(Guid.CreateGuid7());
         var events = new[]
         {
             CreateAccountCreatedEvent(excludedEventID, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
@@ -59,7 +59,7 @@ public sealed class EventHistoryResponseFactoryTests
     {
         var result = AccountCreatedEventBuilder.CreateSeed(
             eventID,
-            new UserID(Guid.NewGuid()),
+            new UserID(Guid.CreateGuid7()),
             EventDateTimeBuilder.Create(eventDateTime),
             AuditDateTimeBuilder.Create(auditDateTime),
             "Create account",

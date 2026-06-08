@@ -490,6 +490,7 @@ export type TicketProposalAllocation = {
 
 export type TicketTradeAllocation = {
   accountID: string;
+  cashHoldingID?: string | null;
   quantity: number;
   bookCost: number;
 };
@@ -499,6 +500,7 @@ export type TicketFill = {
   brokerLEI: string;
   price: number;
   quantity: number;
+  bookCost: number;
   note: string;
 };
 
@@ -534,6 +536,34 @@ export type Tickets = {
   lastEventID: string;
   lastAuditDateTime: string;
   items: Ticket[];
+};
+
+export type FoleoTraderOrderStatus = 'Submitted' | 'PartiallyFilled' | 'Filled' | 'Rejected' | 'Failed';
+
+export type FoleoTraderOrder = {
+  ticketNumber: number;
+  clOrdID: string;
+  status: FoleoTraderOrderStatus;
+  orderQuantity: number;
+  filledQuantity: number;
+  price: number;
+  currency: string;
+  side: TicketSide;
+  securityID: string;
+  securityIDSource: string;
+  symbol: string;
+  lastExecID?: string | null;
+  lastError?: string | null;
+  submittedAt: string;
+  updatedAt: string;
+};
+
+export type FoleoTraderOrders = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: FoleoTraderOrder[];
 };
 
 export type TicketDetail = Ticket & {
@@ -831,6 +861,7 @@ export type AggregateKind =
   | 'Currencies'
   | 'FXs'
   | 'FXRates'
+  | 'FoleoTraderOrders'
   | 'Holdings'
   | 'HoldingPositions'
   | 'Instruments'

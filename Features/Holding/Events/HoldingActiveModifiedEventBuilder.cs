@@ -16,7 +16,7 @@ public static class HoldingActiveModifiedEventBuilder
     public static Result<HoldingActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, HoldingID holdingID, Active active, Holdings? holdings = null)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, holdingID, active, holdings);
     }
 

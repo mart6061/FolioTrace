@@ -17,7 +17,7 @@ public sealed record CountryFlagModifiedEvent : EventBase, ICountryEvent
     }
 
     public CountryFlagModifiedEvent(UserID userId, EventDateTime eventDateTime, string reason, Alpha2 alpha2, CountryFlag flag)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, alpha2, flag)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, alpha2, flag)
     {
     }
 

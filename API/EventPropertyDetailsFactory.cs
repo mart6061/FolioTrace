@@ -127,12 +127,21 @@ public static partial class EventPropertyDetailsFactory
 
 public sealed record EventPropertyDetail(string Name, string Description, int Order, object? Value);
 
-public sealed class EventResponseWithPropertyDetails(
-    IDictionary<string, object?> properties,
-    IReadOnlyList<EventPropertyDetail> propertyDetails)
+public sealed class EventResponseWithPropertyDetails
 {
-    [JsonExtensionData]
-    public IDictionary<string, object?> Properties { get; } = properties;
+    public EventResponseWithPropertyDetails()
+        : this(new Dictionary<string, object?>(), [])
+    {
+    }
 
-    public IReadOnlyList<EventPropertyDetail> PropertyDetails { get; } = propertyDetails;
+    public EventResponseWithPropertyDetails(IDictionary<string, object?> properties, IReadOnlyList<EventPropertyDetail> propertyDetails)
+    {
+        Properties = properties;
+        PropertyDetails = propertyDetails;
+    }
+
+    [JsonExtensionData]
+    public IDictionary<string, object?> Properties { get; }
+
+    public IReadOnlyList<EventPropertyDetail> PropertyDetails { get; }
 }

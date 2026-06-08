@@ -19,7 +19,7 @@ public sealed record UserModifiedEvent : EventBase, IUserEvent
     }
 
     public UserModifiedEvent(UserID userId, EventDateTime eventDateTime, string reason, string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, displayName, displayPreferences, valuationPreferences)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, displayName, displayPreferences, valuationPreferences)
     {
     }
 

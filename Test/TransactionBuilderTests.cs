@@ -299,7 +299,7 @@ public sealed class TransactionBuilderTests
     private static Holdings CreateHoldings(bool includeOtherAccount = false)
     {
         var holdingCreated = HoldingPositionMemoCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             HoldingEventDate,
             HoldingAuditDate,
@@ -315,7 +315,7 @@ public sealed class TransactionBuilderTests
             return new Holdings(HoldingEventDate, HoldingAuditDate, [holdingCreated]);
 
         var otherHoldingCreated = HoldingPositionMemoCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             HoldingEventDate,
             HoldingAuditDate,

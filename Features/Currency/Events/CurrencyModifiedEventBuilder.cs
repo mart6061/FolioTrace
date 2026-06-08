@@ -16,7 +16,7 @@ public static class CurrencyModifiedEventBuilder
     public static Result<CurrencyModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = CurrencyModifiedEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, alphabeticCode, numericCode, decimalPlace, name);
 
         return validationErrors.Count == 0

@@ -90,7 +90,7 @@ public sealed class AggregateMaintenanceCoordinator(
             return;
         }
 
-        var runID = Guid.NewGuid();
+        var runID = Guid.CreateGuid7();
         var startedAtUtc = DateTime.UtcNow;
 
         try

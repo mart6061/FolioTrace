@@ -226,7 +226,7 @@ public sealed class TypeValidationTests
     [Fact]
     public void EventId_AcceptsNonEmptyGuid()
     {
-        var value = Guid.NewGuid();
+        var value = Guid.CreateGuid7();
 
         var eventId = new EventID(value);
 
@@ -462,7 +462,7 @@ public sealed class TypeValidationTests
     [Fact]
     public void UserId_AcceptsNonEmptyGuid()
     {
-        var value = Guid.NewGuid();
+        var value = Guid.CreateGuid7();
 
         var userId = new UserID(value);
 
@@ -517,7 +517,7 @@ public sealed class TypeValidationTests
             null,
             eventDateTime,
             auditDateTime,
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             lastAuditDateTime);
 
         return new InstrumentValue(
@@ -527,7 +527,7 @@ public sealed class TypeValidationTests
             income,
             eventDateTime,
             auditDateTime,
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             lastAuditDateTime);
     }
 }

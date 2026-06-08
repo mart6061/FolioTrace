@@ -16,7 +16,7 @@ internal static class HoldingModifiedEventBuilderCore
             throw new ArgumentNullException(nameof(request));
 
         return CreateSeed<TEvent, TExpectedHolding>(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             request.UserID,
             request.EventDateTime,
             AuditDateTimeBuilder.Create(),
@@ -62,7 +62,7 @@ internal static class HoldingModifiedEventBuilderCore
             throw new ArgumentNullException(nameof(request));
 
         return CreateBankSeed<TEvent, TExpectedHolding>(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             request.UserID,
             request.EventDateTime,
             AuditDateTimeBuilder.Create(),

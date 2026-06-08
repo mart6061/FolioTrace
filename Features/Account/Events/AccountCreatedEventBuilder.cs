@@ -16,7 +16,7 @@ public static class AccountCreatedEventBuilder
     public static Result<AccountCreatedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active, Currencies? currencies = null, Accounts? accounts = null)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, accountID, name, formalName, bookCurrency, active, currencies, accounts);
     }
 

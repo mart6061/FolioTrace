@@ -28,7 +28,7 @@ public static class UserMenuPreferencesCreatedEventBuilder
     public static Result<UserMenuPreferencesCreatedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, IReadOnlyList<UserMenuPreferenceItem> items)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventID = Guid.NewGuid();
+        EventID eventID = Guid.CreateGuid7();
         return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, items);
     }
 

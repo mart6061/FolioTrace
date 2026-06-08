@@ -17,7 +17,7 @@ public sealed class UserMenuPreferencesTests
     public void CreatedBuilder_AcceptsDefaultVisibleItems()
     {
         var result = UserMenuPreferencesCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -29,9 +29,47 @@ public sealed class UserMenuPreferencesTests
         Assert.All(result.Value!.Items, item => Assert.True(item.Visible));
         Assert.Equal(UserMenuPreferenceDefaults.ControlledMenuItemIDs.Count, result.Value.Items.Count);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Bookmarks);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Report);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Compliance);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Administration);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Todo);
+    }
+
+    [Fact]
+    public void Normalize_MapsLegacyValuationsMenuIDToAsset()
+    {
+        var items = UserMenuPreferenceDefaults.CreateVisibleItems()
+            .Where(item => item.MenuItemID != UserMenuPreferenceDefaults.Asset)
+            .Append(new UserMenuPreferenceItem("value-valuations", false))
+            .ToList();
+
+        var normalized = UserMenuPreferenceDefaults.Normalize(items);
+
+        Assert.Contains(normalized, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset && !item.Visible);
+        Assert.DoesNotContain(normalized, item => item.MenuItemID == "value-valuations");
+    }
+
+    [Fact]
+    public void CreatedBuilder_AcceptsLegacyValuationsMenuID()
+    {
+        var items = UserMenuPreferenceDefaults.CreateVisibleItems()
+            .Where(item => item.MenuItemID != UserMenuPreferenceDefaults.Asset)
+            .Append(new UserMenuPreferenceItem("value-valuations", false))
+            .ToList();
+
+        var result = UserMenuPreferencesCreatedEventBuilder.CreateSeed(
+            Guid.CreateGuid7(),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create menu preferences",
+            items);
+
+        Assert.True(result.IsValid);
+        Assert.NotNull(result.Value);
+        Assert.Contains(result.Value!.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset && !item.Visible);
+        Assert.DoesNotContain(result.Value.Items, item => item.MenuItemID == "value-valuations");
     }
 
     [Theory]
@@ -44,7 +82,7 @@ public sealed class UserMenuPreferencesTests
             .ToList();
 
         var result = UserMenuPreferencesCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -62,7 +100,7 @@ public sealed class UserMenuPreferencesTests
             .ToList();
 
         var result = UserMenuPreferencesModifiedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -90,7 +128,7 @@ public sealed class UserMenuPreferencesTests
         var firstAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 1, DateTimeKind.Utc));
         var secondAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 2, DateTimeKind.Utc));
         var created = UserMenuPreferencesCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             firstAudit,
@@ -100,7 +138,7 @@ public sealed class UserMenuPreferencesTests
             .Select(item => item.MenuItemID == UserMenuPreferenceDefaults.Data ? item with { Visible = false } : item)
             .ToList();
         var modified = UserMenuPreferencesModifiedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             secondAudit,

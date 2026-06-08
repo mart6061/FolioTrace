@@ -16,7 +16,7 @@ public static class BrokerApprovedDateTimeSetEventBuilder
     public static Result<BrokerApprovedDateTimeSetEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, LegalEntityIdentifier lei, EventDateTime approvedDateTime)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = BrokerApprovedDateTimeSetEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, lei, approvedDateTime);
 
         return validationErrors.Count == 0

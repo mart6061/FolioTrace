@@ -8,7 +8,7 @@ public static class UserModifiedEventBuilder
     public static Result<UserModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = UserModifiedEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, displayName, displayPreferences, valuationPreferences);
 
         return validationErrors.Count == 0

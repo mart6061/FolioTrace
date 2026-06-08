@@ -31,7 +31,7 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
 
     public AggregateUpdateNotificationSubscription Subscribe()
     {
-        var id = Guid.NewGuid();
+        var id = Guid.CreateGuid7();
         var channel = Channel.CreateUnbounded<object>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -111,6 +111,7 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
             ICurrencyEvent => ["Currencies"],
             IFXEvent => ["FXs", "FXRates"],
             IFXRateEvent => ["FXRates"],
+            IFoleoTraderOrderEvent => ["FoleoTraderOrders"],
             IHoldingEvent => ["Holdings", "HoldingPositions"],
             IInstrumentEvent => ["Instruments", "InstrumentValues"],
             IInstrumentPriceEvent => ["InstrumentValues"],

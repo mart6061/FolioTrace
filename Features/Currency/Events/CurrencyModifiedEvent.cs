@@ -21,7 +21,7 @@ public sealed record CurrencyModifiedEvent : EventBase, ICurrencyEvent
     }
 
     public CurrencyModifiedEvent(UserID userId, EventDateTime eventDateTime, string reason, Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, alphabeticCode, numericCode, decimalPlace, name)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, alphabeticCode, numericCode, decimalPlace, name)
     {
     }
 

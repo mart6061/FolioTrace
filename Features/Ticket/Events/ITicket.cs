@@ -20,6 +20,7 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(TicketTradeFillAddedEvent), nameof(TicketTradeFillAddedEvent))]
 [JsonDerivedType(typeof(TicketTradeFillModifiedEvent), nameof(TicketTradeFillModifiedEvent))]
 [JsonDerivedType(typeof(TicketTradeFillRemovedEvent), nameof(TicketTradeFillRemovedEvent))]
+[JsonDerivedType(typeof(TicketTradeDecisionRequestedEvent), nameof(TicketTradeDecisionRequestedEvent))]
 [JsonDerivedType(typeof(TicketTradeApprovedEvent), nameof(TicketTradeApprovedEvent))]
 [JsonDerivedType(typeof(TicketTradeNotApprovedEvent), nameof(TicketTradeNotApprovedEvent))]
 [JsonDerivedType(typeof(TicketTradeInstructionNotesSetEvent), nameof(TicketTradeInstructionNotesSetEvent))]

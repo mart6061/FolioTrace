@@ -17,7 +17,7 @@ public sealed record BrokerApprovedDateTimeSetEvent : EventBase, IBrokerEvent
     }
 
     public BrokerApprovedDateTimeSetEvent(UserID userId, EventDateTime eventDateTime, string reason, LegalEntityIdentifier lei, EventDateTime approvedDateTime)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, approvedDateTime)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, approvedDateTime)
     {
     }
 

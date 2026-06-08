@@ -10,6 +10,7 @@ import type {
   Currencies,
   CurrencyReferenceEvent,
   FXRates,
+  FoleoTraderOrders,
   FXRateHistoryEvent,
   FXs,
   Holding,
@@ -123,6 +124,14 @@ export type HoldingActiveModifiedRequest = {
   reason: string;
   holdingID: string;
   active: boolean;
+};
+
+export type HoldingQueryOptions = {
+  holdingID?: string | null;
+  accountID?: string | null;
+  instrumentID?: string | null;
+  holdingKind?: HoldingKind | null;
+  includeInactive?: boolean;
 };
 
 export type CurrencyModifiedRequest = {
@@ -390,6 +399,7 @@ export type TicketTradeRequest = {
   tradedPrice: number;
   allocations: {
     accountID: string;
+    cashHoldingID: string;
     quantity: number;
     bookCost: number;
   }[];
@@ -404,6 +414,7 @@ export type TicketTradeFillRequest = {
   brokerLEI: string;
   price: number;
   quantity: number;
+  bookCost: number;
   note: string;
 };
 
@@ -413,6 +424,17 @@ export type TicketTradeFillRemovedRequest = {
   reason: string;
   ticketNumber: number;
   fillID: string;
+};
+
+export type FoleoTraderOrderRequest = {
+  userID: string;
+  eventDateTime: string;
+  ticketNumber: number;
+};
+
+export type FoleoTraderOrderSubmissionResponse = {
+  eventID: string;
+  clOrdID: string;
 };
 
 export type TicketCancellationRequest = TicketApprovalRequest;
@@ -540,14 +562,25 @@ export async function getHoldings(
   fetchApi: typeof fetch,
   eventDateTime: string,
   auditDateTime: string | null,
-  includeInactive = true
+  includeInactiveOrOptions: boolean | HoldingQueryOptions = true
 ) {
+  const options = typeof includeInactiveOrOptions === 'boolean'
+    ? { includeInactive: includeInactiveOrOptions }
+    : includeInactiveOrOptions;
   const url = new URL(`${getApiBaseUrl()}/Holdings/`);
   url.searchParams.set('eventDateTime', eventDateTime);
-  url.searchParams.set('includeInactive', String(includeInactive));
+  url.searchParams.set('includeInactive', String(options.includeInactive ?? true));
 
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
+  if (options.holdingID)
+    url.searchParams.set('holdingID', options.holdingID);
+  if (options.accountID)
+    url.searchParams.set('accountID', options.accountID);
+  if (options.instrumentID)
+    url.searchParams.set('instrumentID', options.instrumentID);
+  if (options.holdingKind)
+    url.searchParams.set('holdingKind', options.holdingKind);
 
   const response = await fetchApi(url);
 
@@ -889,6 +922,25 @@ export async function getTickets(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as Tickets;
+}
+
+export async function getFoleoTraderOrders(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/Trading/FoleoTrader/Orders`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as FoleoTraderOrders;
 }
 
 export async function getTicketDetails(
@@ -1605,12 +1657,35 @@ export async function postTicketTradeFillRemovedEvent(fetchApi: typeof fetch, re
   return postTicketEvent(fetchApi, 'TicketTradeFillRemovedEvent', request);
 }
 
+export async function postTicketTradeDecisionRequestedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
+  return postTicketEvent(fetchApi, 'TicketTradeDecisionRequestedEvent', request);
+}
+
 export async function postTicketTradeApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
   return postTicketEvent(fetchApi, 'TicketTradeApprovedEvent', request);
 }
 
 export async function postTicketTradeNotApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
   return postTicketEvent(fetchApi, 'TicketTradeNotApprovedEvent', request);
+}
+
+export async function postFoleoTraderOrder(fetchApi: typeof fetch, request: FoleoTraderOrderRequest) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Trading/FoleoTrader/Orders`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: request.userID,
+      EventDateTime: request.eventDateTime,
+      TicketNumber: request.ticketNumber
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as FoleoTraderOrderSubmissionResponse;
 }
 
 export async function postTicketTradeInstructionNotesSetEvent(fetchApi: typeof fetch, request: TicketTextSetRequest) {
@@ -1764,6 +1839,8 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
     body.Price = request.price;
   if (typeof request.quantity === 'number')
     body.Quantity = request.quantity;
+  if (typeof request.bookCost === 'number')
+    body.BookCost = request.bookCost;
   if (typeof request.note === 'string')
     body.Note = request.note;
   if (typeof request.value === 'string')

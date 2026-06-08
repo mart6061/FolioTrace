@@ -5,7 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import type { Holding, HoldingHistoryEvent, HoldingKind, TransactionReferenceEvent } from '$lib/types';
+  import type { EventPropertyDetail, Holding, HoldingHistoryEvent, HoldingKind, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -14,6 +14,8 @@
   type SortKey = 'name' | 'type' | 'account' | 'instrument' | 'status' | 'lastAudit';
 
   const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InSpecieIn', 'InSpecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const historyDatePropertyNames = new Set(['ValuationDateTime', 'EventDateTime', 'SettlementDateTime', 'CancelledDateTime', 'CancellationDateTime', 'AuditDateTime']);
+  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const holdingCount = $derived(data.holdings?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.holdings ? formatDisplayDateTime(data.holdings.asOfDateTime) : 'now');
   const accountsByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account.name])));
@@ -264,8 +266,7 @@
 
     return [
       `Quantity ${formatNumber(event.quantity)}`,
-      `Book cost ${formatNumber(event.bookCost)}`,
-      `Settlement ${formatTableDateTime(event.settlementDateTime)}`
+      `Book cost ${formatNumber(event.bookCost)}`
     ].join(' - ');
   }
 
@@ -286,6 +287,136 @@
       maximumFractionDigits: 8,
       minimumFractionDigits: 0
     }).format(value);
+  }
+
+  function historyDateRows(event: HoldingHistoryEvent) {
+    const valuationDateTime = detailString(event, 'ValuationDateTime');
+    const eventDateTime = event.eventDateTime || detailString(event, 'EventDateTime');
+    const settlementDateTime = isTransactionHistoryEvent(event)
+      ? event.settlementDateTime
+      : detailString(event, 'SettlementDateTime');
+    const cancelledDateTime = detailString(event, 'CancelledDateTime') ||
+      detailString(event, 'CancellationDateTime') ||
+      (event.$type === 'TransactionCancellationEvent' ? event.auditDateTime : '');
+    const rows: { label: string; value: string }[] = [];
+
+    if (valuationDateTime)
+      rows.push({ label: 'Valuation', value: valuationDateTime });
+
+    if (eventDateTime && (!valuationDateTime || !isSameDateTime(eventDateTime, valuationDateTime)))
+      rows.push({ label: valuationDateTime ? 'Event' : firstDateLabel(eventDateTime), value: eventDateTime });
+
+    if (settlementDateTime)
+      rows.push({ label: 'Settlement', value: settlementDateTime });
+
+    if (cancelledDateTime)
+      rows.push({ label: 'Cancelled', value: cancelledDateTime });
+
+    if (event.auditDateTime)
+      rows.push({ label: 'Audit', value: event.auditDateTime });
+
+    return rows;
+  }
+
+  function firstDateLabel(value: string) {
+    return isStartOfDay(value) ? 'Valuation' : 'Event';
+  }
+
+  function isStartOfDay(value: string) {
+    const date = new Date(value);
+
+    return Number.isFinite(date.getTime()) &&
+      date.getHours() === 0 &&
+      date.getMinutes() === 0 &&
+      date.getSeconds() === 0 &&
+      date.getMilliseconds() === 0;
+  }
+
+  function isSameDateTime(left: string, right: string) {
+    const leftTime = new Date(left).getTime();
+    const rightTime = new Date(right).getTime();
+
+    return Number.isFinite(leftTime) && Number.isFinite(rightTime)
+      ? leftTime === rightTime
+      : left === right;
+  }
+
+  function historyGuidDetails(event: HoldingHistoryEvent) {
+    const details = (event.propertyDetails ?? []).filter((detail) => !historyDatePropertyNames.has(detail.name) && isGuidDetail(detail));
+    const seen = new Set<string>();
+
+    return details.filter((detail) => {
+      const key = `${detail.name}|${formatHistoryDetailValue(detail.value)}`;
+
+      if (seen.has(key))
+        return false;
+
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function historyPropertyExclusionNames(guidDetails: EventPropertyDetail[]) {
+    return [
+      ...historyDatePropertyNames,
+      ...guidDetails.map((detail) => detail.name)
+    ];
+  }
+
+  function isGuidDetail(detail: EventPropertyDetail) {
+    return valuesFromDetail(detail.value).some((value) => guidPattern.test(value));
+  }
+
+  function valuesFromDetail(value: unknown): string[] {
+    if (typeof value === 'string')
+      return [value.trim()];
+
+    if (Array.isArray(value))
+      return value.flatMap(valuesFromDetail);
+
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const primitive = record.value ?? record.Value;
+
+      return primitive === undefined || primitive === value
+        ? []
+        : valuesFromDetail(primitive);
+    }
+
+    return [];
+  }
+
+  function detailString(event: HoldingHistoryEvent, name: string) {
+    const value = event.propertyDetails?.find((detail) => detail.name === name)?.value;
+    const formatted = formatHistoryDetailValue(value);
+
+    return formatted === '-' ? '' : formatted;
+  }
+
+  function formatHistoryDetailValue(value: unknown): string {
+    if (value === null || value === undefined)
+      return '-';
+
+    if (typeof value === 'string')
+      return value.trim().length ? value : '-';
+
+    if (typeof value === 'number' || typeof value === 'boolean')
+      return String(value);
+
+    if (Array.isArray(value))
+      return value.length ? value.map(formatHistoryDetailValue).join(', ') : '-';
+
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const primitive = record.value ?? record.Value ?? record.amount ?? record.Amount;
+
+      if (primitive !== undefined && primitive !== value)
+        return formatHistoryDetailValue(primitive);
+
+      return JSON.stringify(value);
+    }
+
+    return '-';
   }
 </script>
 
@@ -555,11 +686,18 @@
                           {:else if history?.events.length}
                             <ol class="grid gap-2">
                               {#each history.events as event (event.eventID)}
-                                <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${event.applicationStatus === 'omitted' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200'}`}>
-                                  <div class="text-xs text-slate-500">
-                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
-                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
-                                  </div>
+                                {@const dateRows = historyDateRows(event)}
+                                {@const guidDetails = historyGuidDetails(event)}
+                                {@const excludedPropertyNames = historyPropertyExclusionNames(guidDetails)}
+                                <li class={`grid gap-3 rounded-md border px-3 py-2 md:grid-cols-[180px_minmax(0,1fr)_220px] ${event.applicationStatus === 'omitted' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200'}`}>
+                                  <dl class="grid content-start gap-1 text-xs text-slate-500">
+                                    {#each dateRows as row (`${row.label}-${row.value}`)}
+                                      <div class="grid gap-0.5">
+                                        <dt class="text-[0.68rem] font-light uppercase tracking-wide text-slate-400">{row.label}:</dt>
+                                        <dd class="font-medium text-slate-700">{formatTableDateTime(row.value)}</dd>
+                                      </div>
+                                    {/each}
+                                  </dl>
                                   <div class="grid gap-1">
                                     <div class="flex flex-wrap items-center gap-2">
                                       <span class="font-medium text-slate-950">
@@ -575,7 +713,6 @@
                                       {:else if data.auditDateTime}
                                         <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
                                       {/if}
-                                      <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
                                     </div>
                                     {#if isTransactionHistoryEvent(event)}
                                       <div class="text-sm text-slate-700">{transactionEventSummary(event)}</div>
@@ -585,9 +722,17 @@
                                     {:else}
                                       <div class="text-sm text-slate-700">{holdingEventSummary(event)}</div>
                                     {/if}
-                                    <EventPropertyDetails details={event.propertyDetails} />
+                                    <EventPropertyDetails details={event.propertyDetails} excludeNames={excludedPropertyNames} />
                                     <div class="text-xs text-slate-500">{event.reason}</div>
                                   </div>
+                                  <dl class="grid content-start gap-1 text-xs">
+                                    {#each guidDetails as detail, index (`${detail.name}-${index}`)}
+                                      <div class="grid gap-0.5">
+                                        <dt class="text-[0.68rem] font-light uppercase tracking-wide text-slate-400">{detail.description}</dt>
+                                        <dd class="break-all font-mono font-medium text-slate-700">{formatHistoryDetailValue(detail.value)}</dd>
+                                      </div>
+                                    {/each}
+                                  </dl>
                                 </li>
                               {/each}
                             </ol>

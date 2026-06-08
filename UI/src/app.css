@@ -2542,18 +2542,18 @@ tbody tr {
 
 .ticket-history-card {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  padding: 0.75rem;
+  padding: 0.625rem;
 }
 
 .ticket-history-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .ticket-history-header h2 {
@@ -2583,7 +2583,7 @@ tbody tr {
 
 .ticket-history-list {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.375rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2591,10 +2591,10 @@ tbody tr {
 
 .ticket-history-list li {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.25rem;
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 0.625rem 0.75rem;
+  padding: 0.375rem 0.5rem;
 }
 
 .ticket-history-event-omitted {
@@ -2604,14 +2604,15 @@ tbody tr {
 
 .ticket-history-body {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.125rem;
 }
 
 .ticket-history-event-title {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  column-gap: 0.5rem;
+  row-gap: 0.125rem;
 }
 
 .ticket-history-type {
@@ -2623,9 +2624,9 @@ tbody tr {
 .ticket-history-status {
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 760;
-  padding: 0.125rem 0.5rem;
+  padding: 0.0625rem 0.375rem;
 }
 
 .ticket-history-status-applied {
@@ -2642,7 +2643,7 @@ tbody tr {
 
 .ticket-history-summary {
   color: var(--ink);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .ticket-history-omitted-note {
@@ -2653,7 +2654,7 @@ tbody tr {
 
 @media (min-width: 768px) {
   .ticket-history-list li {
-    grid-template-columns: 11rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3249,7 +3250,7 @@ input[type='number']::-webkit-outer-spin-button {
 .fill-table-header,
 .fill-row {
   display: grid;
-  grid-template-columns: minmax(10rem, 1fr) minmax(7rem, 0.5fr) minmax(9rem, 1fr) minmax(2.5rem, auto);
+  grid-template-columns: minmax(10rem, 1fr) minmax(6rem, 0.45fr) minmax(7rem, 0.5fr) minmax(7rem, 0.5fr) minmax(9rem, 1fr) minmax(2.5rem, auto);
   gap: 0.5rem;
   align-items: center;
 }
@@ -3314,7 +3315,7 @@ input[type='number']::-webkit-outer-spin-button {
 
 .trade-allocation-table .account-allocation-header,
 .trade-allocation-table .account-allocation-row {
-  grid-template-columns: minmax(12rem, 1fr) minmax(10rem, 0.44fr) minmax(10rem, 0.44fr);
+  grid-template-columns: minmax(12rem, 1fr) minmax(10rem, 0.38fr) minmax(10rem, 0.38fr) minmax(13rem, 0.58fr);
 }
 
 .trade-allocation-table .input,
@@ -3363,6 +3364,10 @@ input[type='number']::-webkit-outer-spin-button {
     grid-column: 1 / -1;
   }
 
+  .trade-cash-holding-select {
+    grid-column: 1 / -1;
+  }
+
   .fill-table-header {
     display: none;
   }
@@ -3371,19 +3376,20 @@ input[type='number']::-webkit-outer-spin-button {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .fill-row .ticket-readonly-value:nth-of-type(3) {
+  .fill-row .ticket-readonly-value:nth-of-type(5) {
     grid-column: 1 / -1;
   }
 }
 
 .fill-form {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(7rem, 0.55fr);
+  grid-template-columns: minmax(12rem, 1fr) minmax(7rem, 0.55fr) minmax(7rem, 0.55fr);
 }
 
+.fill-form .fill-price-preview,
 .fill-form input[name='fillNote'],
 .fill-form button {
-  grid-column: span 2;
+  grid-column: span 3;
 }
 
 .fill-form .btn {
@@ -3396,6 +3402,7 @@ input[type='number']::-webkit-outer-spin-button {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .fill-form .fill-price-preview,
   .fill-form input[name='fillNote'],
   .fill-form button {
     grid-column: auto;

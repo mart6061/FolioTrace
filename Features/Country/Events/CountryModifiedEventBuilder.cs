@@ -16,7 +16,7 @@ public static class CountryModifiedEventBuilder
     public static Result<CountryModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, Alpha2 alpha2, Alpha3 alpha3, short numeric, string name)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = CountryModifiedEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, alpha2, alpha3, numeric, name);
 
         return validationErrors.Count == 0

@@ -20,7 +20,7 @@ public static class UserBuilder
     public static User CreateSeed(string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)
     {
         var createdEvent = UserCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             Constants.Initialisation.UserID,
             Constants.Initialisation.EventDateTime,
             Constants.Initialisation.AuditDateTime,
