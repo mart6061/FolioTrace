@@ -31,6 +31,10 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     {
         idleTimer = new Timer(_ => StopIfIdle(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
         await ReplayStoredExecutionReportsAsync(cancellationToken);
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        idleTimer = new Timer(_ => StopIfIdle(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -45,6 +49,11 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         EnsureStarted();
 
         var session = await WaitForLogonAsync(cancellationToken);
+    public Task SendAsync(FoleoTraderFixOrder order, CancellationToken cancellationToken)
+    {
+        EnsureStarted();
+
+        var session = sessionID ?? throw new InvalidOperationException("FoleoTrader FIX session has not been created.");
         var message = new QuickFix.FIX50SP2.NewOrderSingle(
             new ClOrdID(order.ClOrdID),
             new Side(order.Side == FolioTrace.Aggregates.TicketSide.Buy ? Side.BUY : Side.SELL),
@@ -62,6 +71,10 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
             throw new InvalidOperationException("FoleoTrader FIX order was not sent because the session is not logged on.");
 
         MarkActivity();
+        Session.SendToTarget(message, session);
+        MarkActivity();
+
+        return Task.CompletedTask;
     }
 
     public void OnCreate(SessionID sessionID)
@@ -70,6 +83,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         {
             this.sessionID = sessionID;
         }
+        this.sessionID = sessionID;
     }
 
     public void OnLogon(SessionID sessionID)
@@ -82,6 +96,8 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
             MarkActivity();
         }
 
+        this.sessionID = sessionID;
+        MarkActivity();
         logger.LogInformation("Logged on to FoleoTrader FIX session {SessionID}.", sessionID);
     }
 
@@ -112,6 +128,16 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     public void OnMessage(QuickFix.FIX50SP2.ExecutionReport message, SessionID sessionID)
     {
         var report = CreateExecutionReport(message);
+        var report = new FoleoTraderExecutionReport(
+            message.GetString(Tags.ClOrdID),
+            message.GetString(Tags.ExecID),
+            message.IsSetField(Tags.LastQty) ? message.GetDecimal(Tags.LastQty) : 0m,
+            message.IsSetField(Tags.LastPx) ? message.GetDecimal(Tags.LastPx) : 0m,
+            message.GetDecimal(Tags.CumQty),
+            message.GetDecimal(Tags.LeavesQty),
+            message.IsSetField(Tags.GrossTradeAmt) ? message.GetDecimal(Tags.GrossTradeAmt) : 0m,
+            message.GetChar(Tags.OrdStatus).ToString());
+
         _ = processor.ProcessExecutionReportAsync(report, CancellationToken.None);
     }
 

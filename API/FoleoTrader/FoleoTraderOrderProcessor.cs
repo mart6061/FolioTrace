@@ -103,6 +103,9 @@ public sealed class FoleoTraderOrderProcessor(
                 .OfType<FoleoTraderOrderSubmittedEvent>()
                 .LastOrDefault(@event => string.Equals(@event.ClOrdID, report.ClOrdID, StringComparison.Ordinal));
             if (submitted is null)
+            var orders = new FoleoTraderOrders(EventDateTimeBuilder.Create(DateTime.UtcNow), events);
+            var order = orders.FindByClOrdID(report.ClOrdID);
+            if (order is null)
             {
                 logger.LogWarning("Received FoleoTrader execution for unknown ClOrdID {ClOrdID}.", report.ClOrdID);
                 return;
@@ -112,6 +115,7 @@ public sealed class FoleoTraderOrderProcessor(
                 return;
 
             var eventDateTime = submitted.EventDateTime;
+            var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow);
             var fillID = Guid.CreateGuid7();
             var bookCost = report.GrossTradeAmt > 0m ? report.GrossTradeAmt : decimal.Round(report.LastQty * report.LastPx, 8);
             var execution = new FoleoTraderExecutionReceivedEvent(
@@ -121,6 +125,8 @@ public sealed class FoleoTraderOrderProcessor(
                 AuditDateTimeBuilder.Create(),
                 $"Receive FoleoTrader execution {report.ExecID} for ticket {submitted.TicketNumber.Value}",
                 submitted.TicketNumber,
+                $"Receive FoleoTrader execution {report.ExecID} for ticket {order.TicketNumber.Value}",
+                order.TicketNumber,
                 report.ClOrdID,
                 report.ExecID,
                 fillID,
@@ -136,6 +142,7 @@ public sealed class FoleoTraderOrderProcessor(
                 eventDateTime,
                 $"FoleoTrader FIX fill {report.ExecID}",
                 submitted.TicketNumber,
+                order.TicketNumber,
                 fillID,
                 new LegalEntityIdentifier(options.BrokerLEI),
                 new Price(report.LastPx),
