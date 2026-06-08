@@ -41,7 +41,9 @@ import type {
   HoldingDateBasis,
   EventPropertyDetail,
   InstrumentPriceBasis,
-  Valuations
+  Valuations,
+  ValuationSettings,
+  ValuationSettingReferenceEvent
 } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
@@ -142,6 +144,57 @@ export type CurrencyModifiedRequest = {
 };
 
 export type CurrencyCreatedRequest = CurrencyModifiedRequest;
+
+export type AssetAllocationNodeAccountSettingRequest = {
+  accountID: string;
+  targetWeight: number;
+  targetWeightMax: number;
+  targetWeightMin: number;
+  targetYield: number;
+};
+
+export type AssetAllocationNodeRequest = {
+  nodeID: string;
+  nodes: string[];
+  name: string;
+  subtotal: boolean;
+  hidden: boolean;
+  accountSettings: AssetAllocationNodeAccountSettingRequest[];
+};
+
+export type AssetAllocationCreatedRequest = {
+  eventDateTime: string;
+  reason: string;
+  assetAllocationID?: string;
+  name: string;
+  accountIDs: string[];
+  active: boolean;
+  rootNodeID?: string;
+  nodes: AssetAllocationNodeRequest[];
+};
+
+export type AssetAllocationModifiedRequest = {
+  eventDateTime: string;
+  reason: string;
+  assetAllocationID: string;
+  name: string;
+  rootNodeID: string;
+  nodes: AssetAllocationNodeRequest[];
+};
+
+export type AssetAllocationAccountIDsSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  assetAllocationID: string;
+  accountIDs: string[];
+};
+
+export type AssetAllocationActiveSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  assetAllocationID: string;
+  active: boolean;
+};
 
 export type BrokerModifiedRequest = {
   eventDateTime: string;
@@ -613,6 +666,25 @@ export async function getCurrencies(
   return (await response.json()) as Currencies;
 }
 
+export async function getValuationSettings(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/ValuationSettings/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as ValuationSettings;
+}
+
 export async function getBrokers(
   fetchApi: typeof fetch,
   eventDateTime: string,
@@ -666,6 +738,15 @@ export async function getCurrencyEvents(fetchApi: typeof fetch, filters?: EventQ
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as CurrencyReferenceEvent[];
+}
+
+export async function getValuationSettingEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
+  const response = await fetchApi(createApiUrl('/Events/ValuationSetting/', filters));
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as ValuationSettingReferenceEvent[];
 }
 
 export async function getBrokerEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
@@ -1175,6 +1256,38 @@ export async function postCurrencyModifiedEvent(
   userID: string
 ) {
   return postCurrencyEvent(fetchApi, 'CurrencyModifiedEvent', request, userID);
+}
+
+export async function postAssetAllocationCreatedEvent(
+  fetchApi: typeof fetch,
+  request: AssetAllocationCreatedRequest,
+  userID: string
+) {
+  return postAssetAllocationEvent(fetchApi, 'AssetAllocationCreatedEvent', request, userID);
+}
+
+export async function postAssetAllocationModifiedEvent(
+  fetchApi: typeof fetch,
+  request: AssetAllocationModifiedRequest,
+  userID: string
+) {
+  return postAssetAllocationEvent(fetchApi, 'AssetAllocationModifiedEvent', request, userID);
+}
+
+export async function postAssetAllocationAccountIDsSetEvent(
+  fetchApi: typeof fetch,
+  request: AssetAllocationAccountIDsSetRequest,
+  userID: string
+) {
+  return postAssetAllocationEvent(fetchApi, 'AssetAllocationAccountIDsSetEvent', request, userID);
+}
+
+export async function postAssetAllocationActiveSetEvent(
+  fetchApi: typeof fetch,
+  request: AssetAllocationActiveSetRequest,
+  userID: string
+) {
+  return postAssetAllocationEvent(fetchApi, 'AssetAllocationActiveSetEvent', request, userID);
 }
 
 export async function postBrokerCreatedEvent(
@@ -2155,6 +2268,71 @@ async function postCurrencyEvent(
       DecimalPlace: request.decimalPlace,
       Name: request.name
     })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postAssetAllocationEvent(
+  fetchApi: typeof fetch,
+  eventType:
+    | 'AssetAllocationCreatedEvent'
+    | 'AssetAllocationModifiedEvent'
+    | 'AssetAllocationAccountIDsSetEvent'
+    | 'AssetAllocationActiveSetEvent',
+  request:
+    | AssetAllocationCreatedRequest
+    | AssetAllocationModifiedRequest
+    | AssetAllocationAccountIDsSetRequest
+    | AssetAllocationActiveSetRequest,
+  userID: string
+) {
+  const body: Record<string, unknown> = {
+    UserID: userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    AssetAllocationID: request.assetAllocationID
+  };
+
+  if ('name' in request)
+    body.Name = request.name;
+
+  if ('accountIDs' in request)
+    body.AccountIDs = request.accountIDs;
+
+  if ('active' in request)
+    body.Active = request.active;
+
+  if ('rootNodeID' in request)
+    body.RootNodeID = request.rootNodeID;
+
+  if ('nodes' in request)
+    body.Nodes = request.nodes.map((node) => ({
+      NodeID: node.nodeID,
+      Nodes: node.nodes,
+      Name: node.name,
+      Subtotal: node.subtotal,
+      Hidden: node.hidden,
+      AccountSettings: node.accountSettings.map((setting) => ({
+        AccountID: setting.accountID,
+        TargetWeight: setting.targetWeight,
+        TargetWeightMax: setting.targetWeightMax,
+        TargetWeightMin: setting.targetWeightMin,
+        TargetYield: setting.targetYield
+      }))
+    }));
+
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/ValuationSetting/${eventType}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {

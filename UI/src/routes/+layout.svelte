@@ -113,7 +113,8 @@
     { id: 'reference-currency', label: 'Currency', path: '/Data/Reference/Currencies', tone: menuTones.reference },
     { id: 'reference-fx', label: 'FX', path: '/Value/FXs', tone: menuTones.reference },
     { id: 'reference-holding', label: 'Holding', path: '/Data/Reference/Holdings', tone: menuTones.reference },
-    { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference }
+    { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference },
+    { id: 'reference-valuation-setting', label: 'Valuation Setting', path: '/Data/Reference/ValuationSetting', tone: menuTones.reference }
   ];
   const systemItems: MenuItem[] = [
     { id: 'system-logs', label: 'Logs', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },

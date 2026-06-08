@@ -265,6 +265,44 @@ export type Currencies = {
   items: Currency[];
 };
 
+export type AssetAllocationNodeAccountSetting = {
+  accountID: string;
+  targetWeight: number;
+  targetWeightMax: number;
+  targetWeightMin: number;
+  targetYield: number;
+};
+
+export type AssetAllocationNode = {
+  nodeID: string;
+  nodes: string[];
+  name: string;
+  subtotal: boolean;
+  hidden: boolean;
+  accountSettings: AssetAllocationNodeAccountSetting[];
+};
+
+export type ValuationSetting = {
+  assetAllocationID: string;
+  name: string;
+  accountIDs: string[];
+  active: boolean;
+  rootNodeID: string;
+  nodes: AssetAllocationNode[];
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type ValuationSettings = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: ValuationSetting[];
+};
+
 export type Broker = {
   name: string;
   lei: string;
@@ -574,6 +612,15 @@ export type CurrencyReferenceEvent = ReferenceEventBase & {
   name: string;
 };
 
+export type ValuationSettingReferenceEvent = ReferenceEventBase & {
+  assetAllocationID: string;
+  name?: string;
+  accountIDs?: string[];
+  active?: boolean;
+  rootNodeID?: string;
+  nodes?: AssetAllocationNode[];
+};
+
 export type BrokerReferenceEvent = ReferenceEventBase & {
   lei: string;
   name?: string;
@@ -823,7 +870,8 @@ export type AggregateKind =
   | 'Users'
   | 'UserBookmarks'
   | 'UserMenuPreferences'
-  | 'UserValuationPreferences';
+  | 'UserValuationPreferences'
+  | 'ValuationSettings';
 
 export type AggregateUpdateNotification = {
   notificationType: 'AggregateUpdated' | 'AggregatesInvalidated';

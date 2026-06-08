@@ -43,6 +43,8 @@ public static class Constants
 
         public static readonly Guid UserValuationPreferencesStreamId = Guid.Parse("f680675f-7966-4a7f-bc61-4c1d846455f1");
 
+        public static readonly Guid ValuationSettingsStreamId = Guid.Parse("2e5980e5-85bb-455c-9a0c-7f4980d0ef7f");
+
         public static readonly Guid UserBookmarksStreamId = Guid.Parse("4f8e4ab1-7cc9-43f8-b11b-ec8932f1b8b7");
 
         public static readonly EventID EmptyViewEventID = Guid.Parse("11111111-1111-4111-8111-111111111111");
