@@ -19334,3 +19334,771 @@ info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
       Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
 info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
       Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.2768ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.636ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.7465ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.8605ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.9448ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.1223ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.2822ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.8004ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.8978ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 1.9841ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.6466ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.7572ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.8971ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.8362ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.9361ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.0582ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.1456ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 4.2543ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 4.4055ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.9346ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 5.3616ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 5.6652ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.0486ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.1472ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.2761ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.941ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.0438ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.1649ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.088ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.1948ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.3427ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 11.0037ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 11.1969ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 11.4093ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.1491ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 4.2796ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 4.8492ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.9708ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.075ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.1997ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.9142ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 5.0294ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 5.1517ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.0741ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.1746ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.2803ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.9702ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.0776ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.1849ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.6212ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 4.9423ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 5.1707ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.9299ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.0466ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.1688ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.0482ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.1516ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.2950ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 6.4597ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 6.6594ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 6.9243ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 10.5752ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 10.7072ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 10.9743ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.3169ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.4294ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.5705ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.6538ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.7893ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.9291ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 6.3606ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 6.6772ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 6.9229ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.9759ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.0757ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.2215ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.6445ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 4.7902ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 4.9344ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.4547ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.564ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.6942ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 5.5298ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 5.6601ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 5.7830ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 12.6098ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 12.9295ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 13.2319ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.7894ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 2.8874ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.9797ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 2.9997ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.121ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.4472ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 9.5325ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 10.3474ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 11.4641ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.7105ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.8309ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 1.9408ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 7.6753ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 7.8263ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 7.9632ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.3012ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.4081ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.5400ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.1449ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.258ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.3924ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.7878ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 4.8949ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 5.0384ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.6897ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.8224ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 1.9603ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.6503ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.7679ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 1.8684ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.571ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.6834ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.8054ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 6.5705ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 6.7346ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 6.9198ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.7908ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.9214ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.0633ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.772ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.8855ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 1.9840ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 1.8236ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 1.9325ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 2.0574ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 3.0969ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 3.2006ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 3.4553ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 7.2357ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 7.3622ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 7.7243ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 12.201ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 12.6525ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 13.0275ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 GET https://localhost:5001/ - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Index", controller = "FoleoTrader"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Index() on controller FoleoTrader.Controllers.FoleoTraderController (FoleoTrader).
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[1]
+      Executing ViewResult, running view Index.
+info: Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor[4]
+      Executed ViewResult - view Index executed in 4.5368ms.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader) in 4.6971ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'FoleoTrader.Controllers.FoleoTraderController.Index (FoleoTrader)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 GET https://localhost:5001/ - 200 - text/html;+charset=utf-8 4.8392ms
