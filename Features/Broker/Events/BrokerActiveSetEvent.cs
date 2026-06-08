@@ -17,7 +17,7 @@ public sealed record BrokerActiveSetEvent : EventBase, IBrokerEvent
     }
 
     public BrokerActiveSetEvent(UserID userId, EventDateTime eventDateTime, string reason, LegalEntityIdentifier lei, Active active)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, active)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, active)
     {
     }
 

@@ -99,6 +99,10 @@ public sealed class FoleoTraderOrderProcessor(
             if (events.OfType<FoleoTraderExecutionReceivedEvent>().Any(@event => @event.ExecID == report.ExecID))
                 return;
 
+            var submitted = events
+                .OfType<FoleoTraderOrderSubmittedEvent>()
+                .LastOrDefault(@event => string.Equals(@event.ClOrdID, report.ClOrdID, StringComparison.Ordinal));
+            if (submitted is null)
             var orders = new FoleoTraderOrders(EventDateTimeBuilder.Create(DateTime.UtcNow), events);
             var order = orders.FindByClOrdID(report.ClOrdID);
             if (order is null)
@@ -110,6 +114,7 @@ public sealed class FoleoTraderOrderProcessor(
             if (report.LastQty <= 0m)
                 return;
 
+            var eventDateTime = submitted.EventDateTime;
             var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow);
             var fillID = Guid.CreateGuid7();
             var bookCost = report.GrossTradeAmt > 0m ? report.GrossTradeAmt : decimal.Round(report.LastQty * report.LastPx, 8);
@@ -118,6 +123,8 @@ public sealed class FoleoTraderOrderProcessor(
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 AuditDateTimeBuilder.Create(),
+                $"Receive FoleoTrader execution {report.ExecID} for ticket {submitted.TicketNumber.Value}",
+                submitted.TicketNumber,
                 $"Receive FoleoTrader execution {report.ExecID} for ticket {order.TicketNumber.Value}",
                 order.TicketNumber,
                 report.ClOrdID,
@@ -134,6 +141,7 @@ public sealed class FoleoTraderOrderProcessor(
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 $"FoleoTrader FIX fill {report.ExecID}",
+                submitted.TicketNumber,
                 order.TicketNumber,
                 fillID,
                 new LegalEntityIdentifier(options.BrokerLEI),

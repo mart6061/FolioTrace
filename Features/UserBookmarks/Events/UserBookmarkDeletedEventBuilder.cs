@@ -12,7 +12,7 @@ public static class UserBookmarkDeletedEventBuilder
 
     public static Result<UserBookmarkDeletedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, Guid bookmarkID)
     {
-        return CreateSeed(Guid.NewGuid(), userID, eventDateTime, AuditDateTimeBuilder.Create(DateTime.UtcNow), reason, bookmarkID);
+        return CreateSeed(Guid.CreateGuid7(), userID, eventDateTime, AuditDateTimeBuilder.Create(DateTime.UtcNow), reason, bookmarkID);
     }
 
     public static Result<UserBookmarkDeletedEvent> CreateSeed(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, Guid bookmarkID)

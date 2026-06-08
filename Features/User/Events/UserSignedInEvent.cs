@@ -13,7 +13,7 @@ public sealed record UserSignedInEvent : EventBase, IUserEvent
     }
 
     public UserSignedInEvent(UserID userId, EventDateTime eventDateTime, string reason)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason)
     {
     }
 

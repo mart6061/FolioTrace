@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { EventPropertyDetail } from '$lib/types';
 
-  let { details = [] }: { details?: EventPropertyDetail[] } = $props();
+  let { details = [], excludeNames = [] }: { details?: EventPropertyDetail[]; excludeNames?: string[] } = $props();
 
   const commonPropertyNames = new Set(['Type', 'EventID', 'UserID', 'EventDateTime', 'AuditDateTime', 'Reason']);
+  const duplicatePropertyNames = new Set(['Type', 'Reason']);
 
-  const orderedDetails = $derived.by(() =>
+  const rawOrderedDetails = $derived.by(() =>
     (details ?? [])
       .map((detail, index) => ({ detail, index }))
       .sort((left, right) =>
@@ -14,6 +15,8 @@
       )
       .map((item) => item.detail)
   );
+  const excludedPropertyNames = $derived(new Set([...duplicatePropertyNames, ...excludeNames]));
+  const orderedDetails = $derived(rawOrderedDetails.filter((detail) => !excludedPropertyNames.has(detail.name)));
 
   const commonDetails = $derived(orderedDetails.filter((detail) => commonPropertyNames.has(detail.name)));
   const typeDetails = $derived(orderedDetails.filter((detail) => !commonPropertyNames.has(detail.name)));
@@ -23,9 +26,10 @@
   const eventSetID = $derived(formatValue(detailValue('EventSetID')));
   const auditDateTime = $derived(formatValue(detailValue('AuditDateTime')));
   const cancelledIDGroup = $derived(toValueList(detailValue('CancelledIDGroup')));
+  const hasRenderedDetails = $derived(orderedDetails.length || isTransactionCancellation);
 
   function detailValue(name: string): unknown {
-    return orderedDetails.find((detail) => detail.name === name)?.value;
+    return rawOrderedDetails.find((detail) => detail.name === name)?.value;
   }
 
   function formatValue(value: unknown): string {
@@ -64,33 +68,31 @@
   }
 </script>
 
-{#if orderedDetails.length}
-  <div class="grid gap-2">
+{#if hasRenderedDetails}
+  <div class="grid gap-1">
     {#if isTransactionCancellation}
-      <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-900">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">Cancelled</span>
+      <div class="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-900">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="rounded-full bg-red-100 px-1.5 py-0.5 text-[0.68rem] font-semibold text-red-700">Cancelled</span>
           <span class="font-semibold">Transaction cancellation</span>
-        </div>
-        <div class="mt-1">
-          Cancelled {cancelledEventID === '-' ? 'transaction' : cancelledEventID} from set {eventSetID}
+          <span>Cancelled {cancelledEventID === '-' ? 'transaction' : cancelledEventID} from set {eventSetID}</span>
         </div>
         {#if cancelledIDGroup.length}
-          <div class="mt-1 break-all font-mono text-[0.7rem] text-red-700">
+          <div class="mt-0.5 break-all font-mono text-[0.68rem] text-red-700">
             Cancelled group {cancelledIDGroup.join(', ')}
           </div>
         {/if}
         {#if auditDateTime !== '-'}
-          <div class="mt-1 font-medium text-red-700">Cancelled on {auditDateTime}</div>
+          <div class="mt-0.5 font-medium text-red-700">Cancelled on {auditDateTime}</div>
         {/if}
       </div>
     {/if}
 
     {#if commonDetails.length}
-      <dl class="grid gap-1.5 text-xs sm:grid-cols-2 lg:grid-cols-3">
+      <dl class="flex flex-wrap gap-x-3 gap-y-1 text-xs">
         {#each commonDetails as detail, index (`${detail.name}-${index}`)}
-          <div class="grid min-w-0 gap-0.5 rounded-md border border-slate-100 bg-white px-2 py-1.5">
-            <dt class="text-[0.68rem] font-light uppercase tracking-wide text-slate-400">{detail.description}</dt>
+          <div class="flex min-w-0 items-baseline gap-1">
+            <dt class="shrink-0 text-[0.68rem] font-light uppercase tracking-wide text-slate-400">{detail.description}</dt>
             <dd class="min-w-0 break-words font-medium text-slate-900">{formatValue(detail.value)}</dd>
           </div>
         {/each}
@@ -98,10 +100,10 @@
     {/if}
 
     {#if typeDetails.length}
-      <dl class="grid gap-1.5 text-xs sm:grid-cols-2">
+      <dl class="flex flex-wrap gap-x-3 gap-y-1 text-xs">
         {#each typeDetails as detail, index (`${detail.name}-${index}`)}
-          <div class="grid min-w-0 gap-0.5 rounded-md bg-slate-50 px-2 py-1.5">
-            <dt class="text-[0.68rem] font-light uppercase tracking-wide text-slate-400">{detail.description}</dt>
+          <div class="flex min-w-0 items-baseline gap-1">
+            <dt class="shrink-0 text-[0.68rem] font-light uppercase tracking-wide text-slate-400">{detail.description}</dt>
             <dd class="min-w-0 break-words font-semibold text-slate-900">{formatValue(detail.value)}</dd>
           </div>
         {/each}

@@ -16,7 +16,7 @@ public static class FXRateSetEventBuilder
     public static Result<FXRateSetEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, CurrencyPair pair, FXPrice price)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = FXRateSetEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, pair, price);
 
         return validationErrors.Count == 0

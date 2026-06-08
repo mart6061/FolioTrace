@@ -1,6 +1,7 @@
 using API;
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
+using System.Text.Json;
 
 namespace Test;
 
@@ -148,11 +149,34 @@ public sealed class EventPropertyDetailsFactoryTests
         Assert.Equal("GBP", detail.Value);
     }
 
+    [Fact]
+    public void WithPropertyDetails_SerializesExtensionPropertiesAtTopLevel()
+    {
+        var @event = CreateAccountCreatedEvent();
+
+        var response = EventPropertyDetailsFactory.WithPropertyDetails(@event, new
+        {
+            Type = @event.Type,
+            EventID = @event.EventID.Value,
+            AccountID = @event.AccountID.Value
+        });
+        response.Properties["applicationStatus"] = "applied";
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(response, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+        var root = document.RootElement;
+
+        Assert.Equal(@event.Type, root.GetProperty("type").GetString());
+        Assert.Equal(@event.EventID.Value, root.GetProperty("eventID").GetGuid());
+        Assert.Equal("applied", root.GetProperty("applicationStatus").GetString());
+        Assert.True(root.TryGetProperty("propertyDetails", out _));
+        Assert.False(root.TryGetProperty("properties", out _));
+    }
+
     private static AccountCreatedEvent CreateAccountCreatedEvent()
     {
         var result = AccountCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
-            new UserID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
+            new UserID(Guid.CreateGuid7()),
             EventDateTimeBuilder.Create(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
             AuditDateTimeBuilder.Create(new DateTime(2026, 1, 2, 0, 0, 1, DateTimeKind.Utc)),
             "Create account",

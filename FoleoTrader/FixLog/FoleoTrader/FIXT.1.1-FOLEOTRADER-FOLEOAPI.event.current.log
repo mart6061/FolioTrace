@@ -1,0 +1,30 @@
+20260608-19:29:14.342 : Created session
+20260608-19:32:29.723 : Created session
+20260608-19:38:32.914 : Created session
+20260608-19:42:14.243 : Created session
+20260608-19:49:56.572 : Created session
+20260608-19:53:13.944 : Created session
+20260608-19:55:37.165 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 64020231 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:53446
+20260608-19:55:37.173 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260608-19:55:37.185 : Session reset: Reset requested by counterparty
+20260608-19:55:37.193 : Session reset: ResetOnLogon
+20260608-19:55:37.237 : Received logon
+20260608-19:55:37.250 : Responding to logon request; heartbeat is 20 seconds
+20260608-20:07:43.298 : Initiated logout request
+20260608-20:07:43.304 : Received logout response
+20260608-20:07:43.304 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout response
+20260608-20:10:42.063 : Created session
+20260608-20:17:13.840 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 26421693 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:59308
+20260608-20:17:13.854 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260608-20:17:13.872 : Session reset: Reset requested by counterparty
+20260608-20:17:13.886 : Session reset: ResetOnLogon
+20260608-20:17:13.957 : Received logon
+20260608-20:17:13.975 : Responding to logon request; heartbeat is 20 seconds
+20260608-20:23:26.351 : SocketReader Error: Socket exception (127.0.0.1:59308): An existing connection was forcibly closed by the remote host.
+20260608-20:23:26.354 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Socket exception (127.0.0.1:59308): An existing connection was forcibly closed by the remote host.
+20260608-20:31:00.987 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 28149674 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:58807
+20260608-20:31:00.987 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260608-20:31:00.994 : Session reset: Reset requested by counterparty
+20260608-20:31:01.001 : Session reset: ResetOnLogon
+20260608-20:31:01.002 : Received logon
+20260608-20:31:01.003 : Responding to logon request; heartbeat is 20 seconds

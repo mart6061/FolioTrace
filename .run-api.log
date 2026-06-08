@@ -1,0 +1,1573 @@
+Using launch settings from API\Properties\launchSettings.json...
+Building...
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=139ms): [
+SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=123ms): [
+select column_name, data_type, character_maximum_length, udt_name
+from information_schema.columns where table_schema = $1 and table_name = $2
+order by ordinal_position, select kcu.column_name as key_column
+from information_schema.table_constraints tco
+         join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tco.constraint_name
+                  and kcu.constraint_schema = tco.constraint_schema
+                  and kcu.constraint_name = tco.constraint_name
+where tco.constraint_type = 'PRIMARY KEY' and kcu.table_schema = $1 and kcu.table_name = $2
+order by kcu.ordinal_position, SELECT *
+FROM (
+    SELECT
+      R.rolname                AS user_name,
+      ns.nspname               AS schema_name,
+      pg_catalog.textin(pg_catalog.regclassout(idx.indrelid :: REGCLASS)) AS table_name,
+      i.relname                AS index_name,
+      pg_get_indexdef(i.oid) as ddl,
+      idx.indisunique          AS is_unique,
+      idx.indisprimary         AS is_primary,
+      am.amname                AS index_type,
+      idx.indkey,
+           ARRAY(
+               SELECT pg_get_indexdef(idx.indexrelid, k + 1, TRUE)
+               FROM
+                 generate_subscripts(idx.indkey, 1) AS k
+               ORDER BY k
+           ) AS index_keys,
+      (idx.indexprs IS NOT NULL) OR (idx.indkey::int[] @> array[0]) AS is_functional,
+      idx.indpred IS NOT NULL AS is_partial
+    FROM pg_index AS idx
+      JOIN pg_class AS i
+        ON i.oid = idx.indexrelid
+      JOIN pg_am AS am
+        ON i.relam = am.oid
+      JOIN pg_namespace AS NS ON i.relnamespace = NS.OID
+      JOIN pg_roles AS R ON i.relowner = r.oid
+    WHERE
+      nspname = $1 AND
+      NOT nspname LIKE 'pg%'
+) ind
+WHERE
+      ind.table_name = $2 OR
+      ind.table_name = $3 OR
+      ind.table_name = $4 OR
+      ind.table_name = $5, SELECT c.conname                                     AS constraint_name,
+       c.contype                                     AS constraint_type,
+       sch.nspname                                   AS schema_name,
+       tbl.relname                                   AS table_name,
+       ARRAY_AGG(col.attname ORDER BY u.attposition) AS columns,
+       pg_get_constraintdef(c.oid)                   AS definition
+FROM pg_constraint c
+       JOIN LATERAL UNNEST(c.conkey) WITH ORDINALITY AS u(attnum, attposition) ON TRUE
+       JOIN pg_class tbl ON tbl.oid = c.conrelid
+       JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+       JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = u.attnum)
+WHERE
+	c.contype = 'f' and
+	sch.nspname = $1 and
+	tbl.relname = $2
+GROUP BY constraint_name, constraint_type, schema_name, table_name, definition, SHOW max_identifier_length, select
+    col.column_name,
+    partition_strategy
+from
+    (select
+         partrelid,
+         partnatts,
+         case partstrat
+             when 'l' then 'list'
+             when 'h' then 'hash'
+             when 'r' then 'range' end as partition_strategy,
+         unnest(partattrs) column_index
+     from
+         pg_partitioned_table) pt
+        join
+    pg_class par
+    on
+            par.oid = pt.partrelid
+        join
+    pg_namespace ns
+    on
+            ns.oid = par.relnamespace
+        join
+    information_schema.columns col
+    on
+                col.table_schema = ns.nspname
+            and col.table_name = par.relname
+            and ordinal_position = pt.column_index
+where
+    col.table_schema = $1 and table_name = $2
+order by column_index, select pt.relname as partition_name,
+          pg_get_expr(pt.relpartbound, pt.oid, true) as partition_expression
+   from pg_class base_tb
+            join pg_namespace ns on ns.oid = base_tb.relnamespace
+            join pg_inherits i on i.inhparent = base_tb.oid
+            join pg_class pt on pt.oid = i.inhrelid
+   where base_tb.relname = $1 and ns.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=173ms): [
+select column_name, data_type, character_maximum_length, udt_name
+from information_schema.columns where table_schema = $1 and table_name = $2
+order by ordinal_position, select kcu.column_name as key_column
+from information_schema.table_constraints tco
+         join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tco.constraint_name
+                  and kcu.constraint_schema = tco.constraint_schema
+                  and kcu.constraint_name = tco.constraint_name
+where tco.constraint_type = 'PRIMARY KEY' and kcu.table_schema = $1 and kcu.table_name = $2
+order by kcu.ordinal_position, SELECT *
+FROM (
+    SELECT
+      R.rolname                AS user_name,
+      ns.nspname               AS schema_name,
+      pg_catalog.textin(pg_catalog.regclassout(idx.indrelid :: REGCLASS)) AS table_name,
+      i.relname                AS index_name,
+      pg_get_indexdef(i.oid) as ddl,
+      idx.indisunique          AS is_unique,
+      idx.indisprimary         AS is_primary,
+      am.amname                AS index_type,
+      idx.indkey,
+           ARRAY(
+               SELECT pg_get_indexdef(idx.indexrelid, k + 1, TRUE)
+               FROM
+                 generate_subscripts(idx.indkey, 1) AS k
+               ORDER BY k
+           ) AS index_keys,
+      (idx.indexprs IS NOT NULL) OR (idx.indkey::int[] @> array[0]) AS is_functional,
+      idx.indpred IS NOT NULL AS is_partial
+    FROM pg_index AS idx
+      JOIN pg_class AS i
+        ON i.oid = idx.indexrelid
+      JOIN pg_am AS am
+        ON i.relam = am.oid
+      JOIN pg_namespace AS NS ON i.relnamespace = NS.OID
+      JOIN pg_roles AS R ON i.relowner = r.oid
+    WHERE
+      nspname = $1 AND
+      NOT nspname LIKE 'pg%'
+) ind
+WHERE
+      ind.table_name = $2 OR
+      ind.table_name = $3 OR
+      ind.table_name = $4 OR
+      ind.table_name = $5, SELECT c.conname                                     AS constraint_name,
+       c.contype                                     AS constraint_type,
+       sch.nspname                                   AS schema_name,
+       tbl.relname                                   AS table_name,
+       ARRAY_AGG(col.attname ORDER BY u.attposition) AS columns,
+       pg_get_constraintdef(c.oid)                   AS definition
+FROM pg_constraint c
+       JOIN LATERAL UNNEST(c.conkey) WITH ORDINALITY AS u(attnum, attposition) ON TRUE
+       JOIN pg_class tbl ON tbl.oid = c.conrelid
+       JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+       JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = u.attnum)
+WHERE
+	c.contype = 'f' and
+	sch.nspname = $1 and
+	tbl.relname = $2
+GROUP BY constraint_name, constraint_type, schema_name, table_name, definition, SHOW max_identifier_length, select
+    col.column_name,
+    partition_strategy
+from
+    (select
+         partrelid,
+         partnatts,
+         case partstrat
+             when 'l' then 'list'
+             when 'h' then 'hash'
+             when 'r' then 'range' end as partition_strategy,
+         unnest(partattrs) column_index
+     from
+         pg_partitioned_table) pt
+        join
+    pg_class par
+    on
+            par.oid = pt.partrelid
+        join
+    pg_namespace ns
+    on
+            ns.oid = par.relnamespace
+        join
+    information_schema.columns col
+    on
+                col.table_schema = ns.nspname
+            and col.table_name = par.relname
+            and ordinal_position = pt.column_index
+where
+    col.table_schema = $1 and table_name = $2
+order by column_index, select pt.relname as partition_name,
+          pg_get_expr(pt.relpartbound, pt.oid, true) as partition_expression
+   from pg_class base_tb
+            join pg_namespace ns on ns.oid = base_tb.relnamespace
+            join pg_inherits i on i.inhparent = base_tb.oid
+            join pg_class pt on pt.oid = i.inhrelid
+   where base_tb.relname = $1 and ns.nspname = $2, select column_name, data_type, character_maximum_length, udt_name
+from information_schema.columns where table_schema = $1 and table_name = $2
+order by ordinal_position, select kcu.column_name as key_column
+from information_schema.table_constraints tco
+         join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tco.constraint_name
+                  and kcu.constraint_schema = tco.constraint_schema
+                  and kcu.constraint_name = tco.constraint_name
+where tco.constraint_type = 'PRIMARY KEY' and kcu.table_schema = $1 and kcu.table_name = $2
+order by kcu.ordinal_position, SELECT *
+FROM (
+    SELECT
+      R.rolname                AS user_name,
+      ns.nspname               AS schema_name,
+      pg_catalog.textin(pg_catalog.regclassout(idx.indrelid :: REGCLASS)) AS table_name,
+      i.relname                AS index_name,
+      pg_get_indexdef(i.oid) as ddl,
+      idx.indisunique          AS is_unique,
+      idx.indisprimary         AS is_primary,
+      am.amname                AS index_type,
+      idx.indkey,
+           ARRAY(
+               SELECT pg_get_indexdef(idx.indexrelid, k + 1, TRUE)
+               FROM
+                 generate_subscripts(idx.indkey, 1) AS k
+               ORDER BY k
+           ) AS index_keys,
+      (idx.indexprs IS NOT NULL) OR (idx.indkey::int[] @> array[0]) AS is_functional,
+      idx.indpred IS NOT NULL AS is_partial
+    FROM pg_index AS idx
+      JOIN pg_class AS i
+        ON i.oid = idx.indexrelid
+      JOIN pg_am AS am
+        ON i.relam = am.oid
+      JOIN pg_namespace AS NS ON i.relnamespace = NS.OID
+      JOIN pg_roles AS R ON i.relowner = r.oid
+    WHERE
+      nspname = $1 AND
+      NOT nspname LIKE 'pg%'
+) ind
+WHERE
+      ind.table_name = $2 OR
+      ind.table_name = $3 OR
+      ind.table_name = $4 OR
+      ind.table_name = $5, SELECT c.conname                                     AS constraint_name,
+       c.contype                                     AS constraint_type,
+       sch.nspname                                   AS schema_name,
+       tbl.relname                                   AS table_name,
+       ARRAY_AGG(col.attname ORDER BY u.attposition) AS columns,
+       pg_get_constraintdef(c.oid)                   AS definition
+FROM pg_constraint c
+       JOIN LATERAL UNNEST(c.conkey) WITH ORDINALITY AS u(attnum, attposition) ON TRUE
+       JOIN pg_class tbl ON tbl.oid = c.conrelid
+       JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+       JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = u.attnum)
+WHERE
+	c.contype = 'f' and
+	sch.nspname = $1 and
+	tbl.relname = $2
+GROUP BY constraint_name, constraint_type, schema_name, table_name, definition, SHOW max_identifier_length, select
+    col.column_name,
+    partition_strategy
+from
+    (select
+         partrelid,
+         partnatts,
+         case partstrat
+             when 'l' then 'list'
+             when 'h' then 'hash'
+             when 'r' then 'range' end as partition_strategy,
+         unnest(partattrs) column_index
+     from
+         pg_partitioned_table) pt
+        join
+    pg_class par
+    on
+            par.oid = pt.partrelid
+        join
+    pg_namespace ns
+    on
+            ns.oid = par.relnamespace
+        join
+    information_schema.columns col
+    on
+                col.table_schema = ns.nspname
+            and col.table_name = par.relname
+            and ordinal_position = pt.column_index
+where
+    col.table_schema = $1 and table_name = $2
+order by column_index, select pt.relname as partition_name,
+          pg_get_expr(pt.relpartbound, pt.oid, true) as partition_expression
+   from pg_class base_tb
+            join pg_namespace ns on ns.oid = base_tb.relnamespace
+            join pg_inherits i on i.inhparent = base_tb.oid
+            join pg_class pt on pt.oid = i.inhrelid
+   where base_tb.relname = $1 and ns.nspname = $2, select count(*) from information_schema.sequences where sequence_schema = $1 and sequence_name = $2, select column_name, data_type, character_maximum_length, udt_name
+from information_schema.columns where table_schema = $1 and table_name = $2
+order by ordinal_position, select kcu.column_name as key_column
+from information_schema.table_constraints tco
+         join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tco.constraint_name
+                  and kcu.constraint_schema = tco.constraint_schema
+                  and kcu.constraint_name = tco.constraint_name
+where tco.constraint_type = 'PRIMARY KEY' and kcu.table_schema = $1 and kcu.table_name = $2
+order by kcu.ordinal_position, SELECT *
+FROM (
+    SELECT
+      R.rolname                AS user_name,
+      ns.nspname               AS schema_name,
+      pg_catalog.textin(pg_catalog.regclassout(idx.indrelid :: REGCLASS)) AS table_name,
+      i.relname                AS index_name,
+      pg_get_indexdef(i.oid) as ddl,
+      idx.indisunique          AS is_unique,
+      idx.indisprimary         AS is_primary,
+      am.amname                AS index_type,
+      idx.indkey,
+           ARRAY(
+               SELECT pg_get_indexdef(idx.indexrelid, k + 1, TRUE)
+               FROM
+                 generate_subscripts(idx.indkey, 1) AS k
+               ORDER BY k
+           ) AS index_keys,
+      (idx.indexprs IS NOT NULL) OR (idx.indkey::int[] @> array[0]) AS is_functional,
+      idx.indpred IS NOT NULL AS is_partial
+    FROM pg_index AS idx
+      JOIN pg_class AS i
+        ON i.oid = idx.indexrelid
+      JOIN pg_am AS am
+        ON i.relam = am.oid
+      JOIN pg_namespace AS NS ON i.relnamespace = NS.OID
+      JOIN pg_roles AS R ON i.relowner = r.oid
+    WHERE
+      nspname = $1 AND
+      NOT nspname LIKE 'pg%'
+) ind
+WHERE
+      ind.table_name = $2 OR
+      ind.table_name = $3 OR
+      ind.table_name = $4 OR
+      ind.table_name = $5, SELECT c.conname                                     AS constraint_name,
+       c.contype                                     AS constraint_type,
+       sch.nspname                                   AS schema_name,
+       tbl.relname                                   AS table_name,
+       ARRAY_AGG(col.attname ORDER BY u.attposition) AS columns,
+       pg_get_constraintdef(c.oid)                   AS definition
+FROM pg_constraint c
+       JOIN LATERAL UNNEST(c.conkey) WITH ORDINALITY AS u(attnum, attposition) ON TRUE
+       JOIN pg_class tbl ON tbl.oid = c.conrelid
+       JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+       JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = u.attnum)
+WHERE
+	c.contype = 'f' and
+	sch.nspname = $1 and
+	tbl.relname = $2
+GROUP BY constraint_name, constraint_type, schema_name, table_name, definition, SHOW max_identifier_length, select
+    col.column_name,
+    partition_strategy
+from
+    (select
+         partrelid,
+         partnatts,
+         case partstrat
+             when 'l' then 'list'
+             when 'h' then 'hash'
+             when 'r' then 'range' end as partition_strategy,
+         unnest(partattrs) column_index
+     from
+         pg_partitioned_table) pt
+        join
+    pg_class par
+    on
+            par.oid = pt.partrelid
+        join
+    pg_namespace ns
+    on
+            ns.oid = par.relnamespace
+        join
+    information_schema.columns col
+    on
+                col.table_schema = ns.nspname
+            and col.table_name = par.relname
+            and ordinal_position = pt.column_index
+where
+    col.table_schema = $1 and table_name = $2
+order by column_index, select pt.relname as partition_name,
+          pg_get_expr(pt.relpartbound, pt.oid, true) as partition_expression
+   from pg_class base_tb
+            join pg_namespace ns on ns.oid = base_tb.relnamespace
+            join pg_inherits i on i.inhparent = base_tb.oid
+            join pg_class pt on pt.oid = i.inhrelid
+   where base_tb.relname = $1 and ns.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=9674ms): select data, type, mt_dotnet_type, seq_id, id, stream_id, version, timestamp, tenant_id, is_archived from public.mt_events as d where d.is_archived = FALSE
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=49ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=31ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=5ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: https://localhost:7058
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\mart6\source\repos\FolioTrace\API
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=24ms): [
+select column_name, data_type, character_maximum_length, udt_name
+from information_schema.columns where table_schema = $1 and table_name = $2
+order by ordinal_position, select kcu.column_name as key_column
+from information_schema.table_constraints tco
+         join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tco.constraint_name
+                  and kcu.constraint_schema = tco.constraint_schema
+                  and kcu.constraint_name = tco.constraint_name
+where tco.constraint_type = 'PRIMARY KEY' and kcu.table_schema = $1 and kcu.table_name = $2
+order by kcu.ordinal_position, SELECT *
+FROM (
+    SELECT
+      R.rolname                AS user_name,
+      ns.nspname               AS schema_name,
+      pg_catalog.textin(pg_catalog.regclassout(idx.indrelid :: REGCLASS)) AS table_name,
+      i.relname                AS index_name,
+      pg_get_indexdef(i.oid) as ddl,
+      idx.indisunique          AS is_unique,
+      idx.indisprimary         AS is_primary,
+      am.amname                AS index_type,
+      idx.indkey,
+           ARRAY(
+               SELECT pg_get_indexdef(idx.indexrelid, k + 1, TRUE)
+               FROM
+                 generate_subscripts(idx.indkey, 1) AS k
+               ORDER BY k
+           ) AS index_keys,
+      (idx.indexprs IS NOT NULL) OR (idx.indkey::int[] @> array[0]) AS is_functional,
+      idx.indpred IS NOT NULL AS is_partial
+    FROM pg_index AS idx
+      JOIN pg_class AS i
+        ON i.oid = idx.indexrelid
+      JOIN pg_am AS am
+        ON i.relam = am.oid
+      JOIN pg_namespace AS NS ON i.relnamespace = NS.OID
+      JOIN pg_roles AS R ON i.relowner = r.oid
+    WHERE
+      nspname = $1 AND
+      NOT nspname LIKE 'pg%'
+) ind
+WHERE
+      ind.table_name = $2 OR
+      ind.table_name = $3 OR
+      ind.table_name = $4 OR
+      ind.table_name = $5, SELECT c.conname                                     AS constraint_name,
+       c.contype                                     AS constraint_type,
+       sch.nspname                                   AS schema_name,
+       tbl.relname                                   AS table_name,
+       ARRAY_AGG(col.attname ORDER BY u.attposition) AS columns,
+       pg_get_constraintdef(c.oid)                   AS definition
+FROM pg_constraint c
+       JOIN LATERAL UNNEST(c.conkey) WITH ORDINALITY AS u(attnum, attposition) ON TRUE
+       JOIN pg_class tbl ON tbl.oid = c.conrelid
+       JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+       JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = u.attnum)
+WHERE
+	c.contype = 'f' and
+	sch.nspname = $1 and
+	tbl.relname = $2
+GROUP BY constraint_name, constraint_type, schema_name, table_name, definition, SHOW max_identifier_length, select
+    col.column_name,
+    partition_strategy
+from
+    (select
+         partrelid,
+         partnatts,
+         case partstrat
+             when 'l' then 'list'
+             when 'h' then 'hash'
+             when 'r' then 'range' end as partition_strategy,
+         unnest(partattrs) column_index
+     from
+         pg_partitioned_table) pt
+        join
+    pg_class par
+    on
+            par.oid = pt.partrelid
+        join
+    pg_namespace ns
+    on
+            ns.oid = par.relnamespace
+        join
+    information_schema.columns col
+    on
+                col.table_schema = ns.nspname
+            and col.table_name = par.relname
+            and ordinal_position = pt.column_index
+where
+    col.table_schema = $1 and table_name = $2
+order by column_index, select pt.relname as partition_name,
+          pg_get_expr(pt.relpartbound, pt.oid, true) as partition_expression
+   from pg_class base_tb
+            join pg_namespace ns on ns.oid = base_tb.relnamespace
+            join pg_inherits i on i.inhparent = base_tb.oid
+            join pg_class pt on pt.oid = i.inhrelid
+   where base_tb.relname = $1 and ns.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=23ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=144ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=14ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=35ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=20ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=14ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=63ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=15ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=19ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=14ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=26ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=88ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=217ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=29ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=47ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=14ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=19ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=6ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=4ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=6ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: API.FoleoTrader.FoleoTraderFixClient[0]
+      Logged on to FoleoTrader FIX session FIXT.1.1:FOLEOAPI->FOLEOTRADER.
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=4ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=9ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=28ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=4ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=22ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=7ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=5ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=4ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=5ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=4ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=5ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=0ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=7ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=15ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=12ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=6ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=6ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=13ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=10ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=7ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=5ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=4ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=3ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=2ms): [select nextval('public.mt_events_sequence') from generate_series(1,1), select id, version, type, timestamp, created as timestamp, is_archived from public.mt_streams where id = $1]
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=1ms): [update public.mt_streams set version = $1 where id = $2 and version = $3 returning version, insert into public.mt_events (data, type, mt_dotnet_type, id, stream_id, version, timestamp, tenant_id, seq_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=2ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Batch execution completed (duration=62ms): [
+select column_name, data_type, character_maximum_length, udt_name
+from information_schema.columns where table_schema = $1 and table_name = $2
+order by ordinal_position, select kcu.column_name as key_column
+from information_schema.table_constraints tco
+         join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tco.constraint_name
+                  and kcu.constraint_schema = tco.constraint_schema
+                  and kcu.constraint_name = tco.constraint_name
+where tco.constraint_type = 'PRIMARY KEY' and kcu.table_schema = $1 and kcu.table_name = $2
+order by kcu.ordinal_position, SELECT *
+FROM (
+    SELECT
+      R.rolname                AS user_name,
+      ns.nspname               AS schema_name,
+      pg_catalog.textin(pg_catalog.regclassout(idx.indrelid :: REGCLASS)) AS table_name,
+      i.relname                AS index_name,
+      pg_get_indexdef(i.oid) as ddl,
+      idx.indisunique          AS is_unique,
+      idx.indisprimary         AS is_primary,
+      am.amname                AS index_type,
+      idx.indkey,
+           ARRAY(
+               SELECT pg_get_indexdef(idx.indexrelid, k + 1, TRUE)
+               FROM
+                 generate_subscripts(idx.indkey, 1) AS k
+               ORDER BY k
+           ) AS index_keys,
+      (idx.indexprs IS NOT NULL) OR (idx.indkey::int[] @> array[0]) AS is_functional,
+      idx.indpred IS NOT NULL AS is_partial
+    FROM pg_index AS idx
+      JOIN pg_class AS i
+        ON i.oid = idx.indexrelid
+      JOIN pg_am AS am
+        ON i.relam = am.oid
+      JOIN pg_namespace AS NS ON i.relnamespace = NS.OID
+      JOIN pg_roles AS R ON i.relowner = r.oid
+    WHERE
+      nspname = $1 AND
+      NOT nspname LIKE 'pg%'
+) ind
+WHERE
+      ind.table_name = $2 OR
+      ind.table_name = $3 OR
+      ind.table_name = $4 OR
+      ind.table_name = $5, SELECT c.conname                                     AS constraint_name,
+       c.contype                                     AS constraint_type,
+       sch.nspname                                   AS schema_name,
+       tbl.relname                                   AS table_name,
+       ARRAY_AGG(col.attname ORDER BY u.attposition) AS columns,
+       pg_get_constraintdef(c.oid)                   AS definition
+FROM pg_constraint c
+       JOIN LATERAL UNNEST(c.conkey) WITH ORDINALITY AS u(attnum, attposition) ON TRUE
+       JOIN pg_class tbl ON tbl.oid = c.conrelid
+       JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+       JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = u.attnum)
+WHERE
+	c.contype = 'f' and
+	sch.nspname = $1 and
+	tbl.relname = $2
+GROUP BY constraint_name, constraint_type, schema_name, table_name, definition, SHOW max_identifier_length, select
+    col.column_name,
+    partition_strategy
+from
+    (select
+         partrelid,
+         partnatts,
+         case partstrat
+             when 'l' then 'list'
+             when 'h' then 'hash'
+             when 'r' then 'range' end as partition_strategy,
+         unnest(partattrs) column_index
+     from
+         pg_partitioned_table) pt
+        join
+    pg_class par
+    on
+            par.oid = pt.partrelid
+        join
+    pg_namespace ns
+    on
+            ns.oid = par.relnamespace
+        join
+    information_schema.columns col
+    on
+                col.table_schema = ns.nspname
+            and col.table_name = par.relname
+            and ordinal_position = pt.column_index
+where
+    col.table_schema = $1 and table_name = $2
+order by column_index, select pt.relname as partition_name,
+          pg_get_expr(pt.relpartbound, pt.oid, true) as partition_expression
+   from pg_class base_tb
+            join pg_namespace ns on ns.oid = base_tb.relnamespace
+            join pg_inherits i on i.inhparent = base_tb.oid
+            join pg_class pt on pt.oid = i.inhrelid
+   where base_tb.relname = $1 and ns.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2, SELECT pg_get_functiondef(pg_proc.oid)
+FROM pg_proc JOIN pg_namespace as ns ON pg_proc.pronamespace = ns.oid WHERE ns.nspname = $1 and proname = $2, SELECT format('DROP FUNCTION IF EXISTS %s.%s(%s);'
+             ,n.nspname
+             ,p.proname
+             ,pg_get_function_identity_arguments(p.oid))
+FROM   pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE  p.proname = $1
+AND    n.nspname = $2]
+info: Npgsql.Command[2001]
+      Command execution completed (duration=6ms): select d.data from public.mt_doc_fxdefinitionreadmodel as d where (public.mt_immutable_timestamp(d.data ->> 'ValidFrom') <= $1 and public.mt_immutable_timestamp(d.data ->> 'ValidTo') > $2);
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select d.data from public.mt_doc_fxdefinitionreadmodel as d where (public.mt_immutable_timestamp(d.data ->> 'ValidFrom') <= $1 and public.mt_immutable_timestamp(d.data ->> 'ValidTo') > $2);
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select d.data from public.mt_doc_fxdefinitionreadmodel as d where (public.mt_immutable_timestamp(d.data ->> 'ValidFrom') <= $1 and public.mt_immutable_timestamp(d.data ->> 'ValidTo') > $2);
+info: Npgsql.Command[2001]
+      Command execution completed (duration=6ms): select d.data from public.mt_doc_fxdefinitionreadmodel as d where (public.mt_immutable_timestamp(d.data ->> 'ValidFrom') <= $1 and public.mt_immutable_timestamp(d.data ->> 'ValidTo') > $2);
+info: Npgsql.Command[2001]
+      Command execution completed (duration=70ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=13ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=0ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+fail: API.ApiUnhandledExceptionLoggingMiddleware[0]
+      Unhandled API exception 019ea957-7029-76d0-82a0-d9003f804607 for GET /Events/Ticket/.
+      System.ArgumentException: An item with the same key has already been added. Key: FillID
+         at System.Collections.Generic.Dictionary`2.TryInsert(TKey key, TValue value, InsertionBehavior behavior)
+         at System.Linq.Enumerable.ToDictionary[TSource,TKey,TElement](IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer)
+         at API.EventPropertyDetailsFactory.<>c.<GetPropertyMetadata>b__8_0(Type type) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 81
+         at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+         at API.EventPropertyDetailsFactory.GetPropertyMetadata(Type eventType) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 80
+         at API.EventPropertyDetailsFactory.CreatePropertyDetails(IEventBase event, Object response) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 49
+         at API.EventPropertyDetailsFactory.WithPropertyDetails(IEventBase event, Object response, Object nestedDetails) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 26
+         at API.ApiEndpointRegistration.WithTicketBase(ITicket event, Object details) in C:\Users\mart6\source\repos\FolioTrace\API\ApiEndpointRegistration.cs:line 2978
+         at API.ApiEndpointRegistration.ToTicketEventResponse(ITicket event) in C:\Users\mart6\source\repos\FolioTrace\API\ApiEndpointRegistration.cs:line 2930
+         at API.EventHistoryResponseFactory.<>c__DisplayClass0_0`1.<Create>b__4(TEvent event) in C:\Users\mart6\source\repos\FolioTrace\API\EventHistoryResponseFactory.cs:line 18
+         at System.Linq.Enumerable.IteratorSelectIterator`2.ToListNoPresizing()
+         at System.Linq.Enumerable.IteratorSelectIterator`2.ToList()
+         at API.EventHistoryResponseFactory.Create[TEvent](IEnumerable`1 events, Nullable`1 valuationDateTime, Nullable`1 auditDateTime, Func`2 createResponse) in C:\Users\mart6\source\repos\FolioTrace\API\EventHistoryResponseFactory.cs:line 13
+         at API.ApiEndpointRegistration.<>c.<<MapTicketEventEndpoints>b__55_0>d.MoveNext() in C:\Users\mart6\source\repos\FolioTrace\API\ApiEndpointRegistration.cs:line 1583
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+         at API.ApiUnhandledExceptionLoggingMiddleware.InvokeAsync(HttpContext context) in C:\Users\mart6\source\repos\FolioTrace\API\ApiUnhandledExceptionLoggingMiddleware.cs:line 16
+info: Npgsql.Command[2001]
+      Command execution completed (duration=1ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+info: Npgsql.Command[2001]
+      Command execution completed (duration=3ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)
+fail: API.ApiUnhandledExceptionLoggingMiddleware[0]
+      Unhandled API exception 019ea957-7bf1-7a44-940d-ea97f6139b55 for GET /Events/Ticket/.
+      System.ArgumentException: An item with the same key has already been added. Key: FillID
+         at System.Collections.Generic.Dictionary`2.TryInsert(TKey key, TValue value, InsertionBehavior behavior)
+         at System.Linq.Enumerable.ToDictionary[TSource,TKey,TElement](IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer)
+         at API.EventPropertyDetailsFactory.<>c.<GetPropertyMetadata>b__8_0(Type type) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 81
+         at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+         at API.EventPropertyDetailsFactory.GetPropertyMetadata(Type eventType) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 80
+         at API.EventPropertyDetailsFactory.CreatePropertyDetails(IEventBase event, Object response) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 49
+         at API.EventPropertyDetailsFactory.WithPropertyDetails(IEventBase event, Object response, Object nestedDetails) in C:\Users\mart6\source\repos\FolioTrace\API\EventPropertyDetailsFactory.cs:line 26
+         at API.ApiEndpointRegistration.WithTicketBase(ITicket event, Object details) in C:\Users\mart6\source\repos\FolioTrace\API\ApiEndpointRegistration.cs:line 2978
+         at API.ApiEndpointRegistration.ToTicketEventResponse(ITicket event) in C:\Users\mart6\source\repos\FolioTrace\API\ApiEndpointRegistration.cs:line 2930
+         at API.EventHistoryResponseFactory.<>c__DisplayClass0_0`1.<Create>b__4(TEvent event) in C:\Users\mart6\source\repos\FolioTrace\API\EventHistoryResponseFactory.cs:line 18
+         at System.Linq.Enumerable.IteratorSelectIterator`2.ToListNoPresizing()
+         at System.Linq.Enumerable.IteratorSelectIterator`2.ToList()
+         at API.EventHistoryResponseFactory.Create[TEvent](IEnumerable`1 events, Nullable`1 valuationDateTime, Nullable`1 auditDateTime, Func`2 createResponse) in C:\Users\mart6\source\repos\FolioTrace\API\EventHistoryResponseFactory.cs:line 13
+         at API.ApiEndpointRegistration.<>c.<<MapTicketEventEndpoints>b__55_0>d.MoveNext() in C:\Users\mart6\source\repos\FolioTrace\API\ApiEndpointRegistration.cs:line 1583
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+         at API.ApiUnhandledExceptionLoggingMiddleware.InvokeAsync(HttpContext context) in C:\Users\mart6\source\repos\FolioTrace\API\ApiUnhandledExceptionLoggingMiddleware.cs:line 16
+info: Npgsql.Command[2001]
+      Command execution completed (duration=4ms): select public.mt_upsert_apiexchange($1,$2,$3,$4)

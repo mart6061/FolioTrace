@@ -18,7 +18,7 @@ public static class TransactionBuilder
         var eventSetID = EventSetIDBuilder.Create();
         var movementCount = request.Credits.Count + request.Debits.Count;
         var eventIDGroup = Enumerable.Range(0, movementCount)
-            .Select(_ => new EventID(Guid.NewGuid()))
+            .Select(_ => new EventID(Guid.CreateGuid7()))
             .ToList();
 
         var events = new List<ITransactionMovementEvent>(movementCount);

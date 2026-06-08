@@ -19,7 +19,7 @@ public sealed record BrokerModifiedEvent : EventBase, IBrokerEvent
     }
 
     public BrokerModifiedEvent(UserID userId, EventDateTime eventDateTime, string reason, LegalEntityIdentifier lei, string name, FeeRate commission)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, name, commission)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, name, commission)
     {
     }
 

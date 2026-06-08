@@ -21,7 +21,7 @@ public sealed record CountryModifiedEvent : EventBase, ICountryEvent
     }
 
     public CountryModifiedEvent(UserID userId, EventDateTime eventDateTime, string reason, Alpha2 alpha2, Alpha3 alpha3, short numeric, string name)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, alpha2, alpha3, numeric, name)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, alpha2, alpha3, numeric, name)
     {
     }
 

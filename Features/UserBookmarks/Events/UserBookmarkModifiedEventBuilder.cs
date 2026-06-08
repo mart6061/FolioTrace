@@ -16,7 +16,7 @@ public static class UserBookmarkModifiedEventBuilder
     public static Result<UserBookmarkModifiedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, Guid bookmarkID, UserBookmarkType bookmarkType, string url, DisplayOrder displayOrder)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventID = Guid.NewGuid();
+        EventID eventID = Guid.CreateGuid7();
         return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, bookmarkID, bookmarkType, url, displayOrder);
     }
 

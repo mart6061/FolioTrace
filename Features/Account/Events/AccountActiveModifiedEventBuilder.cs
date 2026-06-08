@@ -16,7 +16,7 @@ public static class AccountActiveModifiedEventBuilder
     public static Result<AccountActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, AccountID accountID, Active active, Accounts? accounts = null)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, accountID, active, accounts);
     }
 

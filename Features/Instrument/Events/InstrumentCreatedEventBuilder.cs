@@ -16,7 +16,7 @@ public static class InstrumentCreatedEventBuilder
     public static Result<InstrumentCreatedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo, Active active, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         return CreateSeed(eventId, userId, eventDateTime, auditDateTime, reason, instrumentID, name, formalName, exchange, cfi, logo, active, incomeCountry, priceCountry, priceCurrency);
     }
 

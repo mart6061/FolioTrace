@@ -17,7 +17,7 @@ public sealed record BrokerNotesSetEvent : EventBase, IBrokerEvent
     }
 
     public BrokerNotesSetEvent(UserID userId, EventDateTime eventDateTime, string reason, LegalEntityIdentifier lei, string notes)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, notes)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, notes)
     {
     }
 

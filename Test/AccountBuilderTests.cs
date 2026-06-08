@@ -98,8 +98,8 @@ public sealed class AccountBuilderTests
         var currencies = CreateCurrencies("GBP");
         var first = AccountIDBuilder.Create();
         var second = AccountIDBuilder.Create();
-        var createdFirst = AccountCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDate, "Create account", first, "First", "First Formal", Alpha3Builder.Create("GBP"), true, currencies).Value!;
-        var createdSecond = AccountCreatedEventBuilder.CreateSeed(new EventID(Guid.NewGuid()), UserID, EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), "Create account", second, "Second", "Second Formal", Alpha3Builder.Create("GBP"), true, currencies).Value!;
+        var createdFirst = AccountCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create account", first, "First", "First Formal", Alpha3Builder.Create("GBP"), true, currencies).Value!;
+        var createdSecond = AccountCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), "Create account", second, "Second", "Second Formal", Alpha3Builder.Create("GBP"), true, currencies).Value!;
         var accounts = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [createdFirst, createdSecond]);
         var reorder = AccountDisplayOrderSetEventBuilder.Create(new AccountDisplayOrderSetRequest(UserID, EventDate, "Move first account", first, 3), accounts).Value!;
 
@@ -116,7 +116,7 @@ public sealed class AccountBuilderTests
     private static Currencies CreateCurrencies(params string[] codes)
     {
         var events = codes.Select((code, index) => CurrencyCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(index)),
@@ -135,7 +135,7 @@ public sealed class AccountBuilderTests
     private static Accounts CreateAccounts(Currencies currencies, params (string Name, AccountID AccountID)[] seeds)
     {
         var events = seeds.Select((seed, index) => AccountCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             EventDate,
             AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(index)),

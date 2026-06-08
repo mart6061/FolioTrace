@@ -16,7 +16,7 @@ public static class FXActiveModifiedEventBuilder
     public static Result<FXActiveModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, CurrencyPair pair, Active active)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = FXActiveModifiedEvent.Validate(eventId, userId, eventDateTime, auditDateTime, reason, pair);
 
         return validationErrors.Count == 0

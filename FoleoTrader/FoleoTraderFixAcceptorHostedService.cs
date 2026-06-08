@@ -20,6 +20,9 @@ public sealed class FoleoTraderFixAcceptorHostedService(
         Directory.CreateDirectory(options.LogPath);
 
         var settings = new SessionSettings();
+        settings.Get().SetString("FileStorePath", options.StorePath);
+        settings.Get().SetString("FileLogPath", options.LogPath);
+
         var dictionary = new SettingsDictionary("FoleoTrader");
         dictionary.SetString("ConnectionType", "acceptor");
         dictionary.SetString("BeginString", "FIXT.1.1");

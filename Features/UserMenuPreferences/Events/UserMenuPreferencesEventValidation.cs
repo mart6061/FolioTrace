@@ -43,6 +43,7 @@ internal static class UserMenuPreferencesEventValidation
         }
 
         var ids = items.Select(item => item.MenuItemID).ToList();
+        var normalizedIDs = ids.Select(UserMenuPreferenceDefaults.NormalizeID).ToList();
 
         foreach (var itemID in ids.Where(string.IsNullOrWhiteSpace))
             messages.Add("MenuItemID is required.");
@@ -53,10 +54,10 @@ internal static class UserMenuPreferencesEventValidation
         foreach (var itemID in ids.Where(id => !string.IsNullOrWhiteSpace(id) && !UserMenuPreferenceDefaults.IsControlled(id)).Distinct(StringComparer.Ordinal))
             messages.Add($"Unknown menu item ID '{itemID}'.");
 
-        foreach (var duplicate in ids.GroupBy(id => id, StringComparer.Ordinal).Where(group => group.Count() > 1).Select(group => group.Key))
+        foreach (var duplicate in normalizedIDs.GroupBy(id => id, StringComparer.Ordinal).Where(group => group.Count() > 1).Select(group => group.Key))
             messages.Add($"Menu item ID '{duplicate}' is duplicated.");
 
-        foreach (var missing in UserMenuPreferenceDefaults.ControlledMenuItemIDs.Except(ids, StringComparer.Ordinal))
+        foreach (var missing in UserMenuPreferenceDefaults.ControlledMenuItemIDs.Except(normalizedIDs, StringComparer.Ordinal))
             messages.Add($"Menu item ID '{missing}' is required.");
     }
 }

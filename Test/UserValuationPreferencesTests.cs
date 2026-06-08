@@ -17,7 +17,7 @@ public sealed class UserValuationPreferencesTests
     public void CreatedBuilder_AcceptsDefaultPreferences()
     {
         var result = UserValuationPreferencesCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -37,7 +37,7 @@ public sealed class UserValuationPreferencesTests
     public void ModifiedBuilder_RejectsUnsupportedEnums()
     {
         var result = UserValuationPreferencesModifiedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -69,7 +69,7 @@ public sealed class UserValuationPreferencesTests
         var firstAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 1, DateTimeKind.Utc));
         var secondAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 2, DateTimeKind.Utc));
         var created = UserValuationPreferencesCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             firstAudit,
@@ -78,7 +78,7 @@ public sealed class UserValuationPreferencesTests
             HoldingDateBasis.EventDateTime,
             false).Value!;
         var modified = UserValuationPreferencesModifiedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             secondAudit,

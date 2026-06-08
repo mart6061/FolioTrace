@@ -17,9 +17,9 @@ public sealed class UserBookmarksTests
     [Fact]
     public void CreatedBuilder_AcceptsPathBookmark()
     {
-        var bookmarkID = Guid.NewGuid();
+        var bookmarkID = Guid.CreateGuid7();
         var result = UserBookmarkCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -65,12 +65,12 @@ public sealed class UserBookmarksTests
     public void CreatedBuilder_RejectsInvalidUrls(string url)
     {
         var result = UserBookmarkCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
             "Create bookmark",
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserBookmarkType.Base,
             url,
             1);
@@ -82,12 +82,12 @@ public sealed class UserBookmarksTests
     public void DisplayOrderBuilder_RejectsNonPositiveOrder()
     {
         var result = UserBookmarkDisplayOrderSetEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
             "Set bookmark order",
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             0);
 
         Assert.False(result.IsValid);
@@ -97,7 +97,7 @@ public sealed class UserBookmarksTests
     public void DeletedBuilder_RejectsEmptyBookmarkID()
     {
         var result = UserBookmarkDeletedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             UserID,
             EventDate,
             AuditDate,
@@ -110,14 +110,14 @@ public sealed class UserBookmarksTests
     [Fact]
     public async Task Service_RebuildsBookmarksAndHonorsDisplayOrder()
     {
-        var firstID = Guid.NewGuid();
-        var secondID = Guid.NewGuid();
+        var firstID = Guid.CreateGuid7();
+        var secondID = Guid.CreateGuid7();
         var firstAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 1, DateTimeKind.Utc));
         var secondAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 2, DateTimeKind.Utc));
         var thirdAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 3, DateTimeKind.Utc));
-        var first = UserBookmarkCreatedEventBuilder.CreateSeed(Guid.NewGuid(), UserID, EventDate, firstAudit, "Create bookmark", firstID, UserBookmarkType.Base, "/Data/Reference/Accounts", 1).Value!;
-        var second = UserBookmarkCreatedEventBuilder.CreateSeed(Guid.NewGuid(), UserID, EventDate, secondAudit, "Create bookmark", secondID, UserBookmarkType.Query, "/Blotter", 2).Value!;
-        var reorder = UserBookmarkDisplayOrderSetEventBuilder.CreateSeed(Guid.NewGuid(), UserID, EventDate, thirdAudit, "Set bookmark order", secondID, 1).Value!;
+        var first = UserBookmarkCreatedEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, firstAudit, "Create bookmark", firstID, UserBookmarkType.Base, "/Data/Reference/Accounts", 1).Value!;
+        var second = UserBookmarkCreatedEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, secondAudit, "Create bookmark", secondID, UserBookmarkType.Query, "/Blotter", 2).Value!;
+        var reorder = UserBookmarkDisplayOrderSetEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, thirdAudit, "Set bookmark order", secondID, 1).Value!;
         var service = new UserBookmarksService(new FakeEventRepository(first, second, reorder));
 
         var beforeReorder = await service.Get(UserID, EventDate, secondAudit);
@@ -131,11 +131,11 @@ public sealed class UserBookmarksTests
     [Fact]
     public async Task Service_RemovesDeletedBookmarks()
     {
-        var bookmarkID = Guid.NewGuid();
+        var bookmarkID = Guid.CreateGuid7();
         var firstAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 1, DateTimeKind.Utc));
         var secondAudit = AuditDateTimeBuilder.Create(new DateTime(2025, 5, 1, 0, 0, 2, DateTimeKind.Utc));
-        var created = UserBookmarkCreatedEventBuilder.CreateSeed(Guid.NewGuid(), UserID, EventDate, firstAudit, "Create bookmark", bookmarkID, UserBookmarkType.Base, "/Data/Reference/Accounts", 1).Value!;
-        var deleted = UserBookmarkDeletedEventBuilder.CreateSeed(Guid.NewGuid(), UserID, EventDate, secondAudit, "Delete bookmark", bookmarkID).Value!;
+        var created = UserBookmarkCreatedEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, firstAudit, "Create bookmark", bookmarkID, UserBookmarkType.Base, "/Data/Reference/Accounts", 1).Value!;
+        var deleted = UserBookmarkDeletedEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, secondAudit, "Delete bookmark", bookmarkID).Value!;
         var service = new UserBookmarksService(new FakeEventRepository(created, deleted));
 
         var beforeDelete = await service.Get(UserID, EventDate, firstAudit);

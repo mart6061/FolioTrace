@@ -103,7 +103,7 @@ public sealed class UserServiceTests
 
     private static UserCreatedEvent CreateUserCreated(string displayName, EventDateTime eventDateTime, AuditDateTime auditDateTime) =>
         UserCreatedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             eventDateTime,
             auditDateTime,
@@ -114,7 +114,7 @@ public sealed class UserServiceTests
 
     private static UserModifiedEvent CreateUserModified(string displayName, EventDateTime eventDateTime, AuditDateTime auditDateTime) =>
         UserModifiedEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             eventDateTime,
             auditDateTime,
@@ -125,7 +125,7 @@ public sealed class UserServiceTests
 
     private static UserSignedInEvent CreateUserSignedIn(EventDateTime eventDateTime, AuditDateTime auditDateTime) =>
         UserSignedInEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             eventDateTime,
             auditDateTime,
@@ -133,7 +133,7 @@ public sealed class UserServiceTests
 
     private static UserSignedOutEvent CreateUserSignedOut(EventDateTime eventDateTime, AuditDateTime auditDateTime) =>
         UserSignedOutEventBuilder.CreateSeed(
-            new EventID(Guid.NewGuid()),
+            new EventID(Guid.CreateGuid7()),
             UserID,
             eventDateTime,
             auditDateTime,

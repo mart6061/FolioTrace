@@ -17,7 +17,7 @@ public sealed record BrokerNextReviewSetEvent : EventBase, IBrokerEvent
     }
 
     public BrokerNextReviewSetEvent(UserID userId, EventDateTime eventDateTime, string reason, LegalEntityIdentifier lei, EventDateTime nextReview)
-        : this(Guid.NewGuid(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, nextReview)
+        : this(Guid.CreateGuid7(), userId, eventDateTime, AuditDateTimeBuilder.Create(), reason, lei, nextReview)
     {
     }
 

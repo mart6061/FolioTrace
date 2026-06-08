@@ -1,4 +1,4 @@
-import { getAccountEvents, readApplicationStatus, readEventPropertyDetails } from '$lib/server/api';
+import { getAccountEvents, getTransactionEvents, readApplicationStatus, readEventPropertyDetails } from '$lib/server/api';
 import { json } from '@sveltejs/kit';
 
 export const GET = async ({ fetch, url }) => {
@@ -7,14 +7,31 @@ export const GET = async ({ fetch, url }) => {
   if (!accountID)
     return json({ message: 'Account ID is required.' }, { status: 400 });
 
-  const history = (await getAccountEvents(fetch, {
+  const historyFilters = {
     accountID,
     valuationDateTime: url.searchParams.get('valuationDateTime'),
     auditDateTime: url.searchParams.get('auditDateTime')
-  })).map(normalizeAccountEvent);
+  };
+  const [accountEvents, transactionEvents] = await Promise.all([
+    getAccountEvents(fetch, historyFilters),
+    getTransactionEvents(fetch, historyFilters)
+  ]);
+
+  const history = [
+    ...accountEvents.map(normalizeAccountEvent),
+    ...transactionEvents
+  ].sort(compareEvents);
 
   return json(history);
 };
+
+function compareEvents(left: { eventDateTime: string; auditDateTime: string; eventID: string }, right: { eventDateTime: string; auditDateTime: string; eventID: string }) {
+  return (
+    new Date(left.eventDateTime).getTime() - new Date(right.eventDateTime).getTime() ||
+    new Date(left.auditDateTime).getTime() - new Date(right.auditDateTime).getTime() ||
+    left.eventID.localeCompare(right.eventID)
+  );
+}
 
 function normalizeAccountEvent(event: Record<string, unknown>) {
   return {

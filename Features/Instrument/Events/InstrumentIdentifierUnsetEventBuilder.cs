@@ -11,7 +11,7 @@ public static class InstrumentIdentifierUnsetEventBuilder
             throw new ArgumentNullException(nameof(request));
 
         var auditDateTime = AuditDateTimeBuilder.Create();
-        EventID eventId = Guid.NewGuid();
+        EventID eventId = Guid.CreateGuid7();
         var validationErrors = InstrumentCreatedEventBuilder.ValidateCommon(eventId, request.UserID, request.EventDateTime, auditDateTime, request.Reason, request.InstrumentID);
 
         return validationErrors.Count == 0

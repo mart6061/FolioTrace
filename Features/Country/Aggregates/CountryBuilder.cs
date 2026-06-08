@@ -21,7 +21,7 @@ public static class CountryBuilder
     public static Country CreateSeed(Alpha2 alpha2, Alpha3 alpha3, short numeric, string name)
     {
         var createdEvent = CountryCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             Constants.Initialisation.UserID,
             Constants.Initialisation.EventDateTime,
             Constants.Initialisation.AuditDateTime,

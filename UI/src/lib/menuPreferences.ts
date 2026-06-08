@@ -1,5 +1,9 @@
 import type { UserMenuPreferenceItem, UserMenuPreferences } from '$lib/types';
 
+const legacyMenuPreferenceIDs = new Map([
+  ['value-valuations', 'asset']
+]);
+
 export type MenuPreferenceDefinition = {
   id: string;
   label: string;
@@ -9,15 +13,16 @@ export type MenuPreferenceDefinition = {
 export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'blotter', label: 'Blotter' },
-  { id: 'value-valuations', label: 'Valuations' },
+  { id: 'asset', label: 'Asset' },
+  { id: 'report', label: 'Report' },
   { id: 'account', label: 'Account' },
   { id: 'compliance', label: 'Compliance' },
   { id: 'administration', label: 'Administration' },
-  { id: 'data', label: 'Data' },
+  { id: 'system', label: 'System' },
+  { id: 'data', label: 'Data', parentID: 'system' },
   { id: 'value', label: 'Value', parentID: 'data' },
   { id: 'reference', label: 'Reference', parentID: 'data' },
   { id: 'reference-valuation-setting', label: 'Valuation Setting', parentID: 'reference' },
-  { id: 'system', label: 'System' },
   { id: 'system-logs', label: 'Logs', parentID: 'system' },
   { id: 'system-stats', label: 'Stats for Nerds', parentID: 'system' },
   { id: 'todo', label: 'To Do' }
@@ -42,7 +47,7 @@ export function defaultUserMenuPreferences(userID = ''): UserMenuPreferences {
 }
 
 export function normalizeMenuPreferenceItems(items: UserMenuPreferenceItem[] | null | undefined) {
-  const byID = new Map((items ?? []).map((item) => [item.menuItemID, item.visible]));
+  const byID = new Map((items ?? []).map((item) => [legacyMenuPreferenceIDs.get(item.menuItemID) ?? item.menuItemID, item.visible]));
   return defaultMenuPreferenceItems().map((item) => ({
     ...item,
     visible: byID.get(item.menuItemID) ?? item.visible

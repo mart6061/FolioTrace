@@ -21,7 +21,7 @@ public static class CurrencyBuilder
     public static Currency CreateSeed(Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name)
     {
         var createdEvent = CurrencyCreatedEventBuilder.CreateSeed(
-            Guid.NewGuid(),
+            Guid.CreateGuid7(),
             Constants.Initialisation.UserID,
             Constants.Initialisation.EventDateTime,
             Constants.Initialisation.AuditDateTime,

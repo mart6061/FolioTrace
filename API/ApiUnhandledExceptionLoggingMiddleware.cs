@@ -17,7 +17,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
         }
         catch (Exception exception)
         {
-            var errorId = Guid.NewGuid();
+            var errorId = Guid.CreateGuid7();
             await WriteExceptionLogAsync(context, exception, errorId);
             var statusCode = exception switch
             {
