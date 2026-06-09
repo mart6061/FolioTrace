@@ -15,7 +15,6 @@ public sealed record Ticket : IModel
     public required TicketDecision TradeDecision { get; init; }
     public required List<AccountID> AccountIDs { get; init; } = [];
     public Price? ProposalTargetPrice { get; init; }
-    public TransactionQuantity? ProposalTotalAmount { get; init; }
     public required List<TicketProposalAllocation> ProposalAllocations { get; init; } = [];
     public required string ProposalReason { get; init; } = string.Empty;
     public required string ProposalAllocation { get; init; } = string.Empty;

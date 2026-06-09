@@ -2898,14 +2898,12 @@ public static class ApiEndpointRegistration
             TicketProposalCreatedEvent proposalCreatedEvent => WithTicketBase(proposalCreatedEvent, new
             {
                 proposalCreatedEvent.TargetPrice,
-                proposalCreatedEvent.TotalAmount,
                 TradeCurrency = proposalCreatedEvent.TradeCurrency.Value,
                 Allocations = proposalCreatedEvent.Allocations.Select(ToResponse).ToList()
             }),
             TicketProposalModifiedEvent proposalModifiedEvent => WithTicketBase(proposalModifiedEvent, new
             {
                 proposalModifiedEvent.TargetPrice,
-                proposalModifiedEvent.TotalAmount,
                 TradeCurrency = proposalModifiedEvent.TradeCurrency.Value,
                 Allocations = proposalModifiedEvent.Allocations.Select(ToResponse).ToList()
             }),

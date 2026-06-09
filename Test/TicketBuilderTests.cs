@@ -64,20 +64,20 @@ public sealed class TicketBuilderTests
         var added = AddAccount(created);
         var tickets = new Tickets(EventDate, [created, added]);
         var proposal = TicketEventBuilder.CreateProposal(
-            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), new TransactionQuantity(100m), null, [new TicketProposalAllocation(AccountID, 7m)]),
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), null, [new TicketProposalAllocation(AccountID, 7m)]),
             tickets).Value!;
         tickets = new Tickets(EventDate, [created, added, proposal]);
         var modified = TicketEventBuilder.ModifyProposal(
-            new TicketProposalRequest(UserID, EventDate, "Modify proposal", created.TicketNumber, new Price(11m), new TransactionQuantity(110m), Alpha3Builder.Create("USD"), [new TicketProposalAllocation(AccountID, 8m)]),
+            new TicketProposalRequest(UserID, EventDate, "Modify proposal", created.TicketNumber, new Price(11m), Alpha3Builder.Create("USD"), [new TicketProposalAllocation(AccountID, 8m)]),
             tickets).Value!;
 
         var ticket = Assert.Single(new Tickets(EventDate, [created, added, proposal, modified]).Items);
         Assert.Equal(TicketStage.Proposal, ticket.Stage);
         Assert.Equal(TicketDecision.InProgress, ticket.ProposalDecision);
         Assert.Equal(11m, ticket.ProposalTargetPrice?.Amount);
-        Assert.Equal(110m, ticket.ProposalTotalAmount?.Value);
         Assert.Equal(Alpha3Builder.Create("USD"), ticket.TradeCurrency);
         Assert.Equal(8m, Assert.Single(ticket.ProposalAllocations).Quantity);
+        Assert.Equal(8m, ticket.ProposalAllocations.Sum(allocation => allocation.Quantity));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class TicketBuilderTests
         var created = CreateTicket();
         var added = AddAccount(created);
         var proposal = TicketEventBuilder.CreateProposal(
-            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), new TransactionQuantity(100m), null, [new TicketProposalAllocation(AccountID, 7m)]),
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), null, [new TicketProposalAllocation(AccountID, 7m)]),
             new Tickets(EventDate, [created, added])).Value!;
 
         var requested = TicketEventBuilder.RequestProposalDecision(new TicketApprovalRequest(UserID, EventDate, "Request decision", TicketOne), new Tickets(EventDate, [created, added, proposal])).Value!;
@@ -355,7 +355,7 @@ public sealed class TicketBuilderTests
         var created = CreateTicket(ticketNumber ?? TicketOne);
         var added = AddAccount(created);
         var proposal = TicketEventBuilder.CreateProposal(
-            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), new TransactionQuantity(100m), null, [new TicketProposalAllocation(AccountID, 7m)]),
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", created.TicketNumber, new Price(10m), null, [new TicketProposalAllocation(AccountID, 7m)]),
             new Tickets(EventDate, [created, added])).Value!;
         var requested = TicketEventBuilder.RequestProposalDecision(
             new TicketApprovalRequest(UserID, EventDate, "Request proposal decision", created.TicketNumber),

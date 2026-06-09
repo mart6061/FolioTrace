@@ -8,6 +8,5 @@ public sealed record TicketProposalRequest(
     string Reason,
     TicketNumber TicketNumber,
     Price TargetPrice,
-    TransactionQuantity TotalAmount,
     Alpha3? TradeCurrency,
     IReadOnlyList<TicketProposalAllocation> Allocations);
