@@ -4,10 +4,14 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Account Modified Event")]
 public sealed record AccountModifiedEvent : EventBase, IAccountEvent
 {
+    [EventProperty(Description = "Account ID")]
     public AccountID AccountID { get; init; } = null!;
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
+    [EventProperty(Description = "Formal Name")]
     public string FormalName { get; init; } = string.Empty;
 
     [JsonConstructor]

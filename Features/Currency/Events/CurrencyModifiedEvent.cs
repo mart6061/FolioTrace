@@ -4,14 +4,19 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Currency Modified Event")]
 public sealed record CurrencyModifiedEvent : EventBase, ICurrencyEvent
 {
+    [EventProperty(Description = "Alphabetic Code")]
     public Alpha3 AlphabeticCode { get; init; } = null!;
 
+    [EventProperty(Description = "Numeric Code")]
     public int NumericCode { get; init; }
 
+    [EventProperty(Description = "Decimal Place")]
     public short DecimalPlace { get; init; }
 
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
 
     [JsonConstructor]

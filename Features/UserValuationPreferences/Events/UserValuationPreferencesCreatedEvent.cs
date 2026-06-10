@@ -4,12 +4,16 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "User Valuation Preferences Created Event")]
 public sealed record UserValuationPreferencesCreatedEvent : EventBase, IUserValuationPreferencesEvent
 {
+    [EventProperty(Description = "Valuation Date Option")]
     public UserValuationDateOption ValuationDateOption { get; init; }
 
+    [EventProperty(Description = "Holding Date Basis")]
     public HoldingDateBasis HoldingDateBasis { get; init; }
 
+    [EventProperty(Description = "Show Zero Balances")]
     public bool ShowZeroBalances { get; init; }
 
     [JsonConstructor]

@@ -7,7 +7,7 @@ namespace FolioTrace.Common;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(AccountCreatedEvent), nameof(AccountCreatedEvent))]
 [JsonDerivedType(typeof(AccountModifiedEvent), nameof(AccountModifiedEvent))]
-[JsonDerivedType(typeof(AccountActiveModifiedEvent), nameof(AccountActiveModifiedEvent))]
+[JsonDerivedType(typeof(AccountActiveSetEvent), nameof(AccountActiveSetEvent))]
 [JsonDerivedType(typeof(AccountDisplayOrderSetEvent), nameof(AccountDisplayOrderSetEvent))]
 [JsonDerivedType(typeof(BrokerCreatedEvent), nameof(BrokerCreatedEvent))]
 [JsonDerivedType(typeof(BrokerModifiedEvent), nameof(BrokerModifiedEvent))]

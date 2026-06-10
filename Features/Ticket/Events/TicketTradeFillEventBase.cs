@@ -17,7 +17,7 @@ public abstract record TicketTradeFillEventBase : TicketEventBase
     [EventProperty(Description = "Quantity", Order = 130)]
     public decimal Quantity { get; init; }
 
-    [EventProperty(Description = "Book cost", Order = 140)]
+    [EventProperty(Description = "Book Cost", Order = 140)]
     public TransactionBookCost BookCost { get; init; } = null!;
 
     [EventProperty(Description = "Note", Order = 150)]

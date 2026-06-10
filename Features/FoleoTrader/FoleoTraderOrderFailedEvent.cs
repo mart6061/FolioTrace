@@ -3,12 +3,16 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.System, Description = "Foleo Trader Order Failed Event")]
 public sealed record FoleoTraderOrderFailedEvent : EventBase, IFoleoTraderOrderEvent
 {
+    [EventProperty(Description = "Ticket Number")]
     public TicketNumber TicketNumber { get; init; } = null!;
 
+    [EventProperty(Description = "Cl Ord ID")]
     public string ClOrdID { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Error")]
     public string Error { get; init; } = string.Empty;
 
     private FoleoTraderOrderFailedEvent()

@@ -1,12 +1,17 @@
 using System.Text.Json.Serialization;
 using FolioTrace.Types;
+using FolioTrace.Common;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "Ticket Created Event")]
 public sealed record TicketCreatedEvent : TicketEventBase
 {
+    [EventProperty(Description = "Side")]
     public TicketSide Side { get; init; }
+    [EventProperty(Description = "Instrument ID")]
     public InstrumentID InstrumentID { get; init; } = null!;
+    [EventProperty(Description = "Trade Currency")]
     public Alpha3 TradeCurrency { get; init; } = null!;
 
     [JsonConstructor]

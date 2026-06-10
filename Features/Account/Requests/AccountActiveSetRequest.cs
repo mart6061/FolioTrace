@@ -3,7 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record AccountActiveModifiedRequest(
+public sealed record AccountActiveSetRequest(
     UserID UserID,
     EventDateTime EventDateTime,
     string Reason,

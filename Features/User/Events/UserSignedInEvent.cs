@@ -4,6 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Authentication, Description = "User Signed In Event")]
 public sealed record UserSignedInEvent : EventBase, IUserEvent
 {
     [JsonConstructor]

@@ -4,12 +4,16 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "User Modified Event")]
 public sealed record UserModifiedEvent : EventBase, IUserEvent
 {
+    [EventProperty(Description = "Display Name")]
     public string DisplayName { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Display Preferences")]
     public UserDisplayPreferences DisplayPreferences { get; init; } = null!;
 
+    [EventProperty(Description = "Valuation Preferences")]
     public UserProfileValuationPreferences ValuationPreferences { get; init; } = null!;
 
     [JsonConstructor]

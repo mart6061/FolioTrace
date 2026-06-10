@@ -4,20 +4,28 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "Broker Created Event")]
 public sealed record BrokerCreatedEvent : EventBase, IBrokerEvent
 {
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
 
+    [EventProperty(Description = "LEI")]
     public LegalEntityIdentifier LEI { get; init; } = null!;
 
+    [EventProperty(Description = "Commission")]
     public FeeRate Commission { get; init; } = null!;
 
+    [EventProperty(Description = "Active")]
     public Active Active { get; init; } = false;
 
+    [EventProperty(Description = "Approved Date Time")]
     public EventDateTime ApprovedDateTime { get; init; } = null!;
 
+    [EventProperty(Description = "Next Review")]
     public EventDateTime NextReview { get; init; } = null!;
 
+    [EventProperty(Description = "Notes")]
     public string Notes { get; init; } = string.Empty;
 
     [JsonConstructor]

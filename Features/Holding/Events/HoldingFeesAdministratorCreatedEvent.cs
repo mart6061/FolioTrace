@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using FolioTrace.Types;
+using FolioTrace.Common;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "Holding Fees Administrator Created Event")]
 public sealed record HoldingFeesAdministratorCreatedEvent : HoldingCreatedEvent
 {
     [JsonConstructor]

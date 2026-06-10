@@ -313,7 +313,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             .ToList();
     }
 
-    public static IReadOnlyList<AccountActiveModifiedEvent> CreateInitialAccountActiveModifiedEvents()
+    public static IReadOnlyList<AccountActiveSetEvent> CreateInitialAccountActiveModifiedEvents()
     {
         var activeChanges = new[]
         {
@@ -323,7 +323,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         };
 
         return activeChanges
-            .Select((account, index) => AccountActiveModifiedEventBuilder.CreateSeed(
+            .Select((account, index) => AccountActiveSetEventBuilder.CreateSeed(
                 Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
                 EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(40 + index)),

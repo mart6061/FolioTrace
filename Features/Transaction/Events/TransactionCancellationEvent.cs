@@ -4,13 +4,20 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Cancelled, Description = "Transaction Cancellation Event")]
 public sealed record TransactionCancellationEvent : EventBase, ITransactionEvent
 {
+    [EventProperty(Description = "Event Set ID")]
     public EventSetID EventSetID { get; init; } = null!;
+    [EventProperty(Description = "Event ID Group")]
     public IReadOnlyList<EventID> EventIDGroup { get; init; } = [];
+    [EventProperty(Description = "Account ID")]
     public AccountID AccountID { get; init; } = null!;
+    [EventProperty(Description = "Cancelled Event ID")]
     public EventID CancelledEventID { get; init; } = null!;
+    [EventProperty(Description = "Cancelled ID Group")]
     public IReadOnlyList<EventID> CancelledIDGroup { get; init; } = [];
+    [EventProperty(Description = "Settlement Date Time")]
     public SettlementDateTime SettlementDateTime { get; init; } = null!;
 
     [JsonConstructor]

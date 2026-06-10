@@ -1,9 +1,20 @@
 using API;
 using API.FoleoTrader;
+using Microsoft.Extensions.Logging;
 using Repository;
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.Configure(options =>
+{
+    options.ActivityTrackingOptions =
+        ActivityTrackingOptions.TraceId |
+        ActivityTrackingOptions.SpanId |
+        ActivityTrackingOptions.ParentId |
+        ActivityTrackingOptions.Baggage |
+        ActivityTrackingOptions.Tags;
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -27,6 +38,7 @@ builder.Services.AddSingleton(
         .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
+builder.Services.AddApiObservability(builder.Configuration, builder.Environment);
 builder.Services.AddHostedService<AggregateMaintenanceHostedService>();
 
 var app = builder.Build();
@@ -44,9 +56,11 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseApiRequestLogging();
 app.UseApiExchangeCapture();
 app.UseApiUnhandledExceptionLogging();
 
+app.MapHealthChecks("/health");
 app.MapFolioTraceApi();
 
 app.Run();

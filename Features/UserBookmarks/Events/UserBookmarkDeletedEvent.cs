@@ -4,8 +4,10 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "User Bookmark Deleted Event")]
 public sealed record UserBookmarkDeletedEvent : EventBase, IUserBookmarksEvent
 {
+    [EventProperty(Description = "Bookmark ID")]
     public Guid BookmarkID { get; init; }
 
     [JsonConstructor]

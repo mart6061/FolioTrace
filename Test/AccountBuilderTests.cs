@@ -50,9 +50,9 @@ public sealed class AccountBuilderTests
     {
         var currencies = CreateCurrencies("GBP");
         var accounts = CreateAccounts(currencies, "Existing Account");
-        var request = new AccountActiveModifiedRequest(UserID, EventDate, "Deactivate account", AccountIDBuilder.Create(), false);
+        var request = new AccountActiveSetRequest(UserID, EventDate, "Deactivate account", AccountIDBuilder.Create(), false);
 
-        var result = AccountActiveModifiedEventBuilder.Create(request, accounts);
+        var result = AccountActiveSetEventBuilder.Create(request, accounts);
 
         Assert.False(result.IsValid);
         Assert.Contains("No matching Account found for AccountID", result.ValidationErrors[0]);
@@ -67,7 +67,7 @@ public sealed class AccountBuilderTests
         var accounts = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created]);
         var modified = AccountModifiedEventBuilder.Create(new AccountModifiedRequest(UserID, EventDate, "Modify account", accountID, "Renamed", "Renamed Formal"), accounts).Value!;
         accounts = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created, modified]);
-        var active = AccountActiveModifiedEventBuilder.Create(new AccountActiveModifiedRequest(UserID, EventDate, "Deactivate account", accountID, false), accounts).Value!;
+        var active = AccountActiveSetEventBuilder.Create(new AccountActiveSetRequest(UserID, EventDate, "Deactivate account", accountID, false), accounts).Value!;
 
         var finalAccounts = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created, modified, active]);
 

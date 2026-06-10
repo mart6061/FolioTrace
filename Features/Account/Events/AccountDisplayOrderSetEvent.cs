@@ -4,9 +4,12 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Account Display Order Set Event")]
 public sealed record AccountDisplayOrderSetEvent : EventBase, IAccountEvent
 {
+    [EventProperty(Description = "Account ID")]
     public AccountID AccountID { get; init; } = null!;
+    [EventProperty(Description = "Display Order")]
     public DisplayOrder DisplayOrder { get; init; } = null!;
 
     [JsonConstructor]

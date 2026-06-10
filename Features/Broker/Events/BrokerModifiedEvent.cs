@@ -4,12 +4,16 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Broker Modified Event")]
 public sealed record BrokerModifiedEvent : EventBase, IBrokerEvent
 {
+    [EventProperty(Description = "LEI")]
     public LegalEntityIdentifier LEI { get; init; } = null!;
 
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Commission")]
     public FeeRate Commission { get; init; } = null!;
 
     [JsonConstructor]

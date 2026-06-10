@@ -1,10 +1,13 @@
 using System.Text.Json.Serialization;
 using FolioTrace.Types;
+using FolioTrace.Common;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Ticket Proposal Reason Set Event")]
 public sealed record TicketProposalReasonSetEvent : TicketEventBase
 {
+    [EventProperty(Description = "Proposal Reason")]
     public string ProposalReason { get; init; } = string.Empty;
 
     [JsonConstructor]

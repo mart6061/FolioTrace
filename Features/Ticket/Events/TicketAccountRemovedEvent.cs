@@ -1,10 +1,13 @@
 using System.Text.Json.Serialization;
 using FolioTrace.Types;
+using FolioTrace.Common;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Ticket Account Removed Event")]
 public sealed record TicketAccountRemovedEvent : TicketEventBase
 {
+    [EventProperty(Description = "Account ID")]
     public AccountID AccountID { get; init; } = null!;
 
     [JsonConstructor]
