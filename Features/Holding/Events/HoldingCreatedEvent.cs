@@ -3,13 +3,20 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "Holding Created Event")]
 public abstract record HoldingCreatedEvent : EventBase, IHoldingEvent
 {
+    [EventProperty(Description = "Holding ID")]
     public HoldingID HoldingID { get; init; } = null!;
+    [EventProperty(Description = "Account ID")]
     public AccountID AccountID { get; init; } = null!;
+    [EventProperty(Description = "Instrument ID")]
     public InstrumentID InstrumentID { get; init; } = null!;
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
+    [EventProperty(Description = "Active")]
     public Active Active { get; init; } = false;
+    [EventProperty(Description = "Default")]
     public bool Default { get; init; }
 
     protected HoldingCreatedEvent() : base(null!, null!, null!, null!, string.Empty) { }

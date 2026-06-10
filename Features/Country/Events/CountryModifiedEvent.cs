@@ -4,14 +4,19 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Country Modified Event")]
 public sealed record CountryModifiedEvent : EventBase, ICountryEvent
 {
+    [EventProperty(Description = "Alpha2")]
     public Alpha2 Alpha2 { get; init; } = null!;
 
+    [EventProperty(Description = "Alpha3")]
     public Alpha3 Alpha3 { get; init; } = null!;
 
+    [EventProperty(Description = "Numeric")]
     public short Numeric { get; init; }
 
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
 
     [JsonConstructor]

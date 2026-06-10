@@ -4,10 +4,14 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Holding Modified Event")]
 public abstract record HoldingModifiedEvent : EventBase, IHoldingEvent
 {
+    [EventProperty(Description = "Holding ID")]
     public HoldingID HoldingID { get; init; } = null!;
+    [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
+    [EventProperty(Description = "Default")]
     public bool Default { get; init; }
 
     protected HoldingModifiedEvent() : base(null!, null!, null!, null!, string.Empty) { }

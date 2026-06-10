@@ -33,7 +33,7 @@ public static class AccountBuilder
             };
         }
 
-        public Account Apply(AccountActiveModifiedEvent activeModifiedEvent)
+        public Account Apply(AccountActiveSetEvent activeModifiedEvent)
         {
             if (account is null)
                 throw new ArgumentNullException(nameof(account));

@@ -514,7 +514,6 @@ export type Ticket = {
   tradeDecision: TicketDecision;
   accountIDs: string[];
   proposalTargetPrice?: number | null;
-  proposalTotalAmount?: number | null;
   proposalAllocations: TicketProposalAllocation[];
   proposalReason: string;
   proposalAllocation: string;

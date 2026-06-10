@@ -4,9 +4,12 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Instrument Income Set Event")]
 public sealed record InstrumentIncomeSetEvent : EventBase, IInstrumentIncomeEvent
 {
+    [EventProperty(Description = "Instrument ID")]
     public InstrumentID InstrumentID { get; init; } = null!;
+    [EventProperty(Description = "Income")]
     public IInstrumentIncome Income { get; init; } = null!;
 
     [JsonConstructor]

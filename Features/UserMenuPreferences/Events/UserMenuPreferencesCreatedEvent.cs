@@ -4,8 +4,10 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "User Menu Preferences Created Event")]
 public sealed record UserMenuPreferencesCreatedEvent : EventBase, IUserMenuPreferencesEvent
 {
+    [EventProperty(Description = "Items")]
     public IReadOnlyList<UserMenuPreferenceItem> Items { get; init; } = [];
 
     [JsonConstructor]

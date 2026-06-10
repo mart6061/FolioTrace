@@ -4,10 +4,13 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "FX Active Modified Event")]
 public sealed record FXActiveModifiedEvent : EventBase, IFXEvent
 {
+    [EventProperty(Description = "Pair")]
     public CurrencyPair Pair { get; init; } = null!;
 
+    [EventProperty(Description = "Active")]
     public Active Active { get; init; } = false;
 
     [JsonConstructor]

@@ -68,7 +68,6 @@ public sealed record Tickets : IAggregate
                     Stage = TicketStage.Proposal,
                     ProposalDecision = TicketDecision.InProgress,
                     ProposalTargetPrice = @event.TargetPrice,
-                    ProposalTotalAmount = @event.TotalAmount,
                     TradeCurrency = @event.TradeCurrency,
                     ProposalAllocations = @event.Allocations.ToList()
                 });
@@ -79,7 +78,6 @@ public sealed record Tickets : IAggregate
                     Stage = TicketStage.Proposal,
                     ProposalDecision = TicketDecision.InProgress,
                     ProposalTargetPrice = @event.TargetPrice,
-                    ProposalTotalAmount = @event.TotalAmount,
                     TradeCurrency = @event.TradeCurrency,
                     ProposalAllocations = @event.Allocations.ToList()
                 });

@@ -4,14 +4,19 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "User Bookmark Modified Event")]
 public sealed record UserBookmarkModifiedEvent : EventBase, IUserBookmarksEvent
 {
+    [EventProperty(Description = "Bookmark ID")]
     public Guid BookmarkID { get; init; }
 
+    [EventProperty(Description = "Bookmark Type")]
     public UserBookmarkType BookmarkType { get; init; }
 
+    [EventProperty(Description = "Url")]
     public string Url { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Display Order")]
     public DisplayOrder DisplayOrder { get; init; } = null!;
 
     [JsonConstructor]

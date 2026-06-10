@@ -1,14 +1,22 @@
 using FolioTrace.Types;
+using FolioTrace.Common;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Created, Description = "Holding Bank Created Event")]
 public abstract record HoldingBankCreatedEvent : HoldingCreatedEvent
 {
+    [EventProperty(Description = "Bank Name")]
     public string BankName { get; init; } = string.Empty;
+    [EventProperty(Description = "Account Name")]
     public string AccountName { get; init; } = string.Empty;
+    [EventProperty(Description = "Sort Code")]
     public SortCode SortCode { get; init; } = null!;
+    [EventProperty(Description = "Account Number")]
     public BankAccountNumber AccountNumber { get; init; } = null!;
+    [EventProperty(Description = "BIC")]
     public BIC BIC { get; init; } = null!;
+    [EventProperty(Description = "IBAN")]
     public IBAN IBAN { get; init; } = null!;
 
     protected HoldingBankCreatedEvent() { }

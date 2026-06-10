@@ -24,7 +24,12 @@
   let editingTicket = $state<{ ticketNumber: number; context: TicketEditContext | '' }>({ ticketNumber: 0, context: '' });
   let cancelConfirmingTicketNumber = $state(0);
   let cancelConfirmationInput = $state('');
+  let proposalQuantityDrafts = $state<Record<string, string>>({});
+  let tradeQuantityDrafts = $state<Record<string, string>>({});
+  let tradeBookCostDrafts = $state<Record<string, string>>({});
+  let tradeCashHoldingDrafts = $state<Record<string, string>>({});
   let openHistoryTicketNumber = $state(0);
+  let submittedTicketNumber = $state(0);
   let historyByTicketNumber = $state<Record<number, { events: TicketReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = '';
   const tickets = $derived(data.tickets?.items ?? []);
@@ -45,6 +50,7 @@
     [...activeInstruments].sort((left, right) => instrumentLabel(left).localeCompare(instrumentLabel(right)))
   );
   const asOfSummary = $derived(data.auditDateTime && data.tickets ? formatDisplayDateTime(data.tickets.asOfDateTime) : 'now');
+  const formTicketNumber = $derived(form?.status === 'failure' ? readFormTicketNumber(form) || submittedTicketNumber : 0);
   const historyContextKey = $derived([
     data.valuationDate,
     data.auditDateTime ?? '',
@@ -74,7 +80,8 @@
   });
 
   const enhanceAction = (name: string): SubmitFunction => {
-    return () => {
+    return ({ formData }) => {
+      submittedTicketNumber = readSubmittedTicketNumber(formData);
       submitting = name;
       return async ({ result, update }) => {
         const historyTicketNumber = result.type === 'success' ? openHistoryTicketNumber : 0;
@@ -89,6 +96,19 @@
       };
     };
   };
+
+  function readSubmittedTicketNumber(formData: FormData) {
+    const ticketNumber = Number(formData.get('ticketNumber'));
+    return Number.isFinite(ticketNumber) ? ticketNumber : 0;
+  }
+
+  function readFormTicketNumber(value: unknown) {
+    if (!value || typeof value !== 'object' || !('ticketNumber' in value))
+      return 0;
+
+    const ticketNumber = (value as { ticketNumber?: unknown }).ticketNumber;
+    return typeof ticketNumber === 'number' && Number.isFinite(ticketNumber) ? ticketNumber : 0;
+  }
 
   function findInstrument(instrumentID: string) {
     return instruments.find((instrument) => instrument.instrumentID === instrumentID) ?? null;
@@ -198,6 +218,16 @@
       return cashHoldingID;
 
     return options.find((holding) => holding.default)?.holdingID ?? '';
+  }
+
+  function tradeCashHoldingInputValue(ticket: Ticket, accountID: string, cashHoldingID: string | null | undefined) {
+    const key = tradeDraftKey(ticket.ticketNumber, accountID);
+    const draft = tradeCashHoldingDrafts[key];
+
+    if (draft !== undefined)
+      return draft;
+
+    return selectedTradeCashHoldingID(ticket, accountID, cashHoldingID);
   }
 
   function cashHoldingLabel(holding: Holding) {
@@ -320,13 +350,11 @@
   }
 
   function targetPriceDisplay(ticket: Ticket) {
-    const target = priceText(ticket.proposalTargetPrice, ticket.tradeCurrency);
-    const current = priceText(currentInstrumentPrice(ticket.instrumentID), ticket.tradeCurrency);
+    return formattedDisplay(priceText(ticket.proposalTargetPrice, ticket.tradeCurrency));
+  }
 
-    if (!target)
-      return 'Not set';
-
-    return current ? `${target} (current ${current})` : target;
+  function targetPriceInputValue(ticket: Ticket) {
+    return priceText(ticket.proposalTargetPrice ?? currentInstrumentPrice(ticket.instrumentID), ticket.tradeCurrency);
   }
 
   function quantityText(value: number | null | undefined) {
@@ -335,6 +363,96 @@
 
   function quantityTotal(items: { quantity: number }[]) {
     return items.reduce((total, item) => total + item.quantity, 0);
+  }
+
+  function proposalTotal(ticket: Ticket) {
+    return quantityTotal(ticket.proposalAllocations);
+  }
+
+  function proposalQuantityDraftKey(ticketNumber: number, accountID: string) {
+    return `${ticketNumber}:${accountID}`;
+  }
+
+  function tradeDraftKey(ticketNumber: number, accountID: string) {
+    return `${ticketNumber}:${accountID}`;
+  }
+
+  function parseDecimalInput(value: string) {
+    const normalized = value.replace(/,/g, '').trim();
+    const number = normalized ? Number(normalized) : 0;
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function proposalQuantityInputValue(ticket: Ticket, accountID: string) {
+    const key = proposalQuantityDraftKey(ticket.ticketNumber, accountID);
+    const draft = proposalQuantityDrafts[key];
+
+    if (draft !== undefined)
+      return draft;
+
+    const allocation = ticket.proposalAllocations.find((item) => item.accountID === accountID);
+    return quantityText(allocation?.quantity);
+  }
+
+  function liveProposalAllocationTotal(ticket: Ticket) {
+    return ticket.accountIDs.reduce((total, accountID) => {
+      const key = proposalQuantityDraftKey(ticket.ticketNumber, accountID);
+      const draft = proposalQuantityDrafts[key];
+
+      if (draft !== undefined)
+        return total + parseDecimalInput(draft);
+
+      const allocation = ticket.proposalAllocations.find((item) => item.accountID === accountID);
+      return total + (allocation?.quantity ?? 0);
+    }, 0);
+  }
+
+  function tradeQuantityInputValue(ticket: Ticket, accountID: string) {
+    const key = tradeDraftKey(ticket.ticketNumber, accountID);
+    const draft = tradeQuantityDrafts[key];
+
+    if (draft !== undefined)
+      return draft;
+
+    const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID);
+    return quantityText(allocation?.quantity);
+  }
+
+  function tradeBookCostInputValue(ticket: Ticket, accountID: string) {
+    const key = tradeDraftKey(ticket.ticketNumber, accountID);
+    const draft = tradeBookCostDrafts[key];
+
+    if (draft !== undefined)
+      return draft;
+
+    const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID);
+    return quantityText(allocation?.bookCost);
+  }
+
+  function liveTradeAllocationTotal(ticket: Ticket) {
+    return ticket.accountIDs.reduce((total, accountID) => {
+      const key = tradeDraftKey(ticket.ticketNumber, accountID);
+      const draft = tradeQuantityDrafts[key];
+
+      if (draft !== undefined)
+        return total + parseDecimalInput(draft);
+
+      const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID);
+      return total + (allocation?.quantity ?? 0);
+    }, 0);
+  }
+
+  function liveTradeBookCostTotal(ticket: Ticket) {
+    return ticket.accountIDs.reduce((total, accountID) => {
+      const key = tradeDraftKey(ticket.ticketNumber, accountID);
+      const draft = tradeBookCostDrafts[key];
+
+      if (draft !== undefined)
+        return total + parseDecimalInput(draft);
+
+      const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID);
+      return total + (allocation?.bookCost ?? 0);
+    }, 0);
   }
 
   function bookCostTotal(items: { bookCost: number }[]) {
@@ -358,6 +476,52 @@
     const cleaned = input.value.replace(/[^0-9,.]/g, '');
     const [whole, ...fractionParts] = cleaned.split('.');
     input.value = fractionParts.length > 0 ? `${whole}.${fractionParts.join('')}` : whole;
+  }
+
+  function updateProposalQuantityDraft(ticketNumber: number, accountID: string, event: Event) {
+    cleanDecimalInput(event);
+
+    const input = event.currentTarget as HTMLInputElement;
+    proposalQuantityDrafts[proposalQuantityDraftKey(ticketNumber, accountID)] = input.value;
+  }
+
+  function updateTradeQuantityDraft(ticketNumber: number, accountID: string, event: Event) {
+    cleanDecimalInput(event);
+
+    const input = event.currentTarget as HTMLInputElement;
+    tradeQuantityDrafts[tradeDraftKey(ticketNumber, accountID)] = input.value;
+  }
+
+  function updateTradeBookCostDraft(ticketNumber: number, accountID: string, event: Event) {
+    cleanDecimalInput(event);
+
+    const input = event.currentTarget as HTMLInputElement;
+    tradeBookCostDrafts[tradeDraftKey(ticketNumber, accountID)] = input.value;
+  }
+
+  function updateTradeCashHoldingDraft(ticketNumber: number, accountID: string, event: Event) {
+    const select = event.currentTarget as HTMLSelectElement;
+    tradeCashHoldingDrafts[tradeDraftKey(ticketNumber, accountID)] = select.value;
+  }
+
+  function resizeTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  function autoResizeTextarea(value: string | null | undefined) {
+    return (textarea: HTMLTextAreaElement) => {
+      void value;
+      const resize = () => resizeTextarea(textarea);
+
+      resize();
+      requestAnimationFrame(resize);
+      textarea.addEventListener('input', resize);
+
+      return () => {
+        textarea.removeEventListener('input', resize);
+      };
+    };
   }
 
   function ticketStep(ticket: Ticket) {
@@ -390,8 +554,7 @@
   function canApproveProposal(ticket: Ticket) {
     return ticket.stage === 'Proposal' &&
       ticket.proposalDecision === 'PendingApproval' &&
-      ticket.proposalAllocations.length > 0 &&
-      quantitiesMatch(ticket.proposalTotalAmount, quantityTotal(ticket.proposalAllocations));
+      ticket.proposalAllocations.length > 0;
   }
 
   function isAwaitingProposalDecision(ticket: Ticket) {
@@ -402,9 +565,7 @@
     return ticket.stage === 'Proposal' &&
       ticket.proposalDecision === 'InProgress' &&
       ticket.proposalTargetPrice != null &&
-      ticket.proposalTotalAmount != null &&
-      ticket.proposalAllocations.length > 0 &&
-      quantitiesMatch(ticket.proposalTotalAmount, quantityTotal(ticket.proposalAllocations));
+      ticket.proposalAllocations.length > 0;
   }
 
   function canEditTrade(ticket: Ticket) {
@@ -431,10 +592,7 @@
       ticket.tradePrice != null &&
       ticket.tradeAllocations.length > 0 &&
       hasTradeCashHoldings(ticket.tradeAllocations) &&
-      ticket.fills.length > 0 &&
-      quantitiesMatch(ticket.proposalTotalAmount, tradeTotal) &&
-      quantitiesMatch(tradeTotal, quantityTotal(ticket.fills)) &&
-      quantitiesMatch(bookCostTotal(ticket.tradeAllocations), bookCostTotal(ticket.fills));
+      quantitiesMatch(proposalTotal(ticket), tradeTotal);
   }
 
   function foleoTraderOrderFor(ticket: Ticket) {
@@ -446,7 +604,7 @@
       ticket.proposalDecision === 'Approved' &&
       ticket.tradeDecision === 'InProgress' &&
       ticket.proposalTargetPrice != null &&
-      ticket.proposalTotalAmount != null &&
+      proposalTotal(ticket) > 0 &&
       ticket.tradePrice == null &&
       ticket.tradeAllocations.length === 0 &&
       ticket.fills.length === 0 &&
@@ -470,7 +628,7 @@
       ticket.tradeDecision === 'PendingApproval' &&
       ticket.tradeAllocations.length > 0 &&
       hasTradeCashHoldings(ticket.tradeAllocations) &&
-      quantitiesMatch(ticket.proposalTotalAmount, tradeTotal) &&
+      quantitiesMatch(proposalTotal(ticket), tradeTotal) &&
       quantitiesMatch(tradeTotal, quantityTotal(ticket.fills)) &&
       quantitiesMatch(bookCostTotal(ticket.tradeAllocations), bookCostTotal(ticket.fills));
   }
@@ -574,10 +732,8 @@
     selectedSides = [];
   }
 
-  function toggleSideFilter(side: TicketSide) {
-    selectedSides = selectedSides.includes(side)
-      ? selectedSides.filter((selectedSide) => selectedSide !== side)
-      : [...selectedSides, side];
+  function selectSideFilter(side: TicketSide) {
+    selectedSides = [side];
   }
 
   function clearStageFilters() {
@@ -658,7 +814,7 @@
     if (type === 'TicketProposalCreatedEvent' || type === 'TicketProposalModifiedEvent')
       return [
         `Target ${detailAmount(details, 'TargetPrice')}`,
-        `Total ${detailAmount(details, 'TotalAmount')}`,
+        allocationQuantitySummary(details),
         allocationCount(details)
       ].filter(Boolean).join(' · ');
 
@@ -704,6 +860,22 @@
       : '';
   }
 
+  function allocationQuantitySummary(details: Record<string, unknown>) {
+    const allocations = details.Allocations ?? details.allocations;
+    if (!Array.isArray(allocations))
+      return '';
+
+    const total = allocations.reduce((sum, allocation) => {
+      if (!allocation || typeof allocation !== 'object')
+        return sum;
+
+      const value = (allocation as Record<string, unknown>).Quantity ?? (allocation as Record<string, unknown>).quantity;
+      return sum + (typeof value === 'number' ? value : 0);
+    }, 0);
+
+    return total > 0 ? `Allocated ${quantityText(total)}` : '';
+  }
+
   function readDetailString(details: Record<string, unknown>, key: string) {
     const value = details[key] ?? details[key.charAt(0).toLowerCase() + key.slice(1)];
     return typeof value === 'string' ? value : '';
@@ -744,7 +916,7 @@
       <div class="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{data.error}</div>
     {/if}
 
-    {#if form?.message}
+    {#if form?.message && !formTicketNumber}
       <div class={form.status === 'success' ? 'success-message' : 'error-message'}>
         {form.message}
       </div>
@@ -765,9 +937,9 @@
             </label>
           </div>
         </fieldset>
-        <label class="create-ticket-field">
-          <span>Instrument</span>
+        <div class="create-ticket-field">
           <input
+            aria-label="Instrument"
             class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
             bind:value={createTicketInstrument}
             list="ticket-instrument-options"
@@ -780,7 +952,7 @@
               <option label={instrumentLabel(instrument)} value={instrumentLabel(instrument)}></option>
             {/each}
           </datalist>
-        </label>
+        </div>
         <button class="commit-ticket-button" type="submit" disabled={!canCommitTicket}>
           Commit
         </button>
@@ -788,20 +960,33 @@
     </section>
 
     <section class="section-band create-ticket-card create-ticket-action-card">
-      <h2 class="create-ticket-title">Filter</h2>
-      <div class="ticket-filter-layout">
-        <div class="side-radio-group ticket-filter-group ticket-side-filter-group" role="group" aria-label="Ticket side filters">
+      <div class="filter-card-header">
+        <h2 class="create-ticket-title">Filter</h2>
+        <div class="side-radio-group ticket-view-group" role="radiogroup" aria-label="Ticket display mode">
           <label class="side-radio-pill ticket-filter-pill">
-            <input checked={selectedSides.length === 0} name="ticketSideFilterAll" type="checkbox" onchange={clearSideFilters} />
+            <input checked={ticketViewMode === 'Compact'} name="ticketViewMode" type="radio" value="Compact" onchange={() => ticketViewMode = 'Compact'} />
+            <span>Compact</span>
+          </label>
+          <label class="side-radio-pill ticket-filter-pill">
+            <input checked={ticketViewMode === 'Detailed'} name="ticketViewMode" type="radio" value="Detailed" onchange={() => ticketViewMode = 'Detailed'} />
+            <span>Detailed</span>
+          </label>
+        </div>
+      </div>
+      <div class="ticket-filter-layout">
+        <div class="side-radio-group ticket-filter-group ticket-side-filter-group" role="radiogroup" aria-label="Ticket side filters">
+          <label class="side-radio-pill ticket-filter-pill">
+            <input checked={selectedSides.length === 0} name="ticketSideFilter" type="radio" value="All" onchange={clearSideFilters} />
             <span>All</span>
           </label>
           {#each ticketSideOptions as side (side)}
             <label class="side-radio-pill ticket-filter-pill">
               <input
                 checked={selectedSides.includes(side)}
-                name={`ticketSideFilter-${side}`}
-                type="checkbox"
-                onchange={() => toggleSideFilter(side)}
+                name="ticketSideFilter"
+                type="radio"
+                value={side}
+                onchange={() => selectSideFilter(side)}
               />
               <span>{side}</span>
             </label>
@@ -833,16 +1018,6 @@
             type="search"
           />
         </label>
-        <div class="side-radio-group ticket-view-group" role="radiogroup" aria-label="Ticket display mode">
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={ticketViewMode === 'Compact'} name="ticketViewMode" type="radio" value="Compact" onchange={() => ticketViewMode = 'Compact'} />
-            <span>Compact</span>
-          </label>
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={ticketViewMode === 'Detailed'} name="ticketViewMode" type="radio" value="Detailed" onchange={() => ticketViewMode = 'Detailed'} />
-            <span>Detailed</span>
-          </label>
-        </div>
       </div>
     </section>
 
@@ -867,15 +1042,14 @@
           {@const proposalInputActive = ticketEditingProposal && !ticketCancelConfirming && !ticketAwaitingDecision}
           {@const tradeInputActive = ticketEditingTrade && !ticketCancelConfirming && !ticketAwaitingDecision}
           {@const saveFormID = `ticket-save-${ticket.ticketNumber}`}
-          {@const proposalAllocationTotal = quantityTotal(ticket.proposalAllocations)}
-          {@const proposalAllocationRemaining = quantityDifference(ticket.proposalTotalAmount, proposalAllocationTotal)}
-          {@const tradeAllocationTotal = quantityTotal(ticket.tradeAllocations)}
-          {@const tradeAllocationRemaining = quantityDifference(ticket.proposalTotalAmount, tradeAllocationTotal)}
+          {@const proposalAllocationTotal = liveProposalAllocationTotal(ticket)}
+          {@const tradeAllocationTotal = liveTradeAllocationTotal(ticket)}
+          {@const tradeAllocationRemaining = quantityDifference(proposalAllocationTotal, tradeAllocationTotal)}
           {@const fillTotal = quantityTotal(ticket.fills)}
           {@const fillRemaining = quantityDifference(tradeAllocationTotal, fillTotal)}
-          {@const tradeBookCostTotal = bookCostTotal(ticket.tradeAllocations)}
           {@const fillBookCostTotal = bookCostTotal(ticket.fills)}
-          {@const fillBookCostRemaining = quantityDifference(tradeBookCostTotal, fillBookCostTotal)}
+          {@const savedFillRemaining = quantityDifference(quantityTotal(ticket.tradeAllocations), fillTotal)}
+          {@const savedFillBookCostRemaining = quantityDifference(bookCostTotal(ticket.tradeAllocations), fillBookCostTotal)}
           <article
             class="ticket-card"
             class:ticket-card-buy={ticket.side === 'Buy'}
@@ -908,7 +1082,7 @@
                   >
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <button class="ticket-action-button" type="submit" disabled={ticketCancelConfirming || submitting === `save-ticket-${ticket.ticketNumber}`}>
+                    <button class="ticket-action-button" type="submit" formnovalidate disabled={ticketCancelConfirming || submitting === `save-ticket-${ticket.ticketNumber}`}>
                       Save
                     </button>
                   </form>
@@ -941,8 +1115,6 @@
                         FoleoTrader
                       </button>
                     </form>
-                  {:else if foleoTraderStatus}
-                    <span class="ticket-readonly-value">{foleoTraderStatus}</span>
                   {/if}
                   <form
                     class="ticket-save-form"
@@ -1025,6 +1197,12 @@
                 </button>
               </div>
             </header>
+
+            {#if form?.message && formTicketNumber === ticket.ticketNumber}
+              <div class="ticket-form-message error-message">
+                {form.message}
+              </div>
+            {/if}
 
             {#if openHistoryTicketNumber === ticket.ticketNumber}
               {@const history = historyByTicketNumber[ticket.ticketNumber]}
@@ -1126,17 +1304,9 @@
                     <label class="field">
                       <span>Target price ({ticket.tradeCurrency})</span>
                       {#if proposalInputActive && canEditProposalTerms(ticket)}
-                        <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="targetPrice" value={priceText(ticket.proposalTargetPrice, ticket.tradeCurrency)} oninput={cleanDecimalInput} />
+                        <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="targetPrice" value={targetPriceInputValue(ticket)} oninput={cleanDecimalInput} />
                       {:else}
                         <span class="ticket-readonly-value">{targetPriceDisplay(ticket)}</span>
-                      {/if}
-                    </label>
-                    <label class="field">
-                      <span>Total quantity</span>
-                      {#if proposalInputActive && canEditProposalTerms(ticket)}
-                        <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="totalAmount" value={quantityText(ticket.proposalTotalAmount)} oninput={cleanDecimalInput} />
-                      {:else}
-                        <span class="ticket-readonly-value">{formattedDisplay(quantityText(ticket.proposalTotalAmount))}</span>
                       {/if}
                     </label>
                   </div>
@@ -1145,13 +1315,13 @@
                   <div class="ticket-text-set-form">
                     <label class="field ticket-textarea-field">
                       <span>Proposal reason</span>
-                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalReason" value={ticket.proposalReason} disabled={!proposalInputActive || !canSetProposalText(ticket)}></textarea>
+                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalReason" value={ticket.proposalReason} rows="1" {@attach autoResizeTextarea(ticket.proposalReason)} disabled={!proposalInputActive || !canSetProposalText(ticket)}></textarea>
                     </label>
                   </div>
                   <div class="ticket-text-set-form">
                     <label class="field ticket-textarea-field">
                       <span>Proposal allocation</span>
-                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalAllocation" value={ticket.proposalAllocation} disabled={!proposalInputActive || !canSetProposalText(ticket)}></textarea>
+                      <textarea form={saveFormID} class="input ticket-textarea" name="proposalAllocation" value={ticket.proposalAllocation} rows="1" {@attach autoResizeTextarea(ticket.proposalAllocation)} disabled={!proposalInputActive || !canSetProposalText(ticket)}></textarea>
                     </label>
                   </div>
                 </div>
@@ -1159,6 +1329,19 @@
 
               <section class="workflow-panel workflow-panel-wide">
                 <h2>Accounts</h2>
+                {#if canEditProposalTerms(ticket)}
+                  <form class="account-add-form" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
+                    <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                    <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                    <select class="input account-add-select" name="accountID" disabled={!proposalInputActive || availableAccounts(ticket).length === 0} required>
+                      <option value="">Add account</option>
+                      {#each availableAccounts(ticket) as account (account.accountID)}
+                        <option value={account.accountID}>{account.name} {account.bookCurrency}</option>
+                      {/each}
+                    </select>
+                    <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || availableAccounts(ticket).length === 0}>Add</button>
+                  </form>
+                {/if}
                 <div class="account-allocation-table">
                   <div class="account-allocation-header">
                     <span>Account</span>
@@ -1178,7 +1361,7 @@
                         <div class="account-allocation-quantity">
                           <input form={saveFormID} type="hidden" name="proposalAllocationAccountID" value={accountID} disabled={!proposalInputActive || !canEditProposal(ticket)} />
                           {#if proposalInputActive && canEditProposal(ticket)}
-                            <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`proposalQuantity-${accountID}`} value={quantityText(allocation?.quantity)} placeholder="Qty" oninput={cleanDecimalInput} />
+                            <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`proposalQuantity-${accountID}`} value={proposalQuantityInputValue(ticket, accountID)} placeholder="Qty" oninput={(event) => updateProposalQuantityDraft(ticket.ticketNumber, accountID, event)} />
                           {:else}
                             <span class="ticket-readonly-value">{formattedDisplay(quantityText(allocation?.quantity))}</span>
                           {/if}
@@ -1195,27 +1378,9 @@
                       <div class="account-allocation-empty">No accounts selected</div>
                     {/each}
                   </div>
-                  {#if canEditProposalTerms(ticket)}
-                    <form class="account-allocation-row account-allocation-add-row" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
-                      <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
-                      <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                      <select class="input account-add-select" name="accountID" disabled={!proposalInputActive || availableAccounts(ticket).length === 0} required>
-                        <option value="">Add account</option>
-                        {#each availableAccounts(ticket) as account (account.accountID)}
-                          <option value={account.accountID}>{account.name} {account.bookCurrency}</option>
-                        {/each}
-                      </select>
-                      <span class="account-allocation-currency account-add-currency">-</span>
-                      <span class="account-add-quantity-hint">Quantity can be entered after the account is added</span>
-                      <span class="account-current-quantity-placeholder">-</span>
-                      <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || availableAccounts(ticket).length === 0}>Add</button>
-                    </form>
-                  {/if}
                 </div>
-                <div class="quantity-balance" class:quantity-balance-mismatch={!quantitiesMatch(ticket.proposalTotalAmount, proposalAllocationTotal)}>
+                <div class="quantity-balance">
                   <span>Proposal allocated {formattedDisplay(quantityText(proposalAllocationTotal))}</span>
-                  <span>Total {formattedDisplay(quantityText(ticket.proposalTotalAmount))}</span>
-                  <span>Remaining {formattedDisplay(quantityText(proposalAllocationRemaining))}</span>
                 </div>
               </section>
 
@@ -1248,19 +1413,19 @@
                         {#each ticket.accountIDs as accountID (accountID)}
                           {@const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID)}
                           {@const cashHoldings = cashInvestableHoldings(ticket, accountID)}
-                          {@const selectedCashHoldingID = selectedTradeCashHoldingID(ticket, accountID, allocation?.cashHoldingID)}
+                          {@const selectedCashHoldingID = tradeCashHoldingInputValue(ticket, accountID, allocation?.cashHoldingID)}
                           <div class="account-allocation-row">
                             <div class="account-allocation-account">
                               <span>{accountName(accountID)}</span>
                             </div>
                             <input form={saveFormID} type="hidden" name="tradeAllocationAccountID" value={accountID} disabled={!tradeInputActive || !canEditTrade(ticket)} />
                             {#if tradeInputActive && canEditTrade(ticket)}
-                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeQuantity-${accountID}`} value={quantityText(allocation?.quantity)} placeholder="Qty" oninput={cleanDecimalInput} />
-                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeBookCost-${accountID}`} value={quantityText(allocation?.bookCost)} placeholder="Book" oninput={cleanDecimalInput} />
-                              <select form={saveFormID} class="input trade-cash-holding-select" name={`tradeCashHoldingID-${accountID}`} disabled={cashHoldings.length === 0} required>
-                                <option value="" selected={selectedCashHoldingID === ''}>Cash holding</option>
+                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeQuantity-${accountID}`} value={tradeQuantityInputValue(ticket, accountID)} placeholder="Qty" oninput={(event) => updateTradeQuantityDraft(ticket.ticketNumber, accountID, event)} />
+                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeBookCost-${accountID}`} value={tradeBookCostInputValue(ticket, accountID)} placeholder="Book" oninput={(event) => updateTradeBookCostDraft(ticket.ticketNumber, accountID, event)} />
+                              <select form={saveFormID} class="input trade-cash-holding-select" name={`tradeCashHoldingID-${accountID}`} value={selectedCashHoldingID} disabled={cashHoldings.length === 0} onchange={(event) => updateTradeCashHoldingDraft(ticket.ticketNumber, accountID, event)} required>
+                                <option value="">Cash holding</option>
                                 {#each cashHoldings as holding (holding.holdingID)}
-                                  <option value={holding.holdingID} selected={selectedCashHoldingID === holding.holdingID}>{cashHoldingLabel(holding)}</option>
+                                  <option value={holding.holdingID}>{cashHoldingLabel(holding)}</option>
                                 {/each}
                               </select>
                             {:else}
@@ -1274,9 +1439,9 @@
                         {/each}
                       </div>
                     </div>
-                    <div class="quantity-balance" class:quantity-balance-mismatch={!quantitiesMatch(ticket.proposalTotalAmount, tradeAllocationTotal)}>
+                    <div class="quantity-balance" class:quantity-balance-mismatch={!quantitiesMatch(proposalAllocationTotal, tradeAllocationTotal)}>
                       <span>Trade allocated {formattedDisplay(quantityText(tradeAllocationTotal))}</span>
-                      <span>Total {formattedDisplay(quantityText(ticket.proposalTotalAmount))}</span>
+                      <span>Proposal total {formattedDisplay(quantityText(proposalAllocationTotal))}</span>
                       <span>Remaining {formattedDisplay(quantityText(tradeAllocationRemaining))}</span>
                     </div>
                   </form>
@@ -1284,20 +1449,25 @@
                     <div class="ticket-text-set-form">
                       <label class="field ticket-textarea-field">
                         <span>Instruction notes</span>
-                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeInstructionNotes" value={ticket.tradeInstructionNotes} disabled={!tradeInputActive || !canSetTradeText(ticket)}></textarea>
+                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeInstructionNotes" value={ticket.tradeInstructionNotes} rows="1" {@attach autoResizeTextarea(ticket.tradeInstructionNotes)} disabled={!tradeInputActive || !canSetTradeText(ticket)}></textarea>
                       </label>
                     </div>
                     <div class="ticket-text-set-form">
                       <label class="field ticket-textarea-field">
                         <span>Progress notes</span>
-                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeProgressNotes" value={ticket.tradeProgressNotes} disabled={!tradeInputActive || !canSetTradeText(ticket)}></textarea>
+                        <textarea form={saveFormID} class="input ticket-textarea" name="tradeProgressNotes" value={ticket.tradeProgressNotes} rows="1" {@attach autoResizeTextarea(ticket.tradeProgressNotes)} disabled={!tradeInputActive || !canSetTradeText(ticket)}></textarea>
                       </label>
                     </div>
                   </div>
                 </section>
 
                 <section class="workflow-panel">
-                  <h2>Fills</h2>
+                  <div class="fill-section-header">
+                    <h2>Fills</h2>
+                    {#if foleoTraderStatus}
+                      <span class="quantity-balance-pill foleo-trader-fill-pill">{foleoTraderStatus}</span>
+                    {/if}
+                  </div>
                   <div class="fill-table">
                     <div class="fill-table-header">
                       <span>Broker</span>
@@ -1329,14 +1499,12 @@
                     <span>Filled {formattedDisplay(quantityText(fillTotal))}</span>
                     <span>Trade total {formattedDisplay(quantityText(tradeAllocationTotal))}</span>
                     <span>Remaining {formattedDisplay(quantityText(fillRemaining))}</span>
-                    <span>Book filled {formattedDisplay(quantityText(fillBookCostTotal))}</span>
-                    <span>Book remaining {formattedDisplay(quantityText(fillBookCostRemaining))}</span>
                   </div>
                   <form class="fill-form" method="POST" action="?/addFill" use:enhance={enhanceAction(`add-fill-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
                     {#if tradeInputActive && canEditFills(ticket)}
-                      <input type="hidden" name="fillPrice" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} />
+                      <input type="hidden" name="fillPrice" value={ticket.tradePrice ?? ''} />
                       <span class="ticket-readonly-value fill-price-preview">Price {formattedDisplay(priceText(ticket.tradePrice, ticket.tradeCurrency))}</span>
                       <select class="input" name="brokerLEI" disabled={activeBrokers.length === 0} required>
                         <option value="">Broker</option>
@@ -1347,7 +1515,7 @@
                       <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanDecimalInput} required />
                       <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillBookCost" placeholder="Book" oninput={cleanDecimalInput} required />
                       <input class="input" name="fillNote" placeholder="Note" />
-                      <button class="btn btn-secondary" type="submit" disabled={activeBrokers.length === 0 || fillRemaining <= 0 || fillBookCostRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
+                      <button class="btn btn-secondary" type="submit" disabled={activeBrokers.length === 0 || savedFillRemaining <= 0 || savedFillBookCostRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
                     {:else}
                       <span class="ticket-readonly-value">Edit Trade to add fills</span>
                     {/if}

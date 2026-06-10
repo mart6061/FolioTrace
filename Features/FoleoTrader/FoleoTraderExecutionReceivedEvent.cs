@@ -3,26 +3,37 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.System, Description = "Foleo Trader Execution Received Event")]
 public sealed record FoleoTraderExecutionReceivedEvent : EventBase, IFoleoTraderOrderEvent
 {
+    [EventProperty(Description = "Ticket Number")]
     public TicketNumber TicketNumber { get; init; } = null!;
 
+    [EventProperty(Description = "Cl Ord ID")]
     public string ClOrdID { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Exec ID")]
     public string ExecID { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Fill ID")]
     public Guid FillID { get; init; }
 
+    [EventProperty(Description = "Price")]
     public Price Price { get; init; } = null!;
 
+    [EventProperty(Description = "Quantity")]
     public decimal Quantity { get; init; }
 
+    [EventProperty(Description = "Book Cost")]
     public TransactionBookCost BookCost { get; init; } = null!;
 
+    [EventProperty(Description = "Cum Quantity")]
     public decimal CumQuantity { get; init; }
 
+    [EventProperty(Description = "Leaves Quantity")]
     public decimal LeavesQuantity { get; init; }
 
+    [EventProperty(Description = "Ord Status")]
     public string OrdStatus { get; init; } = string.Empty;
 
     private FoleoTraderExecutionReceivedEvent()

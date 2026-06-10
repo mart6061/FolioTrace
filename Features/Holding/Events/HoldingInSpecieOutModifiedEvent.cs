@@ -4,6 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Holding In Specie Out Modified Event")]
 public sealed record HoldingInSpecieOutModifiedEvent : HoldingModifiedEvent
 {
     [JsonConstructor]

@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountModifiedEvent>>(provider => new AggregateCacheInvalidator<AccountModifiedEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
-        services.AddSingleton<IAggregateCacheInvalidator<AccountActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<AccountActiveModifiedEvent>(@event =>
+        services.AddSingleton<IAggregateCacheInvalidator<AccountActiveSetEvent>>(provider => new AggregateCacheInvalidator<AccountActiveSetEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>(provider => new AggregateCacheInvalidator<AccountDisplayOrderSetEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
@@ -76,7 +76,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<IValuationSettingEvent>>(provider => new AggregateCacheInvalidator<IValuationSettingEvent>(provider.GetRequiredService<ValuationSettingService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountModifiedEvent>>());
-        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountActiveModifiedEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountActiveSetEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IBrokerEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<CountryCreatedEvent>>());

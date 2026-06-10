@@ -15,7 +15,6 @@ public sealed record TicketDetail : IModel
     public required TicketDecision TradeDecision { get; init; }
     public required List<AccountID> AccountIDs { get; init; } = [];
     public Price? ProposalTargetPrice { get; init; }
-    public TransactionQuantity? ProposalTotalAmount { get; init; }
     public required List<TicketProposalAllocation> ProposalAllocations { get; init; } = [];
     public required string ProposalReason { get; init; } = string.Empty;
     public required string ProposalAllocation { get; init; } = string.Empty;
@@ -54,7 +53,6 @@ public sealed record TicketDetail : IModel
             TradeDecision = ticket.TradeDecision,
             AccountIDs = ticket.AccountIDs.ToList(),
             ProposalTargetPrice = ticket.ProposalTargetPrice,
-            ProposalTotalAmount = ticket.ProposalTotalAmount,
             ProposalAllocations = ticket.ProposalAllocations.ToList(),
             ProposalReason = ticket.ProposalReason,
             ProposalAllocation = ticket.ProposalAllocation,

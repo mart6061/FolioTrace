@@ -21,7 +21,7 @@ public sealed class EventPropertyDetailsFactoryTests
 
         var detail = Assert.Single(response.PropertyDetails, detail => detail.Name == "BookCurrency");
         Assert.Equal("BookCurrency", detail.Name);
-        Assert.Equal("Book currency", detail.Description);
+        Assert.Equal("Book Currency", detail.Description);
         Assert.Equal(40, detail.Order);
         Assert.Equal("GBP", detail.Value);
     }
@@ -145,7 +145,7 @@ public sealed class EventPropertyDetailsFactoryTests
 
         var detail = Assert.Single(response.PropertyDetails, detail => detail.Name == "BookCurrency");
         Assert.Equal("BookCurrency", detail.Name);
-        Assert.Equal("Book currency", detail.Description);
+        Assert.Equal("Book Currency", detail.Description);
         Assert.Equal("GBP", detail.Value);
     }
 

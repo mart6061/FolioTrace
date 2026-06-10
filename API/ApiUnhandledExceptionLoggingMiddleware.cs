@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -71,6 +72,8 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
         builder.AppendLine($"ErrorId: {errorId}");
         builder.AppendLine($"Utc: {DateTime.UtcNow:O}");
         builder.AppendLine($"TraceId: {context.TraceIdentifier}");
+        builder.AppendLine($"ActivityTraceId: {Activity.Current?.TraceId}");
+        builder.AppendLine($"ActivitySpanId: {Activity.Current?.SpanId}");
         builder.AppendLine($"Request: {context.Request.Method} {context.Request.PathBase}{context.Request.Path}{context.Request.QueryString}");
         builder.AppendLine($"RemoteIpAddress: {context.Connection.RemoteIpAddress}");
         builder.AppendLine($"UserAgent: {context.Request.Headers.UserAgent}");

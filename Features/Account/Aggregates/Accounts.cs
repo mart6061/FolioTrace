@@ -65,7 +65,7 @@ public sealed record Accounts : IAggregate
             case AccountModifiedEvent modifiedEvent:
                 Apply(modifiedEvent);
                 break;
-            case AccountActiveModifiedEvent activeModifiedEvent:
+            case AccountActiveSetEvent activeModifiedEvent:
                 Apply(activeModifiedEvent);
                 break;
             case AccountDisplayOrderSetEvent displayOrderSetEvent:
@@ -103,7 +103,7 @@ public sealed record Accounts : IAggregate
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
-    public void Apply(AccountActiveModifiedEvent activeModifiedEvent)
+    public void Apply(AccountActiveSetEvent activeModifiedEvent)
     {
         var index = Items.FindIndex(account => account.AccountID == activeModifiedEvent.AccountID);
         if (index < 0)

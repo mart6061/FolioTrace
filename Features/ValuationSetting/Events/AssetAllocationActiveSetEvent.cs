@@ -4,10 +4,13 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Asset Allocation Active Set Event")]
 public sealed record AssetAllocationActiveSetEvent : EventBase, IValuationSettingEvent
 {
+    [EventProperty(Description = "Asset Allocation ID")]
     public AssetAllocationID AssetAllocationID { get; init; } = null!;
 
+    [EventProperty(Description = "Active")]
     public bool Active { get; init; }
 
     [JsonConstructor]

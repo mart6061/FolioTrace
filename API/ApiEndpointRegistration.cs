@@ -845,13 +845,13 @@ public static class ApiEndpointRegistration
             return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
         });
 
-        accountEvents.MapPost($"/{nameof(AccountActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountActiveModifiedRequest request, CancellationToken cancellationToken) =>
+        accountEvents.MapPost($"/{nameof(AccountActiveSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountActiveSetRequest request, CancellationToken cancellationToken) =>
         {
             var accounts = await TryGetAccounts(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
             if (accounts is null)
-                return Results.BadRequest(Result<AccountActiveModifiedEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
+                return Results.BadRequest(Result<AccountActiveSetEvent>.Invalid([$"No matching Account found for AccountID '{request.AccountID}'."]));
 
-            var result = AccountActiveModifiedEventBuilder.Create(request, accounts);
+            var result = AccountActiveSetEventBuilder.Create(request, accounts);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
@@ -2039,7 +2039,7 @@ public static class ApiEndpointRegistration
         {
             AccountCreatedEvent createdEvent => createdEvent.AccountID.Value,
             AccountModifiedEvent modifiedEvent => modifiedEvent.AccountID.Value,
-            AccountActiveModifiedEvent activeEvent => activeEvent.AccountID.Value,
+            AccountActiveSetEvent activeEvent => activeEvent.AccountID.Value,
             AccountDisplayOrderSetEvent displayOrderSetEvent => displayOrderSetEvent.AccountID.Value,
             _ => null
         };
@@ -2235,7 +2235,7 @@ public static class ApiEndpointRegistration
                 modifiedEvent.Name,
                 modifiedEvent.FormalName
             },
-            AccountActiveModifiedEvent activeEvent => new
+            AccountActiveSetEvent activeEvent => new
             {
                 Type = activeEvent.Type,
                 EventID = activeEvent.EventID.Value,
@@ -2898,14 +2898,12 @@ public static class ApiEndpointRegistration
             TicketProposalCreatedEvent proposalCreatedEvent => WithTicketBase(proposalCreatedEvent, new
             {
                 proposalCreatedEvent.TargetPrice,
-                proposalCreatedEvent.TotalAmount,
                 TradeCurrency = proposalCreatedEvent.TradeCurrency.Value,
                 Allocations = proposalCreatedEvent.Allocations.Select(ToResponse).ToList()
             }),
             TicketProposalModifiedEvent proposalModifiedEvent => WithTicketBase(proposalModifiedEvent, new
             {
                 proposalModifiedEvent.TargetPrice,
-                proposalModifiedEvent.TotalAmount,
                 TradeCurrency = proposalModifiedEvent.TradeCurrency.Value,
                 Allocations = proposalModifiedEvent.Allocations.Select(ToResponse).ToList()
             }),

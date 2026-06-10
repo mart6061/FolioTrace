@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using FolioTrace.Types;
+using FolioTrace.Common;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Ticket Trade Fill Modified Event")]
 public sealed record TicketTradeFillModifiedEvent : TicketTradeFillEventBase
 {
     [JsonConstructor]

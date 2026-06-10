@@ -17,8 +17,6 @@ public static partial class TicketEventBuilder
                     messages.Add("Proposal decision must be in progress.");
                 if (ticket.ProposalTargetPrice is null)
                     messages.Add("Proposal target price is required before requesting a decision.");
-                if (ticket.ProposalTotalAmount is null)
-                    messages.Add("Proposal total quantity is required before requesting a decision.");
                 if (ticket.ProposalAllocations.Count == 0)
                     messages.Add("Proposal allocations are required before requesting a decision.");
             }

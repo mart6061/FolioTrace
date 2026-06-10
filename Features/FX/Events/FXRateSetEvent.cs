@@ -4,10 +4,13 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "FX Rate Set Event")]
 public sealed record FXRateSetEvent : EventBase, IFXRateEvent
 {
+    [EventProperty(Description = "Pair")]
     public CurrencyPair Pair { get; init; } = null!;
 
+    [EventProperty(Description = "Price")]
     public FXPrice Price { get; init; } = null!;
 
     [JsonConstructor]

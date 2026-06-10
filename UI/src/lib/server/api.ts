@@ -372,7 +372,6 @@ export type TicketProposalRequest = {
   reason: string;
   ticketNumber: number;
   targetPrice: number;
-  totalAmount: number;
   tradeCurrency?: string;
   allocations: {
     accountID: string;
@@ -1819,15 +1818,14 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
     body.AccountID = request.accountID;
   if (typeof request.targetPrice === 'number')
     body.TargetPrice = request.targetPrice;
-  if (typeof request.totalAmount === 'number')
-    body.TotalAmount = request.totalAmount;
   if (typeof request.tradeCurrency === 'string')
     body.TradeCurrency = request.tradeCurrency;
   if (typeof request.tradedPrice === 'number')
     body.TradedPrice = request.tradedPrice;
   if (Array.isArray(request.allocations))
-    body.Allocations = (request.allocations as { accountID: string; quantity: number; bookCost?: number }[]).map((allocation) => ({
+    body.Allocations = (request.allocations as { accountID: string; cashHoldingID?: string; quantity: number; bookCost?: number }[]).map((allocation) => ({
       AccountID: allocation.accountID,
+      CashHoldingID: allocation.cashHoldingID,
       Quantity: allocation.quantity,
       BookCost: allocation.bookCost
     }));

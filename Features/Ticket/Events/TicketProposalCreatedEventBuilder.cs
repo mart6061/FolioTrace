@@ -11,12 +11,11 @@ public static partial class TicketEventBuilder
             var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
             ValidateProposalEntry(ticket, messages, "created");
             ValidatePrice(request.TargetPrice, "TargetPrice", messages);
-            ValidateTransactionQuantity(request.TotalAmount, "TotalAmount", messages);
             ValidateProposalAllocations(request.Allocations, ticket, messages);
             var tradeCurrency = ResolveTradeCurrency(request, ticket, messages);
 
             return messages.Count > 0
                 ? Result<TicketProposalCreatedEvent>.Invalid(messages)
-                : Result<TicketProposalCreatedEvent>.Success(new TicketProposalCreatedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.TargetPrice, request.TotalAmount, tradeCurrency!, request.Allocations));
+                : Result<TicketProposalCreatedEvent>.Success(new TicketProposalCreatedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.TargetPrice, tradeCurrency!, request.Allocations));
         });
 }

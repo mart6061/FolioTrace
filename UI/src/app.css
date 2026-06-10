@@ -2229,6 +2229,18 @@ tbody tr {
   font-weight: 800;
 }
 
+.filter-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.filter-card-header .ticket-view-group {
+  margin-left: auto;
+}
+
 .create-ticket-form {
   display: grid;
   gap: 0.85rem;
@@ -2312,6 +2324,10 @@ tbody tr {
   color: var(--danger-text);
 }
 
+.ticket-form-message {
+  margin: 0.4rem 0.75rem 0;
+}
+
 .empty-state {
   border: 1px dashed var(--line);
   padding: 2rem;
@@ -2321,7 +2337,7 @@ tbody tr {
 
 .ticket-list {
   display: grid;
-  gap: 1rem;
+  gap: 0.65rem;
 }
 
 .ticket-card {
@@ -2346,24 +2362,25 @@ tbody tr {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.65rem;
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 38%, transparent), transparent 58%);
-  padding: 1rem;
+  padding: 0.75rem 0.85rem;
 }
 
 .ticket-header-main {
   display: grid;
   min-width: 0;
-  gap: 0.3rem;
+  gap: 0.2rem;
 }
 
 .ticket-title {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--ink);
 }
@@ -2406,7 +2423,7 @@ tbody tr {
   flex: 0 0 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .ticket-save-form {
@@ -2415,7 +2432,7 @@ tbody tr {
 
 .ticket-action-button {
   display: inline-flex;
-  height: 2rem;
+  height: 1.75rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
@@ -2423,13 +2440,13 @@ tbody tr {
   background: var(--panel);
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  padding: 0 0.75rem;
+  padding: 0 0.6rem;
 }
 
 .ticket-icon-button {
-  width: 2rem;
+  width: 1.75rem;
   justify-content: center;
   padding: 0;
 }
@@ -2696,12 +2713,6 @@ tbody tr {
   .ticket-text-filter {
     grid-column: 3;
   }
-
-  .ticket-view-group {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-self: start;
-  }
 }
 
 .ticket-text-filter {
@@ -2800,7 +2811,20 @@ fieldset.field legend {
 }
 
 .ticket-card-compact .ticket-header {
-  padding-block: 0.75rem;
+  padding-block: 0.55rem;
+}
+
+.ticket-card-compact .ticket-card-actions {
+  gap: 0.25rem;
+}
+
+.ticket-card-compact .ticket-action-button {
+  height: 1.625rem;
+  padding-inline: 0.5rem;
+}
+
+.ticket-card-compact .ticket-icon-button {
+  width: 1.625rem;
 }
 
 .ticket-compact-details {
@@ -3007,20 +3031,31 @@ input[type='number']::-webkit-outer-spin-button {
   overflow: hidden;
 }
 
+.account-add-form {
+  display: grid;
+  grid-template-columns: minmax(14rem, 24rem) auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--panel-muted) 54%, var(--panel));
+}
+
 .account-allocation-header,
 .account-allocation-row {
   display: grid;
   grid-template-columns: minmax(12rem, 1fr) minmax(5rem, 0.28fr) minmax(10rem, 0.44fr) minmax(10rem, 0.44fr) minmax(5.5rem, auto);
-  gap: 0.625rem;
+  gap: 0.45rem;
   align-items: center;
 }
 
 .account-allocation-header {
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel-muted) 82%, var(--panel));
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.625rem;
   color: var(--muted);
-  font-size: 0.6875rem;
+  font-size: 0.65rem;
   font-weight: 760;
   text-transform: uppercase;
 }
@@ -3031,18 +3066,17 @@ input[type='number']::-webkit-outer-spin-button {
 
 .account-allocation-row {
   min-width: 0;
-  padding: 0.625rem 0.75rem;
+  padding: 0.4rem 0.625rem;
 }
 
-.account-allocation-row + .account-allocation-row,
-.account-allocation-add-row {
+.account-allocation-row + .account-allocation-row {
   border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
 }
 
 .account-allocation-account {
   min-width: 0;
   color: var(--ink);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 720;
 }
 
@@ -3061,6 +3095,14 @@ input[type='number']::-webkit-outer-spin-button {
 .account-add-select {
   min-width: 0;
   width: 100%;
+}
+
+.account-allocation-table .input,
+.account-allocation-table .ticket-term-input,
+.account-allocation-table .ticket-readonly-value {
+  min-height: 1.875rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
 }
 
 .account-allocation-quantity .ticket-readonly-value,
@@ -3087,11 +3129,12 @@ input[type='number']::-webkit-outer-spin-button {
   border: 1px solid color-mix(in srgb, var(--danger) 48%, var(--line));
   border-radius: 0.375rem;
   background: color-mix(in srgb, var(--danger-soft) 42%, var(--panel));
-  padding: 0.35rem 0.55rem;
+  padding: 0.25rem 0.45rem;
   color: var(--danger);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 780;
+  line-height: 1.1;
 }
 
 .account-remove-button:disabled {
@@ -3100,27 +3143,13 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 .account-allocation-empty {
-  padding: 0.75rem;
+  padding: 0.5rem 0.625rem;
   color: var(--muted);
-  font-size: 0.8125rem;
-}
-
-.account-allocation-add-row {
-  background: color-mix(in srgb, var(--panel-muted) 54%, var(--panel));
-}
-
-.account-add-currency,
-.account-add-quantity-hint {
-  color: var(--muted);
-}
-
-.account-add-quantity-hint {
   font-size: 0.75rem;
-  line-height: 1.25;
 }
 
 .account-add-button {
-  justify-self: end;
+  justify-self: start;
 }
 
 .quantity-balance {
@@ -3133,12 +3162,27 @@ input[type='number']::-webkit-outer-spin-button {
   font-weight: 720;
 }
 
-.quantity-balance span {
+.quantity-balance span,
+.quantity-balance-pill {
   min-height: 1.75rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel-muted);
   padding: 0.3rem 0.625rem;
+}
+
+.fill-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.foleo-trader-fill-pill {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 720;
 }
 
 .quantity-balance-mismatch span:last-child {
@@ -3166,14 +3210,16 @@ input[type='number']::-webkit-outer-spin-button {
 
 .ticket-textarea {
   width: 100%;
-  min-height: 4.25rem;
-  resize: vertical;
+  min-height: 2.25rem;
+  overflow: hidden;
+  resize: none;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--panel);
   color: var(--ink);
+  line-height: 1.25rem;
   outline: none;
-  padding: 0.5rem 0.625rem;
+  padding: 0.45rem 0.625rem;
 }
 
 .ticket-textarea:focus {
@@ -3250,17 +3296,17 @@ input[type='number']::-webkit-outer-spin-button {
 .fill-table-header,
 .fill-row {
   display: grid;
-  grid-template-columns: minmax(10rem, 1fr) minmax(6rem, 0.45fr) minmax(7rem, 0.5fr) minmax(7rem, 0.5fr) minmax(9rem, 1fr) minmax(2.5rem, auto);
-  gap: 0.5rem;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(5.5rem, 0.38fr) minmax(5.5rem, 0.38fr) minmax(6.25rem, 0.45fr) minmax(14rem, 2fr) 2rem;
+  gap: 0.3rem;
   align-items: center;
 }
 
 .fill-table-header {
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel-muted) 82%, var(--panel));
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.625rem;
   color: var(--muted);
-  font-size: 0.6875rem;
+  font-size: 0.65rem;
   font-weight: 760;
   text-transform: uppercase;
 }
@@ -3271,7 +3317,7 @@ input[type='number']::-webkit-outer-spin-button {
 
 .fill-row {
   min-width: 0;
-  padding: 0.625rem 0.75rem;
+  padding: 0.3rem 0.5rem;
 }
 
 .fill-row + .fill-row {
@@ -3279,14 +3325,17 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 .fill-row .ticket-readonly-value {
+  min-height: 1.75rem;
   min-width: 0;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
 }
 
 .fill-row button {
   display: grid;
-  min-height: 2.25rem;
-  min-width: 2.25rem;
+  min-height: 1.75rem;
+  min-width: 1.75rem;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--danger) 48%, var(--line));
   border-radius: 0.375rem;
@@ -3300,9 +3349,9 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 .fill-empty {
-  padding: 0.75rem;
+  padding: 0.5rem 0.625rem;
   color: var(--muted);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
 .workflow-panel-wide > .trade-main-form {
@@ -3325,6 +3374,14 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 @media (max-width: 720px) {
+  .account-add-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-add-form .account-add-button {
+    justify-self: stretch;
+  }
+
   .account-allocation-header {
     display: none;
   }
@@ -3340,8 +3397,7 @@ input[type='number']::-webkit-outer-spin-button {
 
   .account-allocation-quantity,
   .account-current-quantity,
-  .account-current-quantity-placeholder,
-  .account-add-quantity-hint {
+  .account-current-quantity-placeholder {
     grid-column: 1 / -1;
   }
 

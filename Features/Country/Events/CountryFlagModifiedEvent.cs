@@ -4,10 +4,13 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Country Flag Modified Event")]
 public sealed record CountryFlagModifiedEvent : EventBase, ICountryEvent
 {
+    [EventProperty(Description = "Alpha2")]
     public Alpha2 Alpha2 { get; init; } = null!;
 
+    [EventProperty(Description = "Flag")]
     public CountryFlag Flag { get; init; } = null!;
 
     [JsonConstructor]
