@@ -755,6 +755,8 @@
               ondragover={(event) => allowDrop(event, row.node.nodeID, 'before')}
               ondrop={(event) => dropNode(event, row.node.nodeID, 'before')}
             ></div>
+          {:else if isSpecialNodeID(row.node.nodeID)}
+            <div aria-hidden="true" class="valuation-node-drop-zone valuation-node-drop-zone-static"></div>
           {/if}
 
           <div
@@ -813,6 +815,8 @@
               ondragover={(event) => allowDrop(event, row.node.nodeID, 'after')}
               ondrop={(event) => dropNode(event, row.node.nodeID, 'after')}
             ></div>
+          {:else if isSpecialNodeID(row.node.nodeID)}
+            <div aria-hidden="true" class="valuation-node-drop-zone valuation-node-drop-zone-static"></div>
           {/if}
         </div>
 
