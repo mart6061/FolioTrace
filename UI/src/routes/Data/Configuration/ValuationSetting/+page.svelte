@@ -482,9 +482,13 @@
                   <td class="px-3 py-3 text-slate-600">{formatTableDateTime(allocation.lastAuditDateTime)}</td>
                   <td class="px-3 py-3">
                     <div class="flex flex-nowrap justify-end gap-2 whitespace-nowrap">
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => exportNodesJson(allocation)} title="Export nodes JSON" type="button">
-                        Export
-                      </button>
+                      <span class="table-actions">
+                        <button aria-label={`Export ${allocation.name} nodes to JSON`} onclick={() => exportNodesJson(allocation)} title="Export JSON" type="button">
+                          <svg aria-hidden="true" viewBox="0 0 24 24">
+                            <path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" />
+                          </svg>
+                        </button>
+                      </span>
                       <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(allocation.assetAllocationID)} type="button">
                         {openHistoryID === allocation.assetAllocationID ? 'Hide' : 'History'}
                       </button>
