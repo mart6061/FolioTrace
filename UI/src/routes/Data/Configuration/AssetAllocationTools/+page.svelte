@@ -125,9 +125,20 @@
     editNodesJsonByID[allocation.assetAllocationID] = nodesJsonForEdit(allocation);
   }
 
-  function cancelEdit() {
-    delete editNodesJsonByID[editingAllocationID];
+  function closeEdit() {
+    if (editingAllocationID)
+      delete editNodesJsonByID[editingAllocationID];
+
     editingAllocationID = '';
+  }
+
+  function toggleEdit(allocation: ValuationSetting) {
+    if (editingAllocationID === allocation.assetAllocationID) {
+      closeEdit();
+      return;
+    }
+
+    startEdit(allocation);
   }
 
   function startAccountEdit(assetAllocationID: string) {
@@ -552,8 +563,8 @@
                       <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startAccountEdit(allocation.assetAllocationID)} type="button">
                         Accounts
                       </button>
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(allocation)} type="button">
-                        Edit
+                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleEdit(allocation)} type="button">
+                        {editingAllocationID === allocation.assetAllocationID ? 'Close' : 'Edit'}
                       </button>
                       <form action="?/setActive" class="shrink-0" method="POST" use:enhance={enhanceAllocation}>
                         <input name="assetAllocationID" type="hidden" value={allocation.assetAllocationID} />
@@ -620,7 +631,6 @@
 													<ValuationNodeEditor accounts={accounts} allocationAccountIDs={allocation.accountIDs} mode={editorMode} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} rootNodeName={allocation.name} />
 												{/key}
 												<div class="flex justify-end gap-2">
-                          <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
                           <button class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>
                         </div>
                       </form>
