@@ -795,10 +795,10 @@
                 <input aria-label="Node name" class="valuation-node-name" type="text" value={row.node.name} onchange={(event) => renameNode(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
               {/if}
 
-              <button aria-label={`Add child to ${row.node.name}`} class="valuation-node-icon-button" onclick={() => addChild(row.node.nodeID)} title="Add child" type="button">+</button>
+              <button aria-label={`Add child to ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button" onclick={() => addChild(row.node.nodeID)} title="Add child" type="button">+</button>
 
               {#if row.node.nodeID !== rootNodeID}
-                <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
+                <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
               {/if}
 
               <label class="valuation-node-metrics-toggle" title="Metrics">
@@ -955,8 +955,31 @@
     cursor: grabbing;
   }
 
+  .valuation-node-action-button {
+    border: 1px solid color-mix(in srgb, var(--node-colour) 42%, var(--line));
+    background: color-mix(in srgb, var(--node-colour) 12%, var(--panel));
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+
+  .valuation-node-action-button:hover {
+    border-color: color-mix(in srgb, var(--node-colour) 68%, var(--line));
+    background: color-mix(in srgb, var(--node-colour) 22%, var(--panel));
+  }
+
+  .valuation-node-action-button:active {
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ink) 18%, transparent);
+    transform: translateY(1px);
+  }
+
+  .valuation-node-delete-button {
+    border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+    background: color-mix(in srgb, var(--danger) 8%, var(--panel));
+    color: color-mix(in srgb, var(--danger) 72%, var(--muted));
+  }
+
   .valuation-node-delete-button:hover {
-    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 68%, var(--line));
+    background: color-mix(in srgb, var(--danger) 14%, var(--panel));
     color: var(--danger);
   }
 
