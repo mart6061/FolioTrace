@@ -199,12 +199,12 @@
         </div>
       </div>
 
-      <form class="grid gap-3 md:grid-cols-2 lg:grid-cols-[96px_minmax(150px,0.75fr)_88px_96px_190px_minmax(150px,0.7fr)_auto] lg:items-end">
+      <form class="grid gap-3 md:grid-cols-2 lg:grid-cols-[88px_minmax(110px,0.55fr)_76px_76px_190px_190px_minmax(120px,0.5fr)_auto] lg:items-end">
         <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Method
           <select class="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="method">
             <option value="">All</option>
-            {#each ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as method}
+            {#each ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as method (method)}
               <option selected={data.filters.method === method} value={method}>{method}</option>
             {/each}
           </select>
@@ -251,6 +251,16 @@
             name="fromUtc"
             step="1"
             value={data.filters.fromUtc}
+          />
+        </label>
+
+        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+          To UTC
+          <DateTimeInput
+            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            name="toUtc"
+            step="1"
+            value={data.filters.toUtc}
           />
         </label>
 
@@ -302,7 +312,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              {#each exchanges as exchange}
+              {#each exchanges as exchange (exchange.id)}
                 <tr class="align-top hover:bg-slate-50">
                   <td class="whitespace-nowrap px-3 py-2 text-slate-600">{formatDateTime(exchange.startedAtUtc)}</td>
                   <td class="px-3 py-2">
@@ -409,7 +419,7 @@
   <details class="rounded-md border border-slate-200 bg-white">
     <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-700">Headers</summary>
     <dl class="divide-y divide-slate-100 border-t border-slate-200 text-xs">
-      {#each headers(message) as [name, values]}
+      {#each headers(message) as [name, values] (name)}
         <div class="grid gap-1 px-3 py-2 sm:grid-cols-[180px_1fr]">
           <dt class="font-medium text-slate-700">{name}</dt>
           <dd class="break-all font-mono text-slate-600">{values.join(', ')}</dd>

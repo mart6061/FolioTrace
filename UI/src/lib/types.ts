@@ -279,6 +279,7 @@ export type AssetAllocationNode = {
   name: string;
   subtotal: boolean;
   hidden: boolean;
+  colour?: string | null;
   accountSettings: AssetAllocationNodeAccountSetting[];
 };
 
@@ -518,6 +519,8 @@ export type Ticket = {
   proposalReason: string;
   proposalAllocation: string;
   tradePrice?: number | null;
+  tradeDateTime?: string | null;
+  settlementDateTime?: string | null;
   tradeAllocations: TicketTradeAllocation[];
   fills: TicketFill[];
   tradeInstructionNotes: string;
@@ -585,6 +588,7 @@ export type ReferenceEventBase = {
   eventDateTime: string;
   auditDateTime: string;
   reason: string;
+  classDescription?: string;
   applicationStatus?: 'applied' | 'omitted';
   propertyDetails?: EventPropertyDetail[];
 };
@@ -848,6 +852,34 @@ export type ApiExchange = {
 
 export type ApiExchangeSearchResponse = {
   items: ApiExchange[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+export type FIXOperation = {
+  eventID: string;
+  recordedAtUtc: string;
+  eventDateTime: string;
+  auditDateTime: string;
+  reason: string;
+  direction: string;
+  channel: string;
+  sessionID: string;
+  msgType: string;
+  messageName: string;
+  msgSeqNum: number | null;
+  senderCompID: string;
+  targetCompID: string;
+  sendingTime: string | null;
+  clOrdID: string;
+  execID: string;
+  rawMessage: string;
+  displayMessage: string;
+};
+
+export type FIXOperationSearchResponse = {
+  items: FIXOperation[];
   totalCount: number;
   page: number;
   pageSize: number;

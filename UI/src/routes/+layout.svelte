@@ -45,12 +45,6 @@
       tint: '#f3e3c7',
       tintText: '#865817'
     },
-    compliance: {
-      border: '#ee9a92',
-      strong: '#b42318',
-      tint: '#fde3df',
-      tintText: '#8f1c13'
-    },
     administration: {
       border: '#b8b7dc',
       strong: '#5e5a9d',
@@ -86,7 +80,7 @@
     tone: MenuTone;
   };
   type TopMenuID = 'bookmarks' | 'system' | '';
-  type DataBranchID = 'data' | 'value' | 'reference' | '';
+  type DataBranchID = 'data' | 'value' | 'reference' | 'configuration' | 'internals' | '';
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
@@ -94,7 +88,6 @@
     { id: 'asset', label: 'Asset', path: '/Asset', tone: menuTones.value },
     { id: 'report', label: 'Report', path: '/Report', tone: menuTones.value },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
-    { id: 'compliance', label: 'Compliance', path: '/Compliance', tone: menuTones.compliance },
     { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
     { id: 'system', label: 'System', tone: menuTones.logs },
     { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
@@ -102,7 +95,8 @@
   const dataMenuItem: MenuItem = { id: 'data', label: 'Data', tone: menuTones.value };
   const dataBranchItems: MenuItem[] = [
     { id: 'value', label: 'Value', tone: menuTones.value },
-    { id: 'reference', label: 'Reference', tone: menuTones.reference }
+    { id: 'reference', label: 'Reference', tone: menuTones.reference },
+    { id: 'configuration', label: 'Configuration', tone: menuTones.administration }
   ];
   const valueItems: MenuItem[] = [
     { id: 'value-fxs', label: 'FXs', path: '/Value/FXRates', tone: menuTones.value },
@@ -114,21 +108,26 @@
     { id: 'reference-currency', label: 'Currency', path: '/Data/Reference/Currencies', tone: menuTones.reference },
     { id: 'reference-fx', label: 'FX', path: '/Value/FXs', tone: menuTones.reference },
     { id: 'reference-holding', label: 'Holding', path: '/Data/Reference/Holdings', tone: menuTones.reference },
-    { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference },
-    { id: 'reference-valuation-setting', label: 'Valuation Setting', path: '/Data/Reference/ValuationSetting', tone: menuTones.reference }
+    { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference }
   ];
-  const systemItems: MenuItem[] = [
-    { id: 'system-logs', label: 'Logs', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },
+  const configurationItems: MenuItem[] = [
+    { id: 'configuration-valuation-setting', label: 'Valuation Setting', path: '/Data/Configuration/ValuationSetting', tone: menuTones.administration }
+  ];
+  const internalsMenuItem: MenuItem = { id: 'internals', label: 'Internals', tone: menuTones.logs };
+  const internalsItems: MenuItem[] = [
+    { id: 'system-logs', label: 'Request Trace', path: '/Diagnostics/RequestTrace', tone: menuTones.logs },
+    { id: 'system-fix-trace', label: 'FIX Trace', path: '/Diagnostics/FIXTrace', tone: menuTones.logs },
     { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs }
   ];
   const topLeafItems = topMenuItems.filter((item) => item.path);
-  const leafMenuItems = [...valueItems, ...referenceItems, ...systemItems, ...topLeafItems];
+  const leafMenuItems = [...valueItems, ...referenceItems, ...configurationItems, ...internalsItems, ...topLeafItems];
   const menuVisibility = $derived(new Map(normalizeMenuPreferenceItems(data.menuPreferences?.items).map((item) => [item.menuItemID, item.visible])));
   const visibleTopMenuItems = $derived(topMenuItems.filter((item) => isMenuItemVisible(item)));
   const visibleDataBranchItems = $derived(dataBranchItems.filter((item) => isMenuItemVisible(item)));
   const visibleValueItems = $derived(valueItems.filter((item) => isMenuItemVisible(item)));
   const visibleReferenceItems = $derived(referenceItems.filter((item) => isMenuItemVisible(item)));
-  const visibleSystemItems = $derived(systemItems.filter((item) => isMenuItemVisible(item)));
+  const visibleConfigurationItems = $derived(configurationItems.filter((item) => isMenuItemVisible(item)));
+  const visibleInternalsItems = $derived(internalsItems.filter((item) => isMenuItemVisible(item)));
   const bookmarkMenuItems: MenuItem[] = $derived((data.userBookmarks?.items ?? []).map((bookmark) => ({
     id: `bookmark-${bookmark.bookmarkID}`,
     label: `${formatBookmarkType(bookmark.bookmarkType)}: ${formatBookmarkMenuUrl(bookmark.url)}`,
@@ -306,9 +305,15 @@
       return;
     }
 
-    if (systemItems.includes(item)) {
+    if (configurationItems.includes(item)) {
       openTopMenu = 'system';
-      openDataBranch = '';
+      openDataBranch = 'configuration';
+      return;
+    }
+
+    if (internalsItems.includes(item)) {
+      openTopMenu = 'system';
+      openDataBranch = 'internals';
       return;
     }
 
@@ -332,7 +337,7 @@
     if (!activeItem)
       return '';
 
-    if (valueItems.includes(activeItem) || referenceItems.includes(activeItem) || systemItems.includes(activeItem))
+    if (valueItems.includes(activeItem) || referenceItems.includes(activeItem) || configurationItems.includes(activeItem) || internalsItems.includes(activeItem))
       return 'system';
 
     if (bookmarkMenuItems.includes(activeItem))
@@ -352,6 +357,12 @@
 
     if (referenceItems.includes(activeItem))
       return 'reference';
+
+    if (configurationItems.includes(activeItem))
+      return 'configuration';
+
+    if (internalsItems.includes(activeItem))
+      return 'internals';
 
     return '';
   }
@@ -379,11 +390,17 @@
     if (referenceItems.includes(item))
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible('reference');
 
-    if (systemItems.includes(item))
-      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible(item.id);
+    if (configurationItems.includes(item))
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible('configuration') && isConfiguredMenuVisible(item.id);
 
-    if (item.id === 'value' || item.id === 'reference')
+    if (internalsItems.includes(item))
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('internals') && isConfiguredMenuVisible(item.id);
+
+    if (item.id === 'value' || item.id === 'reference' || item.id === 'configuration')
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible(item.id);
+
+    if (item.id === 'internals')
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('internals');
 
     if (item.id === 'data')
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data');
@@ -489,7 +506,7 @@
             {/if}
 
           {#if item.id === 'system' && openTopMenu === 'system'}
-              {#if openDataBranch && isMenuItemVisible(dataMenuItem)}
+              {#if openDataBranch !== 'internals' && openDataBranch && isMenuItemVisible(dataMenuItem)}
                 <button
                   aria-expanded="true"
                   class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
@@ -524,6 +541,18 @@
                       {referenceLeaf.label}
                     </a>
                   {/each}
+                {:else if openDataBranch === 'configuration' && isMenuItemVisible(dataBranchItems[2])}
+                  {#each visibleSubmenuItems(visibleConfigurationItems) as configurationLeaf, configurationIndex (configurationLeaf.id)}
+                    <a
+                      aria-current={isActiveMenuItem(configurationLeaf) ? 'page' : undefined}
+                      class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(configurationLeaf) ? 'system-menu-pill-active' : ''}`}
+                      href={menuHref(configurationLeaf)}
+                      onclick={() => handleLeafClick(configurationLeaf)}
+                      style={menuStyle(configurationLeaf.tone, 38 - topIndex - configurationIndex)}
+                    >
+                      {configurationLeaf.label}
+                    </a>
+                  {/each}
                 {:else}
                   {#each visibleDataBranchItems as branchItem, branchIndex (branchItem.id)}
                     <button
@@ -537,6 +566,28 @@
                     </button>
                   {/each}
                 {/if}
+              {:else if openDataBranch === 'internals' && isMenuItemVisible(internalsMenuItem)}
+                <button
+                  aria-expanded="true"
+                  class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
+                  onclick={() => toggleDataBranch('internals')}
+                  style={menuStyle(internalsMenuItem.tone, 39 - topIndex)}
+                  type="button"
+                >
+                  {internalsMenuItem.label}
+                </button>
+
+                {#each visibleSubmenuItems(visibleInternalsItems) as internalsLeaf, internalsIndex (internalsLeaf.id)}
+                  <a
+                    aria-current={isActiveMenuItem(internalsLeaf) ? 'page' : undefined}
+                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(internalsLeaf) ? 'system-menu-pill-active' : ''}`}
+                    href={menuHref(internalsLeaf)}
+                    onclick={() => handleLeafClick(internalsLeaf)}
+                    style={menuStyle(internalsLeaf.tone, 38 - topIndex - internalsIndex)}
+                  >
+                    {internalsLeaf.label}
+                  </a>
+                {/each}
               {:else}
                 {#if isMenuItemVisible(dataMenuItem)}
                   <button
@@ -550,17 +601,17 @@
                   </button>
                 {/if}
 
-                {#each visibleSubmenuItems(visibleSystemItems) as systemItem, systemIndex (systemItem.id)}
-                  <a
-                    aria-current={isActiveMenuItem(systemItem) ? 'page' : undefined}
-                    class={`system-menu-pill system-menu-pill-secondary system-menu-pill-overlap ${isActiveMenuItem(systemItem) ? 'system-menu-pill-active' : ''}`}
-                    href={menuHref(systemItem)}
-                    onclick={() => handleLeafClick(systemItem)}
-                    style={menuStyle(systemItem.tone, 38 - topIndex - systemIndex)}
+                {#if isMenuItemVisible(internalsMenuItem)}
+                  <button
+                    aria-expanded="false"
+                    class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
+                    onclick={() => toggleDataBranch('internals')}
+                    style={menuStyle(internalsMenuItem.tone, 38 - topIndex)}
+                    type="button"
                   >
-                    {systemItem.label}
-                  </a>
-                {/each}
+                    {internalsMenuItem.label}
+                  </button>
+                {/if}
               {/if}
           {/if}
           {/each}

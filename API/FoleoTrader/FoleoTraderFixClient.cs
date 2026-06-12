@@ -11,6 +11,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
 {
     private readonly FoleoTraderOptions options;
     private readonly FoleoTraderOrderProcessor processor;
+    private readonly FoleoTraderFIXOperationRecorder operationRecorder;
     private readonly ILogger<FoleoTraderFixClient> logger;
     private readonly object syncRoot = new();
     private SocketInitiator? initiator;
@@ -20,10 +21,11 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private DateTime lastActivityUtc = DateTime.MinValue;
     private Timer? idleTimer;
 
-    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, ILogger<FoleoTraderFixClient> logger)
+    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ILogger<FoleoTraderFixClient> logger)
     {
         this.options = options.Value;
         this.processor = processor;
+        this.operationRecorder = operationRecorder;
         this.logger = logger;
     }
 
@@ -97,15 +99,28 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         logger.LogInformation("Logged out from FoleoTrader FIX session {SessionID}.", sessionID);
     }
 
-    public void ToAdmin(Message message, SessionID sessionID) => MarkActivity();
+    public void ToAdmin(Message message, SessionID sessionID)
+    {
+        MarkActivity();
+        RecordFIXOperation("Outbound", "Admin", message, sessionID);
+    }
 
-    public void FromAdmin(Message message, SessionID sessionID) => MarkActivity();
+    public void FromAdmin(Message message, SessionID sessionID)
+    {
+        MarkActivity();
+        RecordFIXOperation("Inbound", "Admin", message, sessionID);
+    }
 
-    public void ToApp(Message message, SessionID sessionID) => MarkActivity();
+    public void ToApp(Message message, SessionID sessionID)
+    {
+        MarkActivity();
+        RecordFIXOperation("Outbound", "App", message, sessionID);
+    }
 
     public void FromApp(Message message, SessionID sessionID)
     {
         MarkActivity();
+        RecordFIXOperation("Inbound", "App", message, sessionID);
         Crack(message, sessionID);
     }
 
@@ -265,6 +280,30 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     }
 
     private void MarkActivity() => lastActivityUtc = DateTime.UtcNow;
+
+    private void RecordFIXOperation(string direction, string channel, Message message, SessionID sessionID)
+    {
+        Task recordTask;
+
+        try
+        {
+            recordTask = operationRecorder.RecordAsync(direction, channel, message, sessionID, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to record FoleoTrader FIX {Direction} {Channel} message.", direction, channel);
+            return;
+        }
+
+        if (recordTask.IsCompletedSuccessfully)
+            return;
+
+        _ = recordTask.ContinueWith(
+            task => logger.LogWarning(task.Exception, "Failed to record FoleoTrader FIX {Direction} {Channel} message.", direction, channel),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+    }
 
     private static TaskCompletionSource<SessionID> CreateLogonCompletion() =>
         new(TaskCreationOptions.RunContinuationsAsynchronously);

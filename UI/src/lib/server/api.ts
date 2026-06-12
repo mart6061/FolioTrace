@@ -9,6 +9,7 @@ import type {
   CountryReferenceEvent,
   Currencies,
   CurrencyReferenceEvent,
+  FIXOperationSearchResponse,
   FXRates,
   FoleoTraderOrders,
   FXRateHistoryEvent,
@@ -159,6 +160,7 @@ export type AssetAllocationNodeRequest = {
   name: string;
   subtotal: boolean;
   hidden: boolean;
+  colour?: string | null;
   accountSettings: AssetAllocationNodeAccountSettingRequest[];
 };
 
@@ -386,6 +388,8 @@ export type TicketApprovalRequest = {
   ticketNumber: number;
 };
 
+export type TicketTradeApprovalRequest = TicketApprovalRequest;
+
 export type TicketTextSetRequest = TicketApprovalRequest & {
   value: string;
 };
@@ -396,6 +400,8 @@ export type TicketTradeRequest = {
   reason: string;
   ticketNumber: number;
   tradedPrice: number;
+  tradeDateTime: string;
+  settlementDateTime: string;
   allocations: {
     accountID: string;
     cashHoldingID: string;
@@ -1153,6 +1159,19 @@ export type ApiExchangeSearchRequest = {
   pageSize?: string;
 };
 
+export type FIXOperationSearchRequest = {
+  fromUtc?: string;
+  toUtc?: string;
+  direction?: string;
+  channel?: string;
+  msgType?: string;
+  clOrdID?: string;
+  execID?: string;
+  text?: string;
+  page?: string;
+  pageSize?: string;
+};
+
 export async function getApiExchanges(fetchApi: typeof fetch, request: ApiExchangeSearchRequest) {
   const url = new URL(`${getApiBaseUrl()}/Diagnostics/RequestTrace`);
 
@@ -1167,6 +1186,22 @@ export async function getApiExchanges(fetchApi: typeof fetch, request: ApiExchan
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as ApiExchangeSearchResponse;
+}
+
+export async function getFIXOperations(fetchApi: typeof fetch, request: FIXOperationSearchRequest) {
+  const url = new URL(`${getApiBaseUrl()}/Diagnostics/FIXTrace`);
+
+  for (const [key, value] of Object.entries(request)) {
+    if (value)
+      url.searchParams.set(key, value);
+  }
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as FIXOperationSearchResponse;
 }
 
 export async function postCountryCreatedEvent(
@@ -1660,7 +1695,7 @@ export async function postTicketTradeDecisionRequestedEvent(fetchApi: typeof fet
   return postTicketEvent(fetchApi, 'TicketTradeDecisionRequestedEvent', request);
 }
 
-export async function postTicketTradeApprovedEvent(fetchApi: typeof fetch, request: TicketApprovalRequest) {
+export async function postTicketTradeApprovedEvent(fetchApi: typeof fetch, request: TicketTradeApprovalRequest) {
   return postTicketEvent(fetchApi, 'TicketTradeApprovedEvent', request);
 }
 
@@ -1822,6 +1857,10 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
     body.TradeCurrency = request.tradeCurrency;
   if (typeof request.tradedPrice === 'number')
     body.TradedPrice = request.tradedPrice;
+  if (typeof request.tradeDateTime === 'string')
+    body.TradeDateTime = request.tradeDateTime;
+  if (typeof request.settlementDateTime === 'string')
+    body.SettlementDateTime = request.settlementDateTime;
   if (Array.isArray(request.allocations))
     body.Allocations = (request.allocations as { accountID: string; cashHoldingID?: string; quantity: number; bookCost?: number }[]).map((allocation) => ({
       AccountID: allocation.accountID,
@@ -2145,6 +2184,7 @@ function normalizeTransactionEvent(event: Record<string, unknown>): TransactionR
     bookCost: readOptionalNumber(event, 'bookCost', 'BookCost'),
     cancelledEventID: readString(event, 'cancelledEventID', 'cancelledEventId', 'CancelledEventID') || undefined,
     cancelledIDGroup: readStringArray(event, 'cancelledIDGroup', 'cancelledIdGroup', 'CancelledIDGroup'),
+    classDescription: readString(event, 'classDescription', 'ClassDescription') || undefined,
     eventDateTime: readString(event, 'eventDateTime', 'EventDateTime'),
     eventID: readString(event, 'eventID', 'eventId', 'EventID'),
     eventIDGroup: readStringArray(event, 'eventIDGroup', 'eventIdGroup', 'EventIDGroup'),
@@ -2316,6 +2356,7 @@ async function postAssetAllocationEvent(
       Name: node.name,
       Subtotal: node.subtotal,
       Hidden: node.hidden,
+      Colour: node.colour,
       AccountSettings: node.accountSettings.map((setting) => ({
         AccountID: setting.accountID,
         TargetWeight: setting.targetWeight,

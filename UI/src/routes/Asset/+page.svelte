@@ -1,7 +1,7 @@
 <script lang="ts">
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
+  import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
   import type { AggregateKind, Currency, HoldingHistoryEvent, TransactionReferenceEvent, ValuationHistoryEvent, ValuationItem } from '$lib/types';
@@ -334,56 +334,18 @@
       </div>
 
       {#if valuationHistory.open}
-        <section class="grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="text-sm font-semibold text-slate-950">Excluded valuation history</h2>
-            <span class="text-xs text-slate-500">{valuationHistory.events.length} events</span>
-          </div>
-
+        <section>
           {#if valuationHistory.loading}
             <div class="text-sm text-slate-600">Loading history...</div>
           {:else if valuationHistory.error}
             <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{valuationHistory.error}</div>
-          {:else if valuationHistory.events.length}
-            <ol class="grid gap-2">
-              {#each valuationHistory.events as event (event.eventID)}
-                <li class="grid gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-3 py-2 md:grid-cols-[180px_1fr]">
-                  <div class="text-xs text-slate-500">
-                    <div>{formatTableDateTime(event.eventDateTime)}</div>
-                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
-                    <div class="mt-1 font-semibold text-amber-800">{event.exclusionReason}</div>
-                  </div>
-                  <div class="grid gap-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="text-sm font-semibold text-slate-950">
-                        {isTransactionHistoryEvent(event) ? transactionEventLabel(event) : event.$type}
-                      </span>
-                      {#if isTransactionHistoryEvent(event)}
-                        <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-800">Transaction</span>
-                      {:else}
-                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">Holding</span>
-                      {/if}
-                      <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
-                    </div>
-                    {#if isTransactionHistoryEvent(event)}
-                      <div class="text-sm text-slate-600">{transactionEventSummary(event)}</div>
-                      {#if transactionEventDetail(event)}
-                        <div class="break-all text-xs text-slate-500">{transactionEventDetail(event)}</div>
-                      {/if}
-                    {:else if holdingEventSummary(event)}
-                      <div class="text-sm text-slate-600">{holdingEventSummary(event)}</div>
-                    {/if}
-                    {#if eventHoldingDetail(event)}
-                      <div class="break-all text-xs text-slate-500">{eventHoldingDetail(event)}</div>
-                    {/if}
-                    <div class="text-sm text-slate-600">{event.reason}</div>
-                    <div class="break-all text-xs text-slate-400">{event.eventID}</div>
-                  </div>
-                </li>
-              {/each}
-            </ol>
           {:else}
-            <div class="text-sm text-slate-600">No excluded holding or transaction events for this valuation.</div>
+            <HistoryEventsCard
+              eventDateTime={valuations.valuationDateTime ?? data.valuationDate}
+              asAtDateTime={data.auditDateTime}
+              events={valuationHistory.events}
+              emptyMessage="No excluded holding or transaction events for this valuation."
+            />
           {/if}
         </section>
       {/if}
@@ -464,55 +426,18 @@
                     {@const history = historyByHoldingID[item.holdingID]}
                     <tr class="bg-slate-50/80">
                       <td class="px-3 py-3" colspan="9">
-                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
-                          <div class="flex items-center justify-between gap-3">
-                            <h2 class="text-sm font-semibold text-slate-950">{item.name} holding history</h2>
-                            <span class="text-xs text-slate-500">{history?.events.length ?? 0} events</span>
-                          </div>
-
+                        <div>
                           {#if history?.loading}
                             <div class="text-sm text-slate-600">Loading history...</div>
                           {:else if history?.error}
                             <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
-                          {:else if history?.events.length}
-                            <ol class="grid gap-2">
-                              {#each history.events as event (event.eventID)}
-                                <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${event.applicationStatus === 'omitted' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200'}`}>
-                                  <div class="text-xs text-slate-500">
-                                    <div>{formatTableDateTime(event.eventDateTime)}</div>
-                                    <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
-                                    {#if event.applicationStatus === 'omitted'}
-                                      <div class="mt-1 font-semibold text-amber-800">Omitted in trace</div>
-                                    {/if}
-                                  </div>
-                                  <div class="grid gap-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                      <span class="text-sm font-semibold text-slate-950">
-                                        {isTransactionHistoryEvent(event) ? transactionEventLabel(event) : event.$type}
-                                      </span>
-                                      {#if isTransactionHistoryEvent(event)}
-                                        <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-800">Transaction</span>
-                                      {:else}
-                                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">Holding</span>
-                                      {/if}
-                                    </div>
-                                    {#if isTransactionHistoryEvent(event)}
-                                      <div class="text-sm text-slate-600">{transactionEventSummary(event)}</div>
-                                      {#if transactionEventDetail(event)}
-                                        <div class="break-all text-xs text-slate-500">{transactionEventDetail(event)}</div>
-                                      {/if}
-                                    {:else if holdingEventSummary(event)}
-                                      <div class="text-sm text-slate-600">{holdingEventSummary(event)}</div>
-                                    {/if}
-                                    <EventPropertyDetails details={event.propertyDetails} />
-                                    <div class="text-sm text-slate-600">{event.reason}</div>
-                                    <div class="break-all text-xs text-slate-400">{event.eventID}</div>
-                                  </div>
-                                </li>
-                              {/each}
-                            </ol>
                           {:else}
-                            <div class="text-sm text-slate-600">No history found for this holding.</div>
+                            <HistoryEventsCard
+                              eventDateTime={valuations.valuationDateTime ?? data.valuationDate}
+                              asAtDateTime={data.auditDateTime}
+                              events={history?.events ?? []}
+                              emptyMessage="No history found for this holding."
+                            />
                           {/if}
                         </div>
                       </td>

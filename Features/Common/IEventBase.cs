@@ -26,6 +26,7 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(FoleoTraderOrderSubmittedEvent), nameof(FoleoTraderOrderSubmittedEvent))]
 [JsonDerivedType(typeof(FoleoTraderExecutionReceivedEvent), nameof(FoleoTraderExecutionReceivedEvent))]
 [JsonDerivedType(typeof(FoleoTraderOrderFailedEvent), nameof(FoleoTraderOrderFailedEvent))]
+[JsonDerivedType(typeof(FoleoTraderFIXOperationRecordedEvent), nameof(FoleoTraderFIXOperationRecordedEvent))]
 [JsonDerivedType(typeof(HoldingPositionMemoCreatedEvent), nameof(HoldingPositionMemoCreatedEvent))]
 [JsonDerivedType(typeof(HoldingPositionCashCreatedEvent), nameof(HoldingPositionCashCreatedEvent))]
 [JsonDerivedType(typeof(HoldingPositionAssetCreatedEvent), nameof(HoldingPositionAssetCreatedEvent))]

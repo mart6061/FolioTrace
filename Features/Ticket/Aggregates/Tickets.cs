@@ -103,6 +103,8 @@ public sealed record Tickets : IAggregate
                     Stage = TicketStage.Trade,
                     TradeDecision = TicketDecision.InProgress,
                     TradePrice = @event.TradedPrice,
+                    TradeDateTime = @event.TradeDateTime,
+                    SettlementDateTime = @event.SettlementDateTime,
                     TradeAllocations = @event.Allocations.ToList()
                 });
                 break;
@@ -112,6 +114,8 @@ public sealed record Tickets : IAggregate
                     Stage = TicketStage.Trade,
                     TradeDecision = TicketDecision.InProgress,
                     TradePrice = @event.TradedPrice,
+                    TradeDateTime = @event.TradeDateTime,
+                    SettlementDateTime = @event.SettlementDateTime,
                     TradeAllocations = @event.Allocations.ToList()
                 });
                 break;

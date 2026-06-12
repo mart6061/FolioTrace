@@ -30,6 +30,7 @@ builder.Services.AddSingleton<ApiVersionInfo>();
 builder.Services.AddSingleton<BuildCoordinator>();
 builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
 builder.Services.AddSingleton<FoleoTraderOrderProcessor>();
+builder.Services.AddSingleton<FoleoTraderFIXOperationRecorder>();
 builder.Services.AddSingleton<FoleoTraderFixClient>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<FoleoTraderFixClient>());
 builder.Services.AddSingleton(

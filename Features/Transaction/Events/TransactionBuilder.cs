@@ -69,7 +69,7 @@ public static class TransactionBuilder
         if (request.UserID is null) messages.Add("UserID is required.");
         if (request.EventDateTime is null) messages.Add("EventDateTime is required.");
         if (request.SettlementDateTime is null) messages.Add("SettlementDateTime is required.");
-        if (request.EventDateTime is not null && request.SettlementDateTime is not null && request.SettlementDateTime.Value < request.EventDateTime.Value)
+        if (request.EventDateTime is not null && request.SettlementDateTime is not null && request.SettlementDateTime.Value.Date < request.EventDateTime.Value.Date)
             messages.Add("SettlementDateTime must be equal to or greater than EventDateTime.");
         if (string.IsNullOrWhiteSpace(request.Reason)) messages.Add("Reason is required.");
         if (request.Credits is null) messages.Add("Credits are required.");

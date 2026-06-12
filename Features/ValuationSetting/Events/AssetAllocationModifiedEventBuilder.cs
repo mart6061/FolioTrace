@@ -26,6 +26,7 @@ public static class AssetAllocationModifiedEventBuilder
 
     public static Result<AssetAllocationModifiedEvent> Create(UserID userId, EventDateTime eventDateTime, string reason, AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, NodeID rootNodeID, List<AssetAllocationNode> nodes, ValuationSettings? valuationSettings = null)
     {
+        nodes = AssetAllocationNodeNormalizer.Normalise(rootNodeID, name, nodes);
         var auditDateTime = AuditDateTimeBuilder.Create();
         EventID eventId = Guid.CreateGuid7();
         var validationErrors = AssetAllocationEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, assetAllocationID);

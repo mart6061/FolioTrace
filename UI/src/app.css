@@ -2468,6 +2468,18 @@ tbody tr {
   outline: none;
 }
 
+.ticket-action-button-warning {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+
+.ticket-action-button-warning:hover,
+.ticket-action-button-warning:focus-visible {
+  border-color: var(--warning-strong);
+  color: var(--warning-strong);
+}
+
 .ticket-action-button:disabled {
   cursor: wait;
   opacity: 0.62;
@@ -3285,6 +3297,12 @@ input[type='number']::-webkit-outer-spin-button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.trade-price-row {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(12rem, 1fr) minmax(9rem, 0.75fr);
+}
+
 .fill-table {
   display: grid;
   border: 1px solid var(--line);
@@ -3358,6 +3376,11 @@ input[type='number']::-webkit-outer-spin-button {
   align-items: stretch;
 }
 
+.trade-price-row .ticket-term-input,
+.trade-price-row .ticket-readonly-value {
+  width: 100%;
+}
+
 .trade-allocation-table {
   grid-column: 1 / -1;
 }
@@ -3374,6 +3397,10 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 @media (max-width: 720px) {
+  .trade-price-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .account-add-form {
     grid-template-columns: minmax(0, 1fr);
   }

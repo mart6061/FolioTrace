@@ -19,6 +19,8 @@ public sealed record Ticket : IModel
     public required string ProposalReason { get; init; } = string.Empty;
     public required string ProposalAllocation { get; init; } = string.Empty;
     public Price? TradePrice { get; init; }
+    public EventDateTime? TradeDateTime { get; init; }
+    public SettlementDateTime? SettlementDateTime { get; init; }
     public required List<TicketTradeAllocation> TradeAllocations { get; init; } = [];
     public required List<TicketFill> Fills { get; init; } = [];
     public required string TradeInstructionNotes { get; init; } = string.Empty;

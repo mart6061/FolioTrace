@@ -1,7 +1,8 @@
 import type { UserMenuPreferenceItem, UserMenuPreferences } from '$lib/types';
 
 const legacyMenuPreferenceIDs = new Map([
-  ['value-valuations', 'asset']
+  ['value-valuations', 'asset'],
+  ['reference-valuation-setting', 'configuration-valuation-setting']
 ]);
 
 export type MenuPreferenceDefinition = {
@@ -16,15 +17,17 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'asset', label: 'Asset' },
   { id: 'report', label: 'Report' },
   { id: 'account', label: 'Account' },
-  { id: 'compliance', label: 'Compliance' },
   { id: 'administration', label: 'Administration' },
   { id: 'system', label: 'System' },
   { id: 'data', label: 'Data', parentID: 'system' },
   { id: 'value', label: 'Value', parentID: 'data' },
   { id: 'reference', label: 'Reference', parentID: 'data' },
-  { id: 'reference-valuation-setting', label: 'Valuation Setting', parentID: 'reference' },
-  { id: 'system-logs', label: 'Logs', parentID: 'system' },
-  { id: 'system-stats', label: 'Stats for Nerds', parentID: 'system' },
+  { id: 'configuration', label: 'Configuration', parentID: 'data' },
+  { id: 'configuration-valuation-setting', label: 'Valuation Setting', parentID: 'configuration' },
+  { id: 'internals', label: 'Internals', parentID: 'system' },
+  { id: 'system-logs', label: 'Request Trace', parentID: 'internals' },
+  { id: 'system-fix-trace', label: 'FIX Trace', parentID: 'internals' },
+  { id: 'system-stats', label: 'Stats for Nerds', parentID: 'internals' },
   { id: 'todo', label: 'To Do' }
 ];
 

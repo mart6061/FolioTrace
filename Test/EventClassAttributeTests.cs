@@ -18,7 +18,8 @@ public sealed class EventClassAttributeTests
     [
         nameof(FoleoTraderOrderSubmittedEvent),
         nameof(FoleoTraderExecutionReceivedEvent),
-        nameof(FoleoTraderOrderFailedEvent)
+        nameof(FoleoTraderOrderFailedEvent),
+        nameof(FoleoTraderFIXOperationRecordedEvent)
     ];
 
     private static readonly HashSet<string> TransactionEvents =

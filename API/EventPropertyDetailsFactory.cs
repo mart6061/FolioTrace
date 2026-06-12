@@ -11,11 +11,14 @@ public static partial class EventPropertyDetailsFactory
 {
     private static readonly JsonNamingPolicy JsonNamingPolicy = JsonNamingPolicy.CamelCase;
     private static readonly ConcurrentDictionary<Type, IReadOnlyList<ResponseProperty>> ResponsePropertiesByType = [];
+    private static readonly ConcurrentDictionary<Type, string> ClassDescriptionByEventType = [];
     private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, EventPropertyMetadata>> PropertyMetadataByEventType = [];
     private static readonly HashSet<string> ExcludedProperties = new(StringComparer.OrdinalIgnoreCase)
     {
         "$type",
+        "type",
         "applicationStatus",
+        "classDescription",
         "details",
         "propertyDetails"
     };
@@ -23,6 +26,10 @@ public static partial class EventPropertyDetailsFactory
     public static EventResponseWithPropertyDetails WithPropertyDetails(IEventBase @event, object response, object? nestedDetails = null)
     {
         var properties = ToExtensionProperties(response);
+        properties.Remove("type");
+        properties.Remove("Type");
+        properties["$type"] = @event.Type;
+        properties["classDescription"] = GetClassDescription(@event.GetType());
         var propertyDetails = CreatePropertyDetails(@event, response)
             .Concat(nestedDetails is null ? [] : CreatePropertyDetails(@event, nestedDetails))
             .Select((detail, index) => new { Detail = detail, Index = index })
@@ -43,6 +50,11 @@ public static partial class EventPropertyDetailsFactory
 
         return properties;
     }
+
+    private static string GetClassDescription(Type eventType) =>
+        ClassDescriptionByEventType.GetOrAdd(eventType, static type =>
+            type.GetCustomAttribute<EventClassAttribute>(inherit: false)?.Description ??
+            FormatPropertyName(type.Name));
 
     private static IReadOnlyList<EventPropertyDetail> CreatePropertyDetails(IEventBase @event, object response)
     {
@@ -77,20 +89,25 @@ public static partial class EventPropertyDetailsFactory
                 .ToList());
 
     private static IReadOnlyDictionary<string, EventPropertyMetadata> GetPropertyMetadata(Type eventType) =>
-        PropertyMetadataByEventType.GetOrAdd(eventType, static type =>
-            GetMetadataTypes(type)
-                .SelectMany(metadataType => metadataType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-                .Where(property => property.GetIndexParameters().Length == 0)
-                .Select(property => new
-                {
-                    property.Name,
-                    Metadata = property.GetCustomAttribute<EventPropertyAttribute>()
-                })
-                .Where(property => property.Metadata is not null)
-                .ToDictionary(
-                    property => property.Name,
-                    property => new EventPropertyMetadata(property.Metadata!.Description, property.Metadata.Order),
-                    StringComparer.OrdinalIgnoreCase));
+        PropertyMetadataByEventType.GetOrAdd(eventType, BuildPropertyMetadata);
+
+    private static IReadOnlyDictionary<string, EventPropertyMetadata> BuildPropertyMetadata(Type eventType)
+    {
+        var metadataByProperty = new Dictionary<string, EventPropertyMetadata>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in GetMetadataTypes(eventType)
+            .SelectMany(metadataType => metadataType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            .Where(property => property.GetIndexParameters().Length == 0))
+        {
+            var metadata = property.GetCustomAttribute<EventPropertyAttribute>();
+            if (metadata is null || metadataByProperty.ContainsKey(property.Name))
+                continue;
+
+            metadataByProperty[property.Name] = new EventPropertyMetadata(metadata.Description, metadata.Order);
+        }
+
+        return metadataByProperty;
+    }
 
     private static IEnumerable<Type> GetMetadataTypes(Type eventType)
     {

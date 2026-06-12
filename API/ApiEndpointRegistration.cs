@@ -357,6 +357,47 @@ public static class ApiEndpointRegistration
                 ? Results.NotFound()
                 : Results.Ok(ToResponse(exchange));
         });
+
+        diagnostics.MapGet("/FIXTrace", async (
+            DateTime? fromUtc,
+            DateTime? toUtc,
+            string? direction,
+            string? channel,
+            string? msgType,
+            string? clOrdID,
+            string? execID,
+            string? text,
+            int? page,
+            int? pageSize,
+            IEventRepository eventRepository,
+            CancellationToken cancellationToken) =>
+        {
+            var normalizedPage = Math.Max(1, page ?? 1);
+            var normalizedPageSize = Math.Clamp(pageSize ?? 50, 1, 200);
+            var events = await eventRepository.LoadStreamAsync<FoleoTraderFIXOperationRecordedEvent>(Constants.Initialisation.FoleoTraderFIXOperationsStreamId, cancellationToken);
+            var filtered = events
+                .Where(@event => !fromUtc.HasValue || @event.AuditDateTime.Value >= fromUtc.Value)
+                .Where(@event => !toUtc.HasValue || @event.AuditDateTime.Value <= toUtc.Value)
+                .Where(@event => Matches(@event.Direction, direction))
+                .Where(@event => Matches(@event.Channel, channel))
+                .Where(@event => Matches(@event.MsgType, msgType))
+                .Where(@event => Contains(@event.ClOrdID, clOrdID))
+                .Where(@event => Contains(@event.ExecID, execID))
+                .Where(@event => MatchesFIXText(@event, text))
+                .OrderByDescending(@event => @event.AuditDateTime.Value)
+                .ThenByDescending(@event => @event.EventID.Value)
+                .ToList();
+
+            return Results.Ok(new FIXOperationSearchResponse(
+                filtered
+                    .Skip((normalizedPage - 1) * normalizedPageSize)
+                    .Take(normalizedPageSize)
+                    .Select(ToResponse)
+                    .ToList(),
+                filtered.Count,
+                normalizedPage,
+                normalizedPageSize));
+        });
     }
 
     private static void MapSystemEndpoints(this RouteGroupBuilder api)
@@ -1736,19 +1777,27 @@ public static class ApiEndpointRegistration
                 },
                 cancellationToken));
 
-        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
-            await AppendTicketEvent(
-                eventRepository,
-                cacheInvalidationService,
-                async () =>
-                {
-                    var asAt = AuditDateTimeBuilder.Create();
-                    var tickets = await ticketService.Get(request.EventDateTime, asAt);
-                    var holdings = await holdingService.Get(request.EventDateTime, asAt);
-                    var instruments = await instrumentService.Get(request.EventDateTime, asAt);
-                    return TicketEventBuilder.ApproveTrade(request, tickets, holdings, instruments);
-                },
-                cancellationToken));
+        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, AccountService accountService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeApprovalRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var tickets = await ticketService.Get(request.EventDateTime, asAt);
+            var accounts = await accountService.Get(request.EventDateTime, asAt);
+            var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+            var holdingEvents = await eventRepository.LoadStreamAsync<IHoldingEvent>(Constants.Initialisation.HoldingsStreamId, cancellationToken);
+            var result = TicketEventBuilder.ApproveTradeWithTransactions(request, tickets, accounts, instruments, holdingEvents);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            if (result.Value.HoldingEvents.Count > 0)
+                await eventRepository.AppendAsync(Constants.Initialisation.HoldingsStreamId, result.Value.HoldingEvents.Cast<IEventBase>().ToList(), cancellationToken);
+            await eventRepository.AppendAsync(Constants.Initialisation.TicketsStreamId, result.Value.ApprovalEvent, cancellationToken);
+            var transactionEvents = result.Value.TransactionEvents.Cast<IEventBase>().ToList();
+            await eventRepository.AppendAsync(Constants.Initialisation.TransactionsStreamId, transactionEvents, cancellationToken);
+
+            cacheInvalidationService.Invalidate([.. result.Value.HoldingEvents, result.Value.ApprovalEvent, .. transactionEvents]);
+
+            return Results.Accepted(TicketEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(TicketEventsRoute, result.Value.ApprovalEvent));
+        });
 
         ticketEvents.MapPost($"/{nameof(TicketTradeNotApprovedEvent)}", async (TicketService ticketService, HoldingService holdingService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketApprovalRequest request, CancellationToken cancellationToken) =>
             await AppendTicketEvent(
@@ -2195,6 +2244,70 @@ public static class ApiEndpointRegistration
     private static ApiHttpMessageResponse ToResponse(ApiHttpMessage message) =>
         new(message.Headers, message.Body, message.ContentType, message.ContentLength, message.BodyTruncated);
 
+    private static FIXOperationResponse ToResponse(FoleoTraderFIXOperationRecordedEvent @event) =>
+        new(
+            @event.EventID.Value,
+            @event.AuditDateTime.Value,
+            @event.EventDateTime.Value,
+            @event.AuditDateTime.Value,
+            @event.Reason,
+            @event.Direction,
+            @event.Channel,
+            @event.SessionID,
+            @event.MsgType,
+            FIXMessageName(@event.MsgType),
+            @event.MsgSeqNum,
+            @event.SenderCompID,
+            @event.TargetCompID,
+            @event.SendingTime,
+            @event.ClOrdID,
+            @event.ExecID,
+            @event.RawMessage,
+            @event.RawMessage.Replace('\u0001', '|'));
+
+    private static bool Matches(string value, string? filter) =>
+        string.IsNullOrWhiteSpace(filter) || string.Equals(value, filter, StringComparison.OrdinalIgnoreCase);
+
+    private static bool Contains(string value, string? filter) =>
+        string.IsNullOrWhiteSpace(filter) || value.Contains(filter, StringComparison.OrdinalIgnoreCase);
+
+    private static bool MatchesFIXText(FoleoTraderFIXOperationRecordedEvent @event, string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return true;
+
+        return Contains(@event.RawMessage, text) ||
+            Contains(@event.RawMessage.Replace('\u0001', '|'), text) ||
+            Contains(@event.SessionID, text) ||
+            Contains(@event.Direction, text) ||
+            Contains(@event.Channel, text) ||
+            Contains(@event.MsgType, text) ||
+            Contains(FIXMessageName(@event.MsgType), text) ||
+            Contains(@event.SenderCompID, text) ||
+            Contains(@event.TargetCompID, text) ||
+            Contains(@event.ClOrdID, text) ||
+            Contains(@event.ExecID, text);
+    }
+
+    private static string FIXMessageName(string msgType) =>
+        msgType switch
+        {
+            "0" => "Heartbeat",
+            "1" => "Test Request",
+            "2" => "Resend Request",
+            "3" => "Reject",
+            "4" => "Sequence Reset",
+            "5" => "Logout",
+            "8" => "Execution Report",
+            "9" => "Order Cancel Reject",
+            "A" => "Logon",
+            "D" => "New Order Single",
+            "F" => "Order Cancel Request",
+            "G" => "Order Cancel/Replace Request",
+            "j" => "Business Message Reject",
+            _ => string.IsNullOrWhiteSpace(msgType) ? "Unknown" : msgType
+        };
+
     private static bool IsApiExchangeStoreUnavailable(Exception exception) =>
         exception is TimeoutException ||
         exception.GetType().FullName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true ||
@@ -2524,6 +2637,7 @@ public static class ApiEndpointRegistration
                 node.Name,
                 node.Subtotal,
                 node.Hidden,
+                node.Colour,
                 AccountSettings = node.AccountSettings.Select(setting => new
                 {
                     AccountID = setting.AccountID.Value,
@@ -2918,11 +3032,15 @@ public static class ApiEndpointRegistration
             TicketTradeCreatedEvent tradeCreatedEvent => WithTicketBase(tradeCreatedEvent, new
             {
                 tradeCreatedEvent.TradedPrice,
+                tradeCreatedEvent.TradeDateTime,
+                tradeCreatedEvent.SettlementDateTime,
                 Allocations = tradeCreatedEvent.Allocations.Select(ToResponse).ToList()
             }),
             TicketTradeModifiedEvent tradeModifiedEvent => WithTicketBase(tradeModifiedEvent, new
             {
                 tradeModifiedEvent.TradedPrice,
+                tradeModifiedEvent.TradeDateTime,
+                tradeModifiedEvent.SettlementDateTime,
                 Allocations = tradeModifiedEvent.Allocations.Select(ToResponse).ToList()
             }),
             TicketTradeFillAddedEvent fillAddedEvent => WithTicketBase(fillAddedEvent, new

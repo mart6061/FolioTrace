@@ -2,8 +2,8 @@
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
-  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
+  import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
   import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
@@ -28,6 +28,8 @@
   let tradeQuantityDrafts = $state<Record<string, string>>({});
   let tradeBookCostDrafts = $state<Record<string, string>>({});
   let tradeCashHoldingDrafts = $state<Record<string, string>>({});
+  let tradeDateTimeDrafts = $state<Record<number, string>>({});
+  let settlementDateDrafts = $state<Record<number, string>>({});
   let openHistoryTicketNumber = $state(0);
   let submittedTicketNumber = $state(0);
   let historyByTicketNumber = $state<Record<number, { events: TicketReferenceEvent[]; error: string; loading: boolean }>>({});
@@ -42,6 +44,7 @@
   const instrumentValues = $derived(data.instrumentValues?.items ?? []);
   const ticketSideOptions: TicketSide[] = ['Buy', 'Sell'];
   const decimalInputPattern = '(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?';
+  const integerInputPattern = '(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)';
   const ticketStageOptions = $derived(data.ticketStageOptions ?? []);
   const activeAccounts = $derived(accounts.filter((account) => account.active));
   const activeBrokers = $derived([...brokers.filter((broker) => broker.active)].sort((left, right) => brokerLabel(left).localeCompare(brokerLabel(right))));
@@ -478,6 +481,11 @@
     input.value = fractionParts.length > 0 ? `${whole}.${fractionParts.join('')}` : whole;
   }
 
+  function cleanIntegerInput(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    input.value = input.value.replace(/[^0-9,]/g, '');
+  }
+
   function updateProposalQuantityDraft(ticketNumber: number, accountID: string, event: Event) {
     cleanDecimalInput(event);
 
@@ -502,6 +510,38 @@
   function updateTradeCashHoldingDraft(ticketNumber: number, accountID: string, event: Event) {
     const select = event.currentTarget as HTMLSelectElement;
     tradeCashHoldingDrafts[tradeDraftKey(ticketNumber, accountID)] = select.value;
+  }
+
+  function tradeDateTimeInputValue(ticket: Ticket) {
+    return tradeDateTimeDrafts[ticket.ticketNumber] ?? (ticket.tradeDateTime ? dateTimeForInput(ticket.tradeDateTime) : nowForInput());
+  }
+
+  function settlementDateInputValue(ticket: Ticket) {
+    return settlementDateDrafts[ticket.ticketNumber] ?? (ticket.settlementDateTime ? dateForInput(ticket.settlementDateTime) : nextWorkingDayDateForInput(tradeDateTimeInputValue(ticket)));
+  }
+
+  function tradeSettlementMin(ticket: Ticket) {
+    return dateForInput(tradeDateTimeInputValue(ticket));
+  }
+
+  function tradeDateDisplay(ticket: Ticket) {
+    return ticket.tradeDateTime ? formatDisplayDateTime(ticket.tradeDateTime) : '-';
+  }
+
+  function settlementDateDisplay(ticket: Ticket) {
+    return ticket.settlementDateTime ? formatShortDate(ticket.settlementDateTime) : '-';
+  }
+
+  function updateTradeDateTimeDraft(ticketNumber: number, event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    tradeDateTimeDrafts[ticketNumber] = input.value;
+    if (!settlementDateDrafts[ticketNumber])
+      settlementDateDrafts[ticketNumber] = nextWorkingDayDateForInput(input.value);
+  }
+
+  function updateSettlementDateDraft(ticketNumber: number, event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    settlementDateDrafts[ticketNumber] = input.value;
   }
 
   function resizeTextarea(textarea: HTMLTextAreaElement) {
@@ -590,6 +630,8 @@
     return ticket.stage === 'Trade' &&
       ticket.tradeDecision === 'InProgress' &&
       ticket.tradePrice != null &&
+      !!ticket.tradeDateTime &&
+      !!ticket.settlementDateTime &&
       ticket.tradeAllocations.length > 0 &&
       hasTradeCashHoldings(ticket.tradeAllocations) &&
       quantitiesMatch(proposalTotal(ticket), tradeTotal);
@@ -626,6 +668,8 @@
 
     return ticket.stage === 'Trade' &&
       ticket.tradeDecision === 'PendingApproval' &&
+      !!ticket.tradeDateTime &&
+      !!ticket.settlementDateTime &&
       ticket.tradeAllocations.length > 0 &&
       hasTradeCashHoldings(ticket.tradeAllocations) &&
       quantitiesMatch(proposalTotal(ticket), tradeTotal) &&
@@ -709,12 +753,21 @@
     }
   }
 
-  function startTicketEdit(ticketNumber: number, context: TicketEditContext) {
-    editingTicket = { ticketNumber, context };
+  function startTicketEdit(ticket: Ticket, context: TicketEditContext) {
+    editingTicket = { ticketNumber: ticket.ticketNumber, context };
+    if (context === 'Trade') {
+      const tradeDateTime = ticket.tradeDateTime ? dateTimeForInput(ticket.tradeDateTime) : nowForInput();
+      tradeDateTimeDrafts[ticket.ticketNumber] = tradeDateTime;
+      settlementDateDrafts[ticket.ticketNumber] = ticket.settlementDateTime ? dateForInput(ticket.settlementDateTime) : nextWorkingDayDateForInput(tradeDateTime);
+    }
     cancelTicketCancellation();
   }
 
   function stopTicketEdit() {
+    if (editingTicket.ticketNumber) {
+      delete tradeDateTimeDrafts[editingTicket.ticketNumber];
+      delete settlementDateDrafts[editingTicket.ticketNumber];
+    }
     editingTicket = { ticketNumber: 0, context: '' };
   }
 
@@ -1111,8 +1164,8 @@
                     >
                       <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                       <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                      <button class="ticket-action-button" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}`}>
-                        FoleoTrader
+                      <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}`}>
+                        Foleo Trader (FIX)
                       </button>
                     </form>
                   {/if}
@@ -1153,21 +1206,21 @@
                   >
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <button class="ticket-action-button" type="submit" formaction="?/tradeApprove" disabled={ticketCancelConfirming || submitting === `trade-decision-${ticket.ticketNumber}`}>
+                    <button class="ticket-action-button" type="submit" formaction="?/tradeApprove" disabled={ticketCancelConfirming || submitting === `trade-decision-${ticket.ticketNumber}` || !canApproveTrade(ticket)}>
                       Approve
                     </button>
-                    <button class="ticket-action-button" type="submit" formaction="?/tradeNotApprove" disabled={ticketCancelConfirming || submitting === `trade-decision-${ticket.ticketNumber}`}>
+                    <button class="ticket-action-button" type="submit" formaction="?/tradeNotApprove" formnovalidate disabled={ticketCancelConfirming || submitting === `trade-decision-${ticket.ticketNumber}`}>
                       Decline
                     </button>
                   </form>
                 {/if}
                 {#if ticketExpanded && !ticketAwaitingDecision && canSetProposalText(ticket)}
-                  <button class="ticket-action-button" onclick={() => ticketEditingProposal ? stopTicketEdit() : startTicketEdit(ticket.ticketNumber, 'Proposal')} type="button" disabled={ticketCancelConfirming || ticketEditingTrade}>
+                  <button class="ticket-action-button" onclick={() => ticketEditingProposal ? stopTicketEdit() : startTicketEdit(ticket, 'Proposal')} type="button" disabled={ticketCancelConfirming || ticketEditingTrade}>
                     {ticketEditingProposal ? 'Cancel' : 'Edit Proposal'}
                   </button>
                 {/if}
                 {#if ticketExpanded && !ticketAwaitingDecision && canSetTradeText(ticket)}
-                  <button class="ticket-action-button" onclick={() => ticketEditingTrade ? stopTicketEdit() : startTicketEdit(ticket.ticketNumber, 'Trade')} type="button" disabled={ticketCancelConfirming || ticketEditingProposal}>
+                  <button class="ticket-action-button" onclick={() => ticketEditingTrade ? stopTicketEdit() : startTicketEdit(ticket, 'Trade')} type="button" disabled={ticketCancelConfirming || ticketEditingProposal}>
                     {ticketEditingTrade ? 'Cancel' : 'Edit Trade'}
                   </button>
                 {/if}
@@ -1207,53 +1260,18 @@
             {#if openHistoryTicketNumber === ticket.ticketNumber}
               {@const history = historyByTicketNumber[ticket.ticketNumber]}
               <section class="ticket-history-panel">
-                <div class="ticket-history-card">
-                  <div class="ticket-history-header">
-                    <h2>Ticket #{ticket.ticketNumber} history</h2>
-                    <span>
-                      {history?.events.length ?? 0} events
-                      {#if data.auditDateTime && history?.events.length}
-                        | {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
-                      {/if}
-                    </span>
-                  </div>
-
+                <div>
                   {#if history?.loading}
                     <div class="ticket-history-muted">Loading history...</div>
                   {:else if history?.error}
                     <div class="ticket-history-error">{history.error}</div>
-                  {:else if history?.events.length}
-                    <ol class="ticket-history-list">
-                      {#each history.events as event (event.eventID)}
-                        <li class:ticket-history-event-omitted={event.applicationStatus === 'omitted'}>
-                          <div class="ticket-history-body">
-                            <div class="ticket-history-event-title">
-                              <span class="ticket-history-type">{event.$type}</span>
-                              <span class="ticket-history-time">{formatTableDateTime(event.eventDateTime)}</span>
-                              <span class="ticket-history-time">Audit {formatTableDateTime(event.auditDateTime)}</span>
-                              {#if event.applicationStatus === 'omitted'}
-                                <span class="ticket-history-status ticket-history-status-omitted">Not applied</span>
-                              {:else if data.auditDateTime}
-                                <span class="ticket-history-status ticket-history-status-applied">Applied</span>
-                              {/if}
-                              <span class="ticket-history-event-id">{event.eventID}</span>
-                            </div>
-                            {#if ticketHistorySummary(event)}
-                              <div class="ticket-history-summary">{ticketHistorySummary(event)}</div>
-                            {/if}
-                            <EventPropertyDetails details={event.propertyDetails} />
-                            {#if event.applicationStatus === 'omitted'}
-                              <div class="ticket-history-omitted-note">
-                                Omitted from this view because its audit time is after the selected as-at date.
-                              </div>
-                            {/if}
-                            <div class="ticket-history-reason">{event.reason}</div>
-                          </div>
-                        </li>
-                      {/each}
-                    </ol>
                   {:else}
-                    <div class="ticket-history-muted">No history found for this ticket.</div>
+                    <HistoryEventsCard
+                      eventDateTime={data.valuationDate}
+                      asAtDateTime={data.auditDateTime}
+                      events={history?.events ?? []}
+                      emptyMessage="No history found for this ticket."
+                    />
                   {/if}
                 </div>
               </section>
@@ -1392,13 +1410,29 @@
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
                     <input type="hidden" name="hasTrade" value={ticket.tradeAllocations.length > 0 ? 'true' : 'false'} />
-                    <div class="two-col">
+                    <div class="trade-price-row">
                       <label class="field">
                         <span>Traded price ({ticket.tradeCurrency})</span>
                         {#if tradeInputActive && canEditTrade(ticket)}
                           <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="tradedPrice" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} oninput={cleanDecimalInput} />
                         {:else}
                           <span class="ticket-readonly-value">{formattedDisplay(priceText(ticket.tradePrice, ticket.tradeCurrency))}</span>
+                        {/if}
+                      </label>
+                      <label class="field">
+                        <span>Trade date/time</span>
+                        {#if tradeInputActive && canEditTrade(ticket)}
+                          <input form={saveFormID} class="input ticket-term-input" name="tradeDateTime" type="datetime-local" step="1" value={tradeDateTimeInputValue(ticket)} onchange={(event) => updateTradeDateTimeDraft(ticket.ticketNumber, event)} required />
+                        {:else}
+                          <span class="ticket-readonly-value">{tradeDateDisplay(ticket)}</span>
+                        {/if}
+                      </label>
+                      <label class="field">
+                        <span>Settlement date</span>
+                        {#if tradeInputActive && canEditTrade(ticket)}
+                          <input form={saveFormID} class="input ticket-term-input" name="settlementDate" type="date" value={settlementDateInputValue(ticket)} min={tradeSettlementMin(ticket)} onchange={(event) => updateSettlementDateDraft(ticket.ticketNumber, event)} required />
+                        {:else}
+                          <span class="ticket-readonly-value">{settlementDateDisplay(ticket)}</span>
                         {/if}
                       </label>
                     </div>
@@ -1512,7 +1546,7 @@
                           <option value={broker.lei}>{brokerLabel(broker)}</option>
                         {/each}
                       </select>
-                      <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanDecimalInput} required />
+                      <input class="input" type="text" inputmode="numeric" pattern={integerInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanIntegerInput} required />
                       <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillBookCost" placeholder="Book" oninput={cleanDecimalInput} required />
                       <input class="input" name="fillNote" placeholder="Note" />
                       <button class="btn btn-secondary" type="submit" disabled={activeBrokers.length === 0 || savedFillRemaining <= 0 || savedFillBookCostRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
