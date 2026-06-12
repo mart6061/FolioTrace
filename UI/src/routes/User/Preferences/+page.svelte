@@ -199,6 +199,52 @@
 
   <section class="page-container page-section">
     <div class="data-panel menu-preference-card">
+      <h2 class="menu-preference-title">Developer JWT</h2>
+      {#if data.userJWT}
+        <div class="grid gap-4">
+          <label class="grid gap-2">
+            <span class="text-sm font-semibold text-slate-800">Formatted token</span>
+            <textarea
+              aria-label="Formatted user JWT"
+              class="min-h-32 w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-xs text-slate-800"
+              readonly
+              spellcheck="false"
+              value={data.decodedUserJWT.formattedToken}
+            ></textarea>
+          </label>
+          {#if data.decodedUserJWT.error}
+            <p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{data.decodedUserJWT.error}</p>
+          {:else}
+            <div class="grid gap-4 lg:grid-cols-2">
+              <label class="grid gap-2">
+                <span class="text-sm font-semibold text-slate-800">Header JSON</span>
+                <textarea
+                  aria-label="Decoded JWT header JSON"
+                  class="min-h-56 w-full resize-y rounded-md border border-slate-300 bg-white p-3 font-mono text-xs text-slate-800"
+                  readonly
+                  spellcheck="false"
+                  value={data.decodedUserJWT.headerJSON}
+                ></textarea>
+              </label>
+              <label class="grid gap-2">
+                <span class="text-sm font-semibold text-slate-800">Payload JSON</span>
+                <textarea
+                  aria-label="Decoded JWT payload JSON"
+                  class="min-h-56 w-full resize-y rounded-md border border-slate-300 bg-white p-3 font-mono text-xs text-slate-800"
+                  readonly
+                  spellcheck="false"
+                  value={data.decodedUserJWT.payloadJSON}
+                ></textarea>
+              </label>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <p class="menu-preference-empty">No JWT is available for this session.</p>
+      {/if}
+    </div>
+
+    <div class="data-panel menu-preference-card">
       <h2 class="menu-preference-title">Appearance</h2>
       <div class="menu-preference-list">
         <ThemeModeControl class="theme-mode-control-preference" />

@@ -1,6 +1,7 @@
 using API;
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
+using System.Reflection;
 using System.Text.Json;
 
 namespace Test;
@@ -89,13 +90,7 @@ public sealed class EventPropertyDetailsFactoryTests
         });
 
         Assert.Collection(
-            response.PropertyDetails.Take(6),
-            detail =>
-            {
-                Assert.Equal("Type", detail.Name);
-                Assert.Equal("Event type", detail.Description);
-                Assert.Equal(0, detail.Order);
-            },
+            response.PropertyDetails.Take(5),
             detail =>
             {
                 Assert.Equal("EventID", detail.Name);
@@ -126,6 +121,7 @@ public sealed class EventPropertyDetailsFactoryTests
                 Assert.Equal("Reason", detail.Description);
                 Assert.Equal(50, detail.Order);
             });
+        Assert.DoesNotContain(response.PropertyDetails, detail => detail.Name == "Type");
     }
 
     [Fact]
@@ -165,11 +161,63 @@ public sealed class EventPropertyDetailsFactoryTests
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(response, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
         var root = document.RootElement;
 
-        Assert.Equal(@event.Type, root.GetProperty("type").GetString());
+        Assert.Equal(@event.Type, root.GetProperty("$type").GetString());
+        Assert.False(root.TryGetProperty("type", out _));
         Assert.Equal(@event.EventID.Value, root.GetProperty("eventID").GetGuid());
         Assert.Equal("applied", root.GetProperty("applicationStatus").GetString());
         Assert.True(root.TryGetProperty("propertyDetails", out _));
         Assert.False(root.TryGetProperty("properties", out _));
+    }
+
+    [Fact]
+    public void WithPropertyDetails_SerializesClassDescriptionAtTopLevelOnly()
+    {
+        var @event = CreateAccountCreatedEvent();
+
+        var response = EventPropertyDetailsFactory.WithPropertyDetails(@event, new
+        {
+            Type = @event.Type,
+            EventID = @event.EventID.Value,
+            AccountID = @event.AccountID.Value
+        });
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(response, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+        var root = document.RootElement;
+
+        Assert.Equal("Account Created Event", root.GetProperty("classDescription").GetString());
+        Assert.DoesNotContain(response.PropertyDetails, detail => detail.Name == "ClassDescription");
+        Assert.DoesNotContain(response.PropertyDetails, detail => detail.Name == "classDescription");
+    }
+
+    [Fact]
+    public void WithPropertyDetails_HandlesDuplicateMetadataFromEventBaseAndInterfaces()
+    {
+        var @event = CreateTicketCreatedEvent();
+
+        var response = EventPropertyDetailsFactory.WithPropertyDetails(@event, new
+        {
+            TicketNumber = @event.TicketNumber.Value,
+            Side = @event.Side
+        });
+
+        var detail = Assert.Single(response.PropertyDetails, detail => detail.Name == "TicketNumber");
+        Assert.Equal("Ticket Number", detail.Description);
+    }
+
+    [Fact]
+    public void WithPropertyDetails_HandlesDuplicateHoldingMetadataFromEventBaseAndInterfaces()
+    {
+        var @event = CreateHoldingPositionAssetCreatedEvent();
+
+        var response = EventPropertyDetailsFactory.WithPropertyDetails(@event, new
+        {
+            HoldingID = @event.HoldingID.Value,
+            AccountID = @event.AccountID.Value,
+            InstrumentID = @event.InstrumentID.Value
+        });
+
+        var detail = Assert.Single(response.PropertyDetails, detail => detail.Name == "HoldingID");
+        Assert.Equal("Holding ID", detail.Description);
     }
 
     private static AccountCreatedEvent CreateAccountCreatedEvent()
@@ -188,4 +236,44 @@ public sealed class EventPropertyDetailsFactoryTests
 
         return result.Value!;
     }
+
+    private static TicketCreatedEvent CreateTicketCreatedEvent() =>
+        (TicketCreatedEvent)Activator.CreateInstance(
+            typeof(TicketCreatedEvent),
+            BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null,
+            args:
+            [
+                new EventID(Guid.CreateGuid7()),
+                new UserID(Guid.CreateGuid7()),
+                EventDateTimeBuilder.Create(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+                AuditDateTimeBuilder.Create(new DateTime(2026, 1, 2, 0, 0, 1, DateTimeKind.Utc)),
+                "Create ticket",
+                new TicketNumber(3),
+                TicketSide.Buy,
+                InstrumentIDBuilder.Create(),
+                Alpha3Builder.Create("GBP")
+            ],
+            culture: null)!;
+
+    private static HoldingPositionAssetCreatedEvent CreateHoldingPositionAssetCreatedEvent() =>
+        (HoldingPositionAssetCreatedEvent)Activator.CreateInstance(
+            typeof(HoldingPositionAssetCreatedEvent),
+            BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null,
+            args:
+            [
+                new EventID(Guid.CreateGuid7()),
+                new UserID(Guid.CreateGuid7()),
+                EventDateTimeBuilder.Create(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+                AuditDateTimeBuilder.Create(new DateTime(2026, 1, 2, 0, 0, 1, DateTimeKind.Utc)),
+                "Create holding",
+                HoldingIDBuilder.Create(),
+                AccountIDBuilder.Create(),
+                InstrumentIDBuilder.Create(),
+                "Asset holding",
+                true,
+                false
+            ],
+            culture: null)!;
 }

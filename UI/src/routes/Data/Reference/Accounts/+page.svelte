@@ -3,7 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
+  import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -1641,106 +1641,18 @@
                                       {#if openHistoryHoldingID === holding.holdingID}
                                         {@const history = historyByHoldingID[holding.holdingID]}
                                         <li class="bg-slate-50/80 px-3 py-3">
-                                          <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
-                                            <div class="flex items-center justify-between gap-3">
-                                              <h2 class="text-sm font-semibold text-slate-950">{holdingDisplayName(holding)} history</h2>
-                                              <span class="text-xs text-slate-500">{history?.events.length ?? 0} events</span>
-                                            </div>
-
+                                          <div>
                                             {#if history?.loading}
                                               <div class="text-sm text-slate-600">Loading history...</div>
                                             {:else if history?.error}
                                               <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
-                                            {:else if history?.events.length}
-                                              <ol class="grid gap-2">
-                                                {#each historyDisplayEntries(history.events) as entry (entry.key)}
-                                                  {#if entry.kind === 'transactionSet'}
-                                                    <li class={`rounded-md border p-3 text-xs shadow-sm ${
-                                                      entry.card.cancelled
-                                                        ? 'border-red-200 bg-red-50/40'
-                                                        : 'border-slate-200 bg-white'
-                                                    }`}>
-                                                      <div class="flex flex-wrap items-start justify-between gap-3">
-                                                        <div class="grid gap-1">
-                                                          <div class="flex flex-wrap items-center gap-2">
-                                                            <span class="text-sm font-semibold text-slate-900">{entry.card.reason || 'Transaction set'}</span>
-                                                            {#if entry.card.cancelled}
-                                                              <span class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">Cancelled</span>
-                                                            {:else}
-                                                              <span class="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">Active</span>
-                                                            {/if}
-                                                            <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-800">Transaction</span>
-                                                          </div>
-                                                          <div class="text-slate-500">
-                                                            Event {formatTableDateTime(entry.card.eventDateTime)} | Settlement {formatTableDateTime(entry.card.settlementDateTime)}
-                                                          </div>
-                                                          <div class="font-mono text-[11px] text-slate-400">{entry.card.eventSetID}</div>
-                                                          {#if entry.card.cancelled && entry.card.cancellation}
-                                                            <div class="font-semibold text-red-700">Cancelled on: {formatTableDateTime(entry.card.cancellation.auditDateTime)}</div>
-                                                          {/if}
-                                                        </div>
-                                                      </div>
-
-                                                      <div class={`mt-3 grid gap-2 ${entry.card.cancelled ? 'line-through decoration-red-500' : ''}`}>
-                                                        {#each entry.card.movements as transaction (transaction.eventID)}
-                                                          <div class="grid gap-2 rounded-md border border-slate-100 bg-white px-3 py-2 md:grid-cols-[90px_minmax(0,1fr)_110px_120px] md:items-center">
-                                                            <div>
-                                                              <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                                                transaction.$type === 'TransactionCreditEvent'
-                                                                  ? 'bg-emerald-50 text-emerald-700'
-                                                                  : 'bg-sky-50 text-sky-700'
-                                                              }`}>
-                                                                {transactionEventLabel(transaction)}
-                                                              </span>
-                                                            </div>
-                                                            <div class="text-slate-700">
-                                                              <div>{transactionHoldingName(transaction)}</div>
-                                                              <div class="font-mono text-[11px] text-slate-400">{transaction.eventID}</div>
-                                                            </div>
-                                                            <div class="flex justify-between gap-3 font-mono text-slate-700 md:block md:text-right">
-                                                              <span class="font-sans text-[11px] font-semibold uppercase text-slate-400 md:hidden">Qty</span>
-                                                              <span>{transaction.quantity ?? ''}</span>
-                                                            </div>
-                                                            <div class="flex justify-between gap-3 font-mono text-slate-700 md:block md:text-right">
-                                                              <span class="font-sans text-[11px] font-semibold uppercase text-slate-400 md:hidden">Book</span>
-                                                              <span>{transaction.bookCost ?? ''}</span>
-                                                            </div>
-                                                          </div>
-                                                        {/each}
-                                                      </div>
-                                                    </li>
-                                                  {:else}
-                                                    <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${entry.event.applicationStatus === 'omitted' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200'}`}>
-                                                      <div class="text-xs text-slate-500">
-                                                        <div>{formatTableDateTime(entry.event.eventDateTime)}</div>
-                                                        <div>Audit {formatTableDateTime(entry.event.auditDateTime)}</div>
-                                                      </div>
-                                                      <div class="grid gap-1">
-                                                        <div class="flex flex-wrap items-center gap-2">
-                                                          <span class="font-medium text-slate-950">{entry.event.$type}</span>
-                                                          <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">Holding</span>
-                                                          {#if entry.event.applicationStatus === 'omitted'}
-                                                            <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
-                                                          {:else if data.auditDateTime}
-                                                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
-                                                          {/if}
-                                                          <span class="font-mono text-xs text-slate-500">{entry.event.eventID}</span>
-                                                        </div>
-                                                        <div class="text-sm text-slate-700">{holdingEventSummary(entry.event)}</div>
-                                                        <EventPropertyDetails details={entry.event.propertyDetails} />
-                                                        {#if entry.event.applicationStatus === 'omitted'}
-                                                          <div class="text-xs font-medium text-amber-900">
-                                                            Omitted from this view because its audit time is after the selected as-at date.
-                                                          </div>
-                                                        {/if}
-                                                        <div class="text-xs text-slate-500">{entry.event.reason}</div>
-                                                      </div>
-                                                    </li>
-                                                  {/if}
-                                                {/each}
-                                              </ol>
                                             {:else}
-                                              <div class="text-sm text-slate-600">No history found for this holding.</div>
+                                              <HistoryEventsCard
+                                                eventDateTime={data.valuationDate}
+                                                asAtDateTime={data.auditDateTime}
+                                                events={history?.events ?? []}
+                                                emptyMessage="No history found for this holding."
+                                              />
                                             {/if}
                                           </div>
                                         </li>
@@ -2198,115 +2110,18 @@
                     {@const history = historyByAccountID[account.accountID]}
                     <tr class="bg-slate-50/80">
                       <td class="px-3 py-3" colspan="6">
-                        <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
-                          <div class="flex items-center justify-between gap-3">
-                            <h2 class="text-sm font-semibold text-slate-950">{account.name} history</h2>
-                            <span class="text-xs text-slate-500">
-                              {history?.events.length ?? 0} events
-                              {#if data.auditDateTime && history?.events.length}
-                                · {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
-                              {/if}
-                            </span>
-                          </div>
-
+                        <div>
                           {#if history?.loading}
                             <div class="text-sm text-slate-600">Loading history...</div>
                           {:else if history?.error}
                             <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
-                          {:else if history?.events.length}
-                            <ol class="grid gap-2">
-                              {#each historyDisplayEntries(history.events) as entry (entry.key)}
-                                {#if entry.kind === 'transactionSet'}
-                                  <li class={`rounded-md border p-3 text-xs shadow-sm ${
-                                    entry.card.cancelled
-                                      ? 'border-red-200 bg-red-50/40'
-                                      : 'border-slate-200 bg-white'
-                                  }`}>
-                                    <div class="flex flex-wrap items-start justify-between gap-3">
-                                      <div class="grid gap-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                          <span class="text-sm font-semibold text-slate-900">{entry.card.reason || 'Transaction set'}</span>
-                                          {#if entry.card.cancelled}
-                                            <span class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">Cancelled</span>
-                                          {:else}
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">Active</span>
-                                          {/if}
-                                          <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-800">Transaction</span>
-                                        </div>
-                                        <div class="text-slate-500">
-                                          Event {formatTableDateTime(entry.card.eventDateTime)} | Settlement {formatTableDateTime(entry.card.settlementDateTime)}
-                                        </div>
-                                        <div class="font-mono text-[11px] text-slate-400">{entry.card.eventSetID}</div>
-                                        {#if entry.card.cancelled && entry.card.cancellation}
-                                          <div class="font-semibold text-red-700">Cancelled on: {formatTableDateTime(entry.card.cancellation.auditDateTime)}</div>
-                                        {/if}
-                                      </div>
-                                    </div>
-
-                                    <div class={`mt-3 grid gap-2 ${entry.card.cancelled ? 'line-through decoration-red-500' : ''}`}>
-                                      {#each entry.card.movements as transaction (transaction.eventID)}
-                                        <div class="grid gap-2 rounded-md border border-slate-100 bg-white px-3 py-2 md:grid-cols-[90px_minmax(0,1fr)_110px_120px] md:items-center">
-                                          <div>
-                                            <span class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                              transaction.$type === 'TransactionCreditEvent'
-                                                ? 'bg-emerald-50 text-emerald-700'
-                                                : 'bg-sky-50 text-sky-700'
-                                            }`}>
-                                              {transactionEventLabel(transaction)}
-                                            </span>
-                                          </div>
-                                          <div class="text-slate-700">
-                                            <div>{transactionHoldingName(transaction)}</div>
-                                            <div class="font-mono text-[11px] text-slate-400">{transaction.eventID}</div>
-                                          </div>
-                                          <div class="flex justify-between gap-3 font-mono text-slate-700 md:block md:text-right">
-                                            <span class="font-sans text-[11px] font-semibold uppercase text-slate-400 md:hidden">Qty</span>
-                                            <span>{transaction.quantity ?? ''}</span>
-                                          </div>
-                                          <div class="flex justify-between gap-3 font-mono text-slate-700 md:block md:text-right">
-                                            <span class="font-sans text-[11px] font-semibold uppercase text-slate-400 md:hidden">Book</span>
-                                            <span>{transaction.bookCost ?? ''}</span>
-                                          </div>
-                                        </div>
-                                      {/each}
-                                    </div>
-                                  </li>
-                                {:else}
-                                  <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
-                                    entry.event.applicationStatus === 'omitted'
-                                      ? 'border-amber-200 bg-amber-50/70'
-                                      : 'border-slate-200'
-                                  }`}>
-                                    <div class="text-xs text-slate-500">
-                                      <div>{formatTableDateTime(entry.event.eventDateTime)}</div>
-                                      <div>Audit {formatTableDateTime(entry.event.auditDateTime)}</div>
-                                    </div>
-                                    <div class="grid gap-1">
-                                      <div class="flex flex-wrap items-center gap-2">
-                                        <span class="font-medium text-slate-950">{entry.event.$type}</span>
-                                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">Account</span>
-                                        {#if entry.event.applicationStatus === 'omitted'}
-                                          <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
-                                        {:else if data.auditDateTime}
-                                          <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
-                                        {/if}
-                                        <span class="font-mono text-xs text-slate-500">{entry.event.eventID}</span>
-                                      </div>
-                                      <div class="text-sm text-slate-700">{accountEventSummary(entry.event)}</div>
-                                      <EventPropertyDetails details={entry.event.propertyDetails} />
-                                      {#if entry.event.applicationStatus === 'omitted'}
-                                        <div class="text-xs font-medium text-amber-900">
-                                          Omitted from this view because its audit time is after the selected as-at date.
-                                        </div>
-                                      {/if}
-                                      <div class="text-xs text-slate-500">{entry.event.reason}</div>
-                                    </div>
-                                  </li>
-                                {/if}
-                              {/each}
-                            </ol>
                           {:else}
-                            <div class="text-sm text-slate-600">No history found for this account.</div>
+                            <HistoryEventsCard
+                              eventDateTime={data.valuationDate}
+                              asAtDateTime={data.auditDateTime}
+                              events={history?.events ?? []}
+                              emptyMessage="No history found for this account."
+                            />
                           {/if}
                         </div>
                       </td>

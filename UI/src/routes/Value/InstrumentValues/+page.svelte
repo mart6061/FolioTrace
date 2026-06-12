@@ -3,7 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import EventPropertyDetails from '$lib/components/EventPropertyDetails.svelte';
+  import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type {
     InstrumentIncomeCash,
@@ -562,58 +562,18 @@
                             {@const history = historyByInstrumentID[instrument.instrumentID]}
                             <tr class="bg-slate-50/80">
                               <td class="px-3 py-3" colspan="6">
-                                <div class="grid gap-3 rounded-md border border-slate-200 bg-white p-3">
-                                  <div class="flex items-center justify-between gap-3">
-                                    <h2 class="text-sm font-semibold text-slate-950">{instrument.name} history</h2>
-                                    <span class="text-xs text-slate-500">
-                                      {history?.events.length ?? 0} events
-                                      {#if data.auditDateTime && history?.events.length}
-                                        | {history.events.filter((event) => event.applicationStatus === 'omitted').length} omitted
-                                      {/if}
-                                    </span>
-                                  </div>
-
+                                <div>
                                   {#if history?.loading}
                                     <div class="text-sm text-slate-600">Loading history...</div>
                                   {:else if history?.error}
                                     <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
-                                  {:else if history?.events.length}
-                                    <ol class="grid gap-2">
-                                      {#each history.events as event}
-                                        <li class={`grid gap-2 rounded-md border px-3 py-2 md:grid-cols-[180px_1fr] ${
-                                          event.applicationStatus === 'omitted'
-                                            ? 'border-amber-200 bg-amber-50/70'
-                                            : 'border-slate-200'
-                                        }`}>
-                                          <div class="text-xs text-slate-500">
-                                            <div>{formatTableDateTime(event.eventDateTime)}</div>
-                                            <div>Audit {formatTableDateTime(event.auditDateTime)}</div>
-                                          </div>
-                                          <div class="grid gap-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                              <span class="font-medium text-slate-950">{event.$type}</span>
-                                              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">{event.valueKind}</span>
-                                              {#if event.applicationStatus === 'omitted'}
-                                                <span class="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Not applied</span>
-                                              {:else if data.auditDateTime}
-                                                <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Applied</span>
-                                              {/if}
-                                              <span class="font-mono text-xs text-slate-500">{event.eventID}</span>
-                                            </div>
-                                            <div class="text-sm text-slate-700">{event.summary}</div>
-                                            <EventPropertyDetails details={event.propertyDetails} />
-                                            {#if event.applicationStatus === 'omitted'}
-                                              <div class="text-xs font-medium text-amber-900">
-                                                Omitted from this view because its audit time is after the selected as-at date.
-                                              </div>
-                                            {/if}
-                                            <div class="text-xs text-slate-500">{event.reason}</div>
-                                          </div>
-                                        </li>
-                                      {/each}
-                                    </ol>
                                   {:else}
-                                    <div class="text-sm text-slate-600">No history found for this instrument value.</div>
+                                    <HistoryEventsCard
+                                      eventDateTime={data.instrumentValues.valuationDateTime ?? data.valuationDate}
+                                      asAtDateTime={data.auditDateTime}
+                                      events={history?.events ?? []}
+                                      emptyMessage="No history found for this instrument value."
+                                    />
                                   {/if}
                                 </div>
                               </td>

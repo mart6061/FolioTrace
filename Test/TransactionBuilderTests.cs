@@ -101,13 +101,27 @@ public sealed class TransactionBuilderTests
         var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10));
         var request = CreateRequest(eventDateTime, credits: [CreateLeg(10m)], debits: [CreateLeg(10m)]) with
         {
-            SettlementDateTime = SettlementDateTimeBuilder.Create(eventDateTime.Value.AddTicks(-1))
+            SettlementDateTime = SettlementDateTimeBuilder.Create(eventDateTime.Value.Date.AddDays(-1))
         };
 
         var result = TransactionBuilder.Create(request, CreateHoldings());
 
         Assert.False(result.IsValid);
         Assert.Contains("SettlementDateTime must be equal to or greater than EventDateTime.", result.ValidationErrors);
+    }
+
+    [Fact]
+    public void Create_AllowsSettlementDateOnEventDate()
+    {
+        var eventDateTime = EventDateTimeBuilder.Create(new DateTime(2026, 6, 11, 23, 59, 59, DateTimeKind.Utc));
+        var request = CreateRequest(eventDateTime, credits: [CreateLeg(10m)], debits: [CreateLeg(10m)]) with
+        {
+            SettlementDateTime = SettlementDateTimeBuilder.Create(eventDateTime.Value.Date)
+        };
+
+        var result = TransactionBuilder.Create(request, CreateHoldings());
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
     }
 
     [Fact]

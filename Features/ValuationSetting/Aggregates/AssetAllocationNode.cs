@@ -8,4 +8,5 @@ public sealed record AssetAllocationNode(
     string Name,
     bool Subtotal,
     bool Hidden,
-    List<AssetAllocationNodeAccountSetting> AccountSettings);
+    List<AssetAllocationNodeAccountSetting> AccountSettings,
+    string? Colour = null);

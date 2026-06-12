@@ -8,4 +8,6 @@ public sealed record TicketTradeRequest(
     string Reason,
     TicketNumber TicketNumber,
     Price TradedPrice,
+    EventDateTime TradeDateTime,
+    SettlementDateTime SettlementDateTime,
     IReadOnlyList<TicketTradeAllocation> Allocations);

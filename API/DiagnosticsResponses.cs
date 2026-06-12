@@ -99,3 +99,29 @@ public sealed record ApiHttpMessageResponse(
     string? ContentType,
     long? ContentLength,
     bool BodyTruncated);
+
+public sealed record FIXOperationSearchResponse(
+    IReadOnlyList<FIXOperationResponse> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public sealed record FIXOperationResponse(
+    Guid EventID,
+    DateTime RecordedAtUtc,
+    DateTime EventDateTime,
+    DateTime AuditDateTime,
+    string Reason,
+    string Direction,
+    string Channel,
+    string SessionID,
+    string MsgType,
+    string MessageName,
+    int? MsgSeqNum,
+    string SenderCompID,
+    string TargetCompID,
+    DateTime? SendingTime,
+    string ClOrdID,
+    string ExecID,
+    string RawMessage,
+    string DisplayMessage);

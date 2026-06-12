@@ -39,15 +39,20 @@ public sealed class FoleoTraderFixApplication(FoleoTraderMessageMonitor monitor,
     private static async Task SendRandomFillsAsync(QuickFix.FIX50SP2.NewOrderSingle order, SessionID sessionID)
     {
         var clOrdID = order.GetString(Tags.ClOrdID);
-        var quantity = order.GetDecimal(Tags.OrderQty);
+        var requestedQuantity = order.GetDecimal(Tags.OrderQty);
+        var quantity = decimal.Truncate(requestedQuantity);
+        if (quantity <= 0m)
+            return;
+
         var price = order.GetDecimal(Tags.Price);
         var side = order.GetChar(Tags.Side);
         var symbol = order.IsSetField(Tags.Symbol) ? order.GetString(Tags.Symbol) : string.Empty;
         var securityID = order.IsSetField(Tags.SecurityID) ? order.GetString(Tags.SecurityID) : string.Empty;
         var securityIDSource = order.IsSetField(Tags.SecurityIDSource) ? order.GetString(Tags.SecurityIDSource) : string.Empty;
         var currency = order.IsSetField(Tags.Currency) ? order.GetString(Tags.Currency) : string.Empty;
-        var fillCount = Math.Min(Random.Shared.Next(1, 5), Math.Max(1, (int)Math.Ceiling(quantity)));
-        var remaining = quantity;
+        var wholeQuantity = (int)Math.Min(quantity, int.MaxValue);
+        var fillCount = Math.Min(Random.Shared.Next(1, 5), wholeQuantity);
+        var remaining = wholeQuantity;
         var cumulative = 0m;
         var orderID = $"FOLEOTRADER-{Guid.CreateVersion7():N}";
 
@@ -57,10 +62,7 @@ public sealed class FoleoTraderFixApplication(FoleoTraderMessageMonitor monitor,
 
             var lastQty = index == fillCount
                 ? remaining
-                : decimal.Round(remaining * Random.Shared.Next(20, 71) / 100m, 8);
-
-            if (lastQty <= 0m)
-                lastQty = remaining;
+                : Random.Shared.Next(1, remaining - (fillCount - index) + 1);
 
             remaining -= lastQty;
             cumulative += lastQty;

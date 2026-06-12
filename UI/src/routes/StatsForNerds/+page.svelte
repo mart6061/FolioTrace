@@ -244,6 +244,12 @@
             <a href="/Diagnostics/RequestTrace">Search request and response captures</a>
           </article>
 
+          <article class="metric-card">
+            <span class="metric-label">Diagnostics</span>
+            <strong>FIX Trace</strong>
+            <a href="/Diagnostics/FIXTrace">Search sent and received FIX operations</a>
+          </article>
+
           <article class="metric-card metric-card-danger">
             <span class="metric-label">Danger Zone</span>
             <strong>Build</strong>

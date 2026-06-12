@@ -34,12 +34,44 @@ function inputDateTime(date: Date, includeMilliseconds = false) {
   return `${base}.${date.getMilliseconds().toString().padStart(3, '0')}`;
 }
 
+function inputDate(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function todayEndForInput(now = new Date()) {
   return endOfDayForInput(now);
 }
 
 export function nowForInput(now = new Date()) {
   return inputDateTime(now);
+}
+
+export function dateTimeForInput(valueOrNow: string | Date = new Date()) {
+  return inputDateTime(inputDateOrNow(valueOrNow));
+}
+
+export function dateForInput(valueOrNow: string | Date = new Date()) {
+  return inputDate(inputDateOrNow(valueOrNow));
+}
+
+export function nextWorkingDayForInput(valueOrNow: string | Date = new Date()) {
+  const date = inputDateOrNow(valueOrNow);
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, date.getHours(), date.getMinutes(), date.getSeconds());
+
+  while (next.getDay() === 0 || next.getDay() === 6)
+    next.setDate(next.getDate() + 1);
+
+  return inputDateTime(next);
+}
+
+export function nextWorkingDayDateForInput(valueOrNow: string | Date = new Date()) {
+  const date = inputDateOrNow(valueOrNow);
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+  while (next.getDay() === 0 || next.getDay() === 6)
+    next.setDate(next.getDate() + 1);
+
+  return inputDate(next);
 }
 
 export function startOfDayForInput(valueOrNow: string | Date = new Date()) {
@@ -71,6 +103,10 @@ export function clampFutureInputDateTime(value: string, now = new Date()) {
 
 export function toApiDateTime(value: string) {
   return new Date(value).toISOString();
+}
+
+export function dateInputToApiStartOfDay(value: string) {
+  return `${value}T00:00:00.000Z`;
 }
 
 export function formatDateTime(value: string) {

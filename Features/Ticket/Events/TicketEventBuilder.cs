@@ -146,6 +146,18 @@ public static partial class TicketEventBuilder
         ValidatePositiveDecimal(value.Amount, name, messages);
     }
 
+    private static void ValidateTradeDates(EventDateTime? tradeDateTime, SettlementDateTime? settlementDateTime, List<string> messages)
+    {
+        if (tradeDateTime is null)
+            messages.Add("TradeDateTime is required.");
+        if (settlementDateTime is null)
+            messages.Add("SettlementDateTime is required.");
+        if (tradeDateTime is not null && settlementDateTime is not null && settlementDateTime.Value.Date < tradeDateTime.Value.Date)
+            messages.Add("SettlementDateTime must be equal to or greater than TradeDateTime.");
+        if (settlementDateTime is not null && settlementDateTime.Value.TimeOfDay != TimeSpan.Zero)
+            messages.Add("SettlementDateTime must be at the start of the settlement date.");
+    }
+
     private static void ValidateTransactionQuantity(TransactionQuantity? value, string name, List<string> messages)
     {
         if (value is null)

@@ -1,4 +1,4 @@
-import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
@@ -275,14 +275,21 @@ export const actions = {
 
       if (hasTradeFields(formData)) {
         const tradedPrice = submittedOrCurrentNumber(formData, 'tradedPrice', ticket.tradePrice);
+        const tradeDateTime = submittedOrCurrentString(formData, 'tradeDateTime', ticket.tradeDateTime ?? '');
+        const settlementDate = getSettlementDate(formData, ticket.settlementDateTime ?? '');
         const allocations = formData.has('tradeAllocationAccountID')
           ? getTradeAllocations(formData, 'tradeAllocationAccountID')
           : ticket.tradeAllocations;
 
         if (!numbersEqual(tradedPrice, ticket.tradePrice) ||
+            !dateTimesEqual(tradeDateTime, ticket.tradeDateTime) ||
+            !settlementDatesEqual(settlementDate, ticket.settlementDateTime) ||
             !tradeAllocationsEqual(allocations, ticket.tradeAllocations)) {
-          if (!tradedPrice || allocations.length === 0)
-            return fail(400, responseFailure('saveTicketFields', 'Trade price and allocations are required.', ticketNumber));
+          if (!tradedPrice || !tradeDateTime || !settlementDate || allocations.length === 0)
+            return fail(400, responseFailure('saveTicketFields', 'Trade price, trade date, settlement date, and allocations are required.', ticketNumber));
+          const settlementDateError = validateSettlementDate(settlementDate, tradeDateTime);
+          if (settlementDateError)
+            return fail(400, responseFailure('saveTicketFields', settlementDateError, ticketNumber));
 
           const tradeTotal = allocationTotal(ticket.proposalAllocations);
           const tradeTotalError = validateAllocationTotal(allocations, tradeTotal, 'Trade allocations');
@@ -297,7 +304,9 @@ export const actions = {
             allocations: toTradeRequestAllocations(allocations),
             eventDateTime: apiEventDateTime,
             reason: `${ticket.tradeAllocations.length > 0 ? 'Modify' : 'Create'} trade for ticket ${ticketNumber}`,
+            settlementDateTime: dateInputToApiStartOfDay(settlementDate),
             ticketNumber,
+            tradeDateTime: toApiDateTime(tradeDateTime),
             tradedPrice,
             userID: currentUser.userID
           };
@@ -376,11 +385,17 @@ export const actions = {
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
     const tradedPrice = getFormNumber(formData, 'tradedPrice');
+    const tradeDateTime = getFormString(formData, 'tradeDateTime');
+    const settlementDate = getSettlementDate(formData);
     const allocations = getTradeAllocations(formData);
     const hasTrade = getFormString(formData, 'hasTrade') === 'true';
 
-    if (!ticketNumber || !eventDateTime || !tradedPrice || allocations.length === 0)
-      return fail(400, responseFailure('saveTrade', 'Trade price and allocations are required.'));
+    if (!ticketNumber || !eventDateTime || !tradedPrice || !tradeDateTime || !settlementDate || allocations.length === 0)
+      return fail(400, responseFailure('saveTrade', 'Trade price, trade date, settlement date, and allocations are required.'));
+
+    const settlementDateError = validateSettlementDate(settlementDate, tradeDateTime);
+    if (settlementDateError)
+      return fail(400, responseFailure('saveTrade', settlementDateError, ticketNumber));
 
     const apiEventDateTime = toApiDateTime(eventDateTime);
 
@@ -403,7 +418,9 @@ export const actions = {
         allocations: toTradeRequestAllocations(allocations),
         eventDateTime: apiEventDateTime,
         reason: `${hasTrade ? 'Modify' : 'Create'} trade for ticket ${ticketNumber}`,
+        settlementDateTime: dateInputToApiStartOfDay(settlementDate),
         ticketNumber,
+        tradeDateTime: toApiDateTime(tradeDateTime),
         tradedPrice,
         userID: currentUser.userID
       };
@@ -444,6 +461,8 @@ export const actions = {
       const brokers = await getBrokers(fetch, apiEventDateTime, null);
       if (!brokers.items.some((broker) => broker.active && broker.lei === brokerLEI))
         return fail(400, responseFailure('addFill', 'Select an active broker.', ticketNumber));
+      if (!isWholeQuantity(quantity))
+        return fail(400, responseFailure('addFill', 'Fill quantity must be a positive whole number.', ticketNumber));
 
       const remainingQuantity = allocationTotal(ticket.tradeAllocations) - allocationTotal(ticket.fills);
       if (quantity > remainingQuantity + 0.00000001)
@@ -500,14 +519,14 @@ export const actions = {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
-    const eventDateTime = getFormString(formData, 'eventDateTime');
 
-    if (!ticketNumber || !eventDateTime)
-      return fail(400, responseFailure('sendFoleoTraderOrder', 'Ticket and event date are required.'));
+    if (!ticketNumber)
+      return fail(400, responseFailure('sendFoleoTraderOrder', 'Ticket is required.'));
 
     try {
+      const eventDateTime = new Date().toISOString();
       const result = await postFoleoTraderOrder(fetch, {
-        eventDateTime: toApiDateTime(eventDateTime),
+        eventDateTime,
         ticketNumber,
         userID: currentUser.userID
       });
@@ -681,6 +700,8 @@ async function requestTradeDecision(fetchApi: typeof fetch, request: Request, us
     const tradeTotalError = validateAllocationTotal(ticket.tradeAllocations, allocationTotal(ticket.proposalAllocations), 'Trade allocations');
     if (tradeTotalError)
       return fail(400, responseFailure('tradeRequestDecision', tradeTotalError, ticketNumber));
+    if (!ticket.tradeDateTime || !ticket.settlementDateTime)
+      return fail(400, responseFailure('tradeRequestDecision', 'Trade date and settlement date are required.', ticketNumber));
     const accounts = await getAccounts(fetchApi, toApiDateTime(eventDateTime), null);
     const cashHoldingError = validateTradeCashHoldings(ticket.tradeAllocations, accounts.items);
     if (cashHoldingError)
@@ -718,6 +739,8 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
       const tradeTotalError = validateAllocationTotal(ticket.tradeAllocations, allocationTotal(ticket.proposalAllocations), 'Trade allocations');
       if (tradeTotalError)
         return fail(400, responseFailure('tradeApprove', tradeTotalError));
+      if (!ticket.tradeDateTime || !ticket.settlementDateTime)
+        return fail(400, responseFailure('tradeApprove', 'Trade date and settlement date are required.', ticketNumber));
       const accounts = await getAccounts(fetchApi, toApiDateTime(eventDateTime), null);
       const cashHoldingError = validateTradeCashHoldings(ticket.tradeAllocations, accounts.items);
       if (cashHoldingError)
@@ -731,13 +754,19 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
         return fail(400, responseFailure('tradeApprove', fillBookCostError));
     }
 
-    const submit = approved ? postTicketTradeApprovedEvent : postTicketTradeNotApprovedEvent;
-    const result = await submit(fetchApi, {
-      eventDateTime: toApiDateTime(eventDateTime),
-      reason: `${approved ? 'Approve' : 'Not approve'} trade for ticket ${ticketNumber}`,
-      ticketNumber,
-      userID
-    });
+    const result = approved
+      ? await postTicketTradeApprovedEvent(fetchApi, {
+          eventDateTime: toApiDateTime(eventDateTime),
+          reason: `Approve trade for ticket ${ticketNumber}`,
+          ticketNumber,
+          userID
+        })
+      : await postTicketTradeNotApprovedEvent(fetchApi, {
+          eventDateTime: toApiDateTime(eventDateTime),
+          reason: `Not approve trade for ticket ${ticketNumber}`,
+          ticketNumber,
+          userID
+        });
 
     return responseSuccess(approved ? 'tradeApprove' : 'tradeNotApprove', `Trade ${approved ? 'approved' : 'not approved'}.`, result.eventID);
   } catch (error) {
@@ -745,12 +774,32 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
   }
 }
 
+function getSettlementDate(formData: FormData, fallbackDateTime = '') {
+  const settlementDate = getFormString(formData, 'settlementDate');
+  if (settlementDate)
+    return settlementDate;
+
+  const settlementDateTime = getFormString(formData, 'settlementDateTime') || fallbackDateTime;
+  return settlementDateTime.slice(0, 10);
+}
+
+function validateSettlementDate(settlementDate: string, tradeDateTime: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(settlementDate))
+    return 'Settlement date is invalid.';
+
+  const tradeDate = tradeDateTime.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tradeDate))
+    return 'Trade date is invalid.';
+
+  return settlementDate < tradeDate ? 'Settlement date cannot be before the trade date.' : '';
+}
+
 function hasProposalFields(formData: FormData) {
   return formData.has('targetPrice') || formData.has('proposalAllocationAccountID');
 }
 
 function hasTradeFields(formData: FormData) {
-  return formData.has('tradedPrice') || formData.has('tradeAllocationAccountID') || Array.from(formData.keys()).some((key) => key.startsWith('tradeCashHoldingID-'));
+  return formData.has('tradedPrice') || formData.has('tradeDateTime') || formData.has('settlementDate') || formData.has('tradeAllocationAccountID') || Array.from(formData.keys()).some((key) => key.startsWith('tradeCashHoldingID-'));
 }
 
 function changedTextField(
@@ -847,6 +896,29 @@ function validateTradeCashHoldings(allocations: TicketTradeAllocation[], account
   return `Select a cash holding for ${formatList(names)}.`;
 }
 
+function submittedOrCurrentString(formData: FormData, fieldName: string, current: string) {
+  if (!formData.has(fieldName))
+    return current;
+
+  return getFormString(formData, fieldName);
+}
+
+function dateTimesEqual(left: string, right: string | null | undefined) {
+  if (!left || !right)
+    return !left && !right;
+
+  const leftTime = new Date(left).getTime();
+  const rightTime = new Date(right).getTime();
+  return Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime === rightTime;
+}
+
+function settlementDatesEqual(left: string, right: string | null | undefined) {
+  if (!left || !right)
+    return !left && !right;
+
+  return left === right.slice(0, 10);
+}
+
 function accountDisplayName(accounts: Account[], accountID: string) {
   return accounts.find((account) => account.accountID === accountID)?.name ?? accountID;
 }
@@ -897,6 +969,10 @@ function validateAllocationTotal(allocations: { quantity: number }[], expectedTo
   return numbersEqual(total, expectedTotal)
     ? ''
     : `${label} must sum to ${formatValidationNumber(expectedTotal)}. Current total is ${formatValidationNumber(total)}.`;
+}
+
+function isWholeQuantity(value: number) {
+  return Number.isInteger(value) && value > 0;
 }
 
 function validateBookCostTotal(items: { bookCost: number }[], expectedTotal: number, label: string) {

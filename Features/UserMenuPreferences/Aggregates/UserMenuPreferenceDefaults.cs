@@ -7,7 +7,6 @@ public static class UserMenuPreferenceDefaults
     public const string Asset = "asset";
     public const string Report = "report";
     public const string Account = "account";
-    public const string Compliance = "compliance";
     public const string Administration = "administration";
     public const string System = "system";
     public const string Data = "data";
@@ -24,7 +23,6 @@ public static class UserMenuPreferenceDefaults
         Asset,
         Report,
         Account,
-        Compliance,
         Administration,
         System,
         Data,

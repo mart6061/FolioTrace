@@ -122,6 +122,10 @@ internal static class AssetAllocationEventValidation
             messages.Add($"RootNodeID '{rootNodeID}' does not exist in Nodes.");
 
         var nodeIDSet = nodeIDs.ToHashSet();
+        var nodeByID = nodes
+            .Where(node => node.NodeID is not null)
+            .GroupBy(node => node.NodeID.Value)
+            .ToDictionary(group => group.Key, group => group.First());
         var accountIDSet = accountIDs
             .Where(accountID => accountID is not null)
             .Select(accountID => accountID.Value)
@@ -129,6 +133,12 @@ internal static class AssetAllocationEventValidation
 
         foreach (var node in nodes.Where(node => node.NodeID is not null))
         {
+            if (!string.IsNullOrWhiteSpace(node.Colour) && !IsValidHexColour(node.Colour))
+                messages.Add($"Node '{node.NodeID}' has invalid Colour '{node.Colour}'.");
+
+            foreach (var duplicateChildNodeID in (node.Nodes ?? []).Where(childNodeID => childNodeID is not null).GroupBy(childNodeID => childNodeID.Value).Where(group => group.Count() > 1).Select(group => group.Key))
+                messages.Add($"Node '{node.NodeID}' references child NodeID '{duplicateChildNodeID}' more than once.");
+
             foreach (var childNodeID in node.Nodes ?? [])
             {
                 if (childNodeID is null)
@@ -159,5 +169,77 @@ internal static class AssetAllocationEventValidation
                     messages.Add($"Node '{node.NodeID}' has TargetWeightMin greater than TargetWeightMax for AccountID '{setting.AccountID}'.");
             }
         }
+
+        ValidateRootedTree(messages, rootNodeID, nodeByID);
     }
+
+    private static void ValidateRootedTree(List<string> messages, NodeID? rootNodeID, Dictionary<Guid, AssetAllocationNode> nodeByID)
+    {
+        if (rootNodeID is null || !nodeByID.ContainsKey(rootNodeID.Value))
+            return;
+
+        var parentIDsByChildID = new Dictionary<Guid, List<Guid>>();
+
+        foreach (var node in nodeByID.Values)
+        {
+            foreach (var childNodeID in node.Nodes ?? [])
+            {
+                if (childNodeID is null || !nodeByID.ContainsKey(childNodeID.Value))
+                    continue;
+
+                if (!parentIDsByChildID.TryGetValue(childNodeID.Value, out var parentIDs))
+                {
+                    parentIDs = [];
+                    parentIDsByChildID[childNodeID.Value] = parentIDs;
+                }
+
+                parentIDs.Add(node.NodeID.Value);
+            }
+        }
+
+        if (parentIDsByChildID.ContainsKey(rootNodeID.Value))
+            messages.Add($"RootNodeID '{rootNodeID}' cannot be a child node.");
+
+        foreach (var childParentPair in parentIDsByChildID.Where(pair => pair.Value.Distinct().Count() > 1))
+            messages.Add($"NodeID '{childParentPair.Key}' has multiple parents.");
+
+        var visited = new HashSet<Guid>();
+        var visiting = new HashSet<Guid>();
+        VisitNode(rootNodeID.Value, nodeByID, visited, visiting, messages);
+
+        foreach (var nodeID in nodeByID.Keys.Where(nodeID => !visited.Contains(nodeID)))
+            messages.Add($"NodeID '{nodeID}' is not reachable from RootNodeID '{rootNodeID}'.");
+    }
+
+    private static void VisitNode(Guid nodeID, Dictionary<Guid, AssetAllocationNode> nodeByID, HashSet<Guid> visited, HashSet<Guid> visiting, List<string> messages)
+    {
+        if (visited.Contains(nodeID))
+            return;
+
+        if (!visiting.Add(nodeID))
+        {
+            messages.Add($"NodeID '{nodeID}' creates a cycle in Nodes.");
+            return;
+        }
+
+        if (!nodeByID.TryGetValue(nodeID, out var node))
+        {
+            visiting.Remove(nodeID);
+            return;
+        }
+
+        foreach (var childNodeID in node.Nodes ?? [])
+        {
+            if (childNodeID is not null && nodeByID.ContainsKey(childNodeID.Value))
+                VisitNode(childNodeID.Value, nodeByID, visited, visiting, messages);
+        }
+
+        visiting.Remove(nodeID);
+        visited.Add(nodeID);
+    }
+
+    private static bool IsValidHexColour(string colour) =>
+        colour.Length == 7
+        && colour[0] == '#'
+        && colour.Skip(1).All(Uri.IsHexDigit);
 }

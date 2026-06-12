@@ -160,7 +160,7 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents();
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
             new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
@@ -192,7 +192,7 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents();
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, approved]),
             CreateHoldings(),
             CreateInstruments()).Value!;
@@ -208,7 +208,7 @@ public sealed class TicketBuilderTests
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
 
         var result = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m)]),
             new Tickets(EventDate, [.. events, approved]),
             CreateHoldings(),
             CreateInstruments());
@@ -224,7 +224,7 @@ public sealed class TicketBuilderTests
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
 
         var result = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, UsdCashHoldingID)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, UsdCashHoldingID)]),
             new Tickets(EventDate, [.. events, approved]),
             CreateHoldings(),
             CreateInstruments());
@@ -239,7 +239,7 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents();
         var approved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve", TicketOne), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
             new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
@@ -330,6 +330,7 @@ public sealed class TicketBuilderTests
 
     private static readonly UserID UserID = new(Guid.Parse("6d21c6ec-2cf0-430d-987b-6c32c1903538"));
     private static readonly EventDateTime EventDate = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10));
+    private static readonly SettlementDateTime SettlementDate = SettlementDateTimeBuilder.Create(EventDate.Value.Date.AddDays(1));
     private static readonly AuditDateTime AuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-9));
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
     private static readonly InstrumentID InstrumentID = InstrumentIDBuilder.Create();
@@ -370,7 +371,7 @@ public sealed class TicketBuilderTests
         var events = CreateProposalEvents(number);
         var proposalApproved = TicketEventBuilder.ApproveProposal(new TicketApprovalRequest(UserID, EventDate, "Approve proposal", number), new Tickets(EventDate, events)).Value!;
         var trade = TicketEventBuilder.CreateTrade(
-            new TicketTradeRequest(UserID, EventDate, "Create trade", number, new Price(12m), [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
+            new TicketTradeRequest(UserID, EventDate, "Create trade", number, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, proposalApproved])).Value!;
         var fill = TicketEventBuilder.AddFill(
             new TicketTradeFillRequest(UserID, EventDate, "Add fill", number, Guid.CreateGuid7(), BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),

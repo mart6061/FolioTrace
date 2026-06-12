@@ -25,6 +25,8 @@ public static class Constants
 
         public static readonly Guid FoleoTraderOrdersStreamId = Guid.Parse("42dbe999-9cd5-4c73-bd40-976ad6fed1fb");
 
+        public static readonly Guid FoleoTraderFIXOperationsStreamId = Guid.Parse("7ad1f7b6-2f0a-43a0-9d9b-09d6a85d5c61");
+
         public static readonly Guid HoldingsStreamId = Guid.Parse("44a970fc-bd46-4cd8-96a2-6eb023b0e5c6");
 
         public static readonly Guid InstrumentsStreamId = Guid.Parse("ba970d3e-fad9-4fc6-9d42-432630f3dcb0");
