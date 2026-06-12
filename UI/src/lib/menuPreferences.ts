@@ -2,7 +2,8 @@ import type { UserMenuPreferenceItem, UserMenuPreferences } from '$lib/types';
 
 const legacyMenuPreferenceIDs = new Map([
   ['value-valuations', 'asset'],
-  ['reference-valuation-setting', 'configuration-valuation-setting']
+  ['reference-valuation-setting', 'configuration-asset-allocation-tools'],
+  ['configuration-valuation-setting', 'configuration-asset-allocation-tools']
 ]);
 
 export type MenuPreferenceDefinition = {
@@ -23,7 +24,7 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'value', label: 'Value', parentID: 'data' },
   { id: 'reference', label: 'Reference', parentID: 'data' },
   { id: 'configuration', label: 'Configuration', parentID: 'data' },
-  { id: 'configuration-valuation-setting', label: 'Valuation Setting', parentID: 'configuration' },
+  { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', parentID: 'configuration' },
   { id: 'internals', label: 'Internals', parentID: 'system' },
   { id: 'system-logs', label: 'Request Trace', parentID: 'internals' },
   { id: 'system-fix-trace', label: 'FIX Trace', parentID: 'internals' },

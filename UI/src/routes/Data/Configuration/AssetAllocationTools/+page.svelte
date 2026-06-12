@@ -4,7 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import { dateTimeForInput, formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
   import ValuationNodeEditor from './ValuationNodeEditor.svelte';
@@ -12,6 +12,21 @@
   let { data, form } = $props();
 
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
+  const configurationEffectiveDateDefault = $derived.by(() => {
+    let latestDateTime = '';
+    let latestMilliseconds = Number.NEGATIVE_INFINITY;
+
+    for (const allocation of data.valuationSettings?.items ?? []) {
+      const milliseconds = validDateMilliseconds(allocation.valuationDateTime);
+
+      if (milliseconds > latestMilliseconds) {
+        latestMilliseconds = milliseconds;
+        latestDateTime = allocation.valuationDateTime;
+      }
+    }
+
+    return dateTimeInputOrFallback(latestDateTime, eventDateDefault);
+  });
   const allocationCount = $derived(data.valuationSettings?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.valuationSettings ? formatDisplayDateTime(data.valuationSettings.asOfDateTime) : 'now');
 
@@ -171,7 +186,7 @@
     historyByID[assetAllocationID] = { events: [], error: '', loading: true };
 
     try {
-      const historyUrl = new URL('/Data/Configuration/ValuationSetting/History', window.location.origin);
+      const historyUrl = new URL('/Data/Configuration/AssetAllocationTools/History', window.location.origin);
       historyUrl.searchParams.set('assetAllocationID', assetAllocationID);
       historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
 
@@ -235,7 +250,7 @@
       .replace(/^-+|-+$/g, '')
       .toLowerCase();
 
-    return fileName || 'valuation-setting';
+    return fileName || 'asset-allocation-tools';
   }
 
   function exportNodesJson(allocation: ValuationSetting) {
@@ -288,6 +303,26 @@
 
     return formStringValues('setAccounts', 'accountIDs', fallback);
   }
+
+  function allocationEffectiveDateDefault(allocation: ValuationSetting) {
+    return dateTimeInputOrFallback(allocation.valuationDateTime, configurationEffectiveDateDefault);
+  }
+
+  function dateTimeInputOrFallback(value: string, fallback: string) {
+    if (!Number.isFinite(validDateMilliseconds(value)))
+      return fallback;
+
+    return dateTimeForInput(value);
+  }
+
+  function validDateMilliseconds(value: string) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime()) || date.getFullYear() <= 1 || date.getFullYear() >= 9999)
+      return Number.NEGATIVE_INFINITY;
+
+    return date.getTime();
+  }
 </script>
 
 <main class="min-h-screen">
@@ -296,7 +331,7 @@
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Configuration</p>
         <div class="page-title-row">
-          <h1 class="page-title">Valuation Setting</h1>
+          <h1 class="page-title">Asset Allocation Tools</h1>
           <BookmarkButton />
         </div>
       </div>
@@ -413,8 +448,8 @@
               <div class="valuation-allocation-create-side">
                 <div class="valuation-event-active-row">
                   <label class="valuation-event-date-field grid gap-1 text-sm font-medium text-slate-700">
-                    Event date
-                    <DateTimeInput class="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={formStringValue('createAllocation', 'eventDateTime', eventDateDefault)} />
+                    Effective date
+                    <DateTimeInput class="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={formStringValue('createAllocation', 'eventDateTime', configurationEffectiveDateDefault)} />
                   </label>
 
                   <label class="valuation-active-field">
@@ -502,7 +537,7 @@
                         <input name="assetAllocationID" type="hidden" value={allocation.assetAllocationID} />
                         <input name="name" type="hidden" value={allocation.name} />
                         <input name="active" type="hidden" value={String(!allocation.active)} />
-                        <input name="eventDateTime" type="hidden" value={eventDateDefault} />
+                        <input name="eventDateTime" type="hidden" value={allocationEffectiveDateDefault(allocation)} />
                         <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">
                           {allocation.active ? 'Disable' : 'Enable'}
                         </button>
@@ -531,8 +566,8 @@
                           </div>
                         </fieldset>
                         <label class="grid gap-1 text-sm font-medium text-slate-700">
-                          Event date
-                          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={eventDateDefault} />
+                          Effective date
+                          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={formStringValue('setAccounts', 'eventDateTime', allocationEffectiveDateDefault(allocation))} />
                         </label>
                         <div class="flex justify-end gap-2">
                           <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAccountEdit} type="button">Cancel</button>
@@ -555,8 +590,8 @@
 														<input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={allocation.name} />
 													</label>
 													<label class="valuation-allocation-edit-date-field grid gap-1 text-sm font-medium text-slate-700">
-														Event date
-														<DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={eventDateDefault} />
+														Effective date
+														<DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={formStringValue('modifyAllocation', 'eventDateTime', allocationEffectiveDateDefault(allocation))} />
 													</label>
 												</div>
 												{#key allocation.assetAllocationID}

@@ -111,7 +111,7 @@
     { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference }
   ];
   const configurationItems: MenuItem[] = [
-    { id: 'configuration-valuation-setting', label: 'Valuation Setting', path: '/Data/Configuration/ValuationSetting', tone: menuTones.administration }
+    { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', path: '/Data/Configuration/AssetAllocationTools', tone: menuTones.administration }
   ];
   const internalsMenuItem: MenuItem = { id: 'internals', label: 'Internals', tone: menuTones.logs };
   const internalsItems: MenuItem[] = [
