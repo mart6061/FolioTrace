@@ -795,16 +795,18 @@
                 <input aria-label="Node name" class="valuation-node-name" type="text" value={row.node.name} onchange={(event) => renameNode(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
               {/if}
 
-              <button aria-label={`Add child to ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button" onclick={() => addChild(row.node.nodeID)} title="Add child" type="button">+</button>
-
-              {#if row.node.nodeID !== rootNodeID}
-                <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
+              {#if row.node.nodeID === rootNodeID}
+                <button aria-label={`Add child to ${row.node.name}`} class="valuation-node-action-button valuation-node-add-button" onclick={() => addChild(row.node.nodeID)} title="Add child" type="button">Add</button>
               {/if}
 
               <label class="valuation-node-metrics-toggle" title="Metrics">
                 <span>Metrics</span>
                 <input checked={isMetricsOpen(row.node.nodeID)} onchange={() => toggleMetrics(row.node.nodeID)} type="checkbox" />
               </label>
+
+              {#if row.node.nodeID !== rootNodeID}
+                <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
+              {/if}
             {/if}
           </div>
 
@@ -889,7 +891,7 @@
 
   .valuation-node-row {
     display: grid;
-    grid-template-columns: minmax(16rem, 28rem) minmax(26rem, 1fr);
+    grid-template-columns: max-content minmax(26rem, 1fr);
     gap: 0.35rem;
     align-items: start;
     min-width: min(66rem, 100%);
@@ -906,9 +908,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.22rem;
-    width: auto;
-    max-width: 100%;
-    min-width: 11rem;
+    width: 34rem;
+    max-width: 34rem;
+    min-width: 34rem;
     border: 1px solid color-mix(in srgb, var(--node-colour) 58%, var(--line));
     border-radius: 999px;
     background: color-mix(in srgb, var(--node-colour) 13%, var(--panel));
@@ -959,6 +961,18 @@
     border: 1px solid color-mix(in srgb, var(--node-colour) 42%, var(--line));
     background: color-mix(in srgb, var(--node-colour) 12%, var(--panel));
     box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+
+  .valuation-node-add-button {
+    display: inline-grid;
+    height: 1.45rem;
+    place-items: center;
+    border-radius: 999px;
+    padding: 0 0.6rem;
+    color: color-mix(in srgb, var(--node-colour) 76%, var(--ink));
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
   }
 
   .valuation-node-action-button:hover {
@@ -1043,8 +1057,9 @@
   }
 
   .valuation-node-name {
-    min-width: 5rem;
-    max-width: 14rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
     border: 0;
     border-radius: 999px;
     background: transparent;
@@ -1209,7 +1224,9 @@
 
   @media (max-width: 640px) {
     .valuation-node-pill {
-      min-width: min(14rem, 100%);
+      width: 28rem;
+      max-width: 28rem;
+      min-width: 28rem;
     }
   }
 </style>
