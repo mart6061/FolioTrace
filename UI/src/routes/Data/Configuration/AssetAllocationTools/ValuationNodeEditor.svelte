@@ -7,18 +7,21 @@
   const SPECIAL_NODE_COLOUR = '#dc2626';
 
   type EditableNode = AssetAllocationNode & { colour?: string | null };
+  type EditorMode = 'allocate' | 'design';
   type NodeRow = { colourLocked: boolean; depth: number; effectiveColour: string | null; node: EditableNode };
   type ParseResult = { message: string; nodes: EditableNode[] };
 
   let {
     accounts,
     allocationAccountIDs,
+    mode = 'design',
     nodesJson = $bindable(''),
     rootNodeID,
     rootNodeName
   }: {
     accounts: Account[];
     allocationAccountIDs: string[];
+    mode?: EditorMode;
     nodesJson: string;
     rootNodeID: string;
     rootNodeName: string;
@@ -30,6 +33,8 @@
   let nodes = $state<EditableNode[]>([]);
 
   const allocationAccounts = $derived(accounts.filter((account) => allocationAccountIDs.includes(account.accountID)));
+  const isAllocateMode = $derived(mode === 'allocate');
+  const isDesignMode = $derived(mode === 'design');
   const specialNodeID = $derived(specialNodeIDFor(nodes));
   const initialParse = parseNodesJson(nodesJson);
   const initialNodes = initialParse.message ? initialParse.nodes : normaliseNodes(initialParse.nodes);
@@ -125,7 +130,7 @@
   }
 
   function addChild(parentNodeID: string) {
-    if (isSpecialNodeID(parentNodeID))
+    if (!isDesignMode || isSpecialNodeID(parentNodeID))
       return;
 
     const nextNodes = cloneNodes(nodes);
@@ -154,7 +159,7 @@
   }
 
   function toggleMetrics(nodeID: string) {
-    if (isSpecialNodeID(nodeID))
+    if (!isAllocateMode || isSpecialNodeID(nodeID))
       return;
 
     if (metricsNodeIDs.has(nodeID)) {
@@ -166,7 +171,7 @@
   }
 
   function renameNode(nodeID: string, value: string) {
-    if (isSpecialNodeID(nodeID))
+    if (!isDesignMode || isSpecialNodeID(nodeID))
       return;
 
     const nextNodes = cloneNodes(nodes);
@@ -180,21 +185,21 @@
   }
 
   function setNodeColour(nodeID: string, value: string) {
-    if (isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
+    if (!isDesignMode || isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
       return;
 
     setNodeExplicitColour(nodeID, safeColour(value), true);
   }
 
   function setNodeNoColour(nodeID: string, noColour: boolean, fallbackColour: string | null) {
-    if (isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
+    if (!isDesignMode || isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
       return;
 
     setNodeExplicitColour(nodeID, noColour ? null : displayColour(fallbackColour), !noColour);
   }
 
   function setNodeExplicitColour(nodeID: string, colour: string | null, clearDescendantColours: boolean) {
-    if (isSpecialNodeID(nodeID))
+    if (!isDesignMode || isSpecialNodeID(nodeID))
       return;
 
     const nextNodes = cloneNodes(nodes);
@@ -222,7 +227,7 @@
   }
 
   function deleteNode(nodeID: string) {
-    if (nodeID === rootNodeID || isSpecialNodeID(nodeID))
+    if (!isDesignMode || nodeID === rootNodeID || isSpecialNodeID(nodeID))
       return;
 
     const byID = nodeMap(nodes);
@@ -261,7 +266,7 @@
   }
 
   function startNodeDrag(event: DragEvent, nodeID: string) {
-    if (nodeID === rootNodeID || isSpecialNodeID(nodeID)) {
+    if (!isDesignMode || nodeID === rootNodeID || isSpecialNodeID(nodeID)) {
       event.preventDefault();
       return;
     }
@@ -275,7 +280,7 @@
   }
 
   function allowDrop(event: DragEvent, targetNodeID: string, mode: 'after' | 'as-child' | 'before') {
-    if (!draggedNodeID)
+    if (!isDesignMode || !draggedNodeID)
       return;
 
     const allowed = mode === 'as-child'
@@ -294,6 +299,12 @@
 
   function dropNode(event: DragEvent, targetNodeID: string, mode: 'after' | 'as-child' | 'before') {
     event.preventDefault();
+    if (!isDesignMode) {
+      draggedNodeID = '';
+      dragOverNodeID = '';
+      return;
+    }
+
     const sourceNodeID = event.dataTransfer?.getData('text/plain') || draggedNodeID;
     draggedNodeID = '';
     dragOverNodeID = '';
@@ -790,14 +801,14 @@
     {#each rows as row (row.node.nodeID)}
       <section class="valuation-node-row" style={`--node-colour: ${displayColour(row.effectiveColour)}`}>
         <div class="valuation-node-tree-cell" style={`margin-left: ${row.depth * 1.25}rem`}>
-          {#if row.node.nodeID !== rootNodeID && !isSpecialNodeID(row.node.nodeID)}
+          {#if isDesignMode && row.node.nodeID !== rootNodeID && !isSpecialNodeID(row.node.nodeID)}
             <div
               aria-hidden="true"
               class={`valuation-node-drop-zone ${dragOverNodeID === row.node.nodeID ? 'valuation-node-drop-zone-active' : ''}`}
               ondragover={(event) => allowDrop(event, row.node.nodeID, 'before')}
               ondrop={(event) => dropNode(event, row.node.nodeID, 'before')}
             ></div>
-          {:else if isSpecialNodeID(row.node.nodeID)}
+          {:else if isDesignMode && isSpecialNodeID(row.node.nodeID)}
             <div aria-hidden="true" class="valuation-node-drop-zone valuation-node-drop-zone-static"></div>
           {/if}
 
@@ -813,58 +824,64 @@
             {#if isSpecialNodeID(row.node.nodeID)}
               <span class="valuation-node-name valuation-node-name-static valuation-node-special-name" title={SPECIAL_NODE_NAME}>{SPECIAL_NODE_NAME}</span>
             {:else}
-              <button
-                aria-label={`Drag ${row.node.name}`}
-                class="valuation-node-icon-button valuation-node-drag-button"
-                draggable={row.node.nodeID !== rootNodeID}
-                ondragend={endNodeDrag}
-                ondragstart={(event) => startNodeDrag(event, row.node.nodeID)}
-                title="Drag"
-                type="button"
-              >
-                <span aria-hidden="true">::</span>
-              </button>
+              {#if isDesignMode}
+                <button
+                  aria-label={`Drag ${row.node.name}`}
+                  class="valuation-node-icon-button valuation-node-drag-button"
+                  draggable={row.node.nodeID !== rootNodeID}
+                  ondragend={endNodeDrag}
+                  ondragstart={(event) => startNodeDrag(event, row.node.nodeID)}
+                  title="Drag"
+                  type="button"
+                >
+                  <span aria-hidden="true">::</span>
+                </button>
 
-              <span class={`valuation-node-colour-shell ${!row.colourLocked && !hasNodeColour(row.node) ? 'valuation-node-colour-shell-empty' : ''} ${row.colourLocked ? 'valuation-node-colour-shell-locked' : ''}`}>
-                <input aria-label="Node colour" class="valuation-node-colour" disabled={row.colourLocked || !hasNodeColour(row.node)} type="color" value={displayColour(row.effectiveColour)} oninput={(event) => setNodeColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
-              </span>
-              <label aria-label="No colour" class={`valuation-node-no-colour-toggle ${row.colourLocked ? 'valuation-node-no-colour-toggle-locked' : ''}`} title={row.colourLocked ? 'Colour inherited from parent' : 'No colour'}>
-                <input checked={!row.colourLocked && !hasNodeColour(row.node)} disabled={row.colourLocked} onchange={(event) => setNodeNoColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).checked, row.effectiveColour)} type="checkbox" />
-              </label>
+                <span class={`valuation-node-colour-shell ${!row.colourLocked && !hasNodeColour(row.node) ? 'valuation-node-colour-shell-empty' : ''} ${row.colourLocked ? 'valuation-node-colour-shell-locked' : ''}`}>
+                  <input aria-label="Node colour" class="valuation-node-colour" disabled={row.colourLocked || !hasNodeColour(row.node)} type="color" value={displayColour(row.effectiveColour)} oninput={(event) => setNodeColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
+                </span>
+                <label aria-label="No colour" class={`valuation-node-no-colour-toggle ${row.colourLocked ? 'valuation-node-no-colour-toggle-locked' : ''}`} title={row.colourLocked ? 'Colour inherited from parent' : 'No colour'}>
+                  <input checked={!row.colourLocked && !hasNodeColour(row.node)} disabled={row.colourLocked} onchange={(event) => setNodeNoColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).checked, row.effectiveColour)} type="checkbox" />
+                </label>
+              {/if}
               {#if row.node.nodeID === rootNodeID}
                 <span class="valuation-node-name valuation-node-name-static" title={currentRootNodeName()}>{currentRootNodeName()}</span>
-              {:else}
+              {:else if isDesignMode}
                 <input aria-label="Node name" class="valuation-node-name" type="text" value={row.node.name} onchange={(event) => renameNode(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
+              {:else}
+                <span class="valuation-node-name valuation-node-name-static" title={row.node.name}>{row.node.name}</span>
               {/if}
 
-              {#if row.node.nodeID === rootNodeID}
+              {#if isDesignMode && row.node.nodeID === rootNodeID}
                 <button aria-label={`Add child to ${row.node.name}`} class="valuation-node-action-button valuation-node-add-button" onclick={() => addChild(row.node.nodeID)} title="Add child" type="button">Add</button>
               {/if}
 
-              <label class="valuation-node-metrics-toggle" title="Metrics">
-                <span>Metrics</span>
-                <input checked={isMetricsOpen(row.node.nodeID)} onchange={() => toggleMetrics(row.node.nodeID)} type="checkbox" />
-              </label>
+              {#if isAllocateMode}
+                <label class="valuation-node-metrics-toggle" title="Metrics">
+                  <span>Metrics</span>
+                  <input checked={isMetricsOpen(row.node.nodeID)} onchange={() => toggleMetrics(row.node.nodeID)} type="checkbox" />
+                </label>
+              {/if}
 
-              {#if row.node.nodeID !== rootNodeID}
+              {#if isDesignMode && row.node.nodeID !== rootNodeID}
                 <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
               {/if}
             {/if}
           </div>
 
-          {#if row.node.nodeID !== rootNodeID && !isSpecialNodeID(row.node.nodeID)}
+          {#if isDesignMode && row.node.nodeID !== rootNodeID && !isSpecialNodeID(row.node.nodeID)}
             <div
               aria-hidden="true"
               class={`valuation-node-drop-zone ${dragOverNodeID === row.node.nodeID ? 'valuation-node-drop-zone-active' : ''}`}
               ondragover={(event) => allowDrop(event, row.node.nodeID, 'after')}
               ondrop={(event) => dropNode(event, row.node.nodeID, 'after')}
             ></div>
-          {:else if isSpecialNodeID(row.node.nodeID)}
+          {:else if isDesignMode && isSpecialNodeID(row.node.nodeID)}
             <div aria-hidden="true" class="valuation-node-drop-zone valuation-node-drop-zone-static"></div>
           {/if}
         </div>
 
-        {#if isMetricsOpen(row.node.nodeID) && !isSpecialNodeID(row.node.nodeID)}
+        {#if isAllocateMode && isMetricsOpen(row.node.nodeID) && !isSpecialNodeID(row.node.nodeID)}
           <div class="valuation-node-metrics-cell" style={`margin-left: ${row.depth * 1.25}rem`}>
             <div class="valuation-node-account-grid">
               {#if allocationAccounts.length > 0}

@@ -31,11 +31,13 @@
   const asOfSummary = $derived(data.auditDateTime && data.valuationSettings ? formatDisplayDateTime(data.valuationSettings.asOfDateTime) : 'now');
 
   type SortKey = 'name' | 'status' | 'accounts' | 'nodes' | 'lastAudit';
+  type EditorMode = 'allocate' | 'design';
   type HistoryState = { events: ValuationSettingReferenceEvent[]; error: string; loading: boolean };
 
   let sortKey = $state<SortKey>('name');
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
+  let editorMode = $state<EditorMode>('design');
   let showAllConfigs = $state(false);
   let addingAllocation = $state(false);
   let editingAllocationID = $state('');
@@ -119,6 +121,7 @@
     addingAllocation = false;
     editingAccountsID = '';
     editingAllocationID = allocation.assetAllocationID;
+    editorMode = 'design';
     editNodesJsonByID[allocation.assetAllocationID] = nodesJsonForEdit(allocation);
   }
 
@@ -410,6 +413,25 @@
             </span>
           </label>
 
+          <div class="valuation-mode-toggle" aria-label="Editor mode">
+            <button
+              aria-pressed={editorMode === 'allocate'}
+              disabled={!editingAllocationID}
+              onclick={() => (editorMode = 'allocate')}
+              type="button"
+            >
+              Allocate
+            </button>
+            <button
+              aria-pressed={editorMode === 'design'}
+              disabled={!editingAllocationID}
+              onclick={() => (editorMode = 'design')}
+              type="button"
+            >
+              Design
+            </button>
+          </div>
+
           <div class="table-actions" aria-label="Table actions">
             <button aria-label="Add asset allocation" onclick={startAdd} title="Add asset allocation" type="button">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
@@ -595,7 +617,7 @@
 													</label>
 												</div>
 												{#key allocation.assetAllocationID}
-													<ValuationNodeEditor accounts={accounts} allocationAccountIDs={allocation.accountIDs} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} rootNodeName={allocation.name} />
+													<ValuationNodeEditor accounts={accounts} allocationAccountIDs={allocation.accountIDs} mode={editorMode} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} rootNodeName={allocation.name} />
 												{/key}
 												<div class="flex justify-end gap-2">
                           <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
@@ -796,6 +818,41 @@
     font-size: 0.875rem;
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .valuation-mode-toggle {
+    display: inline-flex;
+    overflow: hidden;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    padding: 0.12rem;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+
+  .valuation-mode-toggle button {
+    min-height: 2rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    padding: 0 0.7rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .valuation-mode-toggle button[aria-pressed='true'] {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+
+  .valuation-mode-toggle button:disabled {
+    cursor: not-allowed;
+    opacity: 0.46;
   }
 
   @media (min-width: 768px) {
