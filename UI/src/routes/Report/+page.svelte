@@ -21,12 +21,14 @@
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
 
-      <div class="grid gap-3 xl:grid-cols-[minmax(240px,0.9fr)_minmax(260px,1fr)_minmax(220px,0.8fr)_minmax(220px,0.8fr)]">
+      <div class="grid gap-3 md:grid-cols-[minmax(240px,24rem)]">
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
         </label>
+      </div>
 
+      <div class="grid gap-3 border-t border-slate-200 pt-4 md:grid-cols-3">
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Account
           <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.accounts.length} name="accountID" required>
