@@ -115,21 +115,6 @@
     };
   }
 
-  function rawJsonChanged(event: Event) {
-    nodesJson = (event.currentTarget as HTMLTextAreaElement).value;
-    const result = parseNodesJson(nodesJson, nodes);
-
-    if (!result.message) {
-      const normalisedNodes = normaliseNodes(result.nodes);
-      nodes = normalisedNodes;
-      nodesJson = JSON.stringify(normalisedNodes.map(toJsonNode), null, 2);
-      editorMessage = validateNodes(normalisedNodes);
-      return;
-    }
-
-    editorMessage = result.message || validateNodes(result.nodes);
-  }
-
   function commitVisualNodes(nextNodes: EditableNode[]) {
     const normalisedNodes = normaliseNodes(nextNodes);
     nodes = normalisedNodes;
@@ -856,10 +841,7 @@
     {/each}
   </div>
 
-  <label class="grid gap-1 text-sm font-medium text-slate-700">
-    Nodes JSON
-    <textarea class="min-h-72 rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="nodesJson" oninput={rawJsonChanged} required spellcheck="false" bind:value={nodesJson}></textarea>
-  </label>
+  <input name="nodesJson" type="hidden" value={nodesJson} />
 </div>
 
 <style>
