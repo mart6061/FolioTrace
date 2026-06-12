@@ -7,7 +7,7 @@
   const SPECIAL_NODE_COLOUR = '#dc2626';
 
   type EditableNode = AssetAllocationNode & { colour?: string | null };
-  type NodeRow = { depth: number; effectiveColour: string | null; node: EditableNode };
+  type NodeRow = { colourLocked: boolean; depth: number; effectiveColour: string | null; node: EditableNode };
   type ParseResult = { message: string; nodes: EditableNode[] };
 
   let {
@@ -59,8 +59,10 @@
       return;
 
     const nodeColour = isHexColour(node.colour) ? node.colour : null;
-    const effectiveColour = nodeColour ?? inheritedColour;
-    nextRows.push({ depth, effectiveColour, node });
+    const special = isSpecialNodeShape(node);
+    const colourLocked = inheritedColour !== null && !special;
+    const effectiveColour = special ? nodeColour ?? inheritedColour : inheritedColour ?? nodeColour;
+    nextRows.push({ colourLocked, depth, effectiveColour, node });
 
     const nextPath = new SvelteSet(path);
     nextPath.add(node.nodeID);
@@ -69,7 +71,7 @@
       const childNode = byID.get(childNodeID);
 
       if (childNode)
-        appendRows(childNode, depth + 1, effectiveColour, byID, nextPath, nextRows);
+        appendRows(childNode, depth + 1, special ? inheritedColour : effectiveColour, byID, nextPath, nextRows);
     }
   }
 
@@ -178,14 +180,14 @@
   }
 
   function setNodeColour(nodeID: string, value: string) {
-    if (isSpecialNodeID(nodeID))
+    if (isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
       return;
 
     setNodeExplicitColour(nodeID, safeColour(value), true);
   }
 
   function setNodeNoColour(nodeID: string, noColour: boolean, fallbackColour: string | null) {
-    if (isSpecialNodeID(nodeID))
+    if (isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
       return;
 
     setNodeExplicitColour(nodeID, noColour ? null : displayColour(fallbackColour), !noColour);
@@ -516,7 +518,7 @@
       ...rootNode.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID)
     ];
 
-    return normaliseAccountSettings(nextNodes).map((node) => {
+    return clearInheritedColourOverrides(normaliseAccountSettings(nextNodes).map((node) => {
       if (node.nodeID === rootNodeID)
         return { ...node, name: currentRootNodeName() };
 
@@ -532,7 +534,38 @@
         };
 
       return node;
-    });
+    }));
+  }
+
+  function clearInheritedColourOverrides(sourceNodes: EditableNode[]) {
+    const nextNodes = cloneNodes(sourceNodes);
+    const byID = nodeMap(nextNodes);
+
+    clearChildColourOverrides(rootNodeID, false, byID, new SvelteSet<string>());
+
+    return nextNodes;
+  }
+
+  function clearChildColourOverrides(nodeID: string, inheritedColour: boolean, byID: Map<string, EditableNode>, path: Set<string>) {
+    if (path.has(nodeID))
+      return;
+
+    const node = byID.get(nodeID);
+    if (!node)
+      return;
+
+    const nextPath = new SvelteSet(path);
+    nextPath.add(nodeID);
+
+    const special = isSpecialNodeShape(node);
+
+    if (inheritedColour && !special)
+      node.colour = null;
+
+    const nextInheritedColour = special ? inheritedColour : inheritedColour || isHexColour(node.colour);
+
+    for (const childNodeID of node.nodes)
+      clearChildColourOverrides(childNodeID, nextInheritedColour, byID, nextPath);
   }
 
   function currentRootNodeName() {
@@ -591,6 +624,30 @@
 
   function parentIDFor(nodeID: string, sourceNodes: EditableNode[]) {
     return sourceNodes.find((node) => node.nodes.includes(nodeID))?.nodeID ?? null;
+  }
+
+  function hasInheritedColour(nodeID: string) {
+    let parentID = parentIDFor(nodeID, nodes);
+    const byID = nodeMap(nodes);
+    const seen = new SvelteSet<string>();
+
+    while (parentID) {
+      if (seen.has(parentID))
+        return false;
+
+      seen.add(parentID);
+
+      const parent = byID.get(parentID);
+      if (!parent)
+        return false;
+
+      if (!isSpecialNodeShape(parent) && isHexColour(parent.colour))
+        return true;
+
+      parentID = parentIDFor(parent.nodeID, nodes);
+    }
+
+    return false;
   }
 
   function nodeMap(sourceNodes: EditableNode[]) {
@@ -768,11 +825,11 @@
                 <span aria-hidden="true">::</span>
               </button>
 
-              <span class={`valuation-node-colour-shell ${!hasNodeColour(row.node) ? 'valuation-node-colour-shell-empty' : ''}`}>
-                <input aria-label="Node colour" class="valuation-node-colour" disabled={!hasNodeColour(row.node)} type="color" value={displayColour(row.effectiveColour)} oninput={(event) => setNodeColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
+              <span class={`valuation-node-colour-shell ${!row.colourLocked && !hasNodeColour(row.node) ? 'valuation-node-colour-shell-empty' : ''} ${row.colourLocked ? 'valuation-node-colour-shell-locked' : ''}`}>
+                <input aria-label="Node colour" class="valuation-node-colour" disabled={row.colourLocked || !hasNodeColour(row.node)} type="color" value={displayColour(row.effectiveColour)} oninput={(event) => setNodeColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
               </span>
-              <label aria-label="No colour" class="valuation-node-no-colour-toggle" title="No colour">
-                <input checked={!hasNodeColour(row.node)} onchange={(event) => setNodeNoColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).checked, row.effectiveColour)} type="checkbox" />
+              <label aria-label="No colour" class={`valuation-node-no-colour-toggle ${row.colourLocked ? 'valuation-node-no-colour-toggle-locked' : ''}`} title={row.colourLocked ? 'Colour inherited from parent' : 'No colour'}>
+                <input checked={!row.colourLocked && !hasNodeColour(row.node)} disabled={row.colourLocked} onchange={(event) => setNodeNoColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).checked, row.effectiveColour)} type="checkbox" />
               </label>
               {#if row.node.nodeID === rootNodeID}
                 <span class="valuation-node-name valuation-node-name-static" title={currentRootNodeName()}>{currentRootNodeName()}</span>
@@ -996,6 +1053,11 @@
     background: var(--panel);
   }
 
+  .valuation-node-colour-shell-locked {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--node-colour) 72%, var(--line));
+    opacity: 0.72;
+  }
+
   .valuation-node-colour {
     width: 100%;
     height: 100%;
@@ -1036,6 +1098,11 @@
     height: 1rem;
     margin: 0;
     accent-color: var(--node-colour);
+  }
+
+  .valuation-node-no-colour-toggle-locked {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 
   .valuation-node-name {
