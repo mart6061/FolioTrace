@@ -21,6 +21,7 @@ public sealed record ValuationItem
     public decimal? LocalPrice { get; init; }
     public decimal? QuotePrice { get; init; }
     public decimal? BookValue { get; init; }
+    public decimal? WeightPercent { get; init; }
     public required decimal BookCost { get; init; }
     public required bool Complete { get; init; }
     public string? IncompleteReason { get; init; }

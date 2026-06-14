@@ -6,6 +6,7 @@ namespace FolioTrace.Aggregates;
 public sealed record AssetAllocationCreatedRequest(
     UserID UserID,
     EventDateTime EventDateTime,
+    EventDateTime EffectiveDateTime,
     string Reason,
     AssetAllocationID? AssetAllocationID,
     string Name,

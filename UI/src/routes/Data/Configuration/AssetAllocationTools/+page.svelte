@@ -4,7 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
-  import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
   import ValuationNodeEditor from './ValuationNodeEditor.svelte';
@@ -12,6 +12,21 @@
   let { data, form } = $props();
 
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
+  const configurationEffectiveDateDefault = $derived.by(() => {
+    let latestDateTime = '';
+    let latestMilliseconds = Number.NEGATIVE_INFINITY;
+
+    for (const allocation of data.valuationSettings?.items ?? []) {
+      const milliseconds = validDateMilliseconds(allocation.effectiveDateTime);
+
+      if (milliseconds > latestMilliseconds) {
+        latestMilliseconds = milliseconds;
+        latestDateTime = allocation.effectiveDateTime;
+      }
+    }
+
+    return dateInputOrFallback(latestDateTime, dateForInput(data.valuationDate));
+  });
   const allocationCount = $derived(data.valuationSettings?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.valuationSettings ? formatDisplayDateTime(data.valuationSettings.asOfDateTime) : 'now');
 
@@ -107,9 +122,20 @@
     editNodesJsonByID[allocation.assetAllocationID] = nodesJsonForEdit(allocation);
   }
 
-  function cancelEdit() {
-    delete editNodesJsonByID[editingAllocationID];
+  function closeEdit() {
+    if (editingAllocationID)
+      delete editNodesJsonByID[editingAllocationID];
+
     editingAllocationID = '';
+  }
+
+  function toggleEdit(allocation: ValuationSetting) {
+    if (editingAllocationID === allocation.assetAllocationID) {
+      closeEdit();
+      return;
+    }
+
+    startEdit(allocation);
   }
 
   function startAccountEdit(assetAllocationID: string) {
@@ -171,7 +197,7 @@
     historyByID[assetAllocationID] = { events: [], error: '', loading: true };
 
     try {
-      const historyUrl = new URL('/Data/Configuration/ValuationSetting/History', window.location.origin);
+      const historyUrl = new URL('/Data/Configuration/AssetAllocationTools/History', window.location.origin);
       historyUrl.searchParams.set('assetAllocationID', assetAllocationID);
       historyUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
 
@@ -235,7 +261,7 @@
       .replace(/^-+|-+$/g, '')
       .toLowerCase();
 
-    return fileName || 'valuation-setting';
+    return fileName || 'asset-allocation-tools';
   }
 
   function exportNodesJson(allocation: ValuationSetting) {
@@ -288,6 +314,37 @@
 
     return formStringValues('setAccounts', 'accountIDs', fallback);
   }
+
+  function allocationEffectiveDateDefault(allocation: ValuationSetting) {
+    return dateInputOrFallback(allocation.effectiveDateTime, configurationEffectiveDateDefault);
+  }
+
+  function allocationEventDateDefault(allocation: ValuationSetting) {
+    return dateTimeInputOrFallback(allocation.valuationDateTime, eventDateDefault);
+  }
+
+  function dateInputOrFallback(value: string, fallback: string) {
+    if (!Number.isFinite(validDateMilliseconds(value)))
+      return fallback;
+
+    return dateForInput(value);
+  }
+
+  function dateTimeInputOrFallback(value: string, fallback: string) {
+    if (!Number.isFinite(validDateMilliseconds(value)))
+      return fallback;
+
+    return dateTimeForInput(value);
+  }
+
+  function validDateMilliseconds(value: string) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime()) || date.getFullYear() <= 1 || date.getFullYear() >= 9999)
+      return Number.NEGATIVE_INFINITY;
+
+    return date.getTime();
+  }
 </script>
 
 <main class="min-h-screen">
@@ -296,7 +353,7 @@
       <div class="flex flex-col gap-1">
         <p class="page-kicker">Configuration</p>
         <div class="page-title-row">
-          <h1 class="page-title">Valuation Setting</h1>
+          <h1 class="page-title">Asset Allocation Tools</h1>
           <BookmarkButton />
         </div>
       </div>
@@ -384,16 +441,10 @@
 
         {#if addingAllocation}
           <form action="?/createAllocation" class="valuation-allocation-create-form mb-4 grid gap-4 rounded-md border border-teal-200 bg-teal-50/40 p-4" method="POST" use:enhance={enhanceCreate}>
-            <div class="grid gap-4 md:grid-cols-2">
-              <label class="grid gap-1 text-sm font-medium text-slate-700">
-                Name
-                <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={formStringValue('createAllocation', 'name')} />
-              </label>
-              <label class="grid gap-1 text-sm font-medium text-slate-700">
-                Initial asset node
-                <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="initialNodeName" type="text" value={formStringValue('createAllocation', 'initialNodeName')} />
-              </label>
-            </div>
+            <label class="valuation-allocation-name-field grid gap-1 text-sm font-medium text-slate-700">
+              Name
+              <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={formStringValue('createAllocation', 'name')} />
+            </label>
 
             <div class="valuation-allocation-create-layout">
               <fieldset class="valuation-account-checkbox-field">
@@ -413,8 +464,8 @@
               <div class="valuation-allocation-create-side">
                 <div class="valuation-event-active-row">
                   <label class="valuation-event-date-field grid gap-1 text-sm font-medium text-slate-700">
-                    Event date
-                    <DateTimeInput class="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={formStringValue('createAllocation', 'eventDateTime', eventDateDefault)} />
+                    Effective date
+                    <input class="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="effectiveDate" required type="date" value={formStringValue('createAllocation', 'effectiveDate', configurationEffectiveDateDefault)} />
                   </label>
 
                   <label class="valuation-active-field">
@@ -445,6 +496,7 @@
                 <th class="px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('status')} type="button">Status{sortLabel('status')}</button>
                 </th>
+                <th class="px-3 py-2">Effective date</th>
                 <th class="px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('accounts')} type="button">Accounts{sortLabel('accounts')}</button>
                 </th>
@@ -468,6 +520,7 @@
                       {allocation.active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
+                  <td class="px-3 py-3 text-slate-600">{formatShortDate(allocation.effectiveDateTime)}</td>
                   <td class="px-3 py-3 text-slate-700">
                     {#if allocation.accountIDs.length}
                       {allocation.accountIDs.map(accountName).join(', ')}
@@ -495,14 +548,14 @@
                       <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startAccountEdit(allocation.assetAllocationID)} type="button">
                         Accounts
                       </button>
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(allocation)} type="button">
-                        Edit
+                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleEdit(allocation)} type="button">
+                        {editingAllocationID === allocation.assetAllocationID ? 'Close' : 'Edit'}
                       </button>
                       <form action="?/setActive" class="shrink-0" method="POST" use:enhance={enhanceAllocation}>
                         <input name="assetAllocationID" type="hidden" value={allocation.assetAllocationID} />
                         <input name="name" type="hidden" value={allocation.name} />
                         <input name="active" type="hidden" value={String(!allocation.active)} />
-                        <input name="eventDateTime" type="hidden" value={eventDateDefault} />
+                        <input name="eventDateTime" type="hidden" value={allocationEventDateDefault(allocation)} />
                         <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">
                           {allocation.active ? 'Disable' : 'Enable'}
                         </button>
@@ -513,7 +566,7 @@
 
                 {#if editingAccountsID === allocation.assetAllocationID}
                   <tr class="bg-teal-50/30">
-                    <td class="px-3 py-3" colspan="6">
+                    <td class="px-3 py-3" colspan="7">
                       <form action="?/setAccounts" class="grid gap-4 md:grid-cols-[minmax(260px,1fr)_220px_auto] md:items-end" method="POST" use:enhance={enhanceAllocation}>
                         <input name="assetAllocationID" type="hidden" value={allocation.assetAllocationID} />
                         <input name="name" type="hidden" value={allocation.name} />
@@ -531,8 +584,8 @@
                           </div>
                         </fieldset>
                         <label class="grid gap-1 text-sm font-medium text-slate-700">
-                          Event date
-                          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={eventDateDefault} />
+                          Effective date
+                          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={formStringValue('setAccounts', 'eventDateTime', allocationEventDateDefault(allocation))} />
                         </label>
                         <div class="flex justify-end gap-2">
                           <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAccountEdit} type="button">Cancel</button>
@@ -545,7 +598,7 @@
 
                 {#if editingAllocationID === allocation.assetAllocationID}
                   <tr class="bg-teal-50/30">
-                    <td class="px-3 py-3" colspan="6">
+                    <td class="px-3 py-3" colspan="7">
 											<form action="?/modifyAllocation" class="grid gap-4" method="POST" use:enhance={enhanceAllocation}>
 												<input name="assetAllocationID" type="hidden" value={allocation.assetAllocationID} />
 												<input name="rootNodeID" type="hidden" value={allocation.rootNodeID} />
@@ -555,15 +608,14 @@
 														<input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={allocation.name} />
 													</label>
 													<label class="valuation-allocation-edit-date-field grid gap-1 text-sm font-medium text-slate-700">
-														Event date
-														<DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={eventDateDefault} />
+														Effective date
+														<input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="effectiveDate" required type="date" value={formStringValue('modifyAllocation', 'effectiveDate', allocationEffectiveDateDefault(allocation))} />
 													</label>
 												</div>
 												{#key allocation.assetAllocationID}
 													<ValuationNodeEditor accounts={accounts} allocationAccountIDs={allocation.accountIDs} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} rootNodeName={allocation.name} />
 												{/key}
 												<div class="flex justify-end gap-2">
-                          <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
                           <button class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>
                         </div>
                       </form>
@@ -574,7 +626,7 @@
                 {#if openHistoryID === allocation.assetAllocationID}
                   {@const history = historyByID[allocation.assetAllocationID]}
                   <tr class="bg-slate-50/80">
-                    <td class="px-3 py-3" colspan="6">
+                    <td class="px-3 py-3" colspan="7">
                       <div>
                         {#if history?.loading}
                           <div class="text-sm text-slate-600">Loading history...</div>

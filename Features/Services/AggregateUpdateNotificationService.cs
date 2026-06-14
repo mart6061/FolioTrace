@@ -122,7 +122,9 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
             IUserMenuPreferencesEvent => ["UserMenuPreferences"],
             IUserValuationPreferencesEvent => ["UserValuationPreferences"],
             IUserBookmarksEvent => ["UserBookmarks"],
-            IValuationSettingEvent => ["ValuationSettings"],
+            IValuationSettingEvent => ["ValuationSettings", "AssetAllocationMappings"],
+            IAssetAllocationMappingEvent => ["AssetAllocationMappings"],
+            IReportEvent => ["ReportConfigs"],
             _ => []
         };
 }

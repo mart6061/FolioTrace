@@ -51,7 +51,7 @@ public sealed class AccountService(IEventRepository eventRepository) : IReferenc
         var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.AccountsStreamId, valuationDate.Value);
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == lastEventID)
+            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
                 return cached;
         }
 

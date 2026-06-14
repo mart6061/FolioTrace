@@ -32,6 +32,8 @@ public static class ApiEndpointRegistration
     private const string UserValuationPreferencesEventsRoute = "/API/Events/UserValuationPreferences";
     private const string UserBookmarksEventsRoute = "/API/Events/UserBookmarks";
     private const string ValuationSettingEventsRoute = "/API/Events/ValuationSetting";
+    private const string AssetAllocationMappingEventsRoute = "/API/Events/AssetAllocationMapping";
+    private const string ReportEventsRoute = "/API/Events/Report";
 
     public static WebApplication MapFolioTraceApi(this WebApplication app)
     {
@@ -51,6 +53,8 @@ public static class ApiEndpointRegistration
         api.MapHoldingEndpoints();
         api.MapValuationEndpoints();
         api.MapValuationSettingEndpoints();
+        api.MapAssetAllocationMappingEndpoints();
+        api.MapReportConfigEndpoints();
         api.MapInstrumentEndpoints();
         api.MapInstrumentValueEndpoints();
         api.MapTicketEndpoints();
@@ -75,6 +79,8 @@ public static class ApiEndpointRegistration
         api.MapUserValuationPreferencesEventEndpoints();
         api.MapUserBookmarksEventEndpoints();
         api.MapValuationSettingEventEndpoints();
+        api.MapAssetAllocationMappingEventEndpoints();
+        api.MapReportEventEndpoints();
 
         return app;
     }
@@ -581,6 +587,53 @@ public static class ApiEndpointRegistration
             return auditDateTime.HasValue
                 ? Results.Ok(await valuationSettingService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await valuationSettingService.Get(valuationDate));
+        });
+    }
+
+    private static void MapAssetAllocationMappingEndpoints(this RouteGroupBuilder api)
+    {
+        var mappings = api.MapGroup("/AssetAllocationMappings").WithTags("Asset Allocation Mappings");
+
+        mappings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? assetAllocationID, Guid? accountID, Guid? holdingID, AssetAllocationMappingService assetAllocationMappingService, HoldingService holdingService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+            var asAt = auditDateTime.HasValue
+                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
+                : AuditDateTimeBuilder.Create();
+            var aggregate = await assetAllocationMappingService.Get(valuationDate, asAt);
+
+            var items = aggregate.Items
+                .Where(mapping => !assetAllocationID.HasValue || mapping.AssetAllocationID.Value == assetAllocationID.Value)
+                .Where(mapping => !holdingID.HasValue || mapping.HoldingID.Value == holdingID.Value)
+                .ToList();
+
+            if (accountID.HasValue)
+            {
+                var holdings = await holdingService.Get(valuationDate, asAt);
+                var holdingIDSet = holdings.Items
+                    .Where(holding => holding.AccountID.Value == accountID.Value)
+                    .Select(holding => holding.HoldingID.Value)
+                    .ToHashSet();
+                items = items
+                    .Where(mapping => holdingIDSet.Contains(mapping.HoldingID.Value))
+                    .ToList();
+            }
+
+            return Results.Ok(aggregate with { Items = items });
+        });
+    }
+
+    private static void MapReportConfigEndpoints(this RouteGroupBuilder api)
+    {
+        var reportConfigs = api.MapGroup("/ReportConfigs").WithTags("Report Configs");
+
+        reportConfigs.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, ReportConfigService reportConfigService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await reportConfigService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await reportConfigService.Get(valuationDate));
         });
     }
 
@@ -1148,6 +1201,96 @@ public static class ApiEndpointRegistration
                 eventRepository,
                 cacheInvalidationService,
                 () => AssetAllocationActiveSetEventBuilder.Create(request, valuationSettings),
+                cancellationToken);
+        });
+    }
+
+    private static void MapAssetAllocationMappingEventEndpoints(this RouteGroupBuilder api)
+    {
+        var mappingEvents = api.MapGroup("/Events/AssetAllocationMapping").WithTags("Asset Allocation Mapping Events");
+
+        mappingEvents.MapGet("/", async (Guid? assetAllocationID, Guid? holdingID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IAssetAllocationMappingEvent>(Constants.Initialisation.AssetAllocationMappingsStreamId, cancellationToken);
+
+            if (assetAllocationID.HasValue)
+                events = events.Where(@event => @event.AssetAllocationID.Value == assetAllocationID.Value).ToList();
+
+            if (holdingID.HasValue)
+                events = events.Where(@event => @event.HoldingID.Value == holdingID.Value).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToAssetAllocationMappingEventResponse));
+        });
+
+        mappingEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IAssetAllocationMappingEvent mappingEvent
+                ? Results.Ok(ToAssetAllocationMappingEventResponse(mappingEvent))
+                : Results.NotFound();
+        });
+
+        mappingEvents.MapPost($"/{nameof(AssetAllocationMappingSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AssetAllocationMappingRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var holdings = await TryGetHoldings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            return await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.AssetAllocationMappingsStreamId,
+                AssetAllocationMappingEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => AssetAllocationMappingEventBuilder.Create(request, valuationSettings, holdings),
+                cancellationToken);
+        });
+    }
+
+    private static void MapReportEventEndpoints(this RouteGroupBuilder api)
+    {
+        var reportEvents = api.MapGroup("/Events/Report").WithTags("Report Events");
+
+        reportEvents.MapGet("/", async (Guid? reportID, DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IReportEvent>(Constants.Initialisation.ReportConfigsStreamId, cancellationToken);
+            if (reportID.HasValue)
+                events = events.Where(@event => @event.ReportID.Value == reportID.Value).ToList();
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToReportEventResponse));
+        });
+
+        reportEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IReportEvent reportEvent
+                ? Results.Ok(ToReportEventResponse(reportEvent))
+                : Results.NotFound();
+        });
+
+        reportEvents.MapPost($"/{nameof(ReportCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, ReportCreatedRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var reports = await TryGetReportConfigs(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            return await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.ReportConfigsStreamId,
+                ReportEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => ReportCreatedEventBuilder.Create(request, reports, valuationSettings),
+                cancellationToken);
+        });
+
+        reportEvents.MapPost($"/{nameof(ReportModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, ReportModifiedRequest request, CancellationToken cancellationToken) =>
+        {
+            var asAt = AuditDateTimeBuilder.Create();
+            var reports = await TryGetReportConfigs(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            return await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.ReportConfigsStreamId,
+                ReportEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => ReportModifiedEventBuilder.Create(request, reports, valuationSettings),
                 cancellationToken);
         });
     }
@@ -2226,6 +2369,12 @@ public static class ApiEndpointRegistration
         return valuationSettingEvents.Count == 0 ? null : new ValuationSettings(eventDateTime, auditDateTime, valuationSettingEvents.ToList());
     }
 
+    private static async Task<ReportConfigs?> TryGetReportConfigs(EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
+    {
+        var reportEvents = await eventRepository.LoadStreamAsync<IReportEvent>(Constants.Initialisation.ReportConfigsStreamId, cancellationToken);
+        return reportEvents.Count == 0 ? null : new ReportConfigs(eventDateTime, auditDateTime, reportEvents.ToList());
+    }
+
     private static ApiExchangeResponse ToResponse(ApiExchange exchange) =>
         new(
             exchange.Id,
@@ -2579,7 +2728,8 @@ public static class ApiEndpointRegistration
                 AccountIDs = createdEvent.AccountIDs.Select(accountID => accountID.Value).ToList(),
                 createdEvent.Active,
                 RootNodeID = createdEvent.RootNodeID.Value,
-                Nodes = ToAssetAllocationNodeResponses(createdEvent.Nodes)
+                Nodes = ToAssetAllocationNodeResponses(createdEvent.Nodes),
+                EffectiveDateTime = (createdEvent.EffectiveDateTime ?? createdEvent.EventDateTime).Value
             },
             AssetAllocationModifiedEvent modifiedEvent => new
             {
@@ -2592,7 +2742,8 @@ public static class ApiEndpointRegistration
                 AssetAllocationID = modifiedEvent.AssetAllocationID.Value,
                 modifiedEvent.Name,
                 RootNodeID = modifiedEvent.RootNodeID.Value,
-                Nodes = ToAssetAllocationNodeResponses(modifiedEvent.Nodes)
+                Nodes = ToAssetAllocationNodeResponses(modifiedEvent.Nodes),
+                EffectiveDateTime = (modifiedEvent.EffectiveDateTime ?? modifiedEvent.EventDateTime).Value
             },
             AssetAllocationAccountIDsSetEvent accountIDsSetEvent => new
             {
@@ -2646,6 +2797,130 @@ public static class ApiEndpointRegistration
                     setting.TargetWeightMin,
                     setting.TargetYield
                 }).ToList()
+            })
+            .Cast<object>()
+            .ToList();
+
+    private static object ToAssetAllocationMappingEventResponse(IAssetAllocationMappingEvent @event) =>
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, new
+        {
+            Type = @event.Type,
+            EventID = @event.EventID.Value,
+            UserID = @event.UserID.Value,
+            EventDateTime = @event.EventDateTime.Value,
+            AuditDateTime = @event.AuditDateTime.Value,
+            @event.Reason,
+            AssetAllocationID = @event.AssetAllocationID.Value,
+            HoldingID = @event.HoldingID.Value,
+            NodeID = @event.NodeID.Value
+        });
+
+    private static object ToReportEventResponse(IReportEvent @event) =>
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
+        {
+            ReportCreatedEvent createdEvent => new
+            {
+                Type = createdEvent.Type,
+                EventID = createdEvent.EventID.Value,
+                UserID = createdEvent.UserID.Value,
+                EventDateTime = createdEvent.EventDateTime.Value,
+                AuditDateTime = createdEvent.AuditDateTime.Value,
+                createdEvent.Reason,
+                ReportID = createdEvent.ReportID.Value,
+                createdEvent.Name,
+                createdEvent.Active,
+                EffectiveDateTime = createdEvent.EffectiveDateTime.Value,
+                Nodes = ToReportNodeResponses(createdEvent.Nodes)
+            },
+            ReportModifiedEvent modifiedEvent => new
+            {
+                Type = modifiedEvent.Type,
+                EventID = modifiedEvent.EventID.Value,
+                UserID = modifiedEvent.UserID.Value,
+                EventDateTime = modifiedEvent.EventDateTime.Value,
+                AuditDateTime = modifiedEvent.AuditDateTime.Value,
+                modifiedEvent.Reason,
+                ReportID = modifiedEvent.ReportID.Value,
+                modifiedEvent.Name,
+                modifiedEvent.Active,
+                EffectiveDateTime = modifiedEvent.EffectiveDateTime.Value,
+                Nodes = ToReportNodeResponses(modifiedEvent.Nodes)
+            },
+            _ => new
+            {
+                Type = @event.Type,
+                EventID = @event.EventID.Value,
+                UserID = @event.UserID.Value,
+                EventDateTime = @event.EventDateTime.Value,
+                AuditDateTime = @event.AuditDateTime.Value,
+                @event.Reason,
+                ReportID = @event.ReportID.Value
+            }
+        });
+
+    private static List<object> ToReportNodeResponses(IEnumerable<ReportNodeBase> nodes) =>
+        nodes
+            .OrderBy(node => node.DisplayOrder)
+            .Select(ToReportNodeResponse)
+            .ToList();
+
+    private static object ToReportNodeResponse(ReportNodeBase node) =>
+        node switch
+        {
+            ReportNodeChart chart => new
+            {
+                Type = nameof(ReportNodeChart),
+                ReportNodeID = chart.ReportNodeID.Value,
+                chart.DisplayOrder,
+                chart.Name,
+                chart.Title,
+                AssetAllocationID = chart.AssetAllocationID.Value,
+                ChartType = chart.ChartType.ToString()
+            },
+            ReportNodeValuation valuation => new
+            {
+                Type = nameof(ReportNodeValuation),
+                ReportNodeID = valuation.ReportNodeID.Value,
+                valuation.DisplayOrder,
+                valuation.Name,
+                valuation.Title,
+                AssetAllocationID = valuation.AssetAllocationID.Value,
+                Columns = ToReportValuationColumnResponses(valuation.Columns)
+            },
+            ReportNodeTransactions transactions => new
+            {
+                Type = nameof(ReportNodeTransactions),
+                ReportNodeID = transactions.ReportNodeID.Value,
+                transactions.DisplayOrder,
+                transactions.Name,
+                transactions.Title,
+                AssetAllocationID = transactions.AssetAllocationID.Value
+            },
+            ReportNodeCash cash => new
+            {
+                Type = nameof(ReportNodeCash),
+                ReportNodeID = cash.ReportNodeID.Value,
+                cash.DisplayOrder,
+                cash.Name,
+                cash.Title,
+                AssetAllocationID = cash.AssetAllocationID.Value
+            },
+            _ => new
+            {
+                Type = node.GetType().Name,
+                ReportNodeID = node.ReportNodeID.Value,
+                node.DisplayOrder,
+                node.Name,
+                node.Title
+            }
+        };
+
+    private static List<object> ToReportValuationColumnResponses(IEnumerable<ReportValuationColumn>? columns) =>
+        ReportConfigBuilder.NormaliseValuationColumns(columns)
+            .Select(column => new
+            {
+                ColumnKey = column.ColumnKey.ToString(),
+                column.DisplayOrder
             })
             .Cast<object>()
             .ToList();

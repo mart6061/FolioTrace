@@ -195,6 +195,24 @@ export type HoldingPositions = {
   items: HoldingPosition[];
 };
 
+export type AssetAllocationMapping = {
+  assetAllocationID: string;
+  holdingID: string;
+  nodeID: string;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type AssetAllocationMappings = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: AssetAllocationMapping[];
+};
+
 export type ValuationTotals = {
   bookValue: number;
   bookCost: number;
@@ -219,6 +237,7 @@ export type ValuationItem = {
   localPrice?: number | null;
   quotePrice?: number | null;
   bookValue?: number | null;
+  weightPercent?: number | null;
   bookCost: number;
   complete: boolean;
   incompleteReason?: string | null;
@@ -290,6 +309,7 @@ export type ValuationSetting = {
   active: boolean;
   rootNodeID: string;
   nodes: AssetAllocationNode[];
+  effectiveDateTime: string;
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -302,6 +322,65 @@ export type ValuationSettings = {
   lastEventID: string;
   lastAuditDateTime: string;
   items: ValuationSetting[];
+};
+
+export type ReportChartType = 'Pie' | 'Bar';
+
+export type ReportValuationColumnKey =
+  | 'InstrumentName'
+  | 'ISIN'
+  | 'Sedol'
+  | 'QuotePrice'
+  | 'BookValue'
+  | 'BookCost'
+  | 'Weight'
+  | 'Target'
+  | 'Min'
+  | 'Max';
+
+export type ReportValuationColumn = {
+  columnKey: ReportValuationColumnKey;
+  displayOrder: number;
+};
+
+export type ReportNodeType =
+  | 'ReportNodeCoverPage'
+  | 'ReportNodeIndex'
+  | 'ReportNodeChart'
+  | 'ReportNodeValuation'
+  | 'ReportNodeTransactions'
+  | 'ReportNodeCash';
+
+export type ReportNodeBase = {
+  $type?: ReportNodeType;
+  type?: ReportNodeType;
+  reportNodeID: string;
+  displayOrder: number;
+  name: string;
+  title: string;
+  assetAllocationID?: string;
+  chartType?: ReportChartType;
+  columns?: ReportValuationColumn[] | null;
+};
+
+export type ReportConfig = {
+  reportID: string;
+  name: string;
+  active: boolean;
+  effectiveDateTime: string;
+  nodes: ReportNodeBase[];
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type ReportConfigs = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: ReportConfig[];
 };
 
 export type Broker = {
@@ -622,6 +701,15 @@ export type ValuationSettingReferenceEvent = ReferenceEventBase & {
   active?: boolean;
   rootNodeID?: string;
   nodes?: AssetAllocationNode[];
+  effectiveDateTime?: string;
+};
+
+export type ReportReferenceEvent = ReferenceEventBase & {
+  reportID: string;
+  name?: string;
+  active?: boolean;
+  effectiveDateTime?: string;
+  nodes?: ReportNodeBase[];
 };
 
 export type BrokerReferenceEvent = ReferenceEventBase & {
@@ -887,6 +975,7 @@ export type FIXOperationSearchResponse = {
 
 export type AggregateKind =
   | 'Accounts'
+  | 'AssetAllocationMappings'
   | 'Brokers'
   | 'Countries'
   | 'Currencies'
@@ -897,6 +986,7 @@ export type AggregateKind =
   | 'HoldingPositions'
   | 'Instruments'
   | 'InstrumentValues'
+  | 'ReportConfigs'
   | 'Tickets'
   | 'Users'
   | 'UserBookmarks'

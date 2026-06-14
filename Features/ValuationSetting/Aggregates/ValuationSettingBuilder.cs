@@ -1,3 +1,5 @@
+using FolioTrace.Types;
+
 namespace FolioTrace.Aggregates;
 
 public static class ValuationSettingBuilder
@@ -14,6 +16,7 @@ public static class ValuationSettingBuilder
             createdEvent.Active,
             createdEvent.RootNodeID,
             CloneNodes(createdEvent.Nodes),
+            DateOnly(createdEvent.EffectiveDateTime ?? createdEvent.EventDateTime),
             createdEvent.EventDateTime,
             createdEvent.AuditDateTime,
             createdEvent.EventID);
@@ -32,6 +35,7 @@ public static class ValuationSettingBuilder
             Name = modifiedEvent.Name,
             RootNodeID = modifiedEvent.RootNodeID,
             Nodes = CloneNodes(modifiedEvent.Nodes),
+            EffectiveDateTime = DateOnly(modifiedEvent.EffectiveDateTime ?? modifiedEvent.EventDateTime),
             ValuationDateTime = modifiedEvent.EventDateTime,
             AsOfDateTime = modifiedEvent.AuditDateTime,
             LastEventID = modifiedEvent.EventID,
@@ -86,4 +90,10 @@ public static class ValuationSettingBuilder
 
     internal static List<FolioTrace.Types.AccountID> CloneAccountIDs(IEnumerable<FolioTrace.Types.AccountID> accountIDs) =>
         accountIDs.ToList();
+
+    internal static EventDateTime DateOnly(EventDateTime eventDateTime)
+    {
+        var date = eventDateTime.Value.Date;
+        return date == default ? eventDateTime : new EventDateTime(date);
+    }
 }

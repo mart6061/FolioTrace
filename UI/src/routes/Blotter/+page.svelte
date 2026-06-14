@@ -1348,16 +1348,20 @@
               <section class="workflow-panel workflow-panel-wide">
                 <h2>Accounts</h2>
                 {#if canEditProposalTerms(ticket)}
+                  {@const accountsAvailableForAdd = availableAccounts(ticket)}
                   <form class="account-add-form" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <select class="input account-add-select" name="accountID" disabled={!proposalInputActive || availableAccounts(ticket).length === 0} required>
-                      <option value="">Add account</option>
-                      {#each availableAccounts(ticket) as account (account.accountID)}
-                        <option value={account.accountID}>{account.name} {account.bookCurrency}</option>
+                    <details class="account-add-select" aria-disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}>
+                      <summary>{accountsAvailableForAdd.length === 0 ? 'No accounts available' : 'Add accounts'}</summary>
+                      {#each accountsAvailableForAdd as account (account.accountID)}
+                        <label class="account-add-option">
+                          <input name="accountIDs" type="checkbox" value={account.accountID} disabled={!proposalInputActive} />
+                          <span>{account.name} {account.bookCurrency}</span>
+                        </label>
                       {/each}
-                    </select>
-                    <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || availableAccounts(ticket).length === 0}>Add</button>
+                    </details>
+                    <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}>Add</button>
                   </form>
                 {/if}
                 <div class="account-allocation-table">

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using FolioTrace;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
@@ -30,14 +31,19 @@ public sealed record Accounts : IAggregate
             throw new ArgumentNullException(nameof(items));
         if (items.Any(@event => @event is null))
             throw new ArgumentException("Value must not contain null account events.", nameof(items));
-        if (!items.Any())
-            throw new ArgumentException("Value must contain at least one account event.", nameof(items));
 
         var includedItems = items
             .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
             .ToList();
         if (!includedItems.Any())
-            throw new ArgumentException("Value must contain at least one account event within the valuation and as-of date time.", nameof(items));
+        {
+            ValuationDateTime = valuationDateTime;
+            AsOfDateTime = asOfDateTime;
+            LastEventID = Constants.Initialisation.EmptyViewEventID;
+            LastAuditDateTime = new LastAuditDateTime(asOfDateTime.Value);
+            Items = [];
+            return;
+        }
 
         var orderedItems = includedItems
             .OrderBy(@event => @event.EventDateTime.Value)
@@ -142,8 +148,8 @@ public sealed record Accounts : IAggregate
     private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<IAccountEvent> items)
     {
         var includedItems = items.Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value).ToList();
-        if (!includedItems.Any())
-            throw new ArgumentException("Value must contain at least one account event within the valuation date time.", nameof(items));
-        return new AuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value));
+        return includedItems.Any()
+            ? new AuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value))
+            : Constants.Initialisation.AuditDateTime;
     }
 }

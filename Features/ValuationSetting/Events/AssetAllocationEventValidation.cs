@@ -38,6 +38,18 @@ internal static class AssetAllocationEventValidation
         ValidateNodes(messages, accountIDs ?? [], rootNodeID, nodes);
     }
 
+    public static void ValidateEffectiveDateTime(List<string> messages, EventDateTime? effectiveDateTime)
+    {
+        if (effectiveDateTime is null)
+        {
+            messages.Add("EffectiveDateTime is required.");
+            return;
+        }
+
+        if (effectiveDateTime.Value.Date != default && effectiveDateTime.Value.TimeOfDay != TimeSpan.Zero)
+            messages.Add("EffectiveDateTime must be a date only value with time 00:00:00.");
+    }
+
     public static void ValidateAccountIDs(List<string> messages, IReadOnlyList<AccountID>? accountIDs)
     {
         if (accountIDs is null)

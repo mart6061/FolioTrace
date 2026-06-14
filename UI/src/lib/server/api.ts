@@ -3,6 +3,7 @@ import type {
   Accounts,
   AccountReferenceEvent,
   ApiExchangeSearchResponse,
+  AssetAllocationMappings,
   Brokers,
   BrokerReferenceEvent,
   Countries,
@@ -42,6 +43,8 @@ import type {
   HoldingDateBasis,
   EventPropertyDetail,
   InstrumentPriceBasis,
+  ReportConfigs,
+  ReportNodeBase,
   Valuations,
   ValuationSettings,
   ValuationSettingReferenceEvent
@@ -166,6 +169,7 @@ export type AssetAllocationNodeRequest = {
 
 export type AssetAllocationCreatedRequest = {
   eventDateTime: string;
+  effectiveDateTime: string;
   reason: string;
   assetAllocationID?: string;
   name: string;
@@ -177,6 +181,7 @@ export type AssetAllocationCreatedRequest = {
 
 export type AssetAllocationModifiedRequest = {
   eventDateTime: string;
+  effectiveDateTime: string;
   reason: string;
   assetAllocationID: string;
   name: string;
@@ -196,6 +201,36 @@ export type AssetAllocationActiveSetRequest = {
   reason: string;
   assetAllocationID: string;
   active: boolean;
+};
+
+export type AssetAllocationMappingSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  assetAllocationID: string;
+  holdingID: string;
+  nodeID: string;
+};
+
+export type ReportNodeRequest = ReportNodeBase;
+
+export type ReportCreatedRequest = {
+  eventDateTime: string;
+  effectiveDateTime: string;
+  reason: string;
+  reportID?: string | null;
+  name: string;
+  active: boolean;
+  nodes: ReportNodeRequest[];
+};
+
+export type ReportModifiedRequest = {
+  eventDateTime: string;
+  effectiveDateTime: string;
+  reason: string;
+  reportID: string;
+  name: string;
+  active: boolean;
+  nodes: ReportNodeRequest[];
 };
 
 export type BrokerModifiedRequest = {
@@ -606,7 +641,9 @@ export async function getHoldingPositions(
   fetchApi: typeof fetch,
   eventDateTime: string,
   auditDateTime: string | null,
-  holdingDateBasis: HoldingDateBasis = 'EventDateTime'
+  holdingDateBasis: HoldingDateBasis = 'EventDateTime',
+  accountID: string | null = null,
+  includeZero = false
 ) {
   const url = new URL(`${getApiBaseUrl()}/HoldingPositions`);
   url.searchParams.set('eventDateTime', eventDateTime);
@@ -615,12 +652,45 @@ export async function getHoldingPositions(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
+  if (accountID)
+    url.searchParams.set('accountID', accountID);
+
+  if (includeZero)
+    url.searchParams.set('includeZero', 'true');
+
   const response = await fetchApi(url);
 
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as HoldingPositions;
+}
+
+export async function getAssetAllocationMappings(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  assetAllocationID: string | null = null,
+  accountID: string | null = null
+) {
+  const url = new URL(`${getApiBaseUrl()}/AssetAllocationMappings/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  if (assetAllocationID)
+    url.searchParams.set('assetAllocationID', assetAllocationID);
+
+  if (accountID)
+    url.searchParams.set('accountID', accountID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as AssetAllocationMappings;
 }
 
 export async function getValuations(
@@ -688,6 +758,25 @@ export async function getValuationSettings(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as ValuationSettings;
+}
+
+export async function getReportConfigs(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null
+) {
+  const url = new URL(`${getApiBaseUrl()}/ReportConfigs/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as ReportConfigs;
 }
 
 export async function getBrokers(
@@ -1322,6 +1411,30 @@ export async function postAssetAllocationActiveSetEvent(
   userID: string
 ) {
   return postAssetAllocationEvent(fetchApi, 'AssetAllocationActiveSetEvent', request, userID);
+}
+
+export async function postAssetAllocationMappingSetEvent(
+  fetchApi: typeof fetch,
+  request: AssetAllocationMappingSetRequest,
+  userID: string
+) {
+  return postAssetAllocationMappingEvent(fetchApi, request, userID);
+}
+
+export async function postReportCreatedEvent(
+  fetchApi: typeof fetch,
+  request: ReportCreatedRequest,
+  userID: string
+) {
+  return postReportEvent(fetchApi, 'ReportCreatedEvent', request, userID);
+}
+
+export async function postReportModifiedEvent(
+  fetchApi: typeof fetch,
+  request: ReportModifiedRequest,
+  userID: string
+) {
+  return postReportEvent(fetchApi, 'ReportModifiedEvent', request, userID);
 }
 
 export async function postBrokerCreatedEvent(
@@ -2340,6 +2453,9 @@ async function postAssetAllocationEvent(
   if ('name' in request)
     body.Name = request.name;
 
+  if ('effectiveDateTime' in request)
+    body.EffectiveDateTime = request.effectiveDateTime;
+
   if ('accountIDs' in request)
     body.AccountIDs = request.accountIDs;
 
@@ -2380,6 +2496,94 @@ async function postAssetAllocationEvent(
   }
 
   return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postAssetAllocationMappingEvent(
+  fetchApi: typeof fetch,
+  request: AssetAllocationMappingSetRequest,
+  userID: string
+) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/AssetAllocationMapping/AssetAllocationMappingSetEvent`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      AssetAllocationID: request.assetAllocationID,
+      HoldingID: request.holdingID,
+      NodeID: request.nodeID
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+async function postReportEvent(
+  fetchApi: typeof fetch,
+  eventType: 'ReportCreatedEvent' | 'ReportModifiedEvent',
+  request: ReportCreatedRequest | ReportModifiedRequest,
+  userID: string
+) {
+  const body: Record<string, unknown> = {
+    UserID: userID,
+    EventDateTime: request.eventDateTime,
+    EffectiveDateTime: request.effectiveDateTime,
+    Reason: request.reason,
+    Name: request.name,
+    Active: request.active,
+    Nodes: request.nodes.map(toReportNodeBody)
+  };
+
+  if (request.reportID)
+    body.ReportID = request.reportID;
+
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Report/${eventType}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+function toReportNodeBody(node: ReportNodeRequest) {
+  const type = node.type ?? node.$type ?? 'ReportNodeCoverPage';
+  const body: Record<string, unknown> = {
+    $type: type,
+    ReportNodeID: node.reportNodeID,
+    DisplayOrder: node.displayOrder,
+    Name: node.name,
+    Title: node.title
+  };
+
+  if (node.assetAllocationID)
+    body.AssetAllocationID = node.assetAllocationID;
+
+  if (type === 'ReportNodeChart')
+    body.ChartType = node.chartType ?? 'Pie';
+
+  if (type === 'ReportNodeValuation' && node.columns !== undefined)
+    body.Columns = node.columns?.map((column, index) => ({
+      ColumnKey: column.columnKey,
+      DisplayOrder: index + 1
+    })) ?? null;
+
+  return body;
 }
 
 async function postBrokerEvent(

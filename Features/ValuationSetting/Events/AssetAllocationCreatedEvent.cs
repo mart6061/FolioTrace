@@ -25,13 +25,16 @@ public sealed record AssetAllocationCreatedEvent : EventBase, IValuationSettingE
     [EventProperty(Description = "Nodes")]
     public List<AssetAllocationNode> Nodes { get; init; } = [];
 
+    [EventProperty(Description = "Effective Date Time")]
+    public EventDateTime? EffectiveDateTime { get; init; }
+
     [JsonConstructor]
     private AssetAllocationCreatedEvent()
         : base(null!, null!, null!, null!, string.Empty)
     {
     }
 
-    internal AssetAllocationCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes)
+    internal AssetAllocationCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime effectiveDateTime)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         AssetAllocationID = assetAllocationID;
@@ -40,6 +43,7 @@ public sealed record AssetAllocationCreatedEvent : EventBase, IValuationSettingE
         Active = active;
         RootNodeID = rootNodeID;
         Nodes = ValuationSettingBuilder.CloneNodes(nodes);
+        EffectiveDateTime = ValuationSettingBuilder.DateOnly(effectiveDateTime);
     }
 
     public override string Type => nameof(AssetAllocationCreatedEvent);

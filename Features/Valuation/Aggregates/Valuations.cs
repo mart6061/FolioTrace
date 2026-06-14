@@ -100,6 +100,9 @@ public sealed record Valuations : IAggregate
         var complete = localPrice.HasValue && fxSelection.FXRate.HasValue;
         var quotePrice = complete ? localPrice.GetValueOrDefault() * fxSelection.FXRate.GetValueOrDefault() : (decimal?)null;
         var bookValue = quotePrice.HasValue ? position.Quantity * quotePrice.Value : (decimal?)null;
+        var weightPercent = bookValue.HasValue && position.Quantity != 0m
+            ? decimal.Round(bookValue.Value / position.Quantity, 2, MidpointRounding.AwayFromZero)
+            : (decimal?)null;
         var incompleteReason = BuildIncompleteReason(instrument is null, localPrice.HasValue, fxSelection.FXRate.HasValue, priceCurrency, valuationCurrency);
 
         return new ValuationItem
@@ -121,6 +124,7 @@ public sealed record Valuations : IAggregate
             LocalPrice = localPrice,
             QuotePrice = quotePrice,
             BookValue = bookValue,
+            WeightPercent = weightPercent,
             BookCost = position.BookCost,
             Complete = complete,
             IncompleteReason = incompleteReason

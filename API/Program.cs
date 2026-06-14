@@ -39,7 +39,7 @@ builder.Services.AddSingleton(
         .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
-builder.Services.AddApiObservability(builder.Configuration, builder.Environment);
+builder.AddApiObservability();
 builder.Services.AddHostedService<AggregateMaintenanceHostedService>();
 
 var app = builder.Build();
