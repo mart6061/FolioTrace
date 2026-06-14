@@ -42,6 +42,7 @@
   let draftNodes = $state<ReportNodeBase[]>([]);
   let submitting = $state('');
   let templateDragInProgress = $state(false);
+  let draggedReportNodeID = $state<string | null>(null);
 
   const draftNodesJson = $derived(JSON.stringify(normalizeDraftNodes(draftNodes)));
 
@@ -60,7 +61,7 @@
     draftName = report.name;
     draftActive = report.active;
     draftEffectiveDate = dateForInput(report.effectiveDateTime) || valuationDateForInput;
-    draftNodes = normalizeReportNodes(report.nodes);
+    draftNodes = normalizeReportNodes(sortReportNodes(report.nodes));
   }
 
   function closeEdit() {
@@ -77,15 +78,17 @@
   }
 
   function normalizeReportNodes(nodes: ReportNodeBase[]) {
-    return [...nodes]
-      .sort((left, right) => left.displayOrder - right.displayOrder)
-      .map((node, index) => ({
-        ...node,
-        type: reportNodeType(node),
-        displayOrder: index + 1,
-        reportNodeID: node.reportNodeID,
-        columns: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined
-      }));
+    return nodes.map((node, index) => ({
+      ...node,
+      type: reportNodeType(node),
+      displayOrder: index + 1,
+      reportNodeID: node.reportNodeID,
+      columns: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined
+    }));
+  }
+
+  function sortReportNodes(nodes: ReportNodeBase[]) {
+    return [...nodes].sort((left, right) => left.displayOrder - right.displayOrder);
   }
 
   function normalizeDraftNodes(nodes: ReportNodeBase[]) {
@@ -200,13 +203,22 @@
   }
 
   function handleNodeDragStart(event: DragEvent, reportNodeID: string) {
+    event.stopPropagation();
+    draggedReportNodeID = reportNodeID;
     event.dataTransfer?.setData('application/x-report-node-id', reportNodeID);
     event.dataTransfer?.setData('text/plain', reportNodeID);
     if (event.dataTransfer)
       event.dataTransfer.effectAllowed = 'move';
   }
 
+  function handleNodeDragEnd() {
+    draggedReportNodeID = null;
+  }
+
   function handleDrop(event: DragEvent, index = draftNodes.length) {
+    if (!isReportNodeDrag(event))
+      return;
+
     event.preventDefault();
     event.stopPropagation();
     const templateType = event.dataTransfer?.getData('application/x-report-node-template') as ReportNodeType;
@@ -219,6 +231,8 @@
 
     if (reportNodeID)
       moveNode(reportNodeID, index);
+
+    draggedReportNodeID = null;
   }
 
   function handleNodeCardDrop(event: DragEvent, index: number) {
@@ -231,10 +245,20 @@
   }
 
   function allowDrop(event: DragEvent) {
+    if (!isReportNodeDrag(event))
+      return;
+
     event.preventDefault();
     event.stopPropagation();
     if (event.dataTransfer)
       event.dataTransfer.dropEffect = event.dataTransfer.types.includes('application/x-report-node-template') ? 'copy' : 'move';
+  }
+
+  function isReportNodeDrag(event: DragEvent) {
+    return Boolean(
+      event.dataTransfer?.types.includes('application/x-report-node-template')
+      || event.dataTransfer?.types.includes('application/x-report-node-id')
+    );
   }
 
   function defaultValuationColumns(): ReportValuationColumn[] {
@@ -316,6 +340,9 @@
   }
 
   function allowValuationColumnDrop(event: DragEvent) {
+    if (!isValuationColumnDrag(event))
+      return;
+
     event.preventDefault();
     event.stopPropagation();
     if (event.dataTransfer)
@@ -323,6 +350,9 @@
   }
 
   function handleValuationColumnDrop(event: DragEvent, reportNodeID: string, index?: number) {
+    if (!isValuationColumnDrag(event))
+      return;
+
     event.preventDefault();
     event.stopPropagation();
 
@@ -341,12 +371,22 @@
   }
 
   function handleValuationColumnPillDrop(event: DragEvent, reportNodeID: string, index: number) {
+    if (!isValuationColumnDrag(event))
+      return;
+
     const target = event.currentTarget;
     const targetIndex = target instanceof HTMLElement && event.clientX > target.getBoundingClientRect().left + target.offsetWidth / 2
       ? index + 1
       : index;
 
     handleValuationColumnDrop(event, reportNodeID, targetIndex);
+  }
+
+  function isValuationColumnDrag(event: DragEvent) {
+    return Boolean(
+      event.dataTransfer?.types.includes('application/x-report-valuation-column-template')
+      || event.dataTransfer?.types.includes('application/x-report-valuation-column-index')
+    );
   }
 
   function isValuationColumnKey(value: string | undefined): value is ReportValuationColumnKey {
@@ -494,10 +534,11 @@
                     {@const type = reportNodeType(node)}
                     <div class="report-drop-target" role="presentation" ondragover={allowDrop} ondrop={(event) => handleDrop(event, index)}></div>
                     <section
-                      class="report-node-card"
+                      class={['report-node-card', draggedReportNodeID === node.reportNodeID && 'is-dragging']}
                       role="listitem"
                       draggable="true"
                       ondragstart={(event) => handleNodeDragStart(event, node.reportNodeID)}
+                      ondragend={handleNodeDragEnd}
                       ondragover={allowDrop}
                       ondrop={(event) => handleNodeCardDrop(event, index)}
                     >
