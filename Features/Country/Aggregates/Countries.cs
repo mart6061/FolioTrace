@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using FolioTrace;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
@@ -39,15 +40,19 @@ public sealed record Countries : IAggregate
         if (items.Any(@event => @event is null))
             throw new ArgumentException("Value must not contain null country events.", nameof(items));
 
-        if (!items.Any())
-            throw new ArgumentException("Value must contain at least one country event.", nameof(items));
-
         var includedItems = items
             .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
             .ToList();
 
         if (!includedItems.Any())
-            throw new ArgumentException("Value must contain at least one country event within the valuation and as-of date time.", nameof(items));
+        {
+            ValuationDateTime = valuationDateTime;
+            AsOfDateTime = asOfDateTime;
+            LastEventID = Constants.Initialisation.EmptyViewEventID;
+            LastAuditDateTime = new LastAuditDateTime(asOfDateTime.Value);
+            Items = [];
+            return;
+        }
 
         var orderedItems = includedItems
             .OrderBy(@event => @event.EventDateTime.Value)
@@ -145,9 +150,8 @@ public sealed record Countries : IAggregate
             .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value)
             .ToList();
 
-        if (!includedItems.Any())
-            throw new ArgumentException("Value must contain at least one country event within the valuation date time.", nameof(items));
-
-        return new AuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value));
+        return includedItems.Any()
+            ? new AuditDateTime(includedItems.Max(@event => @event.AuditDateTime.Value))
+            : Constants.Initialisation.AuditDateTime;
     }
 }

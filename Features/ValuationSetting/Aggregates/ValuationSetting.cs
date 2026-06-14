@@ -18,6 +18,8 @@ public sealed record ValuationSetting : IModel
 
     public required List<AssetAllocationNode> Nodes { get; init; }
 
+    public required EventDateTime EffectiveDateTime { get; init; }
+
     public required EventDateTime ValuationDateTime { get; init; }
 
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -28,7 +30,7 @@ public sealed record ValuationSetting : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public ValuationSetting(AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public ValuationSetting(AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime? effectiveDateTime, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         AssetAllocationID = assetAllocationID;
         Name = name;
@@ -36,6 +38,7 @@ public sealed record ValuationSetting : IModel
         Active = active;
         RootNodeID = rootNodeID;
         Nodes = nodes;
+        EffectiveDateTime = effectiveDateTime ?? ValuationSettingBuilder.DateOnly(valuationDateTime);
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
         LastEventID = lastEventID;
@@ -43,8 +46,8 @@ public sealed record ValuationSetting : IModel
     }
 
     [SetsRequiredMembers]
-    public ValuationSetting(AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
-        : this(assetAllocationID, name, accountIDs, active, rootNodeID, nodes, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
+    public ValuationSetting(AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime effectiveDateTime, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
+        : this(assetAllocationID, name, accountIDs, active, rootNodeID, nodes, effectiveDateTime, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
     {
     }
 

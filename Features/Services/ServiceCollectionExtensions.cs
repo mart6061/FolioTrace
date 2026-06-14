@@ -25,6 +25,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<UserValuationPreferencesService>();
         services.AddSingleton<UserBookmarksService>();
         services.AddSingleton<ValuationSettingService>();
+        services.AddSingleton<AssetAllocationMappingService>();
+        services.AddSingleton<ReportConfigService>();
         services.AddSingleton<AggregateMaintenanceCoordinator>();
         services.AddSingleton<AggregateUpdateNotificationService>();
         services.AddSingleton<IAggregateCacheInvalidator<AccountCreatedEvent>>(provider => new AggregateCacheInvalidator<AccountCreatedEvent>(@event =>
@@ -73,7 +75,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<IUserMenuPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserMenuPreferencesEvent>(provider.GetRequiredService<UserMenuPreferencesService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserValuationPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserValuationPreferencesEvent>(provider.GetRequiredService<UserValuationPreferencesService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserBookmarksEvent>>(provider => new AggregateCacheInvalidator<IUserBookmarksEvent>(provider.GetRequiredService<UserBookmarksService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<IValuationSettingEvent>>(provider => new AggregateCacheInvalidator<IValuationSettingEvent>(provider.GetRequiredService<ValuationSettingService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IValuationSettingEvent>>(provider => new AggregateCacheInvalidator<IValuationSettingEvent>(@event =>
+            provider.GetRequiredService<ValuationSettingService>().Invalidate(@event) + provider.GetRequiredService<AssetAllocationMappingService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<IAssetAllocationMappingEvent>>(provider => new AggregateCacheInvalidator<IAssetAllocationMappingEvent>(provider.GetRequiredService<AssetAllocationMappingService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<IReportEvent>>(provider => new AggregateCacheInvalidator<IReportEvent>(provider.GetRequiredService<ReportConfigService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountCreatedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountModifiedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<AccountActiveSetEvent>>());
@@ -106,6 +111,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserValuationPreferencesEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserBookmarksEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IValuationSettingEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IAssetAllocationMappingEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IReportEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<AggregateUpdateNotificationService>());
         services.AddSingleton<AggregateCacheInvalidationService>();
         services.AddSingleton<AggregateCacheClearService>();

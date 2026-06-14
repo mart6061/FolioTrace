@@ -1,4 +1,4 @@
-import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
@@ -56,13 +56,13 @@ export const actions = {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const name = getFormString(formData, 'name');
-    const initialNodeName = getFormString(formData, 'initialNodeName') || name;
-    const eventDateTime = getFormString(formData, 'eventDateTime');
+    const effectiveDate = getFormString(formData, 'effectiveDate');
+    const eventDateTime = effectiveDate ? dateInputToApiStartOfDay(effectiveDate) : '';
     const accountIDs = getFormStrings(formData, 'accountIDs');
     const active = getFormString(formData, 'active') === 'true';
-    const values = { accountIDs, active, eventDateTime, initialNodeName, name };
+    const values = { accountIDs, active, effectiveDate, name };
 
-    if (!name || !eventDateTime)
+    if (!name || !effectiveDate)
       return fail(400, failure('createAllocation', 'Name and effective date are required.', values));
 
     const rootNodeID = crypto.randomUUID();
@@ -96,7 +96,7 @@ export const actions = {
           targetYield: 0
         })),
         hidden: false,
-        name: initialNodeName,
+        name,
         nodeID: assetNodeID,
         nodes: [],
         subtotal: false,
@@ -108,7 +108,8 @@ export const actions = {
       const assetAllocationCreatedRequest: AssetAllocationCreatedRequest = {
         accountIDs,
         active,
-        eventDateTime: toApiDateTime(eventDateTime),
+        effectiveDateTime: eventDateTime,
+        eventDateTime,
         name,
         nodes,
         reason: `Create asset allocation ${name}`,
@@ -135,10 +136,11 @@ export const actions = {
     const name = getFormString(formData, 'name');
     const rootNodeID = getFormString(formData, 'rootNodeID');
     const nodesJson = getFormString(formData, 'nodesJson');
-    const eventDateTime = getFormString(formData, 'eventDateTime');
-    const values = { assetAllocationID, eventDateTime, name, nodesJson, rootNodeID };
+    const effectiveDate = getFormString(formData, 'effectiveDate');
+    const eventDateTime = effectiveDate ? dateInputToApiStartOfDay(effectiveDate) : '';
+    const values = { assetAllocationID, effectiveDate, name, nodesJson, rootNodeID };
 
-    if (!assetAllocationID || !name || !rootNodeID || !nodesJson || !eventDateTime)
+    if (!assetAllocationID || !name || !rootNodeID || !nodesJson || !effectiveDate)
       return fail(400, failure('modifyAllocation', 'Allocation ID, name, root node, node JSON, and effective date are required.', values));
 
     const nodesResult = parseNodes(nodesJson);
@@ -148,7 +150,8 @@ export const actions = {
     try {
       const assetAllocationModifiedRequest: AssetAllocationModifiedRequest = {
         assetAllocationID,
-        eventDateTime: toApiDateTime(eventDateTime),
+        effectiveDateTime: eventDateTime,
+        eventDateTime,
         name,
         nodes: normaliseAllocationNodes(nodesResult.nodes, rootNodeID, name),
         reason: `Modify asset allocation ${name}`,

@@ -45,7 +45,7 @@
       tint: '#f3e3c7',
       tintText: '#865817'
     },
-    administration: {
+    configuration: {
       border: '#b8b7dc',
       strong: '#5e5a9d',
       tint: '#e7e7f3',
@@ -71,6 +71,26 @@
     }
   };
   type MenuTone = typeof menuTones.home;
+  const childMenuTones: Record<number, MenuTone> = {
+    2: {
+      border: menuTones.home.border,
+      strong: menuTones.home.strong,
+      tint: menuTones.home.strong,
+      tintText: '#ffffff'
+    },
+    3: {
+      border: '#8fd8c4',
+      strong: '#0e745f',
+      tint: '#d8efe7',
+      tintText: '#075440'
+    },
+    4: {
+      border: '#b6e2d4',
+      strong: '#2f927d',
+      tint: '#e4f5ef',
+      tintText: '#0d5e4c'
+    }
+  };
   type MenuItem = {
     disabled?: boolean;
     hash?: string;
@@ -88,7 +108,6 @@
     { id: 'asset', label: 'Asset', path: '/Asset', tone: menuTones.value },
     { id: 'report', label: 'Report', path: '/Report', tone: menuTones.value },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
-    { id: 'administration', label: 'Administration', path: '/Administration', tone: menuTones.administration },
     { id: 'system', label: 'System', tone: menuTones.logs },
     { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
   ];
@@ -96,7 +115,7 @@
   const dataBranchItems: MenuItem[] = [
     { id: 'value', label: 'Value', tone: menuTones.value },
     { id: 'reference', label: 'Reference', tone: menuTones.reference },
-    { id: 'configuration', label: 'Configuration', tone: menuTones.administration }
+    { id: 'configuration', label: 'Configuration', tone: menuTones.configuration }
   ];
   const valueItems: MenuItem[] = [
     { id: 'value-fxs', label: 'FXs', path: '/Value/FXRates', tone: menuTones.value },
@@ -111,7 +130,9 @@
     { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference }
   ];
   const configurationItems: MenuItem[] = [
-    { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', path: '/Data/Configuration/AssetAllocationTools', tone: menuTones.administration }
+    { id: 'configuration-asset-allocation', label: 'Asset Allocation', path: '/Data/Configuration/AssetAllocation', tone: menuTones.configuration },
+    { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', path: '/Data/Configuration/AssetAllocationTools', tone: menuTones.configuration },
+    { id: 'configuration-report-tools', label: 'Report Tools', path: '/Data/Configuration/ReportTools', tone: menuTones.configuration }
   ];
   const internalsMenuItem: MenuItem = { id: 'internals', label: 'Internals', tone: menuTones.logs };
   const internalsItems: MenuItem[] = [
@@ -376,6 +397,10 @@
     return activeItem ? [activeItem] : items;
   }
 
+  function dataBranchFor(id: DataBranchID) {
+    return dataBranchItems.find((item) => item.id === id) ?? null;
+  }
+
   function isConfiguredMenuVisible(id: string) {
     return id === 'home' || menuVisibility.get(id) !== false;
   }
@@ -410,6 +435,10 @@
 
   function menuStyle(tone: MenuTone, stack = 10) {
     return `--menu-strong: ${tone.strong}; --menu-tint: ${tone.tint}; --menu-tint-text: ${tone.tintText}; --menu-border: ${tone.border}; --menu-stack: ${stack};`;
+  }
+
+  function menuLevelStyle(tone: MenuTone, level: number, stack = 10) {
+    return menuStyle(childMenuTones[Math.min(Math.max(level, 2), 4)] ?? tone, stack);
   }
 
   const formatRecordedBy = formatDisplayDateTime;
@@ -459,7 +488,7 @@
                         href={menuHref(bookmarkItem)}
                         onclick={() => handleLeafClick(bookmarkItem)}
                         role="menuitem"
-                        style={menuStyle(bookmarkItem.tone, 80 - bookmarkIndex)}
+                        style={menuLevelStyle(bookmarkItem.tone, 2, 80 - bookmarkIndex)}
                       >
                         {bookmarkItem.label}
                       </a>
@@ -511,11 +540,24 @@
                   aria-expanded="true"
                   class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
                   onclick={() => toggleDataBranch('data')}
-                  style={menuStyle(dataMenuItem.tone, 39 - topIndex)}
+                  style={menuLevelStyle(dataMenuItem.tone, 2, 39 - topIndex)}
                   type="button"
                 >
                   {dataMenuItem.label}
                 </button>
+
+                {@const activeDataBranch = dataBranchFor(openDataBranch)}
+                {#if activeDataBranch}
+                  <button
+                    aria-expanded="true"
+                    class="system-menu-pill system-menu-pill-tertiary system-menu-pill-open system-menu-pill-overlap"
+                    onclick={() => toggleDataBranch(activeDataBranch.id as DataBranchID)}
+                    style={menuLevelStyle(activeDataBranch.tone, 3, 38 - topIndex)}
+                    type="button"
+                  >
+                    {activeDataBranch.label}
+                  </button>
+                {/if}
 
                 {#if openDataBranch === 'value' && isMenuItemVisible(dataBranchItems[0])}
                   {#each visibleSubmenuItems(visibleValueItems) as valueLeaf, valueIndex (valueLeaf.id)}
@@ -524,7 +566,7 @@
                       class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(valueLeaf) ? 'system-menu-pill-active' : ''}`}
                       href={menuHref(valueLeaf)}
                       onclick={() => handleLeafClick(valueLeaf)}
-                      style={menuStyle(valueLeaf.tone, 38 - topIndex - valueIndex)}
+                      style={menuLevelStyle(valueLeaf.tone, 4, 37 - topIndex - valueIndex)}
                     >
                       {valueLeaf.label}
                     </a>
@@ -536,7 +578,7 @@
                       class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(referenceLeaf) ? 'system-menu-pill-active' : ''}`}
                       href={menuHref(referenceLeaf)}
                       onclick={() => handleLeafClick(referenceLeaf)}
-                      style={menuStyle(referenceLeaf.tone, 38 - topIndex - referenceIndex)}
+                      style={menuLevelStyle(referenceLeaf.tone, 4, 37 - topIndex - referenceIndex)}
                     >
                       {referenceLeaf.label}
                     </a>
@@ -548,7 +590,7 @@
                       class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(configurationLeaf) ? 'system-menu-pill-active' : ''}`}
                       href={menuHref(configurationLeaf)}
                       onclick={() => handleLeafClick(configurationLeaf)}
-                      style={menuStyle(configurationLeaf.tone, 38 - topIndex - configurationIndex)}
+                      style={menuLevelStyle(configurationLeaf.tone, 4, 37 - topIndex - configurationIndex)}
                     >
                       {configurationLeaf.label}
                     </a>
@@ -559,7 +601,7 @@
                       aria-expanded="false"
                       class="system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap"
                       onclick={() => toggleDataBranch(branchItem.id as DataBranchID)}
-                      style={menuStyle(branchItem.tone, 38 - topIndex - branchIndex)}
+                      style={menuLevelStyle(branchItem.tone, 3, 38 - topIndex - branchIndex)}
                       type="button"
                     >
                       {branchItem.label}
@@ -571,7 +613,7 @@
                   aria-expanded="true"
                   class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
                   onclick={() => toggleDataBranch('internals')}
-                  style={menuStyle(internalsMenuItem.tone, 39 - topIndex)}
+                  style={menuLevelStyle(internalsMenuItem.tone, 2, 39 - topIndex)}
                   type="button"
                 >
                   {internalsMenuItem.label}
@@ -583,7 +625,7 @@
                     class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(internalsLeaf) ? 'system-menu-pill-active' : ''}`}
                     href={menuHref(internalsLeaf)}
                     onclick={() => handleLeafClick(internalsLeaf)}
-                    style={menuStyle(internalsLeaf.tone, 38 - topIndex - internalsIndex)}
+                    style={menuLevelStyle(internalsLeaf.tone, 3, 38 - topIndex - internalsIndex)}
                   >
                     {internalsLeaf.label}
                   </a>
@@ -594,7 +636,7 @@
                     aria-expanded="false"
                     class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
                     onclick={() => toggleDataBranch('data')}
-                    style={menuStyle(dataMenuItem.tone, 39 - topIndex)}
+                    style={menuLevelStyle(dataMenuItem.tone, 2, 39 - topIndex)}
                     type="button"
                   >
                     {dataMenuItem.label}
@@ -606,7 +648,7 @@
                     aria-expanded="false"
                     class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
                     onclick={() => toggleDataBranch('internals')}
-                    style={menuStyle(internalsMenuItem.tone, 38 - topIndex)}
+                    style={menuLevelStyle(internalsMenuItem.tone, 2, 38 - topIndex)}
                     type="button"
                   >
                     {internalsMenuItem.label}

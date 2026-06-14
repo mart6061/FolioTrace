@@ -62,7 +62,7 @@ public sealed class CurrencyService(IEventRepository eventRepository) : IReferen
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == lastEventID)
+            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
                 return cached;
         }
 

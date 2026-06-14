@@ -1,8 +1,8 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getUserValuationPreferences, getValuationSettings } from '$lib/server/api';
+import { getAccounts, getReportConfigs, getUserValuationPreferences, getValuationSettings } from '$lib/server/api';
 import { requireCurrentUser } from '$lib/server/auth';
 import { defaultUserValuationPreferences, normalizeHoldingDateBasis } from '$lib/valuationPreferences';
-import type { Account, InstrumentPriceBasis, UserValuationDateOption, ValuationSetting } from '$lib/types';
+import type { Account, InstrumentPriceBasis, ReportConfig, UserValuationDateOption, ValuationSetting } from '$lib/types';
 
 const instrumentPriceBasisOptions: InstrumentPriceBasis[] = ['Mid', 'Bid', 'Ask', 'NAV'];
 
@@ -17,14 +17,16 @@ export const load = async ({ fetch, locals, url }) => {
   const instrumentPriceBasis = normalizeInstrumentPriceBasis(url.searchParams.get('instrumentPriceBasis'));
 
   try {
-    const [accounts, valuationSettings] = await Promise.all([
+    const [accounts, valuationSettings, reportConfigs] = await Promise.all([
       getAccounts(fetch, apiValuationDate, apiAuditDateTime),
-      getValuationSettings(fetch, apiValuationDate, apiAuditDateTime)
+      getValuationSettings(fetch, apiValuationDate, apiAuditDateTime),
+      getReportConfigs(fetch, apiValuationDate, apiAuditDateTime)
     ]);
     const activeAccounts = sortAccounts(accounts.items.filter((account) => account.active));
-    const activeValuationSettings = sortValuationSettings(valuationSettings.items.filter((setting) => setting.active));
+    const activeValuationSettings = valuationSettings.items.filter((setting) => setting.active);
     const accountID = selectedID(url.searchParams.get('accountID'), activeAccounts, 'accountID');
-    const valuationSettingID = selectedID(url.searchParams.get('valuationSettingID'), activeValuationSettings, 'assetAllocationID');
+    const matchingReportConfigs = sortReportConfigs(filterReportConfigsForAccount(reportConfigs.items, activeValuationSettings, accountID));
+    const reportID = selectedID(url.searchParams.get('reportID'), matchingReportConfigs, 'reportID');
 
     return {
       accountID,
@@ -34,10 +36,10 @@ export const load = async ({ fetch, locals, url }) => {
       holdingDateBasis,
       instrumentPriceBasis,
       instrumentPriceBasisOptions,
+      reportConfigs: matchingReportConfigs,
+      reportID,
       valuationDate,
-      valuationPreferences,
-      valuationSettingID,
-      valuationSettings: activeValuationSettings
+      valuationPreferences
     };
   } catch (error) {
     return {
@@ -48,10 +50,10 @@ export const load = async ({ fetch, locals, url }) => {
       holdingDateBasis,
       instrumentPriceBasis,
       instrumentPriceBasisOptions,
+      reportConfigs: [],
+      reportID: '',
       valuationDate,
-      valuationPreferences,
-      valuationSettingID: '',
-      valuationSettings: []
+      valuationPreferences
     };
   }
 };
@@ -104,6 +106,27 @@ function sortAccounts(accounts: Account[]) {
   });
 }
 
-function sortValuationSettings(settings: ValuationSetting[]) {
-  return [...settings].sort((left, right) => left.name.localeCompare(right.name));
+function filterReportConfigsForAccount(reportConfigs: ReportConfig[], valuationSettings: ValuationSetting[], accountID: string) {
+  if (!accountID)
+    return [];
+
+  const valuationSettingByID = new Map(valuationSettings.map((setting) => [setting.assetAllocationID, setting]));
+
+  return reportConfigs.filter((reportConfig) => {
+    if (!reportConfig.active)
+      return false;
+
+    const assetAllocationIDs = reportConfig.nodes
+      .map((node) => node.assetAllocationID)
+      .filter((assetAllocationID): assetAllocationID is string => Boolean(assetAllocationID));
+
+    if (!assetAllocationIDs.length)
+      return true;
+
+    return assetAllocationIDs.some((assetAllocationID) => valuationSettingByID.get(assetAllocationID)?.accountIDs.includes(accountID));
+  });
+}
+
+function sortReportConfigs(reportConfigs: ReportConfig[]) {
+  return [...reportConfigs].sort((left, right) => left.name.localeCompare(right.name));
 }

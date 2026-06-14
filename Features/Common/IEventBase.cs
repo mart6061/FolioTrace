@@ -102,6 +102,8 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(UserBookmarkModifiedEvent), nameof(UserBookmarkModifiedEvent))]
 [JsonDerivedType(typeof(UserBookmarkDisplayOrderSetEvent), nameof(UserBookmarkDisplayOrderSetEvent))]
 [JsonDerivedType(typeof(UserBookmarkDeletedEvent), nameof(UserBookmarkDeletedEvent))]
+[JsonDerivedType(typeof(ReportCreatedEvent), nameof(ReportCreatedEvent))]
+[JsonDerivedType(typeof(ReportModifiedEvent), nameof(ReportModifiedEvent))]
 public interface IEventBase : IType
 {
     [EventProperty(Description = "Event type", Order = 0)]

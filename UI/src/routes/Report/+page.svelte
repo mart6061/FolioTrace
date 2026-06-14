@@ -9,13 +9,21 @@
   <title>Report | FolioTrace</title>
 </svelte:head>
 
-<section class="min-h-screen bg-slate-50 px-6 py-6 text-slate-900">
-  <div class="mx-auto grid max-w-7xl gap-5">
-    <div>
-      <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Report</p>
-      <h1 class="text-2xl font-semibold text-slate-950">Report</h1>
+<main class="min-h-screen">
+  <section class="page-header">
+    <div class="page-container">
+      <div class="page-header-content">
+        <div class="page-header-main">
+          <p class="page-kicker">Report</p>
+          <div class="page-title-row">
+            <h1 class="page-title">Report</h1>
+          </div>
+        </div>
+      </div>
     </div>
+  </section>
 
+  <section class="page-container page-section grid gap-5">
     <form class="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm" method="GET">
       {#if data.auditDateTime}
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
@@ -60,29 +68,29 @@
       </div>
 
       <div class="grid gap-3 border-t border-slate-200 pt-4 lg:grid-cols-[1fr_auto] lg:items-end">
-        <fieldset class="grid gap-2">
-          <legend class="text-sm font-medium text-slate-700">Valuation config</legend>
-
-          {#if data.valuationSettings.length}
-            <div class="flex flex-wrap gap-2">
-              {#each data.valuationSettings as setting (setting.assetAllocationID)}
-                <label class="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:border-teal-600 hover:text-teal-700 has-[:checked]:border-teal-700 has-[:checked]:bg-teal-50 has-[:checked]:text-teal-900">
-                  <input class="h-4 w-4 accent-teal-700" checked={setting.assetAllocationID === data.valuationSettingID} name="valuationSettingID" required type="radio" value={setting.assetAllocationID} />
-                  <span>{setting.name}</span>
-                </label>
+        <div class="grid gap-2">
+          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+            Report config
+            <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.reportConfigs.length} name="reportID" required>
+              {#each data.reportConfigs as reportConfig (reportConfig.reportID)}
+                <option selected={reportConfig.reportID === data.reportID} value={reportConfig.reportID}>{reportConfig.name}</option>
+              {:else}
+                <option value="">No matching report configs</option>
               {/each}
-            </div>
-          {:else}
-            <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">No active valuation configs are available for the selected valuation date.</div>
-          {/if}
-        </fieldset>
+            </select>
+          </label>
 
-        <button class="h-10 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!data.accounts.length || !data.valuationSettings.length} type="submit">Apply</button>
+          {#if data.accounts.length && !data.reportConfigs.length}
+            <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">No active report configs match the selected account and valuation date.</div>
+          {/if}
+        </div>
+
+        <button class="h-10 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!data.accounts.length || !data.reportConfigs.length} type="submit">Create</button>
       </div>
     </form>
 
     {#if data.error}
       <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">{data.error}</div>
     {/if}
-  </div>
-</section>
+  </section>
+</main>

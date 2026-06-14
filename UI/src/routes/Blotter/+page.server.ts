@@ -121,22 +121,32 @@ export const actions = {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
-    const accountID = getFormString(formData, 'accountID');
+    const accountIDs = uniqueStrings([
+      ...getFormStrings(formData, 'accountIDs'),
+      getFormString(formData, 'accountID')
+    ]);
     const eventDateTime = getFormString(formData, 'eventDateTime');
 
-    if (!ticketNumber || !accountID || !eventDateTime)
-      return fail(400, responseFailure('addAccount', 'Ticket, account, and event date are required.'));
+    if (!ticketNumber || accountIDs.length === 0 || !eventDateTime)
+      return fail(400, responseFailure('addAccount', 'Ticket, at least one account, and event date are required.'));
 
     try {
-      const result = await postTicketAccountAddedEvent(fetch, {
-        accountID,
-        eventDateTime: toApiDateTime(eventDateTime),
-        reason: `Add account to ticket ${ticketNumber}`,
-        ticketNumber,
-        userID: currentUser.userID
-      });
+      const eventIDs: string[] = [];
+      const apiEventDateTime = toApiDateTime(eventDateTime);
 
-      return responseSuccess('addAccount', 'Account added.', result.eventID);
+      for (const accountID of accountIDs) {
+        const result = await postTicketAccountAddedEvent(fetch, {
+          accountID,
+          eventDateTime: apiEventDateTime,
+          reason: `Add account to ticket ${ticketNumber}`,
+          ticketNumber,
+          userID: currentUser.userID
+        });
+
+        eventIDs.push(result.eventID);
+      }
+
+      return responseSuccess('addAccount', accountIDs.length === 1 ? 'Account added.' : `${accountIDs.length} accounts added.`, eventIDs.at(-1) ?? '');
     } catch (error) {
       return fail(502, responseFailure('addAccount', readError(error)));
     }
@@ -519,14 +529,14 @@ export const actions = {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
+    const eventDateTime = getFormString(formData, 'eventDateTime');
 
-    if (!ticketNumber)
-      return fail(400, responseFailure('sendFoleoTraderOrder', 'Ticket is required.'));
+    if (!ticketNumber || !eventDateTime)
+      return fail(400, responseFailure('sendFoleoTraderOrder', 'Ticket and event date are required.'));
 
     try {
-      const eventDateTime = new Date().toISOString();
       const result = await postFoleoTraderOrder(fetch, {
-        eventDateTime,
+        eventDateTime: toApiDateTime(eventDateTime),
         ticketNumber,
         userID: currentUser.userID
       });
@@ -1000,6 +1010,10 @@ function getFormString(formData: FormData, key: string) {
 
 function getFormStrings(formData: FormData, key: string) {
   return formData.getAll(key).filter((value): value is string => typeof value === 'string').map((value) => value.trim());
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function getFormNumber(formData: FormData, key: string) {

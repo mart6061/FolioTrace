@@ -52,6 +52,16 @@
     }).format(value);
   }
 
+  function formatWeightPercent(value: number | null | undefined) {
+    if (value === null || value === undefined || !Number.isFinite(value))
+      return '-';
+
+    return `${new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
+    }).format(value)}%`;
+  }
+
   function holdingKindLabel(value: string) {
     switch (value) {
       case 'PositionMemo':
@@ -249,22 +259,30 @@
   <title>Asset | FolioTrace</title>
 </svelte:head>
 
-<section class="min-h-screen bg-slate-50 px-6 py-6 text-slate-900">
-  <div class="mx-auto grid max-w-7xl gap-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Value</p>
-        <h1 class="text-2xl font-semibold text-slate-950">Asset</h1>
+<main class="min-h-screen">
+  <section class="page-header">
+    <div class="page-container">
+      <div class="page-header-content">
+        <div class="page-header-main">
+          <p class="page-kicker">Value</p>
+          <div class="page-title-row">
+            <h1 class="page-title">Asset</h1>
+          </div>
+        </div>
+        <div class="page-header-aside">
+          <button
+            class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:border-teal-600 hover:text-teal-700"
+            onclick={toggleValuationHistory}
+            type="button"
+          >
+            {valuationHistory.open ? 'Hide history' : 'History'}
+          </button>
+        </div>
       </div>
-      <button
-        class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:border-teal-600 hover:text-teal-700"
-        onclick={toggleValuationHistory}
-        type="button"
-      >
-        {valuationHistory.open ? 'Hide history' : 'History'}
-      </button>
     </div>
+  </section>
 
+  <section class="page-container page-section grid gap-5">
     <form class="grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-[minmax(260px,0.9fr)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(8rem,0.45fr)_auto]" method="GET">
       {#if data.auditDateTime}
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
@@ -370,6 +388,7 @@
                   <th class="px-3 py-2">Name</th>
                   <th class="px-3 py-2">Kind</th>
                   <th class="px-3 py-2 text-right">Quantity</th>
+                  <th class="px-3 py-2 text-right">Weight %</th>
                   <th class="px-3 py-2 text-right">Local price</th>
                   <th class="px-3 py-2 text-right">FX</th>
                   <th class="px-3 py-2 text-right">Quote price</th>
@@ -387,6 +406,7 @@
                     </td>
                     <td class="px-3 py-2 text-slate-700">{holdingKindLabel(item.holdingKind)}</td>
                     <td class="px-3 py-2 text-right font-mono">{formatNumber(item.quantity)}</td>
+                    <td class="px-3 py-2 text-right font-mono">{formatWeightPercent(item.weightPercent)}</td>
                     <td class="px-3 py-2 text-right font-mono">{formatMoney(item.localPrice, item.priceCurrency)}</td>
                     <td class="px-3 py-2 text-right font-mono">
                       {#if item.fxRate}
@@ -425,7 +445,7 @@
                   {#if openHistoryHoldingID === item.holdingID}
                     {@const history = historyByHoldingID[item.holdingID]}
                     <tr class="bg-slate-50/80">
-                      <td class="px-3 py-3" colspan="9">
+                      <td class="px-3 py-3" colspan="10">
                         <div>
                           {#if history?.loading}
                             <div class="text-sm text-slate-600">Loading history...</div>
@@ -450,5 +470,5 @@
         </section>
       {/each}
     {/if}
-  </div>
-</section>
+  </section>
+</main>

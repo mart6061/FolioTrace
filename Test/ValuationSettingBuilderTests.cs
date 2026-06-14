@@ -36,6 +36,7 @@ public sealed class ValuationSettingBuilderTests
         Assert.Equal(assetAllocationID, setting.AssetAllocationID);
         Assert.Equal("Balanced", setting.Name);
         Assert.True(setting.Active);
+        Assert.Equal(Constants.Initialisation.EventDateTime.Value, setting.EffectiveDateTime.Value);
         Assert.Equal(rootNodeID, setting.RootNodeID);
         Assert.Equal(3, setting.Nodes.Count);
         var rootNode = setting.Nodes.Single(node => node.NodeID == rootNodeID);
@@ -46,6 +47,29 @@ public sealed class ValuationSettingBuilderTests
         Assert.Empty(specialNode.AccountSettings);
         Assert.Empty(specialNode.Nodes);
         Assert.Equal(accountID, setting.Nodes.Single(node => node.NodeID == assetNodeID).AccountSettings.Single().AccountID);
+    }
+
+    [Fact]
+    public void CreatedEvent_RejectsEffectiveDateWithTimePart()
+    {
+        var accountID = AccountIDBuilder.Create();
+        var rootNodeID = NodeIDBuilder.Create();
+        var assetNodeID = NodeIDBuilder.Create();
+
+        var result = AssetAllocationCreatedEventBuilder.Create(
+            Constants.Initialisation.UserID,
+            Constants.Initialisation.EventDateTime,
+            new EventDateTime(new DateTime(2026, 6, 13, 10, 0, 0, DateTimeKind.Utc)),
+            "Create allocation",
+            AssetAllocationIDBuilder.Create(),
+            "Balanced",
+            [accountID],
+            true,
+            rootNodeID,
+            CreateNodes(rootNodeID, assetNodeID, accountID));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.ValidationErrors, message => message.Contains("EffectiveDateTime must be a date only value", StringComparison.Ordinal));
     }
 
     [Fact]
