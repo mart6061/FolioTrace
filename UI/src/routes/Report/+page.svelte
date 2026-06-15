@@ -60,15 +60,16 @@
           <meta charset="utf-8" />
           <title>${htmlValue(data.reportDocument?.name ?? 'Report')}</title>
           <style>
-            body { margin: 0; font-family: Arial, sans-serif; color: #0f172a; }
-            .report-document-shell { display: block; }
-            .report-document-page { box-sizing: border-box; min-height: 297mm; padding: 22mm 18mm; page: report-portrait; page-break-after: always; }
-            .report-document-page.landscape-page { min-height: 210mm; page: report-landscape; }
+            html, body { margin: 0; padding: 0; }
+            body { font-family: Arial, sans-serif; color: #0f172a; }
+            .report-document-shell { display: block; margin: 0; padding: 0; }
+            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: report-portrait; break-after: page; page-break-after: always; }
+            .report-document-page.landscape-page { width: 297mm; min-height: 210mm; page: report-landscape; }
             .report-document-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 14px; }
             .report-document-header h2 { margin: 0; font-size: 30px; line-height: 1.2; }
             .report-document-header p { margin: 6px 0 0; color: #475569; font-size: 16px; }
-            @page report-portrait { size: A4 portrait; margin: 0; }
-            @page report-landscape { size: A4 landscape; margin: 0; }
+            @page report-portrait { size: 210mm 297mm; margin: 0; mso-page-orientation: portrait; }
+            @page report-landscape { size: 297mm 210mm; margin: 0; mso-page-orientation: landscape; }
           </style>
         </head>
         <body>${documentElement.outerHTML}</body>
@@ -349,25 +350,29 @@
       border: 0;
       border-radius: 0;
       box-shadow: none;
-      min-height: auto;
+      min-height: 297mm;
       page: report-portrait;
+      break-after: page;
       page-break-after: always;
-      width: auto;
+      width: 210mm;
     }
 
     .report-document-page.landscape-page {
+      min-height: 210mm;
       page: report-landscape;
-      width: auto;
+      width: 297mm;
     }
   }
 
   @page report-portrait {
-    size: A4 portrait;
+    size: 210mm 297mm;
     margin: 0;
+    mso-page-orientation: portrait;
   }
 
   @page report-landscape {
-    size: A4 landscape;
+    size: 297mm 210mm;
     margin: 0;
+    mso-page-orientation: landscape;
   }
 </style>
