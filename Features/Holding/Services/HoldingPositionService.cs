@@ -146,5 +146,3 @@ public sealed class HoldingPositionService(
             ? new[] { transactionEvent.EventDateTime.Value, transactionEvent.SettlementDateTime.Value }.Min()
             : @event.EventDateTime.Value;
 }
-
-public sealed record HoldingPositionServiceDiagnostics(int CacheEntryCount, int PositionCount, long EstimatedMemoryBytes);

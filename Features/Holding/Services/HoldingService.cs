@@ -120,5 +120,3 @@ public sealed class HoldingService(IEventRepository eventRepository)
         }
     }
 }
-
-public sealed record HoldingServiceDiagnostics(int CacheEntryCount, int HoldingCount, long EstimatedMemoryBytes);

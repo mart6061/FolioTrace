@@ -59,6 +59,9 @@ public static class ReportEventValidation
             if (node is ReportNodeChart chart)
             {
                 ValidateAssetAllocation(messages, chart.AssetAllocationID, valuationSettings, chart.ReportNodeID);
+
+                if (chart.ChartType == ReportChartType.Pie && chart.PieLevel is < 1 or > 3)
+                    messages.Add($"Report node '{chart.ReportNodeID}' requires a pie level between one and three.");
             }
             else if (node is ReportNodeValuation valuation)
             {

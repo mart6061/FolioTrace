@@ -12,20 +12,3 @@ public interface ITransactionEvent : IEventBase
 {
     SettlementDateTime SettlementDateTime { get; }
 }
-
-public interface ITransactionMovementEvent : ITransactionEvent
-{
-    EventSetID EventSetID { get; }
-
-    IReadOnlyList<EventID> EventIDGroup { get; }
-
-    HoldingID HoldingID { get; }
-
-    InstrumentID InstrumentID { get; }
-
-    AccountID AccountID { get; }
-
-    TransactionQuantity Quantity { get; }
-
-    TransactionBookCost BookCost { get; }
-}

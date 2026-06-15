@@ -25,10 +25,10 @@ public sealed record FXPrice : IType
         if (ask is null)
             throw new ArgumentNullException(nameof(ask));
 
-        if (bid.Value > mid.Value)
+        if (bid > mid)
             throw new ArgumentException("Bid must be less than or equal to mid.", nameof(bid));
 
-        if (mid.Value > ask.Value)
+        if (mid > ask)
             throw new ArgumentException("Mid must be less than or equal to ask.", nameof(mid));
 
         Bid = bid;

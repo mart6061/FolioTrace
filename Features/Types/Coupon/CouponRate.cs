@@ -26,20 +26,3 @@ public sealed record CouponRate : IType
 
     public override string ToString() => Value.ToString("0.########");
 }
-
-public enum CouponFrequency
-{
-    None = 0,
-    Annual = 1,
-    SemiAnnual = 2,
-    Quarterly = 4,
-    Monthly = 12
-}
-
-internal sealed class CouponRateJsonConverter : JsonConverter<CouponRate>
-{
-    public override CouponRate? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-        reader.TokenType == JsonTokenType.Null ? null : CouponRate.FromJson(reader.GetDecimal());
-
-    public override void Write(Utf8JsonWriter writer, CouponRate value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value);
-}

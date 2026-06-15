@@ -1,0 +1,68 @@
+using FolioTrace.Aggregates;
+using FolioTrace.Types;
+
+namespace Services;
+
+public sealed record AggregateMaintenanceDiagnostics(
+    bool Enabled,
+    TimeSpan PeriodicDelay,
+    int EventTriggerCount,
+    TimeSpan EventTriggerDelay,
+    int DaysFromToday,
+    int EndOfWeeksFromToday,
+    int EndOfMonthsFromToday,
+    string Status,
+    Guid? ActiveRunID,
+    Guid? LastRunID,
+    string? LastTrigger,
+    DateTime? LastStartedAtUtc,
+    DateTime? LastCompletedAtUtc,
+    int LastScannedAggregates,
+    int LastMissingAggregates,
+    int LastFixedAggregates,
+    int LastFailedAggregates,
+    long TotalScannedAggregates,
+    long TotalMissingAggregates,
+    long TotalFixedAggregates,
+    long TotalFailedAggregates,
+    int SkippedRunCount,
+    int PendingEventCount,
+    bool IsSuspended,
+    string? SuspensionReason,
+    DateTime? SuspendedAtUtc,
+    int SuspendedRunCount,
+    string? LastError,
+    IReadOnlyList<string> RecentErrors)
+{
+    public static AggregateMaintenanceDiagnostics Initial(AggregateMaintenanceOptions options) =>
+        new(
+            options.Enabled,
+            options.PeriodicDelay,
+            options.EventTriggerCount,
+            options.EventTriggerDelay,
+            options.DateWindows.DaysFromToday,
+            options.DateWindows.EndOfWeeksFromToday,
+            options.DateWindows.EndOfMonthsFromToday,
+            options.Enabled ? "Idle" : "Disabled",
+            null,
+            null,
+            null,
+            null,
+            null,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            null,
+            null,
+            0,
+            null,
+            []);
+}

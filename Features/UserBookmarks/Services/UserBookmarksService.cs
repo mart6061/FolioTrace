@@ -111,5 +111,3 @@ public sealed class UserBookmarksService(IEventRepository eventRepository)
             : AuditDateTimeBuilder.Create();
     }
 }
-
-public sealed record UserBookmarksServiceDiagnostics(int CacheEntryCount, long EstimatedMemoryBytes);

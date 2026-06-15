@@ -11,11 +11,3 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(InstrumentIdentifierUnsetEvent), nameof(InstrumentIdentifierUnsetEvent))]
 [JsonDerivedType(typeof(InstrumentTermsSetEvent), nameof(InstrumentTermsSetEvent))]
 public interface IInstrumentEvent : IEventBase;
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(InstrumentPriceSetEvent), nameof(InstrumentPriceSetEvent))]
-public interface IInstrumentPriceEvent : IEventBase;
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(InstrumentIncomeSetEvent), nameof(InstrumentIncomeSetEvent))]
-public interface IInstrumentIncomeEvent : IEventBase;
