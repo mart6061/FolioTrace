@@ -3,6 +3,139 @@
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
 
   let { data } = $props();
+
+  let shareStatus = $state('');
+  let reportDocumentElement = $state<HTMLElement | null>(null);
+
+  function captureReportDocument(node: HTMLElement) {
+    reportDocumentElement = node;
+
+    return () => {
+      if (reportDocumentElement === node)
+        reportDocumentElement = null;
+    };
+  }
+
+  function downloadFile(fileName: string, content: string, mimeType: string) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  function reportFileName(extension: string) {
+    const name = data.reportDocument?.name ?? 'report';
+    const slug = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'report';
+
+    return `${slug}.${extension}`;
+  }
+
+  function htmlValue(value: string) {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function reportHtml() {
+    const documentElement = reportDocumentElement;
+
+    if (!(documentElement instanceof HTMLElement))
+      return '';
+
+    return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${htmlValue(data.reportDocument?.name ?? 'Report')}</title>
+          <style>
+            body { margin: 0; font-family: Arial, sans-serif; color: #0f172a; }
+            .report-document-shell { display: block; }
+            .report-document-page { box-sizing: border-box; min-height: 297mm; padding: 22mm 18mm; page: report-portrait; page-break-after: always; }
+            .report-document-page.landscape-page { min-height: 210mm; page: report-landscape; }
+            .report-document-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 14px; }
+            .report-document-header h2 { margin: 0; font-size: 30px; line-height: 1.2; }
+            .report-document-header p { margin: 6px 0 0; color: #475569; font-size: 16px; }
+            @page report-portrait { size: A4 portrait; margin: 0; }
+            @page report-landscape { size: A4 landscape; margin: 0; }
+          </style>
+        </head>
+        <body>${documentElement.outerHTML}</body>
+      </html>`;
+  }
+
+  function exportPdf() {
+    const html = reportHtml();
+    if (!html)
+      return;
+
+    const frame = document.createElement('iframe');
+    frame.title = data.reportDocument?.name ?? 'Report';
+    frame.style.position = 'fixed';
+    frame.style.width = '0';
+    frame.style.height = '0';
+    frame.style.border = '0';
+    frame.style.opacity = '0';
+
+    document.body.appendChild(frame);
+
+    const frameDocument = frame.contentDocument;
+    const frameWindow = frame.contentWindow;
+    if (!frameDocument || !frameWindow) {
+      frame.remove();
+      return;
+    }
+
+    frame.onload = () => {
+      frameWindow.focus();
+      frameWindow.print();
+      setTimeout(() => frame.remove(), 1000);
+    };
+
+    frameDocument.open();
+    frameDocument.write(html);
+    frameDocument.close();
+  }
+
+  function exportWord() {
+    downloadFile(reportFileName('doc'), reportHtml(), 'application/msword');
+  }
+
+  async function shareReport() {
+    const shareData = {
+      title: data.reportDocument?.name ?? 'Report',
+      text: data.reportDocument?.valuationHeading ?? 'Report',
+      url: window.location.href
+    };
+
+    shareStatus = '';
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(window.location.href);
+      shareStatus = 'Link copied';
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError')
+        return;
+
+      shareStatus = 'Unable to share';
+    }
+  }
 </script>
 
 <svelte:head>
@@ -85,12 +218,156 @@
           {/if}
         </div>
 
-        <button class="h-10 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!data.accounts.length || !data.reportConfigs.length} type="submit">Create</button>
+        <button class="h-10 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!data.accounts.length || !data.reportConfigs.length} name="create" type="submit" value="true">Create</button>
       </div>
     </form>
 
     {#if data.error}
       <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">{data.error}</div>
     {/if}
+
+    {#if data.reportDocument}
+      <div class="report-action-bar" aria-label="Report actions">
+        <button onclick={exportPdf} title="Export PDF" type="button">Export to PDF</button>
+        <button onclick={exportWord} title="Export Word" type="button">Export to Word</button>
+        <button onclick={shareReport} title="Share" type="button">Share</button>
+        {#if shareStatus}
+          <span role="status">{shareStatus}</span>
+        {/if}
+      </div>
+
+      <section {@attach captureReportDocument} aria-label={data.reportDocument.name} class="report-document-shell">
+        {#each data.reportDocument.sections as section (section.reportNodeID)}
+          <article class:landscape-page={section.pageOrientation === 'Landscape'} class="report-document-page">
+            <header class="report-document-header">
+              <h2>{section.name}</h2>
+              <p>{data.reportDocument.valuationHeading}</p>
+            </header>
+          </article>
+        {:else}
+          <article class="report-document-page">
+            <header class="report-document-header">
+              <h2>{data.reportDocument.name}</h2>
+              <p>{data.reportDocument.valuationHeading}</p>
+            </header>
+          </article>
+        {/each}
+      </section>
+    {/if}
   </section>
 </main>
+
+<style>
+  .report-document-shell {
+    display: grid;
+    gap: 1.25rem;
+    justify-items: center;
+  }
+
+  .report-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .report-action-bar button {
+    min-height: 2.25rem;
+    border: 1px solid rgb(13 148 136 / 0.32);
+    border-radius: 0.375rem;
+    background: white;
+    color: rgb(15 118 110);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .report-action-bar button:hover,
+  .report-action-bar button:focus-visible {
+    border-color: rgb(15 118 110);
+    background: rgb(240 253 250);
+    outline: none;
+  }
+
+  .report-action-bar span {
+    color: rgb(71 85 105);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .report-document-page {
+    width: min(100%, 210mm);
+    min-height: 297mm;
+    background: white;
+    border: 1px solid rgb(226 232 240);
+    border-radius: 0.375rem;
+    box-shadow: 0 16px 40px rgb(15 23 42 / 0.08);
+    padding: 22mm 18mm;
+  }
+
+  .report-document-page.landscape-page {
+    width: min(100%, 297mm);
+    min-height: 210mm;
+  }
+
+  .report-document-header {
+    border-bottom: 1px solid rgb(203 213 225);
+    padding-bottom: 0.85rem;
+  }
+
+  .report-document-header h2 {
+    color: rgb(15 23 42);
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .report-document-header p {
+    color: rgb(71 85 105);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0.35rem 0 0;
+  }
+
+  @media print {
+    :global(.page-header),
+    form,
+    .report-action-bar,
+    [role='status'] {
+      display: none;
+    }
+
+    .report-document-shell {
+      gap: 0;
+    }
+
+    .report-document-page {
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      min-height: auto;
+      page: report-portrait;
+      page-break-after: always;
+      width: auto;
+    }
+
+    .report-document-page.landscape-page {
+      page: report-landscape;
+      width: auto;
+    }
+  }
+
+  @page report-portrait {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  @page report-landscape {
+    size: A4 landscape;
+    margin: 0;
+  }
+</style>
