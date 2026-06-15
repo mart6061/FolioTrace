@@ -1,5 +1,6 @@
 using FolioTrace.Aggregates;
 using Repository;
+using System.Text.Json;
 
 namespace Test;
 
@@ -44,5 +45,22 @@ public sealed class ReportConfigBuilderTests
 
         Assert.Single(allocationBackedNodes);
         Assert.Equal(SeedRepository.CreateInitialAssetAllocationCreatedEvents().Single().AssetAllocationID, allocationBackedNodes.Single());
+    }
+
+    [Fact]
+    public void ReportCreatedEvent_SerializesNodeTypeDiscriminators()
+    {
+        var createdEvent = SeedRepository.CreateInitialReportCreatedEvents().Single();
+
+        var json = JsonSerializer.Serialize(createdEvent);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal("ReportNodeCoverPage", document.RootElement.GetProperty("Nodes")[0].GetProperty("$type").GetString());
+
+        var roundTripped = JsonSerializer.Deserialize<ReportCreatedEvent>(json);
+
+        Assert.NotNull(roundTripped);
+        Assert.IsType<ReportNodeCoverPage>(roundTripped.Nodes[0]);
+        Assert.IsType<ReportNodeChart>(roundTripped.Nodes[2]);
+        Assert.IsType<ReportNodeValuation>(roundTripped.Nodes[3]);
     }
 }
