@@ -31,33 +31,3 @@ public sealed record Exchange : IType
 
     public override string ToString() => Value;
 }
-
-public static class ExchangeBuilder
-{
-    public static Exchange Create(string value) => new(value);
-}
-
-internal sealed class ExchangeJsonConverter : JsonConverter<Exchange>
-{
-    public override Exchange? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        if (reader.TokenType == JsonTokenType.Null)
-            return null;
-
-        if (reader.TokenType != JsonTokenType.String)
-            throw new JsonException("Expected string token for Exchange value.");
-
-        return Exchange.FromJson(reader.GetString());
-    }
-
-    public override void Write(Utf8JsonWriter writer, Exchange value, JsonSerializerOptions options)
-    {
-        if (value is null || value.Value is null)
-        {
-            writer.WriteNullValue();
-            return;
-        }
-
-        writer.WriteStringValue(value.Value);
-    }
-}

@@ -13,7 +13,7 @@ public sealed record AssetAllocationCreatedEvent : EventBase, IValuationSettingE
     [EventProperty(Description = "Name")]
     public string Name { get; init; } = string.Empty;
 
-    [EventProperty(Description = "Account I Ds")]
+    [EventProperty(Description = "Account IDs")]
     public List<AccountID> AccountIDs { get; init; } = [];
 
     [EventProperty(Description = "Active")]

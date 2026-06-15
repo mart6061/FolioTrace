@@ -121,5 +121,3 @@ public sealed class InstrumentService(IEventRepository eventRepository) : IRefer
         }
     }
 }
-
-public sealed record InstrumentServiceDiagnostics(int CacheEntryCount, int InstrumentCount, long EstimatedMemoryBytes);

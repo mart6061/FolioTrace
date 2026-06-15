@@ -137,8 +137,3 @@ public sealed record HoldingPositions : IAggregate
 
     private sealed record HoldingPositionTotals(decimal Quantity, decimal BookCost, EventID? LastEventID, AuditDateTime? LastAuditDateTime);
 }
-
-public sealed record HoldingPositionFilter(HoldingID? HoldingID, AccountID? AccountID, InstrumentID? InstrumentID, bool IncludeExcluded, bool IncludeZero)
-{
-    public static HoldingPositionFilter Default { get; } = new(null, null, null, false, false);
-}

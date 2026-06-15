@@ -162,11 +162,11 @@ public sealed record Valuations : IAggregate
 
         decimal fxRate = basis switch
         {
-            InstrumentPriceBasis.Bid => rate.Price.Bid.Value,
-            InstrumentPriceBasis.Ask => rate.Price.Ask.Value,
-            InstrumentPriceBasis.Mid => rate.Price.Mid.Value,
-            InstrumentPriceBasis.NAV => rate.Price.Mid.Value,
-            _ => rate.Price.Mid.Value
+            InstrumentPriceBasis.Bid => rate.Price.Bid,
+            InstrumentPriceBasis.Ask => rate.Price.Ask,
+            InstrumentPriceBasis.Mid => rate.Price.Mid,
+            InstrumentPriceBasis.NAV => rate.Price.Mid,
+            _ => rate.Price.Mid
         };
 
         return new(rate.Pair.Value, rate.DisplayPair, fxRate);

@@ -111,5 +111,3 @@ public sealed class UserMenuPreferencesService(IEventRepository eventRepository)
             : AuditDateTimeBuilder.Create();
     }
 }
-
-public sealed record UserMenuPreferencesServiceDiagnostics(int CacheEntryCount, long EstimatedMemoryBytes);

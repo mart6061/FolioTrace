@@ -118,5 +118,3 @@ public sealed class UserService(IEventRepository eventRepository)
         }
     }
 }
-
-public sealed record UserServiceDiagnostics(int CacheEntryCount, int UserCount, long EstimatedMemoryBytes);

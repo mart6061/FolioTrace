@@ -111,5 +111,3 @@ public sealed class UserValuationPreferencesService(IEventRepository eventReposi
             : AuditDateTimeBuilder.Create();
     }
 }
-
-public sealed record UserValuationPreferencesServiceDiagnostics(int CacheEntryCount, long EstimatedMemoryBytes);

@@ -233,12 +233,23 @@ public sealed class EventClassAttributeTests
     private static string FormatEventDescription(string name)
     {
         var withWordBoundaries = Regex.Replace(name, "([a-z0-9])([A-Z])", "$1 $2");
-        return Regex.Replace(withWordBoundaries, "([A-Z]+)([A-Z][a-z])", "$1 $2");
+        return PreserveKnownAcronyms(Regex.Replace(withWordBoundaries, "([A-Z]+)([A-Z][a-z])", "$1 $2"));
     }
 
     private static string FormatEventPropertyDescription(string name)
     {
         var beforeAcronymBoundary = Regex.Replace(name, "([A-Z]+)([A-Z][a-z])", "$1 $2");
-        return Regex.Replace(beforeAcronymBoundary, "([a-z0-9])([A-Z])", "$1 $2");
+        return PreserveKnownAcronyms(Regex.Replace(beforeAcronymBoundary, "([a-z0-9])([A-Z])", "$1 $2"));
     }
+
+    private static string PreserveKnownAcronyms(string description) =>
+        description
+            .Replace("I Ds", "IDs", StringComparison.Ordinal)
+            .Replace("I D", "ID", StringComparison.Ordinal)
+            .Replace("F X", "FX", StringComparison.Ordinal)
+            .Replace("C F I", "CFI", StringComparison.Ordinal)
+            .Replace("I S I N", "ISIN", StringComparison.Ordinal)
+            .Replace("B I C", "BIC", StringComparison.Ordinal)
+            .Replace("I B A N", "IBAN", StringComparison.Ordinal)
+            .Replace("L E I", "LEI", StringComparison.Ordinal);
 }

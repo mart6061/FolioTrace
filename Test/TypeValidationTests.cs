@@ -315,6 +315,57 @@ public sealed class TypeValidationTests
         Assert.Throws<ArgumentException>(() => new Yield(value));
 
     [Fact]
+    public void Price_RejectsZeroForDirectPriceUsage() =>
+        Assert.Throws<ArgumentException>(() => new Price(0m));
+
+    [Fact]
+    public void FXQuoteValues_AcceptZero()
+    {
+        Assert.Equal(0m, new Bid(0m).Value);
+        Assert.Equal(0m, new Mid(0m).Value);
+        Assert.Equal(0m, new Ask(0m).Value);
+    }
+
+    [Fact]
+    public void FXQuoteValues_RejectNegativeValues()
+    {
+        Assert.Throws<ArgumentException>(() => new Bid(-0.00000001m));
+        Assert.Throws<ArgumentException>(() => new Mid(-0.00000001m));
+        Assert.Throws<ArgumentException>(() => new Ask(-0.00000001m));
+    }
+
+    [Fact]
+    public void FXQuoteValues_AreAssignableToPrice()
+    {
+        Price bid = new Bid(1.23m);
+        Price mid = new Mid(1.24m);
+        Price ask = new Ask(1.25m);
+
+        Assert.Equal(1.23m, bid.Amount);
+        Assert.Equal(1.24m, mid.Amount);
+        Assert.Equal(1.25m, ask.Amount);
+    }
+
+    [Fact]
+    public void Price_ConvertsImplicitlyToDecimal()
+    {
+        Price price = new Bid(1.23456789m);
+
+        decimal value = price;
+
+        Assert.Equal(1.23456789m, value);
+    }
+
+    [Fact]
+    public void FXPrice_EnforcesBidMidAskOrdering()
+    {
+        _ = new FXPrice(new Bid(1.00m), new Mid(1.01m), new Ask(1.02m));
+
+        Assert.Throws<ArgumentException>(() => new FXPrice(new Bid(1.02m), new Mid(1.01m), new Ask(1.03m)));
+        Assert.Throws<ArgumentException>(() => new FXPrice(new Bid(1.00m), new Mid(1.03m), new Ask(1.02m)));
+    }
+
+    [Fact]
     public void InstrumentIncomeCash_FixesIncomeAtZero()
     {
         var income = new InstrumentIncomeCash();
@@ -355,6 +406,51 @@ public sealed class TypeValidationTests
 
         Assert.Throws<ArgumentException>(() => CreateInstrumentValue(price, null));
         Assert.Throws<ArgumentException>(() => CreateInstrumentValue(null, income));
+    }
+
+    [Fact]
+    public void InstrumentValues_OmitsIncompletePriceIncomePairs()
+    {
+        var instrumentID = InstrumentIDBuilder.Create();
+        var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow.AddSeconds(-1));
+        var auditDateTime = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddSeconds(-1));
+        var instrumentEvent = CreateInstrumentCreatedEvent(instrumentID, eventDateTime, auditDateTime);
+        var priceEvent = CreateInstrumentPriceSetEvent(instrumentID, eventDateTime, auditDateTime, new InstrumentPriceCash());
+
+        var values = new InstrumentValues(eventDateTime, [instrumentEvent], [priceEvent], []);
+        var value = Assert.Single(values.Items);
+
+        Assert.Null(value.Price);
+        Assert.Null(value.PriceValuationDateTime);
+        Assert.Null(value.Income);
+    }
+
+    [Fact]
+    public void InstrumentValues_OmitsMismatchedPriceIncomePairs()
+    {
+        var instrumentID = InstrumentIDBuilder.Create();
+        var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow.AddSeconds(-1));
+        var auditDateTime = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddSeconds(-1));
+        var instrumentEvent = CreateInstrumentCreatedEvent(instrumentID, eventDateTime, auditDateTime);
+        var priceEvent = CreateInstrumentPriceSetEvent(instrumentID, eventDateTime, auditDateTime, new InstrumentPriceCash());
+        var incomeEvent = CreateInstrumentIncomeSetEvent(
+            instrumentID,
+            eventDateTime,
+            auditDateTime,
+            new InstrumentIncomeEquity(
+                new InstrumentPrice(1m),
+                "Regular",
+                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 1)),
+                InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)),
+                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)),
+                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31))));
+
+        var values = new InstrumentValues(eventDateTime, [instrumentEvent], [priceEvent], [incomeEvent]);
+        var value = Assert.Single(values.Items);
+
+        Assert.Null(value.Price);
+        Assert.Null(value.PriceValuationDateTime);
+        Assert.Null(value.Income);
     }
 
     [Theory]
@@ -530,4 +626,42 @@ public sealed class TypeValidationTests
             new EventID(Guid.CreateGuid7()),
             lastAuditDateTime);
     }
+
+    private static InstrumentCreatedEvent CreateInstrumentCreatedEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime) =>
+        InstrumentCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            new UserID(Guid.CreateGuid7()),
+            eventDateTime,
+            auditDateTime,
+            "Create instrument",
+            instrumentID,
+            "Test Instrument",
+            "Test Instrument plc",
+            ExchangeBuilder.Create("XLON"),
+            CFIBuilder.Create("ESVUFR"),
+            null,
+            true,
+            Alpha2Builder.Create("GB"),
+            Alpha2Builder.Create("GB"),
+            Alpha3Builder.Create("GBP")).Value!;
+
+    private static InstrumentPriceSetEvent CreateInstrumentPriceSetEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IInstrumentPrice price) =>
+        InstrumentPriceSetEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            new UserID(Guid.CreateGuid7()),
+            eventDateTime,
+            auditDateTime,
+            "Set instrument price",
+            instrumentID,
+            price).Value!;
+
+    private static InstrumentIncomeSetEvent CreateInstrumentIncomeSetEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IInstrumentIncome income) =>
+        InstrumentIncomeSetEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            new UserID(Guid.CreateGuid7()),
+            eventDateTime,
+            auditDateTime,
+            "Set instrument income",
+            instrumentID,
+            income).Value!;
 }

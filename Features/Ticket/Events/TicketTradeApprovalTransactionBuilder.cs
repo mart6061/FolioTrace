@@ -250,8 +250,3 @@ public static partial class TicketEventBuilder
 
     private sealed record TicketTradeApprovalTransactionLegs(TransactionRequest AssetLeg, TransactionRequest CashLeg);
 }
-
-public sealed record TicketTradeApprovalTransactionResult(
-    TicketTradeApprovedEvent ApprovalEvent,
-    IReadOnlyList<HoldingPositionAssetCreatedEvent> HoldingEvents,
-    IReadOnlyList<ITransactionMovementEvent> TransactionEvents);

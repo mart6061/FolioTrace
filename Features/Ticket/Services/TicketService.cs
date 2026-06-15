@@ -116,5 +116,3 @@ public sealed class TicketService(IEventRepository eventRepository)
         }
     }
 }
-
-public sealed record TicketServiceDiagnostics(int CacheEntryCount, int TicketCount, long EstimatedMemoryBytes);

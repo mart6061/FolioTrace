@@ -128,5 +128,3 @@ public sealed class ReportConfigService(IEventRepository eventRepository) : IRef
         }
     }
 }
-
-public sealed record ReportConfigServiceDiagnostics(int CacheEntries, int ReportCount, long EstimatedBytes);

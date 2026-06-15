@@ -44,23 +44,3 @@ public sealed class AggregateCacheClearService(
         return new AggregateCacheClearResult(accounts, brokers, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks, valuationSettings, assetAllocationMappings, reportConfigs);
     }
 }
-
-public sealed record AggregateCacheClearResult(
-    int Accounts,
-    int Brokers,
-    int Countries,
-    int Currencies,
-    int FXs,
-    int FXRates,
-    int Holdings,
-    int HoldingPositions,
-    int Instruments,
-    int InstrumentValues,
-    int Tickets,
-    int Users,
-    int UserMenuPreferences,
-    int UserValuationPreferences,
-    int UserBookmarks,
-    int ValuationSettings,
-    int AssetAllocationMappings,
-    int ReportConfigs);

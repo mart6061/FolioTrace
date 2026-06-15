@@ -4,17 +4,6 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-[JsonConverter(typeof(JsonStringEnumConverter<InstrumentIdentifierType>))]
-public enum InstrumentIdentifierType
-{
-    Sedol,
-    ISIN,
-    Ticker,
-    CUSIP,
-    FIGI,
-    RIC
-}
-
 public sealed record InstrumentIdentifier : IType
 {
     public required InstrumentIdentifierType Type { get; init; }

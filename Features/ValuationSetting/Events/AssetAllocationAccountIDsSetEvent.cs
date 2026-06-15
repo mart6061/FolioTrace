@@ -4,13 +4,13 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Asset Allocation Account I Ds Set Event")]
+[EventClass(EventType = EventClassTypeEnum.Modified, Description = "Asset Allocation Account IDs Set Event")]
 public sealed record AssetAllocationAccountIDsSetEvent : EventBase, IValuationSettingEvent
 {
     [EventProperty(Description = "Asset Allocation ID")]
     public AssetAllocationID AssetAllocationID { get; init; } = null!;
 
-    [EventProperty(Description = "Account I Ds")]
+    [EventProperty(Description = "Account IDs")]
     public List<AccountID> AccountIDs { get; init; } = [];
 
     [JsonConstructor]
