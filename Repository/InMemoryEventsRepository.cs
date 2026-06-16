@@ -8,8 +8,8 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
 {
     private readonly SemaphoreSlim loadLock = new(1, 1);
     private readonly Lock sync = new();
-    private readonly Dictionary<Guid, List<IEventBase>> streams = [];
-    private readonly Dictionary<Guid, IEventBase> eventsById = [];
+    private readonly Dictionary<Guid, List<IAuditEventBase>> streams = [];
+    private readonly Dictionary<Guid, IAuditEventBase> eventsById = [];
     private readonly List<UnprocessedEventDiagnostic> unprocessedEvents = [];
     private bool isLoaded;
 
@@ -42,7 +42,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
-    public async Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase
+    public async Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
     {
         if (eventId is null)
             throw new ArgumentNullException(nameof(eventId));
@@ -76,10 +76,13 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             if (!streams.TryGetValue(streamId, out var events))
                 return null;
 
-            IEventBase? latest = null;
+            IAuditEventBase? latest = null;
             foreach (var @event in events)
             {
-                if (@event.EventDateTime.Value > valuationDateTime || (asOfDateTime.HasValue && @event.AuditDateTime.Value > asOfDateTime.Value))
+                if (@event is IEventBase timedEvent && timedEvent.EventDateTime.Value > valuationDateTime)
+                    continue;
+
+                if (asOfDateTime.HasValue && @event.AuditDateTime.Value > asOfDateTime.Value)
                     continue;
 
                 if (latest is null || CompareEventOrder(@event, latest) > 0)
@@ -90,7 +93,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
-    public async Task<IReadOnlyList<IEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IAuditEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
     {
         await EnsureLoadedAsync(cancellationToken);
 
@@ -101,7 +104,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
     }
 
     public async Task<IReadOnlyList<TEvent>> LoadStreamAsync<TEvent>(Guid streamId, CancellationToken cancellationToken = default)
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         var events = await LoadStreamAsync(streamId, cancellationToken);
         return events.OfType<TEvent>().ToList();
@@ -109,7 +112,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
 
     public async Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
         where TAggregate : class
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
@@ -125,7 +128,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
-    public async Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase
+    public async Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
     {
         if (@event is null)
             throw new ArgumentNullException(nameof(@event));
@@ -139,7 +142,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
-    public async Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default)
+    public async Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default)
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
@@ -218,16 +221,13 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
-    private void AddEvent(Guid streamId, IEventBase @event)
+    private void AddEvent(Guid streamId, IAuditEventBase @event)
     {
         if (@event is null)
             throw new ArgumentNullException(nameof(@event));
 
         if (@event.EventID is null)
             throw new InvalidOperationException("EventID is required.");
-
-        if (@event.EventDateTime is null)
-            throw new InvalidOperationException("EventDateTime is required.");
 
         if (@event.AuditDateTime is null)
             throw new InvalidOperationException("AuditDateTime is required.");
@@ -252,13 +252,16 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             DateTime.UtcNow));
     }
 
-    private static Guid? TryGetEventId(IEventBase? @event) => @event?.EventID?.Value;
+    private static Guid? TryGetEventId(IAuditEventBase? @event) => @event?.EventID?.Value;
 
-    private static int CompareEventOrder(IEventBase left, IEventBase right)
+    private static int CompareEventOrder(IAuditEventBase left, IAuditEventBase right)
     {
-        var eventDateComparison = left.EventDateTime.Value.CompareTo(right.EventDateTime.Value);
-        if (eventDateComparison != 0)
-            return eventDateComparison;
+        if (left is IEventBase leftTimed && right is IEventBase rightTimed)
+        {
+            var eventDateComparison = leftTimed.EventDateTime.Value.CompareTo(rightTimed.EventDateTime.Value);
+            if (eventDateComparison != 0)
+                return eventDateComparison;
+        }
 
         var auditDateComparison = left.AuditDateTime.Value.CompareTo(right.AuditDateTime.Value);
         if (auditDateComparison != 0)

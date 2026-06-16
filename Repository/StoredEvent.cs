@@ -2,4 +2,4 @@ using FolioTrace.Common;
 
 namespace Repository;
 
-public sealed record StoredEvent(Guid StreamId, IEventBase Event);
+public sealed record StoredEvent(Guid StreamId, IAuditEventBase Event);

@@ -10,7 +10,7 @@ public sealed class AssetAllocationMappingService(IEventRepository eventReposito
     private readonly Lock cacheLock = new();
     private readonly Dictionary<AssetAllocationMappingCacheKey, AssetAllocationMappings> cache = [];
 
-    public int Invalidate(IValuationSettingEvent @event) => InvalidateFrom(@event.EventDateTime);
+    public int Invalidate(IValuationSettingEvent @event) => InvalidateAll();
 
     public int Invalidate(IAssetAllocationMappingEvent @event) => InvalidateFrom(@event.EventDateTime);
 

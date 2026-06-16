@@ -5,7 +5,7 @@ namespace FolioTrace.Aggregates;
 
 public static class ReportEventValidation
 {
-    public static List<string> ValidateBase(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, ReportID reportID)
+    public static List<string> ValidateBase(EventID eventID, UserID userID, AuditDateTime auditDateTime, ReportID reportID)
     {
         var messages = new List<string>();
 
@@ -13,25 +13,18 @@ public static class ReportEventValidation
             messages.Add("Event ID is required.");
         if (userID is null)
             messages.Add("User ID is required.");
-        if (eventDateTime is null)
-            messages.Add("Event date/time is required.");
         if (auditDateTime is null)
             messages.Add("Audit date/time is required.");
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
         if (reportID is null)
             messages.Add("Report ID is required.");
 
         return messages;
     }
 
-    public static void ValidateDefinition(List<string> messages, string name, EventDateTime effectiveDateTime, List<ReportNodeBase> nodes, ValuationSettings? valuationSettings)
+    public static void ValidateDefinition(List<string> messages, string name, List<ReportNodeBase> nodes, ValuationSettings? valuationSettings)
     {
         if (string.IsNullOrWhiteSpace(name))
             messages.Add("Name is required.");
-
-        if (effectiveDateTime is null)
-            messages.Add("Effective date is required.");
 
         if (nodes is null)
         {

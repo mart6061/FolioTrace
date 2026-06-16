@@ -44,7 +44,7 @@ public sealed class EventClassAttributeTests
     ];
 
     [Fact]
-    public void EventBaseDescendantsHaveEventClassAttribute()
+    public void AuditEventBaseDescendantsHaveEventClassAttribute()
     {
         var missing = IncludedEventTypes()
             .Where(type => type.GetCustomAttributes(typeof(EventClassAttribute), inherit: false).Length == 0)
@@ -94,11 +94,33 @@ public sealed class EventClassAttributeTests
     {
         var includedNames = IncludedEventTypes().Select(type => type.Name).ToHashSet();
 
+        Assert.DoesNotContain(nameof(AuditEventBase), includedNames);
+        Assert.DoesNotContain(nameof(ConfigEventBase), includedNames);
         Assert.DoesNotContain(nameof(EventBase), includedNames);
         Assert.DoesNotContain(nameof(TicketEventBase), includedNames);
         Assert.DoesNotContain(nameof(TicketProposalEventBase), includedNames);
         Assert.DoesNotContain(nameof(TicketTradeEventBase), includedNames);
         Assert.DoesNotContain(nameof(TicketTradeFillEventBase), includedNames);
+    }
+
+    [Fact]
+    public void EventBaseAndConfigEventBaseFollowAuditBaseConventions()
+    {
+        Assert.True(typeof(IAuditEventBase).IsAssignableFrom(typeof(IEventBase)));
+        Assert.True(typeof(AuditEventBase).IsAssignableFrom(typeof(EventBase)));
+        Assert.True(typeof(IAuditEventBase).IsAssignableFrom(typeof(IConfigEventBase)));
+        Assert.True(typeof(AuditEventBase).IsAssignableFrom(typeof(ConfigEventBase)));
+
+        Assert.Contains(nameof(IEventBase.EventDateTime), InterfacePropertyNames(typeof(IEventBase)));
+        Assert.Contains(nameof(IEventBase.Reason), InterfacePropertyNames(typeof(IEventBase)));
+        Assert.DoesNotContain(nameof(IEventBase.EventDateTime), InterfacePropertyNames(typeof(IConfigEventBase)));
+        Assert.DoesNotContain(nameof(IEventBase.Reason), InterfacePropertyNames(typeof(IConfigEventBase)));
+        Assert.DoesNotContain(nameof(IEventBase.EventDateTime), PublicPropertyNames(typeof(ConfigEventBase)));
+        Assert.DoesNotContain(nameof(IEventBase.Reason), PublicPropertyNames(typeof(ConfigEventBase)));
+
+        Assert.All(
+            IncludedEventTypes().Where(type => typeof(IConfigEventBase).IsAssignableFrom(type)),
+            type => Assert.False(typeof(IEventBase).IsAssignableFrom(type), $"{type.Name} should not implement IEventBase."));
     }
 
     [Fact]
@@ -155,10 +177,11 @@ public sealed class EventClassAttributeTests
     }
 
     private static IReadOnlyList<Type> IncludedEventTypes() =>
-        typeof(EventBase).Assembly
+        typeof(AuditEventBase).Assembly
             .GetTypes()
-            .Where(type => type != typeof(EventBase))
-            .Where(type => typeof(EventBase).IsAssignableFrom(type))
+            .Where(type => type is { IsClass: true, IsAbstract: false })
+            .Where(type => !type.IsNested)
+            .Where(type => typeof(IAuditEventBase).IsAssignableFrom(type))
             .Where(type => !type.Name.EndsWith("Base", StringComparison.Ordinal))
             .OrderBy(type => type.Name)
             .ToList();
@@ -182,6 +205,12 @@ public sealed class EventClassAttributeTests
             .Where(item => item.Attribute is not null)
             .Select(item => (item.Property, item.Attribute!));
 
+    private static IReadOnlySet<string> InterfacePropertyNames(Type type) =>
+        type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+
+    private static IReadOnlySet<string> PublicPropertyNames(Type type) =>
+        type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+
     private static IEnumerable<Type> GetEventMetadataTypes(Type eventType)
     {
         for (var type = eventType; type is not null && type != typeof(EventBase); type = type.BaseType)
@@ -198,6 +227,10 @@ public sealed class EventClassAttributeTests
         property.GetMethod is not null &&
         property.GetIndexParameters().Length == 0 &&
         property.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false) is null &&
+        property.DeclaringType != typeof(IAuditEventBase) &&
+        property.DeclaringType != typeof(AuditEventBase) &&
+        property.DeclaringType != typeof(IConfigEventBase) &&
+        property.DeclaringType != typeof(ConfigEventBase) &&
         property.DeclaringType != typeof(IEventBase) &&
         property.DeclaringType != typeof(EventBase) &&
         property.Name != nameof(IEventBase.Type);

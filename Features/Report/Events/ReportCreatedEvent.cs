@@ -5,7 +5,7 @@ using FolioTrace.Types;
 namespace FolioTrace.Aggregates;
 
 [EventClass(EventType = EventClassTypeEnum.Created, Description = "Report Created Event")]
-public sealed record ReportCreatedEvent : EventBase, IReportEvent
+public sealed record ReportCreatedEvent : ConfigEventBase, IReportEvent
 {
     [EventProperty(Description = "Report ID")]
     public ReportID ReportID { get; init; } = null!;
@@ -16,25 +16,21 @@ public sealed record ReportCreatedEvent : EventBase, IReportEvent
     [EventProperty(Description = "Active")]
     public bool Active { get; init; }
 
-    [EventProperty(Description = "Effective Date Time")]
-    public EventDateTime EffectiveDateTime { get; init; } = null!;
-
     [EventProperty(Description = "Nodes")]
     public List<ReportNodeBase> Nodes { get; init; } = [];
 
     [JsonConstructor]
     private ReportCreatedEvent()
-        : base(null!, null!, null!, null!, string.Empty)
+        : base(null!, null!, null!)
     {
     }
 
-    internal ReportCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, ReportID reportID, string name, bool active, EventDateTime effectiveDateTime, List<ReportNodeBase> nodes)
-        : base(eventId, userId, eventDateTime, auditDateTime, reason)
+    internal ReportCreatedEvent(EventID eventId, UserID userId, AuditDateTime auditDateTime, ReportID reportID, string name, bool active, List<ReportNodeBase> nodes)
+        : base(eventId, userId, auditDateTime)
     {
         ReportID = reportID;
         Name = name?.Trim() ?? string.Empty;
         Active = active;
-        EffectiveDateTime = ReportConfigBuilder.DateOnly(effectiveDateTime);
         Nodes = ReportConfigBuilder.NormaliseNodes(nodes);
     }
 

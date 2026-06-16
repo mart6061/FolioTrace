@@ -5,7 +5,7 @@ using FolioTrace.Types;
 namespace FolioTrace.Aggregates;
 
 [EventClass(EventType = EventClassTypeEnum.Modified, Description = "Asset Allocation Active Set Event")]
-public sealed record AssetAllocationActiveSetEvent : EventBase, IValuationSettingEvent
+public sealed record AssetAllocationActiveSetEvent : ConfigEventBase, IValuationSettingEvent
 {
     [EventProperty(Description = "Asset Allocation ID")]
     public AssetAllocationID AssetAllocationID { get; init; } = null!;
@@ -15,12 +15,12 @@ public sealed record AssetAllocationActiveSetEvent : EventBase, IValuationSettin
 
     [JsonConstructor]
     private AssetAllocationActiveSetEvent()
-        : base(null!, null!, null!, null!, string.Empty)
+        : base(null!, null!, null!)
     {
     }
 
-    internal AssetAllocationActiveSetEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AssetAllocationID assetAllocationID, bool active)
-        : base(eventId, userId, eventDateTime, auditDateTime, reason)
+    internal AssetAllocationActiveSetEvent(EventID eventId, UserID userId, AuditDateTime auditDateTime, AssetAllocationID assetAllocationID, bool active)
+        : base(eventId, userId, auditDateTime)
     {
         AssetAllocationID = assetAllocationID;
         Active = active;

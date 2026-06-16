@@ -17,12 +17,12 @@ public sealed class MartenEventRepository(IDocumentStore store)
 
         var rawEvents = session.Events.QueryAllRawEvents().ToList();
         return rawEvents
-            .Where(@event => @event.Data is IEventBase)
-            .Select(@event => new StoredEvent(@event.StreamId, (IEventBase)@event.Data))
+            .Where(@event => @event.Data is IAuditEventBase)
+            .Select(@event => new StoredEvent(@event.StreamId, (IAuditEventBase)@event.Data))
             .ToList();
     }
 
-    public async Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase
+    public async Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
     {
         if (eventId is null)
             throw new ArgumentNullException(nameof(eventId));
@@ -35,7 +35,7 @@ public sealed class MartenEventRepository(IDocumentStore store)
 
     public async Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
         where TAggregate : class
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
@@ -49,7 +49,7 @@ public sealed class MartenEventRepository(IDocumentStore store)
         await session.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase
+    public async Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
     {
         if (@event is null)
             throw new ArgumentNullException(nameof(@event));
@@ -60,7 +60,7 @@ public sealed class MartenEventRepository(IDocumentStore store)
         await session.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task AppendAsync(Guid streamId, IReadOnlyList<IEventBase> events, CancellationToken cancellationToken = default)
+    public async Task AppendAsync(Guid streamId, IReadOnlyList<IAuditEventBase> events, CancellationToken cancellationToken = default)
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));

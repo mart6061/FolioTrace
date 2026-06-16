@@ -1,7 +1,7 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
-import { defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
+import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
@@ -89,16 +89,20 @@ export const actions = {
       menuItemID: item.id,
       visible: getFormString(formData, `originalMenu:${item.id}`) !== 'false'
     }));
-    const valuationDateOption = normalizeValuationDateOption(getFormString(formData, 'valuationDateOption'));
+    const startValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'startValuationDateOption'), defaultStartValuationDateOption);
+    const endValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'endValuationDateOption'), defaultEndValuationDateOption);
+    const valuationDateOption = endValuationDateOption;
     const holdingDateBasis = normalizeHoldingDateBasis(getFormString(formData, 'holdingDateBasis'));
     const showZeroBalances = getFormString(formData, 'showZeroBalances') === 'true';
-    const originalValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalValuationDateOption'));
+    const originalStartValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalStartValuationDateOption'), defaultStartValuationDateOption);
+    const originalEndValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalEndValuationDateOption'), defaultEndValuationDateOption);
     const originalHoldingDateBasis = normalizeHoldingDateBasis(getFormString(formData, 'originalHoldingDateBasis'));
     const originalShowZeroBalances = getFormString(formData, 'originalShowZeroBalances') === 'true';
     const bookmarks = parseBookmarks(getFormString(formData, 'bookmarks'));
     const originalBookmarks = parseBookmarks(getFormString(formData, 'originalBookmarks'));
     const menuChanged = !areMenuItemsEqual(items, originalItems);
-    const valuationChanged = valuationDateOption !== originalValuationDateOption
+    const valuationChanged = startValuationDateOption !== originalStartValuationDateOption
+      || endValuationDateOption !== originalEndValuationDateOption
       || holdingDateBasis !== originalHoldingDateBasis
       || showZeroBalances !== originalShowZeroBalances;
     const bookmarkChanges = getBookmarkChanges(bookmarks, originalBookmarks);
@@ -129,6 +133,8 @@ export const actions = {
           eventDateTime,
           reason: 'Modify user valuation preferences',
           valuationDateOption,
+          startValuationDateOption,
+          endValuationDateOption,
           holdingDateBasis,
           showZeroBalances
         };

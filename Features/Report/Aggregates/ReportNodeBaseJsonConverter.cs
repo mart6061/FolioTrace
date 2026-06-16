@@ -41,7 +41,9 @@ internal sealed class ReportNodeBaseJsonConverter : JsonConverter<ReportNodeBase
                 name,
                 title,
                 ReadRequired<AssetAllocationID>(root, nameof(ReportNodeValuation.AssetAllocationID), options),
-                ReadOptional<List<ReportValuationColumn>?>(root, nameof(ReportNodeValuation.Columns), options, null))
+                ReadOptional<List<ReportValuationColumn>?>(root, nameof(ReportNodeValuation.Columns), options, null),
+                ReadOptional(root, nameof(ReportNodeValuation.ColourBullet), options, true),
+                ReadOptional(root, nameof(ReportNodeValuation.ColourText), options, false))
             {
                 PageOrientation = pageOrientation
             },
@@ -105,7 +107,9 @@ internal sealed class ReportNodeBaseJsonConverter : JsonConverter<ReportNodeBase
         if (HasProperty(root, nameof(ReportNodeChart.ChartType)))
             return nameof(ReportNodeChart);
 
-        if (HasProperty(root, nameof(ReportNodeValuation.Columns)))
+        if (HasProperty(root, nameof(ReportNodeValuation.Columns))
+            || HasProperty(root, nameof(ReportNodeValuation.ColourBullet))
+            || HasProperty(root, nameof(ReportNodeValuation.ColourText)))
             return nameof(ReportNodeValuation);
 
         if (TryGetProperty(root, nameof(ReportNodeBase.Name), out var nameProperty))

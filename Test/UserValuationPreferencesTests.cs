@@ -29,6 +29,8 @@ public sealed class UserValuationPreferencesTests
         Assert.True(result.IsValid);
         Assert.NotNull(result.Value);
         Assert.Equal(UserValuationDateOption.TodayEndOfDay, result.Value!.ValuationDateOption);
+        Assert.Equal(UserValuationPreferenceDefaults.StartValuationDateOption, result.Value.StartValuationDateOption);
+        Assert.Equal(UserValuationPreferenceDefaults.EndValuationDateOption, result.Value.EndValuationDateOption);
         Assert.Equal(HoldingDateBasis.EventDateTime, result.Value.HoldingDateBasis);
         Assert.False(result.Value.ShowZeroBalances);
     }
@@ -58,6 +60,8 @@ public sealed class UserValuationPreferencesTests
 
         Assert.False(preferences.HasStoredPreferences);
         Assert.Equal(UserValuationPreferenceDefaults.ValuationDateOption, preferences.ValuationDateOption);
+        Assert.Equal(UserValuationPreferenceDefaults.StartValuationDateOption, preferences.StartValuationDateOption);
+        Assert.Equal(UserValuationPreferenceDefaults.EndValuationDateOption, preferences.EndValuationDateOption);
         Assert.Equal(UserValuationPreferenceDefaults.HoldingDateBasis, preferences.HoldingDateBasis);
         Assert.Equal(UserValuationPreferenceDefaults.ShowZeroBalances, preferences.ShowZeroBalances);
         Assert.Equal(Constants.Initialisation.EmptyViewEventID, preferences.LastEventID);
@@ -74,6 +78,7 @@ public sealed class UserValuationPreferencesTests
             EventDate,
             firstAudit,
             "Create valuation preferences",
+            UserValuationDateOption.YesterdayEndOfDay,
             UserValuationDateOption.TodayEndOfDay,
             HoldingDateBasis.EventDateTime,
             false).Value!;
@@ -83,6 +88,7 @@ public sealed class UserValuationPreferencesTests
             EventDate,
             secondAudit,
             "Modify valuation preferences",
+            UserValuationDateOption.LastQuarterEndOfDay,
             UserValuationDateOption.LastMonthEndOfDay,
             HoldingDateBasis.SettlementDateTime,
             true).Value!;
@@ -92,8 +98,12 @@ public sealed class UserValuationPreferencesTests
         var afterModification = await service.Get(UserID, EventDate, secondAudit);
 
         Assert.Equal(UserValuationDateOption.TodayEndOfDay, beforeModification.ValuationDateOption);
+        Assert.Equal(UserValuationDateOption.YesterdayEndOfDay, beforeModification.StartValuationDateOption);
+        Assert.Equal(UserValuationDateOption.TodayEndOfDay, beforeModification.EndValuationDateOption);
         Assert.False(beforeModification.ShowZeroBalances);
         Assert.Equal(UserValuationDateOption.LastMonthEndOfDay, afterModification.ValuationDateOption);
+        Assert.Equal(UserValuationDateOption.LastQuarterEndOfDay, afterModification.StartValuationDateOption);
+        Assert.Equal(UserValuationDateOption.LastMonthEndOfDay, afterModification.EndValuationDateOption);
         Assert.Equal(HoldingDateBasis.SettlementDateTime, afterModification.HoldingDateBasis);
         Assert.True(afterModification.ShowZeroBalances);
         Assert.True(afterModification.HasStoredPreferences);
@@ -101,7 +111,7 @@ public sealed class UserValuationPreferencesTests
 
     private sealed class FakeEventRepository(params IEventBase[] events) : IEventRepository
     {
-        private readonly List<IEventBase> events = events.ToList();
+        private readonly List<IAuditEventBase> events = [.. events];
 
         public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, 1, this.events.Count, 0, 0, []);
 
@@ -113,7 +123,7 @@ public sealed class UserValuationPreferencesTests
             return Task.CompletedTask;
         }
 
-        public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase =>
+        public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IAuditEventBase =>
             Task.FromResult(events.SingleOrDefault(@event => @event.EventID == eventId) as T);
 
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, CancellationToken cancellationToken = default) =>
@@ -122,7 +132,7 @@ public sealed class UserValuationPreferencesTests
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, DateTime valuationDateTime, DateTime? asOfDateTime = null, CancellationToken cancellationToken = default)
         {
             var latest = events
-                .Where(@event => @event.EventDateTime.Value <= valuationDateTime && (!asOfDateTime.HasValue || @event.AuditDateTime.Value <= asOfDateTime.Value))
+                .OfType<IEventBase>().Where(@event => @event.EventDateTime.Value <= valuationDateTime && (!asOfDateTime.HasValue || @event.AuditDateTime.Value <= asOfDateTime.Value))
                 .OrderBy(@event => @event.EventDateTime.Value)
                 .ThenBy(@event => @event.AuditDateTime.Value)
                 .ThenBy(@event => @event.EventID.Value)
@@ -131,29 +141,29 @@ public sealed class UserValuationPreferencesTests
             return Task.FromResult(latest?.EventID);
         }
 
-        public Task<IReadOnlyList<IEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
-            Task.FromResult((IReadOnlyList<IEventBase>)events.ToList());
+        public Task<IReadOnlyList<IAuditEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<IAuditEventBase>)events.ToList());
 
         public Task<IReadOnlyList<TEvent>> LoadStreamAsync<TEvent>(Guid streamId, CancellationToken cancellationToken = default)
-            where TEvent : class, IEventBase =>
+            where TEvent : class, IAuditEventBase =>
             Task.FromResult((IReadOnlyList<TEvent>)events.OfType<TEvent>().ToList());
 
         public Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
             where TAggregate : class
-            where TEvent : class, IEventBase
+            where TEvent : class, IAuditEventBase
         {
             this.events.Clear();
             this.events.AddRange(events);
             return Task.CompletedTask;
         }
 
-        public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase
+        public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
         {
             events.Add(@event);
             return Task.CompletedTask;
         }
 
-        public Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default)
+        public Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default)
         {
             this.events.AddRange(events);
             return Task.CompletedTask;

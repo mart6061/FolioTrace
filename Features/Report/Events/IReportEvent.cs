@@ -6,7 +6,7 @@ namespace FolioTrace.Aggregates;
 
 [JsonDerivedType(typeof(ReportCreatedEvent), nameof(ReportCreatedEvent))]
 [JsonDerivedType(typeof(ReportModifiedEvent), nameof(ReportModifiedEvent))]
-public interface IReportEvent : IEventBase
+public interface IReportEvent : IConfigEventBase
 {
     ReportID ReportID { get; }
 }

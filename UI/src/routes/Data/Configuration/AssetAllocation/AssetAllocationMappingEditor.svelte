@@ -104,6 +104,9 @@
     if (firstChild && nodes.some((node) => node.nodeID === firstChild))
       return firstChild;
 
+    if (nodes[0]?.name.trim().toLocaleLowerCase() === 'unallocated')
+      return nodes[0].nodeID;
+
     return nodes.find((node) => node.name.trim().toLocaleLowerCase() === 'unallocated')?.nodeID ?? '';
   }
 
@@ -112,10 +115,20 @@
     const root = byID.get(rootID);
     const mappable = new SvelteSet<string>();
 
-    if (!root)
-      return mappable;
+    if (root) {
+      for (const childNodeID of root.nodes) {
+        const childNode = byID.get(childNodeID);
 
-    visitReachableLeafNodes(root, byID, new SvelteSet<string>(), mappable);
+        if (childNode)
+          visitReachableLeafNodes(childNode, byID, new SvelteSet<string>(), mappable);
+      }
+
+      return mappable;
+    }
+
+    for (const topLevelNode of topLevelNodes(nodes))
+      visitReachableLeafNodes(topLevelNode, byID, new SvelteSet<string>(), mappable);
+
     return mappable;
   }
 
@@ -141,6 +154,11 @@
 
   function isMappableNodeID(nodeID: string) {
     return mappableNodeIDs.has(nodeID);
+  }
+
+  function topLevelNodes(nodes: AssetAllocationNode[]) {
+    const childNodeIDs = new SvelteSet(nodes.flatMap((node) => node.nodes));
+    return nodes.filter((node) => !childNodeIDs.has(node.nodeID));
   }
 
   function uniqueHoldingIDs(holdingIDs: string[]) {

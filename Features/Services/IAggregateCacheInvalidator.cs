@@ -6,5 +6,5 @@ public interface IAggregateCacheInvalidator
 {
     Type EventType { get; }
 
-    int Invalidate(IEventBase @event);
+    int Invalidate(IAuditEventBase @event);
 }

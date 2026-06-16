@@ -168,9 +168,6 @@ export type AssetAllocationNodeRequest = {
 };
 
 export type AssetAllocationCreatedRequest = {
-  eventDateTime: string;
-  effectiveDateTime: string;
-  reason: string;
   assetAllocationID?: string;
   name: string;
   accountIDs: string[];
@@ -180,9 +177,6 @@ export type AssetAllocationCreatedRequest = {
 };
 
 export type AssetAllocationModifiedRequest = {
-  eventDateTime: string;
-  effectiveDateTime: string;
-  reason: string;
   assetAllocationID: string;
   name: string;
   rootNodeID: string;
@@ -190,15 +184,11 @@ export type AssetAllocationModifiedRequest = {
 };
 
 export type AssetAllocationAccountIDsSetRequest = {
-  eventDateTime: string;
-  reason: string;
   assetAllocationID: string;
   accountIDs: string[];
 };
 
 export type AssetAllocationActiveSetRequest = {
-  eventDateTime: string;
-  reason: string;
   assetAllocationID: string;
   active: boolean;
 };
@@ -214,9 +204,6 @@ export type AssetAllocationMappingSetRequest = {
 export type ReportNodeRequest = ReportNodeBase;
 
 export type ReportCreatedRequest = {
-  eventDateTime: string;
-  effectiveDateTime: string;
-  reason: string;
   reportID?: string | null;
   name: string;
   active: boolean;
@@ -224,9 +211,6 @@ export type ReportCreatedRequest = {
 };
 
 export type ReportModifiedRequest = {
-  eventDateTime: string;
-  effectiveDateTime: string;
-  reason: string;
   reportID: string;
   name: string;
   active: boolean;
@@ -491,6 +475,8 @@ export type UserValuationPreferencesRequest = {
   eventDateTime: string;
   reason: string;
   valuationDateOption: UserValuationDateOption;
+  startValuationDateOption: UserValuationDateOption;
+  endValuationDateOption: UserValuationDateOption;
   holdingDateBasis: HoldingDateBasis;
   showZeroBalances: boolean;
 };
@@ -2084,6 +2070,8 @@ async function postUserValuationPreferencesEvent(fetchApi: typeof fetch, eventTy
       EventDateTime: request.eventDateTime,
       Reason: request.reason,
       ValuationDateOption: request.valuationDateOption,
+      StartValuationDateOption: request.startValuationDateOption,
+      EndValuationDateOption: request.endValuationDateOption,
       HoldingDateBasis: request.holdingDateBasis,
       ShowZeroBalances: request.showZeroBalances
     })
@@ -2445,16 +2433,11 @@ async function postAssetAllocationEvent(
 ) {
   const body: Record<string, unknown> = {
     UserID: userID,
-    EventDateTime: request.eventDateTime,
-    Reason: request.reason,
     AssetAllocationID: request.assetAllocationID
   };
 
   if ('name' in request)
     body.Name = request.name;
-
-  if ('effectiveDateTime' in request)
-    body.EffectiveDateTime = request.effectiveDateTime;
 
   if ('accountIDs' in request)
     body.AccountIDs = request.accountIDs;
@@ -2534,9 +2517,6 @@ async function postReportEvent(
 ) {
   const body: Record<string, unknown> = {
     UserID: userID,
-    EventDateTime: request.eventDateTime,
-    EffectiveDateTime: request.effectiveDateTime,
-    Reason: request.reason,
     Name: request.name,
     Active: request.active,
     Nodes: request.nodes.map(toReportNodeBody)
@@ -2568,20 +2548,30 @@ function toReportNodeBody(node: ReportNodeRequest) {
     ReportNodeID: node.reportNodeID,
     DisplayOrder: node.displayOrder,
     Name: node.name,
-    Title: node.title
+    Title: node.title,
+    PageOrientation: node.pageOrientation ?? 'Portrait'
   };
 
   if (node.assetAllocationID)
     body.AssetAllocationID = node.assetAllocationID;
 
-  if (type === 'ReportNodeChart')
-    body.ChartType = node.chartType ?? 'Pie';
+  if (type === 'ReportNodeChart') {
+    const chartType = node.chartType ?? 'Pie';
+    body.ChartType = chartType;
+    if (chartType === 'Pie')
+      body.PieLevel = node.pieLevel ?? 1;
+  }
 
   if (type === 'ReportNodeValuation' && node.columns !== undefined)
     body.Columns = node.columns?.map((column, index) => ({
       ColumnKey: column.columnKey,
       DisplayOrder: index + 1
     })) ?? null;
+
+  if (type === 'ReportNodeValuation') {
+    body.ColourBullet = node.colourBullet ?? true;
+    body.ColourText = node.colourText ?? false;
+  }
 
   return body;
 }

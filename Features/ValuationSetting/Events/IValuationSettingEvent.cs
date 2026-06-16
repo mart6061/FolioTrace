@@ -3,7 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public interface IValuationSettingEvent : IEventBase
+public interface IValuationSettingEvent : IConfigEventBase
 {
     AssetAllocationID AssetAllocationID { get; }
 }

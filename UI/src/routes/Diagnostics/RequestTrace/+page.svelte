@@ -190,8 +190,8 @@
 
 <main class="min-h-screen">
   <section class="page-header">
-    <div class="page-container flex flex-col gap-5">
-      <div class="flex flex-col gap-1">
+    <div class="page-container">
+      <div class="page-header-main">
         <p class="page-kicker">Diagnostics</p>
         <div class="page-title-row">
           <h1 class="page-title">Request Trace</h1>
@@ -199,7 +199,7 @@
         </div>
       </div>
 
-      <form class="grid gap-3 md:grid-cols-2 lg:grid-cols-[88px_minmax(110px,0.55fr)_76px_76px_190px_190px_minmax(120px,0.5fr)_auto] lg:items-end">
+      <form class="house-form grid gap-3 md:grid-cols-2 lg:grid-cols-[88px_minmax(110px,0.55fr)_76px_76px_190px_190px_minmax(120px,0.5fr)_auto] lg:items-end">
         <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
           Method
           <select class="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="method">
@@ -286,7 +286,7 @@
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <div class="status-panel status-panel-error">
         {data.error}
       </div>
     {:else}

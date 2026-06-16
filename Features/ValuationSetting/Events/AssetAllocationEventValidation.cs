@@ -4,7 +4,7 @@ namespace FolioTrace.Aggregates;
 
 internal static class AssetAllocationEventValidation
 {
-    public static List<string> ValidateBase(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AssetAllocationID? assetAllocationID)
+    public static List<string> ValidateBase(EventID? eventId, UserID? userId, AuditDateTime? auditDateTime, AssetAllocationID? assetAllocationID)
     {
         var messages = new List<string>();
 
@@ -14,17 +14,24 @@ internal static class AssetAllocationEventValidation
         if (userId is null)
             messages.Add("UserID is required.");
 
-        if (eventDateTime is null)
-            messages.Add("EventDateTime is required.");
-
         if (auditDateTime is null)
             messages.Add("AuditDateTime is required.");
 
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
-
         if (assetAllocationID is null)
             messages.Add("AssetAllocationID is required.");
+
+        return messages;
+    }
+
+    public static List<string> ValidateBase(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AssetAllocationID? assetAllocationID)
+    {
+        var messages = ValidateBase(eventId, userId, auditDateTime, assetAllocationID);
+
+        if (eventDateTime is null)
+            messages.Add("EventDateTime is required.");
+
+        if (string.IsNullOrWhiteSpace(reason))
+            messages.Add("Reason is required.");
 
         return messages;
     }
@@ -36,18 +43,6 @@ internal static class AssetAllocationEventValidation
 
         ValidateAccountIDs(messages, accountIDs);
         ValidateNodes(messages, accountIDs ?? [], rootNodeID, nodes);
-    }
-
-    public static void ValidateEffectiveDateTime(List<string> messages, EventDateTime? effectiveDateTime)
-    {
-        if (effectiveDateTime is null)
-        {
-            messages.Add("EffectiveDateTime is required.");
-            return;
-        }
-
-        if (effectiveDateTime.Value.Date != default && effectiveDateTime.Value.TimeOfDay != TimeSpan.Zero)
-            messages.Add("EffectiveDateTime must be a date only value with time 00:00:00.");
     }
 
     public static void ValidateAccountIDs(List<string> messages, IReadOnlyList<AccountID>? accountIDs)
@@ -96,10 +91,7 @@ internal static class AssetAllocationEventValidation
         }
 
         if (nodes.Count == 0)
-        {
-            messages.Add("Nodes must contain at least the root node.");
-            return;
-        }
+            messages.Add("Nodes must contain at least one node.");
 
         if (nodes.Any(node => node is null))
         {
@@ -130,8 +122,8 @@ internal static class AssetAllocationEventValidation
         foreach (var duplicateNodeID in nodeIDs.GroupBy(id => id).Where(group => group.Count() > 1).Select(group => group.Key))
             messages.Add($"NodeID '{duplicateNodeID}' is duplicated.");
 
-        if (rootNodeID is not null && !nodeIDs.Contains(rootNodeID.Value))
-            messages.Add($"RootNodeID '{rootNodeID}' does not exist in Nodes.");
+        if (rootNodeID is not null && nodeIDs.Contains(rootNodeID.Value))
+            messages.Add($"RootNodeID '{rootNodeID}' must not exist in Nodes.");
 
         var nodeIDSet = nodeIDs.ToHashSet();
         var nodeByID = nodes
@@ -182,12 +174,12 @@ internal static class AssetAllocationEventValidation
             }
         }
 
-        ValidateRootedTree(messages, rootNodeID, nodeByID);
+        ValidateRootedTree(messages, rootNodeID, nodes, nodeByID);
     }
 
-    private static void ValidateRootedTree(List<string> messages, NodeID? rootNodeID, Dictionary<Guid, AssetAllocationNode> nodeByID)
+    private static void ValidateRootedTree(List<string> messages, NodeID? rootNodeID, IReadOnlyList<AssetAllocationNode> nodes, Dictionary<Guid, AssetAllocationNode> nodeByID)
     {
-        if (rootNodeID is null || !nodeByID.ContainsKey(rootNodeID.Value))
+        if (rootNodeID is null || nodeByID.Count == 0)
             return;
 
         var parentIDsByChildID = new Dictionary<Guid, List<Guid>>();
@@ -210,17 +202,29 @@ internal static class AssetAllocationEventValidation
         }
 
         if (parentIDsByChildID.ContainsKey(rootNodeID.Value))
-            messages.Add($"RootNodeID '{rootNodeID}' cannot be a child node.");
+            messages.Add($"RootNodeID '{rootNodeID}' cannot be referenced as a child node.");
 
         foreach (var childParentPair in parentIDsByChildID.Where(pair => pair.Value.Distinct().Count() > 1))
             messages.Add($"NodeID '{childParentPair.Key}' has multiple parents.");
 
+        var topLevelNodeIDs = nodes
+            .Where(node => node.NodeID is not null && !parentIDsByChildID.ContainsKey(node.NodeID.Value))
+            .Select(node => node.NodeID.Value)
+            .ToList();
+
+        if (topLevelNodeIDs.Count == 0)
+            messages.Add("Nodes must contain at least one top-level node.");
+
         var visited = new HashSet<Guid>();
         var visiting = new HashSet<Guid>();
-        VisitNode(rootNodeID.Value, nodeByID, visited, visiting, messages);
+        foreach (var topLevelNodeID in topLevelNodeIDs)
+            VisitNode(topLevelNodeID, nodeByID, visited, visiting, messages);
 
-        foreach (var nodeID in nodeByID.Keys.Where(nodeID => !visited.Contains(nodeID)))
-            messages.Add($"NodeID '{nodeID}' is not reachable from RootNodeID '{rootNodeID}'.");
+        foreach (var nodeID in nodeByID.Keys.Where(nodeID => !visited.Contains(nodeID)).ToList())
+        {
+            messages.Add($"NodeID '{nodeID}' is not reachable from a top-level node.");
+            VisitNode(nodeID, nodeByID, visited, visiting, messages);
+        }
     }
 
     private static void VisitNode(Guid nodeID, Dictionary<Guid, AssetAllocationNode> nodeByID, HashSet<Guid> visited, HashSet<Guid> visiting, List<string> messages)

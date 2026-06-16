@@ -1,8 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
-  import { dateForInput } from '$lib/dates';
-  import type { ReportConfig, ReportNodeBase, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
+  import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -21,6 +20,7 @@
     { key: 'ISIN', label: 'ISIN' },
     { key: 'Sedol', label: 'Sedol' },
     { key: 'QuotePrice', label: 'Quote Price' },
+    { key: 'Quantity', label: 'Quantity' },
     { key: 'BookValue', label: 'Book Value' },
     { key: 'BookCost', label: 'Book Cost' },
     { key: 'Weight', label: 'Weight' },
@@ -29,16 +29,25 @@
     { key: 'Max', label: 'Max' }
   ];
 
+  const pageOrientationOptions: { value: ReportNodePageOrientation; label: string }[] = [
+    { value: 'Portrait', label: 'Portrait' },
+    { value: 'Landscape', label: 'Landscape' }
+  ];
+
+  const pieLevelOptions: { value: ReportChartPieLevel; label: string }[] = [
+    { value: 1, label: 'Level 1' },
+    { value: 2, label: 'Level 2' },
+    { value: 3, label: 'Level 3' }
+  ];
+
   const accounts = $derived(data.accounts?.items ?? []);
   const reportConfigs = $derived(data.reportConfigs?.items ?? []);
   const assetAllocations = $derived(data.valuationSettings?.items ?? []);
-  const valuationDateForInput = $derived(dateForInput(data.valuationDate));
   const selectedAccountIDs = $derived((data.selectedAccountIDs ?? []) as string[]);
 
   let editingReportID = $state('');
   let draftName = $state('');
   let draftActive = $state(true);
-  let draftEffectiveDate = $state('');
   let draftNodes = $state<ReportNodeBase[]>([]);
   let submitting = $state('');
   let templateDragInProgress = $state(false);
@@ -60,7 +69,6 @@
     editingReportID = report.reportID;
     draftName = report.name;
     draftActive = report.active;
-    draftEffectiveDate = dateForInput(report.effectiveDateTime) || valuationDateForInput;
     draftNodes = normalizeReportNodes(sortReportNodes(report.nodes));
   }
 
@@ -68,7 +76,6 @@
     editingReportID = '';
     draftName = '';
     draftActive = true;
-    draftEffectiveDate = '';
     draftNodes = [];
   }
 
@@ -83,7 +90,12 @@
       type: reportNodeType(node),
       displayOrder: index + 1,
       reportNodeID: node.reportNodeID,
-      columns: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined
+      pageOrientation: normalizePageOrientation(node.pageOrientation),
+      chartType: reportNodeType(node) === 'ReportNodeChart' ? node.chartType ?? 'Pie' : undefined,
+      pieLevel: reportNodeType(node) === 'ReportNodeChart' ? normalizePieLevel(node.pieLevel) : undefined,
+      columns: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined,
+      colourBullet: reportNodeType(node) === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
+      colourText: reportNodeType(node) === 'ReportNodeValuation' ? node.colourText ?? false : undefined
     }));
   }
 
@@ -100,9 +112,13 @@
         displayOrder: index + 1,
         name: node.name,
         title: node.title,
+        pageOrientation: normalizePageOrientation(node.pageOrientation),
         assetAllocationID: requiresAssetAllocation(type) ? node.assetAllocationID || firstAssetAllocationID() : undefined,
         chartType: type === 'ReportNodeChart' ? node.chartType ?? 'Pie' : undefined,
-        columns: type === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined
+        pieLevel: type === 'ReportNodeChart' && (node.chartType ?? 'Pie') === 'Pie' ? normalizePieLevel(node.pieLevel) : undefined,
+        columns: type === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined,
+        colourBullet: type === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
+        colourText: type === 'ReportNodeValuation' ? node.colourText ?? false : undefined
       };
     });
   }
@@ -113,6 +129,14 @@
 
   function nodeTypeLabel(type: ReportNodeType) {
     return nodeTypes.find((nodeType) => nodeType.type === type)?.label ?? type.replace(/^ReportNode/, '');
+  }
+
+  function normalizePageOrientation(value: ReportNodeBase['pageOrientation']): ReportNodePageOrientation {
+    return value === 'Landscape' ? 'Landscape' : 'Portrait';
+  }
+
+  function normalizePieLevel(value: ReportNodeBase['pieLevel']): ReportChartPieLevel {
+    return value === 2 || value === 3 ? value : 1;
   }
 
   function firstAssetAllocationID() {
@@ -130,17 +154,23 @@
       reportNodeID: crypto.randomUUID(),
       displayOrder: draftNodes.length + 1,
       name: template.label,
-      title: template.title
+      title: template.title,
+      pageOrientation: 'Portrait'
     };
 
     if (requiresAssetAllocation(type))
       node.assetAllocationID = firstAssetAllocationID();
 
-    if (type === 'ReportNodeChart')
+    if (type === 'ReportNodeChart') {
       node.chartType = 'Pie';
+      node.pieLevel = 1;
+    }
 
-    if (type === 'ReportNodeValuation')
+    if (type === 'ReportNodeValuation') {
       node.columns = defaultValuationColumns();
+      node.colourBullet = true;
+      node.colourText = false;
+    }
 
     return node;
   }
@@ -280,12 +310,22 @@
     return valuationColumnDefinitions.find((column) => column.key === columnKey)?.label ?? columnKey;
   }
 
-  function isInformationalValuationColumn(columnKey: ReportValuationColumnKey) {
-    return columnKey === 'Target' || columnKey === 'Min' || columnKey === 'Max';
+  function isAssetAllocationColumn(columnKey: ReportValuationColumnKey) {
+    return columnKey === 'Weight' || columnKey === 'Target' || columnKey === 'Min' || columnKey === 'Max';
+  }
+
+  function valuationColumnToneClass(columnKey: ReportValuationColumnKey) {
+    return isAssetAllocationColumn(columnKey) ? 'report-column-pill-asset-allocation' : 'report-column-pill-valuation';
   }
 
   function updateValuationNodeColumns(reportNodeID: string, columns: ReportValuationColumn[]) {
-    draftNodes = normalizeReportNodes(draftNodes.map((node) => node.reportNodeID === reportNodeID ? { ...node, columns } : node));
+    draftNodes = normalizeReportNodes(draftNodes.map((node) => node.reportNodeID === reportNodeID ? { ...node, columns: sequenceValuationColumns(columns) } : node));
+  }
+
+  function sequenceValuationColumns(columns: ReportValuationColumn[]) {
+    return columns
+      .filter((column) => valuationColumnDefinitions.some((definition) => definition.key === column.columnKey))
+      .map((column, index) => ({ columnKey: column.columnKey, displayOrder: index + 1 }));
   }
 
   function addValuationColumn(reportNodeID: string, columnKey: ReportValuationColumnKey, index?: number) {
@@ -393,10 +433,6 @@
     return valuationColumnDefinitions.some((column) => column.key === value);
   }
 
-  function reportEffectiveDate(report: ReportConfig) {
-    return dateForInput(report.effectiveDateTime) || '-';
-  }
-
   function assetAllocationName(assetAllocationID: string | undefined) {
     return assetAllocations.find((allocation) => allocation.assetAllocationID === assetAllocationID)?.name ?? 'Asset allocation';
   }
@@ -453,7 +489,6 @@
       </form>
 
       <form class="report-new-form table-actions" aria-label="Report actions" method="POST" action="?/createReport" use:enhance={enhanceAction('createReport')}>
-        <input type="hidden" name="effectiveDate" value={valuationDateForInput} />
         <input type="hidden" name="name" value="New Report" />
         <button aria-label="Add report" title="Add report" type="submit" disabled={submitting === 'createReport'}>
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
@@ -475,7 +510,6 @@
               <h2>{report.name}</h2>
               <div class="report-config-meta">
                 <span>{report.active ? 'Active' : 'Disabled'}</span>
-                <span>Effective {reportEffectiveDate(report)}</span>
                 <span>{report.nodes.length} nodes</span>
               </div>
             </div>
@@ -498,10 +532,6 @@
                 <label class="field">
                   <span>Name</span>
                   <input class="input" name="name" bind:value={draftName} required />
-                </label>
-                <label class="field report-date-field">
-                  <span>Effective date</span>
-                  <input class="input" name="effectiveDate" type="date" bind:value={draftEffectiveDate} required />
                 </label>
                 <label class="toggle-row report-active-toggle">
                   <span>Active</span>
@@ -573,7 +603,17 @@
                               </button>
                             {/if}
                           </div>
-                          <button class="btn btn-danger" type="button" onclick={() => removeNode(node.reportNodeID)}>Delete</button>
+                          <button
+                            class="report-node-delete-button"
+                            type="button"
+                            aria-label={`Delete ${node.name}`}
+                            title="Delete"
+                            onclick={() => removeNode(node.reportNodeID)}
+                          >
+                            <svg aria-hidden="true" viewBox="0 0 24 24">
+                              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                       <div class="report-node-fields">
@@ -585,6 +625,17 @@
                           <span>Title</span>
                           <input class="input" bind:value={node.title} required />
                         </label>
+                        <fieldset class="field report-orientation-field">
+                          <legend>Orientation</legend>
+                          <div class="report-segmented-control">
+                            {#each pageOrientationOptions as option (option.value)}
+                              <label>
+                                <input type="radio" bind:group={node.pageOrientation} value={option.value} />
+                                <span>{option.label}</span>
+                              </label>
+                            {/each}
+                          </div>
+                        </fieldset>
                         {#if requiresAssetAllocation(type)}
                           <label class="field">
                             <span>Asset allocation</span>
@@ -603,10 +654,30 @@
                               <option value="Bar">Bar</option>
                             </select>
                           </label>
+                          {#if (node.chartType ?? 'Pie') === 'Pie'}
+                            <label class="field">
+                              <span>Pie level</span>
+                              <select class="input" bind:value={node.pieLevel}>
+                                {#each pieLevelOptions as option (option.value)}
+                                  <option value={option.value}>{option.label}</option>
+                                {/each}
+                              </select>
+                            </label>
+                          {/if}
                         {/if}
                       </div>
                       {#if type === 'ReportNodeValuation'}
                         {@const valuationColumns = valuationNodeColumns(node)}
+                        <div class="report-valuation-display-options" aria-label="Valuation display options">
+                          <label class="report-valuation-colour-option">
+                            <input bind:checked={node.colourBullet} type="checkbox" />
+                            <span>Colour Bullet</span>
+                          </label>
+                          <label class="report-valuation-colour-option">
+                            <input bind:checked={node.colourText} type="checkbox" />
+                            <span>Colour Text</span>
+                          </label>
+                        </div>
                         <div class="report-valuation-columns">
                           <aside class="report-column-source">
                             <h4>Columns</h4>
@@ -616,7 +687,7 @@
                                   class={[
                                     'report-column-pill',
                                     'report-column-source-pill',
-                                    isInformationalValuationColumn(column.key) && 'report-column-pill-info'
+                                    valuationColumnToneClass(column.key)
                                   ]}
                                   draggable="true"
                                   type="button"
@@ -636,12 +707,15 @@
                               ondragover={allowValuationColumnDrop}
                               ondrop={(event) => handleValuationColumnDrop(event, node.reportNodeID)}
                             >
+                              <div class="report-column-pill report-column-selected-pill report-column-fixed-pill" role="listitem" aria-label="Fixed Name column">
+                                <span>Name</span>
+                              </div>
                               {#each valuationColumns as column, columnIndex (`${column.columnKey}-${columnIndex}`)}
                                 <div
                                   class={[
                                     'report-column-pill',
                                     'report-column-selected-pill',
-                                    isInformationalValuationColumn(column.columnKey) && 'report-column-pill-info'
+                                    valuationColumnToneClass(column.columnKey)
                                   ]}
                                   role="listitem"
                                   draggable="true"
@@ -660,7 +734,7 @@
                                   </button>
                                 </div>
                               {:else}
-                                <div class="report-column-empty">No columns selected.</div>
+                                <div class="report-column-empty">No additional columns selected.</div>
                               {/each}
                             </div>
                           </div>
@@ -891,7 +965,7 @@
 
   .report-editor-fields {
     display: grid;
-    grid-template-columns: minmax(16rem, 24rem) minmax(10rem, 14rem) auto;
+    grid-template-columns: minmax(16rem, 24rem) auto;
     gap: 0.75rem;
     align-items: end;
   }
@@ -1010,20 +1084,33 @@
   .report-node-order-controls {
     display: inline-grid;
     grid-template-columns: repeat(2, max-content);
-    gap: 0.3rem;
+    gap: 0.22rem;
     align-items: center;
   }
 
   .report-node-move-button {
     display: inline-grid;
-    width: 2rem;
-    height: 2rem;
+    width: 1.55rem;
+    height: 1.55rem;
     place-items: center;
     border: 1px solid var(--line);
-    border-radius: 0.45rem;
+    border-radius: 0.35rem;
     background: var(--panel);
     color: var(--muted);
     cursor: pointer;
+  }
+
+  .report-node-delete-button {
+    display: inline-grid;
+    width: 1.55rem;
+    height: 1.55rem;
+    place-items: center;
+    border: 1px solid var(--danger);
+    border-radius: 0.35rem;
+    background: var(--danger);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--danger) 16%, transparent);
   }
 
   .report-node-move-button:hover,
@@ -1033,9 +1120,17 @@
     outline: none;
   }
 
-  .report-node-move-button svg {
-    width: 1rem;
-    height: 1rem;
+  .report-node-delete-button:hover,
+  .report-node-delete-button:focus-visible {
+    border-color: var(--danger-strong);
+    background: var(--danger-strong);
+    outline: none;
+  }
+
+  .report-node-move-button svg,
+  .report-node-delete-button svg {
+    width: 0.82rem;
+    height: 0.82rem;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -1045,8 +1140,97 @@
 
   .report-node-fields {
     display: grid;
-    grid-template-columns: repeat(2, minmax(10rem, 1fr));
+    grid-template-columns: repeat(2, minmax(10rem, 1fr)) minmax(12rem, 0.75fr);
     gap: 0.7rem;
+  }
+
+  .report-orientation-field {
+    margin: 0;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+  }
+
+  .report-segmented-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 2.25rem;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.45rem;
+    background: var(--panel);
+  }
+
+  .report-segmented-control label {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    place-items: center;
+  }
+
+  .report-segmented-control label + label {
+    border-left: 1px solid var(--line);
+  }
+
+  .report-segmented-control input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .report-segmented-control span {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.25rem;
+    place-items: center;
+    padding: 0 0.45rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 760;
+    text-align: center;
+  }
+
+  .report-segmented-control input:checked + span {
+    background: var(--accent);
+    color: white;
+  }
+
+  .report-segmented-control input:focus-visible + span {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .report-valuation-display-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    padding-top: 0.7rem;
+  }
+
+  .report-valuation-colour-option {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 0.45rem;
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+    padding: 0.38rem 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 720;
+  }
+
+  .report-valuation-colour-option input {
+    width: 0.95rem;
+    height: 0.95rem;
+    accent-color: var(--accent);
   }
 
   .report-valuation-columns {
@@ -1093,15 +1277,19 @@
   }
 
   .report-column-pill {
+    --column-pill-background: var(--panel);
+    --column-pill-border: var(--line);
+    --column-pill-text: var(--ink);
+
     display: inline-flex;
     flex: 0 0 auto;
     gap: 0.35rem;
     align-items: center;
     max-width: 12rem;
-    border: 1px solid var(--line);
+    border: 1px solid var(--column-pill-border);
     border-radius: 999px;
-    background: var(--panel);
-    color: var(--ink);
+    background: var(--column-pill-background);
+    color: var(--column-pill-text);
     cursor: grab;
     padding: 0.28rem 0.55rem;
     font-size: 0.76rem;
@@ -1113,18 +1301,26 @@
     cursor: grabbing;
   }
 
-  .report-column-source-pill {
-    background: color-mix(in srgb, var(--panel) 86%, var(--accent-soft));
+  .report-column-fixed-pill,
+  .report-column-fixed-pill:active {
+    cursor: default;
   }
 
+  .report-column-source-pill,
   .report-column-selected-pill {
-    background: color-mix(in srgb, var(--accent-soft) 52%, var(--panel));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, white 34%, transparent);
   }
 
-  .report-column-pill-info {
-    border-color: color-mix(in srgb, #64748b 42%, var(--line));
-    background: color-mix(in srgb, #dbeafe 62%, var(--panel));
-    color: #1e3a8a;
+  .report-column-pill-valuation {
+    --column-pill-background: color-mix(in srgb, #dbeafe 76%, var(--panel));
+    --column-pill-border: color-mix(in srgb, #2563eb 58%, var(--line));
+    --column-pill-text: #1e3a8a;
+  }
+
+  .report-column-pill-asset-allocation {
+    --column-pill-background: color-mix(in srgb, #fce7f3 76%, var(--panel));
+    --column-pill-border: color-mix(in srgb, #db2777 58%, var(--line));
+    --column-pill-text: #9d174d;
   }
 
   .report-column-delete {
@@ -1134,8 +1330,8 @@
     place-items: center;
     border: 0;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--ink) 10%, transparent);
-    color: var(--muted);
+    background: color-mix(in srgb, currentColor 12%, transparent);
+    color: currentColor;
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 800;

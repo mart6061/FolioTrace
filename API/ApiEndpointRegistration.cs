@@ -1150,7 +1150,7 @@ public static class ApiEndpointRegistration
 
         valuationSettingEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
-            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            var @event = await eventRepository.LoadAsync<IAuditEventBase>(eventId, cancellationToken);
             return @event is IValuationSettingEvent valuationSettingEvent
                 ? Results.Ok(ToValuationSettingEventResponse(valuationSettingEvent))
                 : Results.NotFound();
@@ -1158,7 +1158,7 @@ public static class ApiEndpointRegistration
 
         valuationSettingEvents.MapPost($"/{nameof(AssetAllocationCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AssetAllocationCreatedRequest request, CancellationToken cancellationToken) =>
         {
-            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(Constants.Valuation.Today, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
             return await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.ValuationSettingsStreamId,
                 ValuationSettingEventsRoute,
@@ -1170,7 +1170,7 @@ public static class ApiEndpointRegistration
 
         valuationSettingEvents.MapPost($"/{nameof(AssetAllocationModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AssetAllocationModifiedRequest request, CancellationToken cancellationToken) =>
         {
-            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(Constants.Valuation.Today, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
             return await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.ValuationSettingsStreamId,
                 ValuationSettingEventsRoute,
@@ -1182,7 +1182,7 @@ public static class ApiEndpointRegistration
 
         valuationSettingEvents.MapPost($"/{nameof(AssetAllocationAccountIDsSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AssetAllocationAccountIDsSetRequest request, CancellationToken cancellationToken) =>
         {
-            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(Constants.Valuation.Today, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
             return await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.ValuationSettingsStreamId,
                 ValuationSettingEventsRoute,
@@ -1194,7 +1194,7 @@ public static class ApiEndpointRegistration
 
         valuationSettingEvents.MapPost($"/{nameof(AssetAllocationActiveSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AssetAllocationActiveSetRequest request, CancellationToken cancellationToken) =>
         {
-            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(Constants.Valuation.Today, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
             return await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.ValuationSettingsStreamId,
                 ValuationSettingEventsRoute,
@@ -1224,7 +1224,7 @@ public static class ApiEndpointRegistration
 
         mappingEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
-            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            var @event = await eventRepository.LoadAsync<IAuditEventBase>(eventId, cancellationToken);
             return @event is IAssetAllocationMappingEvent mappingEvent
                 ? Results.Ok(ToAssetAllocationMappingEventResponse(mappingEvent))
                 : Results.NotFound();
@@ -1260,7 +1260,7 @@ public static class ApiEndpointRegistration
 
         reportEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
         {
-            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            var @event = await eventRepository.LoadAsync<IAuditEventBase>(eventId, cancellationToken);
             return @event is IReportEvent reportEvent
                 ? Results.Ok(ToReportEventResponse(reportEvent))
                 : Results.NotFound();
@@ -1269,8 +1269,8 @@ public static class ApiEndpointRegistration
         reportEvents.MapPost($"/{nameof(ReportCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, ReportCreatedRequest request, CancellationToken cancellationToken) =>
         {
             var asAt = AuditDateTimeBuilder.Create();
-            var reports = await TryGetReportConfigs(request.EventDateTime, asAt, eventRepository, cancellationToken);
-            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var reports = await TryGetReportConfigs(Constants.Valuation.Today, asAt, eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(Constants.Valuation.Today, asAt, eventRepository, cancellationToken);
             return await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.ReportConfigsStreamId,
                 ReportEventsRoute,
@@ -1283,8 +1283,8 @@ public static class ApiEndpointRegistration
         reportEvents.MapPost($"/{nameof(ReportModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, ReportModifiedRequest request, CancellationToken cancellationToken) =>
         {
             var asAt = AuditDateTimeBuilder.Create();
-            var reports = await TryGetReportConfigs(request.EventDateTime, asAt, eventRepository, cancellationToken);
-            var valuationSettings = await TryGetValuationSettings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var reports = await TryGetReportConfigs(Constants.Valuation.Today, asAt, eventRepository, cancellationToken);
+            var valuationSettings = await TryGetValuationSettings(Constants.Valuation.Today, asAt, eventRepository, cancellationToken);
             return await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.ReportConfigsStreamId,
                 ReportEventsRoute,
@@ -2720,39 +2720,31 @@ public static class ApiEndpointRegistration
                 Type = createdEvent.Type,
                 EventID = createdEvent.EventID.Value,
                 UserID = createdEvent.UserID.Value,
-                EventDateTime = createdEvent.EventDateTime.Value,
                 AuditDateTime = createdEvent.AuditDateTime.Value,
-                createdEvent.Reason,
                 AssetAllocationID = createdEvent.AssetAllocationID.Value,
                 createdEvent.Name,
                 AccountIDs = createdEvent.AccountIDs.Select(accountID => accountID.Value).ToList(),
                 createdEvent.Active,
                 RootNodeID = createdEvent.RootNodeID.Value,
-                Nodes = ToAssetAllocationNodeResponses(createdEvent.Nodes),
-                EffectiveDateTime = (createdEvent.EffectiveDateTime ?? createdEvent.EventDateTime).Value
+                Nodes = ToAssetAllocationNodeResponses(createdEvent.Nodes)
             },
             AssetAllocationModifiedEvent modifiedEvent => new
             {
                 Type = modifiedEvent.Type,
                 EventID = modifiedEvent.EventID.Value,
                 UserID = modifiedEvent.UserID.Value,
-                EventDateTime = modifiedEvent.EventDateTime.Value,
                 AuditDateTime = modifiedEvent.AuditDateTime.Value,
-                modifiedEvent.Reason,
                 AssetAllocationID = modifiedEvent.AssetAllocationID.Value,
                 modifiedEvent.Name,
                 RootNodeID = modifiedEvent.RootNodeID.Value,
-                Nodes = ToAssetAllocationNodeResponses(modifiedEvent.Nodes),
-                EffectiveDateTime = (modifiedEvent.EffectiveDateTime ?? modifiedEvent.EventDateTime).Value
+                Nodes = ToAssetAllocationNodeResponses(modifiedEvent.Nodes)
             },
             AssetAllocationAccountIDsSetEvent accountIDsSetEvent => new
             {
                 Type = accountIDsSetEvent.Type,
                 EventID = accountIDsSetEvent.EventID.Value,
                 UserID = accountIDsSetEvent.UserID.Value,
-                EventDateTime = accountIDsSetEvent.EventDateTime.Value,
                 AuditDateTime = accountIDsSetEvent.AuditDateTime.Value,
-                accountIDsSetEvent.Reason,
                 AssetAllocationID = accountIDsSetEvent.AssetAllocationID.Value,
                 AccountIDs = accountIDsSetEvent.AccountIDs.Select(accountID => accountID.Value).ToList()
             },
@@ -2761,9 +2753,7 @@ public static class ApiEndpointRegistration
                 Type = activeSetEvent.Type,
                 EventID = activeSetEvent.EventID.Value,
                 UserID = activeSetEvent.UserID.Value,
-                EventDateTime = activeSetEvent.EventDateTime.Value,
                 AuditDateTime = activeSetEvent.AuditDateTime.Value,
-                activeSetEvent.Reason,
                 AssetAllocationID = activeSetEvent.AssetAllocationID.Value,
                 activeSetEvent.Active
             },
@@ -2772,9 +2762,7 @@ public static class ApiEndpointRegistration
                 Type = @event.Type,
                 EventID = @event.EventID.Value,
                 UserID = @event.UserID.Value,
-                EventDateTime = @event.EventDateTime.Value,
                 AuditDateTime = @event.AuditDateTime.Value,
-                @event.Reason,
                 AssetAllocationID = @event.AssetAllocationID.Value
             }
         });
@@ -2823,13 +2811,10 @@ public static class ApiEndpointRegistration
                 Type = createdEvent.Type,
                 EventID = createdEvent.EventID.Value,
                 UserID = createdEvent.UserID.Value,
-                EventDateTime = createdEvent.EventDateTime.Value,
                 AuditDateTime = createdEvent.AuditDateTime.Value,
-                createdEvent.Reason,
                 ReportID = createdEvent.ReportID.Value,
                 createdEvent.Name,
                 createdEvent.Active,
-                EffectiveDateTime = createdEvent.EffectiveDateTime.Value,
                 Nodes = ToReportNodeResponses(createdEvent.Nodes)
             },
             ReportModifiedEvent modifiedEvent => new
@@ -2837,13 +2822,10 @@ public static class ApiEndpointRegistration
                 Type = modifiedEvent.Type,
                 EventID = modifiedEvent.EventID.Value,
                 UserID = modifiedEvent.UserID.Value,
-                EventDateTime = modifiedEvent.EventDateTime.Value,
                 AuditDateTime = modifiedEvent.AuditDateTime.Value,
-                modifiedEvent.Reason,
                 ReportID = modifiedEvent.ReportID.Value,
                 modifiedEvent.Name,
                 modifiedEvent.Active,
-                EffectiveDateTime = modifiedEvent.EffectiveDateTime.Value,
                 Nodes = ToReportNodeResponses(modifiedEvent.Nodes)
             },
             _ => new
@@ -2851,9 +2833,7 @@ public static class ApiEndpointRegistration
                 Type = @event.Type,
                 EventID = @event.EventID.Value,
                 UserID = @event.UserID.Value,
-                EventDateTime = @event.EventDateTime.Value,
                 AuditDateTime = @event.AuditDateTime.Value,
-                @event.Reason,
                 ReportID = @event.ReportID.Value
             }
         });
@@ -2874,8 +2854,10 @@ public static class ApiEndpointRegistration
                 chart.DisplayOrder,
                 chart.Name,
                 chart.Title,
+                PageOrientation = chart.PageOrientation.ToString(),
                 AssetAllocationID = chart.AssetAllocationID.Value,
-                ChartType = chart.ChartType.ToString()
+                ChartType = chart.ChartType.ToString(),
+                chart.PieLevel
             },
             ReportNodeValuation valuation => new
             {
@@ -2884,8 +2866,11 @@ public static class ApiEndpointRegistration
                 valuation.DisplayOrder,
                 valuation.Name,
                 valuation.Title,
+                PageOrientation = valuation.PageOrientation.ToString(),
                 AssetAllocationID = valuation.AssetAllocationID.Value,
-                Columns = ToReportValuationColumnResponses(valuation.Columns)
+                Columns = ToReportValuationColumnResponses(valuation.Columns),
+                valuation.ColourBullet,
+                valuation.ColourText
             },
             ReportNodeTransactions transactions => new
             {
@@ -2894,6 +2879,7 @@ public static class ApiEndpointRegistration
                 transactions.DisplayOrder,
                 transactions.Name,
                 transactions.Title,
+                PageOrientation = transactions.PageOrientation.ToString(),
                 AssetAllocationID = transactions.AssetAllocationID.Value
             },
             ReportNodeCash cash => new
@@ -2903,6 +2889,7 @@ public static class ApiEndpointRegistration
                 cash.DisplayOrder,
                 cash.Name,
                 cash.Title,
+                PageOrientation = cash.PageOrientation.ToString(),
                 AssetAllocationID = cash.AssetAllocationID.Value
             },
             _ => new
@@ -2911,7 +2898,8 @@ public static class ApiEndpointRegistration
                 ReportNodeID = node.ReportNodeID.Value,
                 node.DisplayOrder,
                 node.Name,
-                node.Title
+                node.Title,
+                PageOrientation = node.PageOrientation.ToString()
             }
         };
 

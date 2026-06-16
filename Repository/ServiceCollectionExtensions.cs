@@ -46,9 +46,9 @@ public static class ServiceCollectionExtensions
     }
 
     private static IEnumerable<Type> GetEventTypes() =>
-        typeof(IEventBase).Assembly
+        typeof(IAuditEventBase).Assembly
             .GetTypes()
-            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(IEventBase).IsAssignableFrom(type));
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(IAuditEventBase).IsAssignableFrom(type));
 
     private static string? CreateConnectionStringFromDatabaseUrl(string? databaseUrl)
     {

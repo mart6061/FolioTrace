@@ -10,6 +10,12 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
     [EventProperty(Description = "Valuation Date Option")]
     public UserValuationDateOption ValuationDateOption { get; init; }
 
+    [EventProperty(Description = "Start Valuation Date Option")]
+    public UserValuationDateOption? StartValuationDateOption { get; init; }
+
+    [EventProperty(Description = "End Valuation Date Option")]
+    public UserValuationDateOption? EndValuationDateOption { get; init; }
+
     [EventProperty(Description = "Holding Date Basis")]
     public HoldingDateBasis HoldingDateBasis { get; init; }
 
@@ -22,10 +28,21 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
     {
     }
 
-    internal UserValuationPreferencesModifiedEvent(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
+    internal UserValuationPreferencesModifiedEvent(
+        EventID eventID,
+        UserID userID,
+        EventDateTime eventDateTime,
+        AuditDateTime auditDateTime,
+        string reason,
+        UserValuationDateOption startValuationDateOption,
+        UserValuationDateOption endValuationDateOption,
+        HoldingDateBasis holdingDateBasis,
+        bool showZeroBalances)
         : base(eventID, userID, eventDateTime, auditDateTime, reason)
     {
-        ValuationDateOption = valuationDateOption;
+        ValuationDateOption = endValuationDateOption;
+        StartValuationDateOption = startValuationDateOption;
+        EndValuationDateOption = endValuationDateOption;
         HoldingDateBasis = holdingDateBasis;
         ShowZeroBalances = showZeroBalances;
     }

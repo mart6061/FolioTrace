@@ -143,13 +143,13 @@
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <div class="status-panel status-panel-error mb-4">
         {data.error}
       </div>
     {/if}
 
     {#if data.memoryDiagnostics?.eventCache.unprocessedEventCount}
-      <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+      <div class="status-panel status-panel-error mb-4">
         <strong>{formatCount(data.memoryDiagnostics.eventCache.unprocessedEventCount)} unprocessed events</strong>
         <span class="ml-2">Some stored events could not be loaded and were skipped. Review the diagnostics below.</span>
       </div>

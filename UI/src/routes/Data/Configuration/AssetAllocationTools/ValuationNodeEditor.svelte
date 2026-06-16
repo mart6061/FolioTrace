@@ -7,21 +7,21 @@
   const SPECIAL_NODE_COLOUR = '#dc2626';
 
   type EditableNode = AssetAllocationNode & { colour?: string | null };
-  type NodeRow = { colourLocked: boolean; depth: number; effectiveColour: string | null; node: EditableNode };
+  type NodeRow = { colourInherited: boolean; depth: number; displayedColour: string | null; node: EditableNode };
   type ParseResult = { message: string; nodes: EditableNode[] };
 
   let {
+    addRequest = 0,
     accounts,
     allocationAccountIDs,
     nodesJson = $bindable(''),
-    rootNodeID,
-    rootNodeName
+    rootNodeID
   }: {
+    addRequest?: number;
     accounts: Account[];
     allocationAccountIDs: string[];
     nodesJson: string;
     rootNodeID: string;
-    rootNodeName: string;
   } = $props();
 
   let editorMessage = $state('');
@@ -31,6 +31,8 @@
 
   const allocationAccounts = $derived(accounts.filter((account) => allocationAccountIDs.includes(account.accountID)));
   const specialNodeID = $derived(specialNodeIDFor(nodes));
+  let handledAddRequest = $state(0);
+  let addRequestInitialised = $state(false);
   const initialParse = parseNodesJson(nodesJson);
   const initialNodes = initialParse.message ? initialParse.nodes : normaliseNodes(initialParse.nodes);
   editorMessage = initialParse.message || validateNodes(initialNodes);
@@ -39,17 +41,29 @@
   if (!initialParse.message)
     nodesJson = JSON.stringify(initialNodes.map(toJsonNode), null, 2);
 
-  const rows = $derived.by(() => buildRows(nodes, rootNodeID));
+  $effect(() => {
+    if (!addRequestInitialised) {
+      handledAddRequest = addRequest;
+      addRequestInitialised = true;
+      return;
+    }
 
-  function buildRows(sourceNodes: EditableNode[], rootID: string) {
+    if (addRequest === handledAddRequest)
+      return;
+
+    handledAddRequest = addRequest;
+    addChild(null);
+  });
+
+  const rows = $derived.by(() => buildRows(nodes));
+
+  function buildRows(sourceNodes: EditableNode[]) {
     const byID = nodeMap(sourceNodes);
-    const root = byID.get(rootID);
     const nextRows: NodeRow[] = [];
 
-    if (!root)
-      return nextRows;
+    for (const topLevelNode of topLevelNodes(sourceNodes))
+      appendRows(topLevelNode, 0, null, byID, new SvelteSet<string>(), nextRows);
 
-    appendRows(root, 0, null, byID, new SvelteSet<string>(), nextRows);
     return nextRows;
   }
 
@@ -59,9 +73,9 @@
 
     const nodeColour = isHexColour(node.colour) ? node.colour : null;
     const special = isSpecialNodeShape(node);
-    const colourLocked = inheritedColour !== null && !special;
-    const effectiveColour = special ? nodeColour ?? inheritedColour : inheritedColour ?? nodeColour;
-    nextRows.push({ colourLocked, depth, effectiveColour, node });
+    const colourInherited = inheritedColour !== null && !special;
+    const displayedColour = special ? nodeColour ?? inheritedColour : inheritedColour ?? nodeColour;
+    nextRows.push({ colourInherited, depth, displayedColour, node });
 
     const nextPath = new SvelteSet(path);
     nextPath.add(node.nodeID);
@@ -70,7 +84,7 @@
       const childNode = byID.get(childNodeID);
 
       if (childNode)
-        appendRows(childNode, depth + 1, special ? inheritedColour : effectiveColour, byID, nextPath, nextRows);
+        appendRows(childNode, depth + 1, special ? inheritedColour : displayedColour, byID, nextPath, nextRows);
     }
   }
 
@@ -123,18 +137,18 @@
     nodesJson = JSON.stringify(normalisedNodes.map(toJsonNode), null, 2);
   }
 
-  function addChild(parentNodeID: string) {
-    if (isSpecialNodeID(parentNodeID))
+  function addChild(parentNodeID: string | null) {
+    if (parentNodeID && isSpecialNodeID(parentNodeID))
       return;
 
     const nextNodes = cloneNodes(nodes);
-    const parentNode = nextNodes.find((node) => node.nodeID === parentNodeID);
-
-    if (!parentNode)
-      return;
+    const parentNode = parentNodeID ? nextNodes.find((node) => node.nodeID === parentNodeID) : null;
 
     const childNodeID = crypto.randomUUID();
-    parentNode.nodes = [...parentNode.nodes, childNodeID];
+
+    if (parentNode)
+      parentNode.nodes = [...parentNode.nodes, childNodeID];
+
     nextNodes.push({
       accountSettings: allocationAccounts.map((account) => defaultAccountSetting(account.accountID)),
       colour: null,
@@ -169,11 +183,11 @@
     setNodeExplicitColour(nodeID, safeColour(value), true);
   }
 
-  function setNodeNoColour(nodeID: string, noColour: boolean, fallbackColour: string | null) {
+  function setNodeColourEnabled(nodeID: string, colourEnabled: boolean, fallbackColour: string | null) {
     if (isSpecialNodeID(nodeID) || hasInheritedColour(nodeID))
       return;
 
-    setNodeExplicitColour(nodeID, noColour ? null : displayColour(fallbackColour), !noColour);
+    setNodeExplicitColour(nodeID, colourEnabled ? displayColour(fallbackColour) : null, colourEnabled);
   }
 
   function setNodeExplicitColour(nodeID: string, colour: string | null, clearDescendantColours: boolean) {
@@ -205,7 +219,7 @@
   }
 
   function deleteNode(nodeID: string) {
-    if (nodeID === rootNodeID || isSpecialNodeID(nodeID))
+    if (isSpecialNodeID(nodeID))
       return;
 
     const byID = nodeMap(nodes);
@@ -223,7 +237,7 @@
   }
 
   function startNodeDrag(event: DragEvent, nodeID: string) {
-    if (nodeID === rootNodeID || isSpecialNodeID(nodeID)) {
+    if (isSpecialNodeID(nodeID)) {
       event.preventDefault();
       return;
     }
@@ -296,8 +310,10 @@
 
     const targetParentID = parentIDFor(targetNodeID, nodes);
 
-    if (!targetParentID)
+    if (!targetParentID) {
+      moveTopLevelNodeBeside(sourceNodeID, targetNodeID, mode);
       return;
+    }
 
     const nextNodes = detachNode(sourceNodeID, cloneNodes(nodes));
     const targetParent = nextNodes.find((node) => node.nodeID === targetParentID);
@@ -316,11 +332,33 @@
     commitVisualNodes(nextNodes);
   }
 
+  function moveTopLevelNodeBeside(sourceNodeID: string, targetNodeID: string, mode: 'after' | 'before') {
+    const detachedNodes = detachNode(sourceNodeID, cloneNodes(nodes));
+    const sourceNode = detachedNodes.find((node) => node.nodeID === sourceNodeID);
+
+    if (!sourceNode)
+      return;
+
+    const nextNodes = detachedNodes.filter((node) => node.nodeID !== sourceNodeID);
+    const targetIndex = nextNodes.findIndex((node) => node.nodeID === targetNodeID);
+
+    if (targetIndex === -1)
+      return;
+
+    nextNodes.splice(mode === 'before' ? targetIndex : targetIndex + 1, 0, sourceNode);
+    commitVisualNodes(nextNodes);
+  }
+
   function moveNodeWithinSiblings(nodeID: string, direction: -1 | 1) {
     const parentID = parentIDFor(nodeID, nodes);
 
-    if (!parentID || nodeID === rootNodeID || isSpecialNodeID(nodeID))
+    if (isSpecialNodeID(nodeID))
       return;
+
+    if (!parentID) {
+      moveTopLevelNodeWithinSiblings(nodeID, direction);
+      return;
+    }
 
     const siblingIDs = movableSiblingIDs(nodeID, nodes);
     const siblingIndex = siblingIDs.indexOf(nodeID);
@@ -348,6 +386,25 @@
     commitVisualNodes(nextNodes);
   }
 
+  function moveTopLevelNodeWithinSiblings(nodeID: string, direction: -1 | 1) {
+    const siblingIDs = movableSiblingIDs(nodeID, nodes);
+    const siblingIndex = siblingIDs.indexOf(nodeID);
+    const targetSiblingID = siblingIDs[siblingIndex + direction];
+
+    if (siblingIndex === -1 || !targetSiblingID)
+      return;
+
+    const nextNodes = cloneNodes(nodes);
+    const nodeIndex = nextNodes.findIndex((node) => node.nodeID === nodeID);
+    const targetIndex = nextNodes.findIndex((node) => node.nodeID === targetSiblingID);
+
+    if (nodeIndex === -1 || targetIndex === -1)
+      return;
+
+    [nextNodes[nodeIndex], nextNodes[targetIndex]] = [nextNodes[targetIndex], nextNodes[nodeIndex]];
+    commitVisualNodes(nextNodes);
+  }
+
   function siblingMoveState(nodeID: string) {
     const siblingIDs = movableSiblingIDs(nodeID, nodes);
     const index = siblingIDs.indexOf(nodeID);
@@ -361,27 +418,30 @@
 
   function movableSiblingIDs(nodeID: string, sourceNodes: EditableNode[]) {
     const parentID = parentIDFor(nodeID, sourceNodes);
+
+    if (!parentID)
+      return topLevelNodes(sourceNodes)
+        .map((node) => node.nodeID)
+        .filter((childNodeID) => !isSpecialNodeID(childNodeID));
+
     const parent = sourceNodes.find((node) => node.nodeID === parentID);
 
     if (!parent)
       return [];
 
-    return parent.nodes.filter((childNodeID) => childNodeID !== rootNodeID && !isSpecialNodeID(childNodeID));
+    return parent.nodes.filter((childNodeID) => !isSpecialNodeID(childNodeID));
   }
 
   function canMoveAsChild(sourceNodeID: string, targetNodeID: string) {
-    return sourceNodeID !== rootNodeID
-      && !isSpecialNodeID(sourceNodeID)
+    return !isSpecialNodeID(sourceNodeID)
       && !isSpecialNodeID(targetNodeID)
       && sourceNodeID !== targetNodeID
       && !descendantIDs(sourceNodeID, nodeMap(nodes)).has(targetNodeID);
   }
 
   function canMoveBeside(sourceNodeID: string, targetNodeID: string) {
-    return sourceNodeID !== rootNodeID
-      && !isSpecialNodeID(sourceNodeID)
+    return !isSpecialNodeID(sourceNodeID)
       && !isSpecialNodeID(targetNodeID)
-      && targetNodeID !== rootNodeID
       && sourceNodeID !== targetNodeID
       && !descendantIDs(sourceNodeID, nodeMap(nodes)).has(targetNodeID);
   }
@@ -413,10 +473,10 @@
     const messages: string[] = [];
     const byID = nodeMap(sourceNodes);
 
-    if (!byID.has(rootNodeID))
-      messages.push('Root node is missing.');
-
     for (const node of sourceNodes) {
+      if (node.nodeID === rootNodeID)
+        messages.push('Root node must not be included in nodes.');
+
       if (node.colour && !isHexColour(node.colour))
         messages.push(`${node.name} has an invalid colour.`);
 
@@ -442,22 +502,21 @@
       }
     }
 
-    if (parentIDsByChildID.has(rootNodeID))
-      messages.push('Root node cannot be a child node.');
-
     for (const [childNodeID, parentIDs] of parentIDsByChildID) {
       if (new SvelteSet(parentIDs).size > 1)
         messages.push(`${byID.get(childNodeID)?.name ?? childNodeID} has multiple parents.`);
     }
 
-    if (byID.has(rootNodeID)) {
+    if (sourceNodes.length) {
       const visited = new SvelteSet<string>();
       const visiting = new SvelteSet<string>();
-      visitNode(rootNodeID, byID, visited, visiting, messages);
+
+      for (const topLevelNode of topLevelNodes(sourceNodes))
+        visitNode(topLevelNode.nodeID, byID, visited, visiting, messages);
 
       for (const node of sourceNodes) {
         if (!visited.has(node.nodeID))
-          messages.push(`${node.name} is not reachable from the root node.`);
+          messages.push(`${node.name} is not reachable from a top-level node.`);
       }
     }
 
@@ -496,15 +555,12 @@
   }
 
   function normaliseNodes(sourceNodes: EditableNode[]) {
-    const nextNodes = sourceNodes.map((node) => ({
+    const legacyRootNode = sourceNodes.find((node) => node.nodeID === rootNodeID);
+    const nextNodes = sourceNodes.filter((node) => node.nodeID !== rootNodeID).map((node) => ({
       ...node,
       accountSettings: node.accountSettings.map((setting) => ({ ...setting })),
       nodes: [...node.nodes]
     }));
-    const rootNode = nextNodes.find((node) => node.nodeID === rootNodeID);
-
-    if (!rootNode)
-      return normaliseAccountSettings(nextNodes);
 
     let specialNode = nextNodes.find(isSpecialNodeShape);
     if (!specialNode) {
@@ -520,23 +576,14 @@
       nextNodes.push(specialNode);
     }
 
+    const legacyTopLevelNodeIDs = legacyRootNode?.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID) ?? [];
     const specialChildNodes = specialNode.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID);
 
     for (const node of nextNodes) {
-      if (node.nodeID !== rootNodeID)
-        node.nodes = node.nodes.filter((nodeID) => nodeID !== specialNode.nodeID);
+      node.nodes = node.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID);
     }
 
-    rootNode.nodes = [
-      specialNode.nodeID,
-      ...specialChildNodes,
-      ...rootNode.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID)
-    ];
-
-    return clearInheritedColourOverrides(normaliseAccountSettings(nextNodes).map((node) => {
-      if (node.nodeID === rootNodeID)
-        return { ...node, name: currentRootNodeName() };
-
+    return orderNodes(clearInheritedColourOverrides(normaliseAccountSettings(nextNodes).map((node) => {
       if (node.nodeID === specialNode.nodeID)
         return {
           ...node,
@@ -549,14 +596,18 @@
         };
 
       return node;
-    }));
+    })), [
+      ...specialChildNodes,
+      ...legacyTopLevelNodeIDs
+    ]);
   }
 
   function clearInheritedColourOverrides(sourceNodes: EditableNode[]) {
     const nextNodes = cloneNodes(sourceNodes);
     const byID = nodeMap(nextNodes);
 
-    clearChildColourOverrides(rootNodeID, false, byID, new SvelteSet<string>());
+    for (const topLevelNode of topLevelNodes(nextNodes))
+      clearChildColourOverrides(topLevelNode.nodeID, false, byID, new SvelteSet<string>());
 
     return nextNodes;
   }
@@ -583,21 +634,13 @@
       clearChildColourOverrides(childNodeID, nextInheritedColour, byID, nextPath);
   }
 
-  function currentRootNodeName() {
-    return rootNodeName.trim() || 'Root';
-  }
-
   function isSpecialNodeID(nodeID: string) {
     return nodeID === specialNodeID;
   }
 
   function specialNodeIDFor(sourceNodes: EditableNode[]) {
-    const rootNode = sourceNodes.find((node) => node.nodeID === rootNodeID);
-
-    if (rootNode?.nodes[0])
-      return rootNode.nodes[0];
-
-    return sourceNodes.find(isSpecialNodeShape)?.nodeID ?? '';
+    const firstNode = sourceNodes[0];
+    return firstNode && isSpecialNodeShape(firstNode) ? firstNode.nodeID : sourceNodes.find(isSpecialNodeShape)?.nodeID ?? '';
   }
 
   function isSpecialNodeShape(node: EditableNode) {
@@ -672,7 +715,7 @@
       accountSettings: special ? [] : node.accountSettings,
       colour: special ? SPECIAL_NODE_COLOUR : isHexColour(node.colour) ? node.colour : null,
       hidden: special ? false : node.hidden,
-      name: node.nodeID === rootNodeID ? currentRootNodeName() : special ? SPECIAL_NODE_NAME : node.name,
+      name: special ? SPECIAL_NODE_NAME : node.name,
       nodeID: node.nodeID,
       nodes: special ? [] : node.nodes,
       subtotal: special ? false : node.subtotal
@@ -771,8 +814,41 @@
     return isHexColour(colour) ? colour : DEFAULT_NODE_COLOUR;
   }
 
-  function hasNodeColour(node: EditableNode) {
+  function hasExplicitColour(node: EditableNode) {
     return isHexColour(node.colour);
+  }
+
+  function topLevelNodes(sourceNodes: EditableNode[]) {
+    const childNodeIDs = new SvelteSet(sourceNodes.flatMap((node) => node.nodes));
+    return sourceNodes.filter((node) => !childNodeIDs.has(node.nodeID));
+  }
+
+  function orderNodes(sourceNodes: EditableNode[], preferredTopLevelNodeIDs: string[] = []) {
+    const byID = nodeMap(sourceNodes);
+    const childNodeIDs = new SvelteSet(sourceNodes.flatMap((node) => node.nodes));
+    const orderedNodeIDs = [
+      specialNodeIDFor(sourceNodes),
+      ...preferredTopLevelNodeIDs,
+      ...sourceNodes.filter((node) => !childNodeIDs.has(node.nodeID)).map((node) => node.nodeID)
+    ].filter(Boolean);
+    const addedNodeIDs = new SvelteSet<string>();
+    const orderedNodes: EditableNode[] = [];
+
+    for (const nodeID of orderedNodeIDs) {
+      const node = byID.get(nodeID);
+
+      if (node && !addedNodeIDs.has(nodeID)) {
+        orderedNodes.push(node);
+        addedNodeIDs.add(nodeID);
+      }
+    }
+
+    for (const node of sourceNodes) {
+      if (!addedNodeIDs.has(node.nodeID))
+        orderedNodes.push(node);
+    }
+
+    return orderedNodes;
   }
 
   function safeColour(colour: string | null | undefined) {
@@ -791,9 +867,9 @@
 
   <div class="valuation-node-grid" role="tree">
     {#each rows as row (row.node.nodeID)}
-      <section class="valuation-node-row" style={`--node-colour: ${displayColour(row.effectiveColour)}`}>
+      <section class="valuation-node-row" style={`--node-colour: ${displayColour(row.displayedColour)}`}>
         <div class="valuation-node-tree-cell" style={`margin-left: ${row.depth * 1.25}rem`}>
-          {#if row.node.nodeID !== rootNodeID && !isSpecialNodeID(row.node.nodeID)}
+          {#if !isSpecialNodeID(row.node.nodeID)}
             <div
               aria-hidden="true"
               class={`valuation-node-drop-zone ${dragOverNodeID === row.node.nodeID ? 'valuation-node-drop-zone-active' : ''}`}
@@ -807,7 +883,7 @@
           <div
             aria-level={row.depth + 1}
             aria-selected="false"
-            class={`valuation-node-pill ${isSpecialNodeID(row.node.nodeID) ? 'valuation-node-pill-special' : ''} ${!row.effectiveColour ? 'valuation-node-pill-none' : ''} ${dragOverNodeID === row.node.nodeID ? 'valuation-node-pill-over' : ''}`}
+            class={`valuation-node-pill ${isSpecialNodeID(row.node.nodeID) ? 'valuation-node-pill-special' : ''} ${!row.displayedColour ? 'valuation-node-pill-none' : ''} ${dragOverNodeID === row.node.nodeID ? 'valuation-node-pill-over' : ''}`}
             ondragover={(event) => allowDrop(event, row.node.nodeID, 'as-child')}
             ondrop={(event) => dropNode(event, row.node.nodeID, 'as-child')}
             role="treeitem"
@@ -819,7 +895,7 @@
               <button
                 aria-label={`Drag ${row.node.name}`}
                 class="valuation-node-icon-button valuation-node-drag-button"
-                draggable={row.node.nodeID !== rootNodeID}
+                draggable="true"
                 ondragend={endNodeDrag}
                 ondragstart={(event) => startNodeDrag(event, row.node.nodeID)}
                 title="Drag"
@@ -828,17 +904,13 @@
                 <span aria-hidden="true">::</span>
               </button>
 
-              <span class={`valuation-node-colour-shell ${!row.colourLocked && !hasNodeColour(row.node) ? 'valuation-node-colour-shell-empty' : ''} ${row.colourLocked ? 'valuation-node-colour-shell-locked' : ''}`}>
-                <input aria-label="Node colour" class="valuation-node-colour" disabled={row.colourLocked || !hasNodeColour(row.node)} type="color" value={displayColour(row.effectiveColour)} oninput={(event) => setNodeColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
+              <span class={`valuation-node-colour-shell ${!row.colourInherited && !hasExplicitColour(row.node) ? 'valuation-node-colour-shell-disabled' : ''} ${row.colourInherited ? 'valuation-node-colour-shell-inherited' : ''}`}>
+                <input aria-label="Node colour" class="valuation-node-colour" disabled={row.colourInherited || !hasExplicitColour(row.node)} type="color" value={displayColour(row.displayedColour)} oninput={(event) => setNodeColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
               </span>
-              <label aria-label="No colour" class={`valuation-node-no-colour-toggle ${row.colourLocked ? 'valuation-node-no-colour-toggle-locked' : ''}`} title={row.colourLocked ? 'Colour inherited from parent' : 'No colour'}>
-                <input checked={!row.colourLocked && !hasNodeColour(row.node)} disabled={row.colourLocked} onchange={(event) => setNodeNoColour(row.node.nodeID, (event.currentTarget as HTMLInputElement).checked, row.effectiveColour)} type="checkbox" />
+              <label aria-label="Use colour" class={`valuation-node-colour-toggle ${row.colourInherited ? 'valuation-node-colour-toggle-inherited' : ''}`} title={row.colourInherited ? 'Colour inherited from parent' : 'Use colour'}>
+                <input checked={row.colourInherited || hasExplicitColour(row.node)} disabled={row.colourInherited} onchange={(event) => setNodeColourEnabled(row.node.nodeID, (event.currentTarget as HTMLInputElement).checked, row.displayedColour)} type="checkbox" />
               </label>
-              {#if row.node.nodeID === rootNodeID}
-                <span class="valuation-node-name valuation-node-name-static" title={currentRootNodeName()}>{currentRootNodeName()}</span>
-              {:else}
-                <input aria-label="Node name" class="valuation-node-name" type="text" value={row.node.name} onchange={(event) => renameNode(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
-              {/if}
+              <input aria-label="Node name" class="valuation-node-name" type="text" value={row.node.name} onchange={(event) => renameNode(row.node.nodeID, (event.currentTarget as HTMLInputElement).value)} />
 
               {@const moveState = siblingMoveState(row.node.nodeID)}
               {#if moveState.show}
@@ -866,17 +938,11 @@
                 </span>
               {/if}
 
-              {#if row.node.nodeID === rootNodeID}
-                <button aria-label={`Add child to ${row.node.name}`} class="valuation-node-action-button valuation-node-add-button" onclick={() => addChild(row.node.nodeID)} title="Add child" type="button">Add</button>
-              {/if}
-
-              {#if row.node.nodeID !== rootNodeID}
-                <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
-              {/if}
+              <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
             {/if}
           </div>
 
-          {#if row.node.nodeID !== rootNodeID && !isSpecialNodeID(row.node.nodeID)}
+          {#if !isSpecialNodeID(row.node.nodeID)}
             <div
               aria-hidden="true"
               class={`valuation-node-drop-zone ${dragOverNodeID === row.node.nodeID ? 'valuation-node-drop-zone-active' : ''}`}
@@ -889,7 +955,7 @@
         </div>
       </section>
     {:else}
-      <div class="valuation-node-editor-message" role="status">Root node is missing.</div>
+      <div class="valuation-node-editor-message" role="status">No nodes configured.</div>
     {/each}
   </div>
 
@@ -1071,12 +1137,12 @@
     padding: 0;
   }
 
-  .valuation-node-colour-shell-empty {
+  .valuation-node-colour-shell-disabled {
     border: 1px solid var(--line);
     background: var(--panel);
   }
 
-  .valuation-node-colour-shell-locked {
+  .valuation-node-colour-shell-inherited {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--node-colour) 72%, var(--line));
     opacity: 0.72;
   }
@@ -1109,21 +1175,21 @@
     opacity: 0;
   }
 
-  .valuation-node-no-colour-toggle {
+  .valuation-node-colour-toggle {
     display: inline-flex;
     align-items: center;
     width: 1rem;
     height: 1rem;
   }
 
-  .valuation-node-no-colour-toggle input {
+  .valuation-node-colour-toggle input {
     width: 1rem;
     height: 1rem;
     margin: 0;
     accent-color: var(--node-colour);
   }
 
-  .valuation-node-no-colour-toggle-locked {
+  .valuation-node-colour-toggle-inherited {
     cursor: not-allowed;
     opacity: 0.55;
   }

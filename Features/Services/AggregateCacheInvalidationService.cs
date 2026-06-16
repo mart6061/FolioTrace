@@ -8,7 +8,7 @@ public sealed class AggregateCacheInvalidationService(
 {
     private readonly IReadOnlyList<IAggregateCacheInvalidator> invalidators = invalidators.ToList();
 
-    public int Invalidate(IEventBase @event)
+    public int Invalidate(IAuditEventBase @event)
     {
         if (@event is null)
             throw new ArgumentNullException(nameof(@event));
@@ -22,7 +22,7 @@ public sealed class AggregateCacheInvalidationService(
             .Sum(invalidator => invalidator.Invalidate(@event));
     }
 
-    public int Invalidate(IEnumerable<IEventBase> events)
+    public int Invalidate(IEnumerable<IAuditEventBase> events)
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));

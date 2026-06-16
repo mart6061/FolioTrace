@@ -1,11 +1,33 @@
 <script lang="ts">
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
+  import type { PageData } from './$types';
 
-  let { data } = $props();
+  let { data }: { data: PageData } = $props();
+
+  type ReportDocument = NonNullable<PageData['reportDocument']>;
+  type ReportDocumentSection = ReportDocument['sections'][number];
+  type ReportValuationColumn = ReportDocumentSection['valuationColumns'][number];
+  type ReportValuationRow = ReportDocumentSection['valuationRows'][number];
 
   let shareStatus = $state('');
   let reportDocumentElement = $state<HTMLElement | null>(null);
+  // svelte-ignore state_referenced_locally
+  let valuationStartDate = $state(data.valuationStartDate);
+  // svelte-ignore state_referenced_locally
+  let valuationEndDate = $state(data.valuationDate);
+  // svelte-ignore state_referenced_locally
+  let selectedAccountID = $state(data.accountID);
+  // svelte-ignore state_referenced_locally
+  let selectedReportID = $state(data.reportID);
+  // svelte-ignore state_referenced_locally
+  let selectedInstrumentPriceBasis = $state(data.instrumentPriceBasis);
+  // svelte-ignore state_referenced_locally
+  let selectedHoldingDateBasis = $state(data.holdingDateBasis);
+  const dateRangeValid = $derived(isValidValuationRange(valuationStartDate, valuationEndDate));
+  const selectedAccountExists = $derived(data.accounts.some((account) => account.accountID === selectedAccountID));
+  const selectedReportExists = $derived(data.reportConfigs.some((reportConfig) => reportConfig.reportID === selectedReportID));
+  const filtersValid = $derived(Boolean(selectedAccountExists && selectedReportExists && selectedInstrumentPriceBasis && selectedHoldingDateBasis && dateRangeValid));
 
   function captureReportDocument(node: HTMLElement) {
     reportDocumentElement = node;
@@ -48,6 +70,136 @@
       .replaceAll("'", '&#39;');
   }
 
+  function formatNumber(value: number, maximumFractionDigits = 2) {
+    return new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits,
+      minimumFractionDigits: maximumFractionDigits
+    }).format(value);
+  }
+
+  function formatQuantity(value: number) {
+    return new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 4
+    }).format(value);
+  }
+
+  function formatPercent(value: number) {
+    return `${formatNumber(value, 2)}%`;
+  }
+
+  function formatOptionalPercent(value: number | null) {
+    return value === null ? '' : formatPercent(value);
+  }
+
+  function formatOptionalMoney(value: number | null, currency: string) {
+    return value === null ? '' : formatMoney(value, currency);
+  }
+
+  function formatMoney(value: number, currency: string) {
+    return new Intl.NumberFormat('en-GB', {
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: 'currency'
+    }).format(value);
+  }
+
+  function formatDateTime(value: string) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime()))
+      return '';
+
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      hour: '2-digit',
+      hour12: false,
+      minute: '2-digit',
+      month: '2-digit',
+      second: '2-digit',
+      year: '2-digit'
+    }).format(date);
+  }
+
+  function valuationIndent(level: number) {
+    return `${Math.max(0, Math.min(level - 1, 5)) * 0.8}rem`;
+  }
+
+  function pieLegendIndent(level: number) {
+    return `${Math.max(0, Math.min(level - 1, 5)) * 0.75}rem`;
+  }
+
+  function handleValuationStartChange() {
+    if (new Date(valuationStartDate).getTime() > new Date(valuationEndDate).getTime())
+      valuationEndDate = valuationStartDate;
+  }
+
+  function handleValuationEndChange() {
+    if (new Date(valuationEndDate).getTime() < new Date(valuationStartDate).getTime())
+      valuationStartDate = valuationEndDate;
+  }
+
+  function isValidValuationRange(startDateTime: string, endDateTime: string) {
+    const startTime = new Date(startDateTime).getTime();
+    const endTime = new Date(endDateTime).getTime();
+
+    return Number.isFinite(startTime) && Number.isFinite(endTime) && startTime <= endTime;
+  }
+
+  function submitFilterChange(event: Event) {
+    const control = event.currentTarget;
+
+    if (control instanceof HTMLSelectElement) {
+      if (control.name === 'accountID')
+        selectedReportID = '';
+
+      control.form?.requestSubmit();
+    }
+  }
+
+  function valuationColumnValue(row: ReportValuationRow, column: ReportValuationColumn, currency: string) {
+    switch (column.columnKey) {
+      case 'InstrumentName':
+        return row.instrumentName;
+      case 'ISIN':
+        return row.isin;
+      case 'Sedol':
+        return row.sedol;
+      case 'QuotePrice':
+        return formatOptionalMoney(row.quotePrice, currency);
+      case 'Quantity':
+        return formatQuantity(row.quantity);
+      case 'BookValue':
+        return formatMoney(row.bookValue, currency);
+      case 'BookCost':
+        return formatMoney(row.bookCost, currency);
+      case 'Weight':
+        return formatPercent(row.weightPercent);
+      case 'Target':
+        return formatOptionalPercent(row.targetPercent);
+      case 'Min':
+        return formatOptionalPercent(row.targetMinPercent);
+      case 'Max':
+        return formatOptionalPercent(row.targetMaxPercent);
+      default:
+        return '';
+    }
+  }
+
+  function reportDefaultPageRule() {
+    const sections = data.reportDocument?.sections ?? [];
+    const orientations = sections.map((section) => section.pageOrientation);
+
+    if (orientations.length && orientations.every((orientation) => orientation === 'Landscape'))
+      return '@page { size: A4 landscape; margin: 0; mso-page-orientation: landscape; }';
+
+    if (!orientations.length || orientations.every((orientation) => orientation === 'Portrait'))
+      return '@page { size: A4 portrait; margin: 0; mso-page-orientation: portrait; }';
+
+    return '';
+  }
+
   function reportHtml() {
     const documentElement = reportDocumentElement;
 
@@ -59,17 +211,47 @@
         <head>
           <meta charset="utf-8" />
           <title>${htmlValue(data.reportDocument?.name ?? 'Report')}</title>
-          <style>
+            <style>
+            ${reportDefaultPageRule()}
             html, body { margin: 0; padding: 0; }
             body { font-family: Arial, sans-serif; color: #0f172a; }
             .report-document-shell { display: block; margin: 0; padding: 0; }
-            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: report-portrait; break-after: page; page-break-after: always; }
-            .report-document-page.landscape-page { width: 297mm; min-height: 210mm; page: report-landscape; }
+            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: report-portrait; break-before: page; break-after: page; page-break-before: always; page-break-after: always; mso-page-orientation: portrait; }
+            .report-document-page:first-child { break-before: auto; page-break-before: auto; }
+            .report-document-page.landscape-page { width: 297mm; min-height: 210mm; page: report-landscape; mso-page-orientation: landscape; }
             .report-document-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 14px; }
             .report-document-header h2 { margin: 0; font-size: 30px; line-height: 1.2; }
             .report-document-header p { margin: 6px 0 0; color: #475569; font-size: 16px; }
-            @page report-portrait { size: 210mm 297mm; margin: 0; mso-page-orientation: portrait; }
-            @page report-landscape { size: 297mm 210mm; margin: 0; mso-page-orientation: landscape; }
+            .report-section-content { padding-top: 20px; }
+            .report-empty-state { border: 1px solid #e2e8f0; color: #64748b; font-size: 14px; padding: 14px; }
+            .report-pie-layout { align-items: center; display: grid; gap: 24px; grid-template-columns: minmax(220px, 0.82fr) minmax(220px, 1fr); }
+            .report-pie-chart { display: block; height: auto; width: 100%; }
+            .report-pie-chart path { stroke: #ffffff; stroke-width: 0.45; }
+            .report-pie-legend { display: grid; gap: 9px; margin: 0; }
+            .report-pie-legend-row { align-items: center; display: grid; gap: 10px; grid-template-columns: 14px 1fr auto; }
+            .report-pie-swatch { border-radius: 999px; display: block; height: 12px; width: 12px; }
+            .report-pie-name { font-size: 14px; font-weight: 700; }
+            .report-pie-value { color: #475569; font-family: Consolas, monospace; font-size: 13px; text-align: right; }
+            .report-valuation-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-valuation-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
+            .report-valuation-table th.numeric, .report-valuation-table td.numeric { text-align: right; }
+            .report-valuation-node-row td { border-top: 1px solid #cbd5e1; color: #0f172a; padding: 10px 6px 5px; }
+            .report-valuation-node-row.top-level td { font-size: 13px; font-weight: 700; }
+            .report-valuation-node-row.child-level td { color: #334155; font-size: 11px; font-weight: 700; }
+            .report-valuation-variance.negative { color: #b91c1c; }
+            .report-valuation-variance.positive { color: #047857; }
+            .report-valuation-group-marker { border-radius: 999px; display: inline-block; height: 10px; margin-right: 7px; width: 10px; }
+            .report-valuation-table tbody tr.asset-row td { border-bottom: 1px solid #e2e8f0; padding: 6px; }
+            .report-valuation-table td.numeric { font-family: Consolas, monospace; }
+            .report-valuation-subtotal td { border-bottom: 1px solid #94a3b8; color: #334155; font-weight: 700; padding: 7px 6px 10px; }
+            .report-valuation-subtotal.top-level td { color: #0f172a; }
+            .report-transaction-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-transaction-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
+            .report-transaction-table th.numeric, .report-transaction-table td.numeric { text-align: right; }
+            .report-transaction-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; padding: 6px; }
+            .report-transaction-table td.numeric { font-family: Consolas, monospace; }
+            @page report-portrait { size: A4 portrait; margin: 0; mso-page-orientation: portrait; }
+            @page report-landscape { size: A4 landscape; margin: 0; mso-page-orientation: landscape; }
           </style>
         </head>
         <body>${documentElement.outerHTML}</body>
@@ -158,80 +340,91 @@
   </section>
 
   <section class="page-container page-section grid gap-5">
-    <form class="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm" method="GET">
+    <form class="house-form grid gap-4" method="GET">
       {#if data.auditDateTime}
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
 
-      <div class="grid gap-3 md:grid-cols-[minmax(240px,24rem)]">
+      <div class="report-valuation-date-grid">
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-          Valuation date
-          <DateTimeInput class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          Valuation period
+          <DateTimeInput bind:value={valuationStartDate} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationStartDate" onchange={handleValuationStartChange} step="1" />
+        </label>
+        <span class="report-valuation-date-separator">to</span>
+        <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+          <span class="sr-only">End date</span>
+          <DateTimeInput bind:value={valuationEndDate} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" onchange={handleValuationEndChange} step="1" />
         </label>
       </div>
 
       <div class="grid gap-3 border-t border-slate-200 pt-4 md:grid-cols-3">
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Account
-          <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.accounts.length} name="accountID" required>
+          <select bind:value={selectedAccountID} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.accounts.length} name="accountID" onchange={submitFilterChange}>
+            <option disabled value="">{data.accounts.length ? 'Select account' : 'No active accounts'}</option>
             {#each data.accounts as account (account.accountID)}
-              <option selected={account.accountID === data.accountID} value={account.accountID}>{account.name}</option>
-            {:else}
-              <option value="">No active accounts</option>
+              <option value={account.accountID}>{account.name}</option>
             {/each}
           </select>
         </label>
 
-        <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-          Price basis
-          <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="instrumentPriceBasis">
+        <fieldset class="report-filter-field">
+          <legend>Price basis</legend>
+          <div class="report-filter-toggle-group price-basis-toggle">
             {#each data.instrumentPriceBasisOptions as option (option)}
-              <option selected={option === data.instrumentPriceBasis} value={option}>{option}</option>
+              <label class="report-filter-toggle">
+                <input bind:group={selectedInstrumentPriceBasis} name="instrumentPriceBasis" type="radio" value={option} />
+                <span>{option}</span>
+              </label>
             {/each}
-          </select>
-        </label>
+          </div>
+        </fieldset>
 
-        <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-          Holding basis
-          <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="holdingDateBasis">
+        <fieldset class="report-filter-field">
+          <legend>Holding basis</legend>
+          <div class="report-filter-toggle-group">
             {#each holdingDateBasisOptions as option (option.value)}
-              <option selected={option.value === data.holdingDateBasis} value={option.value}>{option.label}</option>
+              <label class="report-filter-toggle">
+                <input bind:group={selectedHoldingDateBasis} name="holdingDateBasis" type="radio" value={option.value} />
+                <span>{option.label}</span>
+              </label>
             {/each}
-          </select>
-        </label>
+          </div>
+        </fieldset>
       </div>
 
       <div class="grid gap-3 border-t border-slate-200 pt-4 lg:grid-cols-[1fr_auto] lg:items-end">
         <div class="grid gap-2">
           <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-            Report config
-            <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.reportConfigs.length} name="reportID" required>
+            Report
+            <select bind:value={selectedReportID} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.reportConfigs.length} name="reportID">
+              <option disabled value="">{data.accountID ? 'Select report' : 'Select account first'}</option>
               {#each data.reportConfigs as reportConfig (reportConfig.reportID)}
-                <option selected={reportConfig.reportID === data.reportID} value={reportConfig.reportID}>{reportConfig.name}</option>
-              {:else}
-                <option value="">No matching report configs</option>
+                <option value={reportConfig.reportID}>{reportConfig.name}</option>
               {/each}
             </select>
           </label>
 
-          {#if data.accounts.length && !data.reportConfigs.length}
-            <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">No active report configs match the selected account and valuation date.</div>
+          {#if data.accounts.length && !data.accountID}
+            <div class="status-panel status-panel-warning">Select an account to choose a report config.</div>
+          {:else if data.accountID && !data.reportConfigs.length}
+            <div class="status-panel status-panel-warning">No active report configs match the selected account and valuation date.</div>
           {/if}
         </div>
 
-        <button class="h-10 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!data.accounts.length || !data.reportConfigs.length} name="create" type="submit" value="true">Create</button>
+        <button class="btn btn-primary" disabled={!filtersValid} name="create" type="submit" value="true">Create</button>
       </div>
     </form>
 
     {#if data.error}
-      <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">{data.error}</div>
+      <div class="status-panel status-panel-error" role="status">{data.error}</div>
     {/if}
 
     {#if data.reportDocument}
       <div class="report-action-bar" aria-label="Report actions">
-        <button onclick={exportPdf} title="Export PDF" type="button">Export to PDF</button>
-        <button onclick={exportWord} title="Export Word" type="button">Export to Word</button>
-        <button onclick={shareReport} title="Share" type="button">Share</button>
+        <button class="btn btn-secondary" onclick={exportPdf} title="Export PDF" type="button">Export to PDF</button>
+        <button class="btn btn-secondary" onclick={exportWord} title="Export Word" type="button">Export to Word</button>
+        <button class="btn btn-secondary" onclick={shareReport} title="Share" type="button">Share</button>
         {#if shareStatus}
           <span role="status">{shareStatus}</span>
         {/if}
@@ -244,6 +437,106 @@
               <h2>{section.name}</h2>
               <p>{data.reportDocument.valuationHeading}</p>
             </header>
+
+            <div class="report-section-content">
+              {#if section.sectionType === 'Pie'}
+                {#if section.pieSlices.length}
+                  <div class="report-pie-layout">
+                    <svg aria-label={section.title} class="report-pie-chart" role="img" viewBox="0 0 100 100">
+                      {#each section.pieSlices as slice (slice.sliceID)}
+                        <path d={slice.path} fill={slice.colour}>
+                          <title>{slice.name}: {formatPercent(slice.weightPercent)} (level {slice.level})</title>
+                        </path>
+                      {/each}
+                    </svg>
+
+                    <dl class="report-pie-legend">
+                      {#each section.pieSlices as slice (slice.sliceID)}
+                        <div class="report-pie-legend-row" style:padding-left={pieLegendIndent(slice.level)}>
+                          <span class="report-pie-swatch" style:background-color={slice.colour}></span>
+                          <dt class="report-pie-name">{slice.name}</dt>
+                          <dd class="report-pie-value">{formatPercent(slice.weightPercent)}</dd>
+                        </div>
+                      {/each}
+                    </dl>
+                  </div>
+                {:else}
+                  <div class="report-empty-state">No valuation weights are available for this chart.</div>
+                {/if}
+              {:else if section.sectionType === 'Valuation'}
+                {#if section.valuationRows.length}
+                  <table class="report-valuation-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        {#each section.valuationColumns as column (column.columnKey)}
+                          <th class:numeric={column.numeric}>{column.label}</th>
+                        {/each}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each section.valuationRows as row (row.rowID)}
+                        {#if row.rowType === 'Group'}
+                          <tr class={['report-valuation-node-row', row.level === 1 ? 'top-level' : 'child-level']}>
+                            <td colspan={section.valuationColumns.length + 1} style:color={section.valuationColourText ? row.colour : undefined} style:padding-left={valuationIndent(row.level)}>
+                              {#if section.valuationColourBullet}
+                                <span class="report-valuation-group-marker" style:background-color={row.colour}></span>
+                              {/if}
+                              {row.name}
+                            </td>
+                          </tr>
+                        {:else if row.rowType === 'Asset'}
+                          <tr class="asset-row">
+                            <td style:padding-left={valuationIndent(row.level)}>{row.name}</td>
+                            {#each section.valuationColumns as column (column.columnKey)}
+                              <td class:numeric={column.numeric}>{valuationColumnValue(row, column, section.currency)}</td>
+                            {/each}
+                          </tr>
+                        {:else}
+                          <tr class={['report-valuation-subtotal', row.level === 1 ? 'top-level' : 'child-level']}>
+                            <td style:color={section.valuationColourText ? row.colour : undefined} style:padding-left={valuationIndent(row.level)}>{row.name}</td>
+                            {#each section.valuationColumns as column (column.columnKey)}
+                              <td class:numeric={column.numeric}>{valuationColumnValue(row, column, section.currency)}</td>
+                            {/each}
+                          </tr>
+                        {/if}
+                      {/each}
+                    </tbody>
+                  </table>
+                {:else}
+                  <div class="report-empty-state">No mapped assets are available for this valuation.</div>
+                {/if}
+              {:else if section.sectionType === 'Transactions'}
+                {#if section.transactionRows.length}
+                  <table class="report-transaction-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Holding</th>
+                        <th>Instrument</th>
+                        <th class="numeric">Quantity</th>
+                        <th class="numeric">Book cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each section.transactionRows as transaction (transaction.rowID)}
+                        <tr>
+                          <td>{formatDateTime(transaction.displayDateTime)}</td>
+                          <td>{transaction.transactionType}</td>
+                          <td>{transaction.holdingName}</td>
+                          <td>{transaction.instrumentName}</td>
+                          <td class="numeric">{formatQuantity(transaction.quantity)}</td>
+                          <td class="numeric">{formatMoney(transaction.bookCost, section.currency)}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                {:else}
+                  <div class="report-empty-state">No holding transactions are available for this period.</div>
+                {/if}
+              {/if}
+            </div>
           </article>
         {:else}
           <article class="report-document-page">
@@ -298,6 +591,94 @@
     font-weight: 700;
   }
 
+  .report-valuation-date-grid {
+    align-items: end;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: minmax(15rem, 18rem) auto minmax(15rem, 18rem);
+    justify-content: start;
+  }
+
+  .report-valuation-date-separator {
+    align-self: end;
+    color: rgb(71 85 105);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding-bottom: 0.625rem;
+  }
+
+  .report-filter-field {
+    border: 0;
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .report-filter-field legend {
+    color: rgb(51 65 85);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    padding: 0;
+  }
+
+  .report-filter-toggle-group {
+    background: rgb(241 245 249);
+    border: 1px solid rgb(203 213 225);
+    border-radius: 0.375rem;
+    display: grid;
+    gap: 0.125rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 2.5rem;
+    padding: 0.125rem;
+  }
+
+  .price-basis-toggle {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .report-filter-toggle {
+    display: grid;
+    min-width: 0;
+    position: relative;
+  }
+
+  .report-filter-toggle input {
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    width: 1px;
+  }
+
+  .report-filter-toggle span {
+    align-items: center;
+    border-radius: 0.25rem;
+    color: rgb(71 85 105);
+    display: flex;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    justify-content: center;
+    min-height: 2.125rem;
+    min-width: 0;
+    padding: 0 0.5rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .report-filter-toggle input:checked + span {
+    background: white;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.12);
+    color: rgb(15 118 110);
+  }
+
+  .report-filter-toggle input:focus-visible + span {
+    outline: 2px solid rgb(13 148 136 / 0.45);
+    outline-offset: 2px;
+  }
+
   .report-document-page {
     width: min(100%, 210mm);
     min-height: 297mm;
@@ -334,6 +715,188 @@
     margin: 0.35rem 0 0;
   }
 
+  .report-section-content {
+    padding-top: 1.25rem;
+  }
+
+  .report-empty-state {
+    border: 1px solid rgb(226 232 240);
+    border-radius: 0.375rem;
+    color: rgb(100 116 139);
+    font-size: 0.875rem;
+    padding: 0.875rem;
+  }
+
+  .report-pie-layout {
+    align-items: center;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(13.75rem, 0.82fr) minmax(13.75rem, 1fr);
+  }
+
+  .report-pie-chart {
+    display: block;
+    height: auto;
+    width: 100%;
+  }
+
+  .report-pie-chart path {
+    stroke: white;
+    stroke-width: 0.45;
+  }
+
+  .report-pie-legend {
+    display: grid;
+    gap: 0.5625rem;
+    margin: 0;
+  }
+
+  .report-pie-legend-row {
+    align-items: center;
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: 0.875rem 1fr auto;
+  }
+
+  .report-pie-swatch {
+    border-radius: 999px;
+    display: block;
+    height: 0.75rem;
+    width: 0.75rem;
+  }
+
+  .report-pie-name {
+    color: rgb(15 23 42);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .report-pie-value {
+    color: rgb(71 85 105);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8125rem;
+    margin: 0;
+    text-align: right;
+  }
+
+  .report-valuation-table {
+    border-collapse: collapse;
+    font-size: 0.6875rem;
+    width: 100%;
+  }
+
+  .report-valuation-table th {
+    border-bottom: 1px solid rgb(203 213 225);
+    color: rgb(71 85 105);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.4375rem 0.375rem;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .report-valuation-table th.numeric,
+  .report-valuation-table td.numeric {
+    text-align: right;
+  }
+
+  .report-valuation-node-row td {
+    border-top: 1px solid rgb(203 213 225);
+    color: rgb(15 23 42);
+    padding: 0.625rem 0.375rem 0.3125rem;
+  }
+
+  .report-valuation-node-row.top-level td {
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .report-valuation-node-row.child-level td {
+    color: rgb(51 65 85);
+    font-size: 0.6875rem;
+    font-weight: 700;
+  }
+
+  .report-valuation-group-marker {
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.625rem;
+    margin-right: 0.4375rem;
+    width: 0.625rem;
+  }
+
+  .report-valuation-table tbody tr.asset-row td {
+    border-bottom: 1px solid rgb(226 232 240);
+    padding: 0.375rem;
+  }
+
+  .report-valuation-table td.numeric {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .report-valuation-subtotal td {
+    border-bottom: 1px solid rgb(148 163 184);
+    color: rgb(51 65 85);
+    font-weight: 700;
+    padding: 0.4375rem 0.375rem 0.625rem;
+  }
+
+  .report-valuation-subtotal.top-level td {
+    color: rgb(15 23 42);
+  }
+
+  .report-transaction-table {
+    border-collapse: collapse;
+    font-size: 0.6875rem;
+    width: 100%;
+  }
+
+  .report-transaction-table th {
+    border-bottom: 1px solid rgb(203 213 225);
+    color: rgb(71 85 105);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.4375rem 0.375rem;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .report-transaction-table th.numeric,
+  .report-transaction-table td.numeric {
+    text-align: right;
+  }
+
+  .report-transaction-table td {
+    border-bottom: 1px solid rgb(226 232 240);
+    color: rgb(15 23 42);
+    padding: 0.375rem;
+  }
+
+  .report-transaction-table td.numeric {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  @media (max-width: 780px) {
+    .report-valuation-date-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .report-valuation-date-separator {
+      padding-bottom: 0;
+      justify-self: start;
+    }
+
+    .report-pie-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .price-basis-toggle {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media print {
     :global(.page-header),
     form,
@@ -352,9 +915,16 @@
       box-shadow: none;
       min-height: 297mm;
       page: report-portrait;
+      break-before: page;
       break-after: page;
+      page-break-before: always;
       page-break-after: always;
       width: 210mm;
+    }
+
+    .report-document-page:first-child {
+      break-before: auto;
+      page-break-before: auto;
     }
 
     .report-document-page.landscape-page {
@@ -365,13 +935,13 @@
   }
 
   @page report-portrait {
-    size: 210mm 297mm;
+    size: A4 portrait;
     margin: 0;
     mso-page-orientation: portrait;
   }
 
   @page report-landscape {
-    size: 297mm 210mm;
+    size: A4 landscape;
     margin: 0;
     mso-page-orientation: landscape;
   }

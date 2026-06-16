@@ -7,6 +7,7 @@ namespace FolioTrace.Aggregates;
 
 public sealed record ReportConfigs : IAggregate
 {
+    [JsonIgnore]
     public required EventDateTime ValuationDateTime { get; init; }
 
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -40,7 +41,7 @@ public sealed record ReportConfigs : IAggregate
             throw new ArgumentException("Value must not contain null report events.", nameof(items));
 
         var includedItems = items
-            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
+            .Where(@event => @event.AuditDateTime.Value <= asOfDateTime.Value)
             .ToList();
 
         if (!includedItems.Any())
@@ -54,8 +55,7 @@ public sealed record ReportConfigs : IAggregate
         }
 
         var orderedItems = includedItems
-            .OrderBy(@event => @event.EventDateTime.Value)
-            .ThenBy(@event => @event.AuditDateTime.Value)
+            .OrderBy(@event => @event.AuditDateTime.Value)
             .ThenBy(@event => @event.EventID.Value)
             .ToList();
 
@@ -119,7 +119,7 @@ public sealed record ReportConfigs : IAggregate
 
     private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<IReportEvent> items)
     {
-        var includedItems = items.Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value).ToList();
+        var includedItems = items.ToList();
         if (!includedItems.Any())
             return Constants.Initialisation.AuditDateTime;
 

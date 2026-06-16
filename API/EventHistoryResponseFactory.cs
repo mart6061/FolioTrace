@@ -9,16 +9,16 @@ public static class EventHistoryResponseFactory
         DateTime? valuationDateTime,
         DateTime? auditDateTime,
         Func<TEvent, object> createResponse)
-        where TEvent : IEventBase =>
+        where TEvent : IAuditEventBase =>
         events
-            .Where(@event => !valuationDateTime.HasValue || @event.EventDateTime.Value <= valuationDateTime.Value)
-            .OrderBy(@event => @event.EventDateTime.Value)
+            .Where(@event => @event is not IEventBase timedEvent || !valuationDateTime.HasValue || timedEvent.EventDateTime.Value <= valuationDateTime.Value)
+            .OrderBy(@event => @event is IEventBase timedEvent ? timedEvent.EventDateTime.Value : @event.AuditDateTime.Value)
             .ThenBy(@event => @event.AuditDateTime.Value)
             .ThenBy(@event => @event.EventID.Value)
             .Select(@event => WithApplicationStatus(createResponse(@event), @event, auditDateTime))
             .ToList();
 
-    private static object WithApplicationStatus(object response, IEventBase @event, DateTime? auditDateTime)
+    private static object WithApplicationStatus(object response, IAuditEventBase @event, DateTime? auditDateTime)
     {
         var applicationStatus = !auditDateTime.HasValue || @event.AuditDateTime.Value <= auditDateTime.Value
             ? "applied"

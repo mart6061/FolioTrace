@@ -10,6 +10,7 @@ public enum ReportValuationColumnKey
     ISIN,
     Sedol,
     QuotePrice,
+    Quantity,
     BookValue,
     BookCost,
     Weight,

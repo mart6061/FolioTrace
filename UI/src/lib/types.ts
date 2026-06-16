@@ -101,6 +101,8 @@ export type UserValuationDateOption =
 export type UserValuationPreferences = {
   userID: string;
   valuationDateOption: UserValuationDateOption;
+  startValuationDateOption: UserValuationDateOption;
+  endValuationDateOption: UserValuationDateOption;
   holdingDateBasis: HoldingDateBasis;
   showZeroBalances: boolean;
   hasStoredPreferences: boolean;
@@ -309,15 +311,12 @@ export type ValuationSetting = {
   active: boolean;
   rootNodeID: string;
   nodes: AssetAllocationNode[];
-  effectiveDateTime: string;
-  valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
   lastAuditDateTime: string;
 };
 
 export type ValuationSettings = {
-  valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
   lastAuditDateTime: string;
@@ -333,6 +332,7 @@ export type ReportValuationColumnKey =
   | 'ISIN'
   | 'Sedol'
   | 'QuotePrice'
+  | 'Quantity'
   | 'BookValue'
   | 'BookCost'
   | 'Weight'
@@ -367,22 +367,21 @@ export type ReportNodeBase = {
   chartType?: ReportChartType;
   pieLevel?: ReportChartPieLevel;
   columns?: ReportValuationColumn[] | null;
+  colourBullet?: boolean;
+  colourText?: boolean;
 };
 
 export type ReportConfig = {
   reportID: string;
   name: string;
   active: boolean;
-  effectiveDateTime: string;
   nodes: ReportNodeBase[];
-  valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
   lastAuditDateTime: string;
 };
 
 export type ReportConfigs = {
-  valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
   lastAuditDateTime: string;
@@ -707,14 +706,12 @@ export type ValuationSettingReferenceEvent = ReferenceEventBase & {
   active?: boolean;
   rootNodeID?: string;
   nodes?: AssetAllocationNode[];
-  effectiveDateTime?: string;
 };
 
 export type ReportReferenceEvent = ReferenceEventBase & {
   reportID: string;
   name?: string;
   active?: boolean;
-  effectiveDateTime?: string;
   nodes?: ReportNodeBase[];
 };
 

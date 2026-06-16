@@ -4,7 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
-  import { defaultHoldingDateBasis, defaultShowZeroBalances, defaultValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
+  import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
   import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
@@ -13,10 +13,12 @@
   let submitting = $state(false);
   let visibleByID = $state<Record<string, boolean>>(createVisibleByID());
   let originalVisibleByID = $state<Record<string, boolean>>(createVisibleByID());
-  let valuationDateOption = $state<UserValuationDateOption>(defaultValuationDateOption);
+  let startValuationDateOption = $state<UserValuationDateOption>(defaultStartValuationDateOption);
+  let endValuationDateOption = $state<UserValuationDateOption>(defaultEndValuationDateOption);
   let holdingDateBasis = $state<HoldingDateBasis>(defaultHoldingDateBasis);
   let showZeroBalances = $state(defaultShowZeroBalances);
-  let originalValuationDateOption = $state<UserValuationDateOption>(defaultValuationDateOption);
+  let originalStartValuationDateOption = $state<UserValuationDateOption>(defaultStartValuationDateOption);
+  let originalEndValuationDateOption = $state<UserValuationDateOption>(defaultEndValuationDateOption);
   let originalHoldingDateBasis = $state<HoldingDateBasis>(defaultHoldingDateBasis);
   let originalShowZeroBalances = $state(defaultShowZeroBalances);
   let bookmarks = $state<UserBookmarkItem[]>(createBookmarks());
@@ -40,10 +42,12 @@
     const nextValuationSignature = valuationSignature();
 
     if (nextValuationSignature !== syncedValuationSignature) {
-      valuationDateOption = normalizeValuationDateOption(data.valuationPreferences.valuationDateOption);
+      startValuationDateOption = normalizeValuationDateOption(data.valuationPreferences.startValuationDateOption ?? data.valuationPreferences.valuationDateOption, defaultStartValuationDateOption);
+      endValuationDateOption = normalizeValuationDateOption(data.valuationPreferences.endValuationDateOption ?? data.valuationPreferences.valuationDateOption, defaultEndValuationDateOption);
       holdingDateBasis = normalizeHoldingDateBasis(data.valuationPreferences.holdingDateBasis);
       showZeroBalances = Boolean(data.valuationPreferences.showZeroBalances);
-      originalValuationDateOption = valuationDateOption;
+      originalStartValuationDateOption = startValuationDateOption;
+      originalEndValuationDateOption = endValuationDateOption;
       originalHoldingDateBasis = holdingDateBasis;
       originalShowZeroBalances = showZeroBalances;
       syncedValuationSignature = nextValuationSignature;
@@ -66,7 +70,8 @@
 
       if (result.type === 'success') {
         originalVisibleByID = { ...visibleByID };
-        originalValuationDateOption = valuationDateOption;
+        originalStartValuationDateOption = startValuationDateOption;
+        originalEndValuationDateOption = endValuationDateOption;
         originalHoldingDateBasis = holdingDateBasis;
         originalShowZeroBalances = showZeroBalances;
         originalBookmarks = cloneBookmarks(bookmarks);
@@ -104,7 +109,8 @@
 
   function valuationSignature() {
     return [
-      data.valuationPreferences.valuationDateOption,
+      data.valuationPreferences.startValuationDateOption ?? data.valuationPreferences.valuationDateOption,
+      data.valuationPreferences.endValuationDateOption ?? data.valuationPreferences.valuationDateOption,
       data.valuationPreferences.holdingDateBasis,
       String(data.valuationPreferences.showZeroBalances)
     ].join('|');
@@ -198,8 +204,8 @@
   </section>
 
   <section class="page-container page-section">
-    <div class="data-panel menu-preference-card">
-      <h2 class="menu-preference-title">Developer JWT</h2>
+    <div class="data-panel menu-preference-card developer-jwt-card">
+      <h2 class="menu-preference-title">Developer JWT (REMOVE)</h2>
       {#if data.userJWT}
         <div class="grid gap-4">
           <label class="grid gap-2">
@@ -213,7 +219,7 @@
             ></textarea>
           </label>
           {#if data.decodedUserJWT.error}
-            <p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{data.decodedUserJWT.error}</p>
+            <p class="status-panel status-panel-warning">{data.decodedUserJWT.error}</p>
           {:else}
             <div class="grid gap-4 lg:grid-cols-2">
               <label class="grid gap-2">
@@ -256,13 +262,13 @@
         <h2 class="menu-preference-title">Menu Options</h2>
 
         {#if data.error}
-          <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <div class="status-panel status-panel-warning mb-4">
             {data.error}
           </div>
         {/if}
 
         {#if form?.intent === 'savePreferences'}
-          <div class={`mb-4 rounded-md border px-3 py-2 text-sm ${form.status === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+          <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']}>
             {form.message}
           </div>
         {/if}
@@ -299,18 +305,33 @@
         <h2 class="menu-preference-title">Valuation Options</h2>
 
         <input type="hidden" name="hasStoredValuationPreferences" value={String(data.valuationPreferences.hasStoredPreferences)} />
-        <input type="hidden" name="originalValuationDateOption" value={originalValuationDateOption} />
+        <input type="hidden" name="originalStartValuationDateOption" value={originalStartValuationDateOption} />
+        <input type="hidden" name="originalEndValuationDateOption" value={originalEndValuationDateOption} />
         <input type="hidden" name="originalHoldingDateBasis" value={originalHoldingDateBasis} />
         <input type="hidden" name="originalShowZeroBalances" value={String(originalShowZeroBalances)} />
 
         <div class="menu-preference-list">
           <label class="menu-preference-row">
-            <span>Valuation Date</span>
+            <span>Valuation Start</span>
             <select
               class="menu-preference-select"
-              name="valuationDateOption"
-              value={valuationDateOption}
-              onchange={(event) => valuationDateOption = normalizeValuationDateOption(event.currentTarget.value)}
+              name="startValuationDateOption"
+              value={startValuationDateOption}
+              onchange={(event) => startValuationDateOption = normalizeValuationDateOption(event.currentTarget.value, defaultStartValuationDateOption)}
+            >
+              {#each valuationDateOptions as option (option.value)}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="menu-preference-row">
+            <span>Valuation End</span>
+            <select
+              class="menu-preference-select"
+              name="endValuationDateOption"
+              value={endValuationDateOption}
+              onchange={(event) => endValuationDateOption = normalizeValuationDateOption(event.currentTarget.value, defaultEndValuationDateOption)}
             >
               {#each valuationDateOptions as option (option.value)}
                 <option value={option.value}>{option.label}</option>
@@ -401,8 +422,8 @@
     </form>
 
     <div class="data-panel menu-preference-save-card">
-      <a class="secondary-action" href="/sign-out">Sign out</a>
-      <button class="primary-action" disabled={submitting} form="preferences-form" type="submit">
+      <a class="btn btn-secondary" href="/sign-out">Sign out</a>
+      <button class="btn btn-primary" disabled={submitting} form="preferences-form" type="submit">
         {submitting ? 'Saving...' : 'Save'}
       </button>
     </div>
