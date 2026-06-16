@@ -43,7 +43,7 @@ public sealed class AssetAllocationMappingTests
         var missingHolding = AssetAllocationMappingEventBuilder.Create(new AssetAllocationMappingRequest(UserID, EventDate, "Map holding", allocation.AssetAllocationID, HoldingIDBuilder.Create(), LeafNodeID(allocation)), settings, holdings);
         var wrongAccount = AssetAllocationMappingEventBuilder.Create(new AssetAllocationMappingRequest(UserID, EventDate, "Map holding", allocation.AssetAllocationID, holdingID, LeafNodeID(allocation)), settings, holdings);
         var missingNode = AssetAllocationMappingEventBuilder.Create(new AssetAllocationMappingRequest(UserID, EventDate, "Map holding", allocation.AssetAllocationID, holdingID, NodeIDBuilder.Create()), settings, holdings);
-        var nonLeafNode = AssetAllocationMappingEventBuilder.Create(new AssetAllocationMappingRequest(UserID, EventDate, "Map holding", allocation.AssetAllocationID, holdingID, allocation.RootNodeID), settings, holdings);
+        var nonLeafNode = AssetAllocationMappingEventBuilder.Create(new AssetAllocationMappingRequest(UserID, EventDate, "Map holding", allocation.AssetAllocationID, holdingID, ParentNodeID(allocation)), settings, holdings);
 
         Assert.False(inactiveAllocation.IsValid);
         Assert.Contains($"Asset allocation '{inactive.AssetAllocationID}' is inactive.", inactiveAllocation.ValidationErrors);
@@ -83,6 +83,7 @@ public sealed class AssetAllocationMappingTests
         var assetAllocationID = AssetAllocationIDBuilder.Create();
         var rootNodeID = NodeIDBuilder.Create();
         var unallocatedNodeID = NodeIDBuilder.Create();
+        var parentNodeID = NodeIDBuilder.Create();
         var leafNodeID = NodeIDBuilder.Create();
 
         return AssetAllocationCreatedEventBuilder.CreateSeed(
@@ -97,8 +98,8 @@ public sealed class AssetAllocationMappingTests
             active,
             rootNodeID,
             [
-                new AssetAllocationNode(rootNodeID, [unallocatedNodeID, leafNodeID], "Balanced", false, true, [], "#0f766e"),
                 new AssetAllocationNode(unallocatedNodeID, [], "Unallocated", false, false, [], "#dc2626"),
+                new AssetAllocationNode(parentNodeID, [leafNodeID], "Assets", false, false, [], "#0f766e"),
                 new AssetAllocationNode(leafNodeID, [], "Equity", false, false, [new AssetAllocationNodeAccountSetting(AccountID, 0, 0, 0, 0)], "#0f766e")
             ]).Value!;
     }
@@ -122,6 +123,9 @@ public sealed class AssetAllocationMappingTests
 
     private static NodeID LeafNodeID(AssetAllocationCreatedEvent allocation) =>
         allocation.Nodes.Single(node => node.Name == "Equity").NodeID;
+
+    private static NodeID ParentNodeID(AssetAllocationCreatedEvent allocation) =>
+        allocation.Nodes.Single(node => node.Name == "Assets").NodeID;
 
     private static NodeID UnallocatedNodeID(AssetAllocationCreatedEvent allocation) =>
         allocation.Nodes.Single(node => node.Name == "Unallocated").NodeID;

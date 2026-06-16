@@ -5,7 +5,7 @@ using FolioTrace.Types;
 namespace FolioTrace.Aggregates;
 
 [EventClass(EventType = EventClassTypeEnum.Modified, Description = "Asset Allocation Modified Event")]
-public sealed record AssetAllocationModifiedEvent : EventBase, IValuationSettingEvent
+public sealed record AssetAllocationModifiedEvent : ConfigEventBase, IValuationSettingEvent
 {
     [EventProperty(Description = "Asset Allocation ID")]
     public AssetAllocationID AssetAllocationID { get; init; } = null!;
@@ -19,23 +19,19 @@ public sealed record AssetAllocationModifiedEvent : EventBase, IValuationSetting
     [EventProperty(Description = "Nodes")]
     public List<AssetAllocationNode> Nodes { get; init; } = [];
 
-    [EventProperty(Description = "Effective Date Time")]
-    public EventDateTime? EffectiveDateTime { get; init; }
-
     [JsonConstructor]
     private AssetAllocationModifiedEvent()
-        : base(null!, null!, null!, null!, string.Empty)
+        : base(null!, null!, null!)
     {
     }
 
-    internal AssetAllocationModifiedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AssetAllocationID assetAllocationID, string name, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime effectiveDateTime)
-        : base(eventId, userId, eventDateTime, auditDateTime, reason)
+    internal AssetAllocationModifiedEvent(EventID eventId, UserID userId, AuditDateTime auditDateTime, AssetAllocationID assetAllocationID, string name, NodeID rootNodeID, List<AssetAllocationNode> nodes)
+        : base(eventId, userId, auditDateTime)
     {
         AssetAllocationID = assetAllocationID;
         Name = name?.Trim() ?? string.Empty;
         RootNodeID = rootNodeID;
         Nodes = ValuationSettingBuilder.CloneNodes(nodes);
-        EffectiveDateTime = ValuationSettingBuilder.DateOnly(effectiveDateTime);
     }
 
     public override string Type => nameof(AssetAllocationModifiedEvent);

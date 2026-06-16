@@ -966,7 +966,7 @@
     <AggregateUpdateWatcher aggregateKind={['Tickets', 'FoleoTraderOrders']} autoReload={!editingTicket.ticketNumber && !cancelConfirmingTicketNumber} valuationDate={data.valuationDate} lastEventID={data.tickets?.lastEventID ?? null} auditDateTime={data.auditDateTime} />
 
     {#if data.error}
-      <div class="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{data.error}</div>
+      <div class="status-panel status-panel-error">{data.error}</div>
     {/if}
 
     {#if form?.message && !formTicketNumber}

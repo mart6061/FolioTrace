@@ -9,4 +9,6 @@ public sealed record ReportNodeValuation(
     string Name,
     string Title,
     AssetAllocationID AssetAllocationID,
-    List<ReportValuationColumn>? Columns = null) : ReportNodeBase(ReportNodeID, DisplayOrder, Name, Title);
+    List<ReportValuationColumn>? Columns = null,
+    bool ColourBullet = true,
+    bool ColourText = false) : ReportNodeBase(ReportNodeID, DisplayOrder, Name, Title);

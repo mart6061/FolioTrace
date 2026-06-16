@@ -25,7 +25,7 @@ public sealed class ValuationSettingService(IEventRepository eventRepository) : 
         }
     }
 
-    public int Invalidate(IValuationSettingEvent @event) => InvalidateFrom(@event.EventDateTime);
+    public int Invalidate(IValuationSettingEvent @event) => InvalidateAll();
 
     public bool IsCached(EventDateTime valuationDate)
     {
@@ -56,7 +56,7 @@ public sealed class ValuationSettingService(IEventRepository eventRepository) : 
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = ValuationSettingCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.ValuationSettingsStreamId, valuationDate.Value);
+        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.ValuationSettingsStreamId);
 
         lock (cacheLock)
         {
@@ -109,22 +109,4 @@ public sealed class ValuationSettingService(IEventRepository eventRepository) : 
             new(valuationDate.Value, asAt.Value);
     }
 
-    private int InvalidateFrom(EventDateTime eventDateTime)
-    {
-        if (eventDateTime is null)
-            throw new ArgumentNullException(nameof(eventDateTime));
-
-        lock (cacheLock)
-        {
-            var removedCount = 0;
-
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
-            {
-                if (cache.Remove(cacheKey))
-                    removedCount++;
-            }
-
-            return removedCount;
-        }
-    }
 }

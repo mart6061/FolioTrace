@@ -378,7 +378,6 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 true,
                 rootNodeID,
                 [
-                    new AssetAllocationNode(rootNodeID, [unallocatedNodeID, growthNodeID, internationalNodeID, cashIncomeNodeID], "Current", false, true, [], "#0f766e"),
                     new AssetAllocationNode(unallocatedNodeID, [], "Unallocated", false, false, [], "#dc2626"),
                     new AssetAllocationNode(
                         growthNodeID,
@@ -1030,7 +1029,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private async Task StoreEvents<TAggregate, TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
         where TAggregate : class, IAggregate
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
@@ -1044,7 +1043,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private async Task StoreEventsInBatches<TAggregate, TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken, Action<int>? batchStored = null)
         where TAggregate : class, IAggregate
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
@@ -1066,7 +1065,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     }
 
     private async Task AppendEvents<TEvent>(Guid streamId, IEnumerable<TEvent> events, CancellationToken cancellationToken)
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));
@@ -1075,7 +1074,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             await eventRepository.AppendAsync(streamId, @event, cancellationToken);
     }
 
-    private async Task AppendEventsInBatches(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken, Action<int>? batchStored = null)
+    private async Task AppendEventsInBatches(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken, Action<int>? batchStored = null)
     {
         if (events is null)
             throw new ArgumentNullException(nameof(events));

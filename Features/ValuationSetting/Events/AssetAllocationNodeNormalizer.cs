@@ -9,16 +9,13 @@ internal static class AssetAllocationNodeNormalizer
 
     public static List<AssetAllocationNode> Normalise(NodeID rootNodeID, string rootName, List<AssetAllocationNode>? nodes)
     {
-        var normalisedNodes = CloneNodes(nodes is { Count: > 0 }
+        var sourceNodes = CloneNodes(nodes is { Count: > 0 }
             ? nodes
-            :
-            [
-                new AssetAllocationNode(rootNodeID, [], rootName, false, true, [], "#0f766e")
-            ]);
-        var rootNode = normalisedNodes.FirstOrDefault(node => node.NodeID == rootNodeID);
-
-        if (rootNode is null)
-            return normalisedNodes;
+            : []);
+        var legacyRootNode = sourceNodes.FirstOrDefault(node => node.NodeID == rootNodeID);
+        var normalisedNodes = sourceNodes
+            .Where(node => node.NodeID != rootNodeID)
+            .ToList();
 
         var specialNode = normalisedNodes.FirstOrDefault(IsSpecialNode);
         if (specialNode is null)
@@ -28,6 +25,9 @@ internal static class AssetAllocationNodeNormalizer
         }
 
         var specialChildNodeIDs = (specialNode.Nodes ?? [])
+            .Where(nodeID => nodeID is not null && nodeID != rootNodeID && nodeID != specialNode.NodeID)
+            .ToList();
+        var legacyTopLevelNodeIDs = (legacyRootNode?.Nodes ?? [])
             .Where(nodeID => nodeID is not null && nodeID != rootNodeID && nodeID != specialNode.NodeID)
             .ToList();
 
@@ -44,16 +44,59 @@ internal static class AssetAllocationNodeNormalizer
         for (var index = 0; index < normalisedNodes.Count; index++)
         {
             var node = normalisedNodes[index];
-            var childNodeIDs = (node.Nodes ?? []).Where(nodeID => nodeID is not null && nodeID != specialNode.NodeID).ToList();
+            var childNodeIDs = (node.Nodes ?? [])
+                .Where(nodeID => nodeID is not null && nodeID != rootNodeID && nodeID != specialNode.NodeID)
+                .ToList();
 
-            normalisedNodes[index] = node.NodeID == rootNodeID
-                ? node with { Name = rootName, Nodes = [specialNode.NodeID, .. specialChildNodeIDs, .. childNodeIDs] }
-                : node.NodeID == specialNode.NodeID
-                    ? specialNode
-                    : node with { Nodes = childNodeIDs };
+            normalisedNodes[index] = node.NodeID == specialNode.NodeID
+                ? specialNode
+                : node with { Nodes = childNodeIDs };
         }
 
-        return normalisedNodes;
+        return OrderNodes(normalisedNodes, specialNode.NodeID, [.. specialChildNodeIDs, .. legacyTopLevelNodeIDs]);
+    }
+
+    private static List<AssetAllocationNode> OrderNodes(IReadOnlyList<AssetAllocationNode> nodes, NodeID specialNodeID, IReadOnlyList<NodeID> legacyTopLevelNodeIDs)
+    {
+        var childNodeIDs = nodes
+            .SelectMany(node => node.Nodes ?? [])
+            .Where(nodeID => nodeID is not null)
+            .Select(nodeID => nodeID.Value)
+            .ToHashSet();
+        var nodeByID = nodes
+            .Where(node => node.NodeID is not null)
+            .GroupBy(node => node.NodeID.Value)
+            .ToDictionary(group => group.Key, group => group.First());
+        var orderedNodeIDs = new List<Guid> { specialNodeID.Value };
+
+        foreach (var topLevelNodeID in legacyTopLevelNodeIDs)
+        {
+            if (topLevelNodeID is not null)
+                orderedNodeIDs.Add(topLevelNodeID.Value);
+        }
+
+        foreach (var node in nodes)
+        {
+            if (node.NodeID is not null && !childNodeIDs.Contains(node.NodeID.Value))
+                orderedNodeIDs.Add(node.NodeID.Value);
+        }
+
+        var result = new List<AssetAllocationNode>();
+        var addedNodeIDs = new HashSet<Guid>();
+
+        foreach (var nodeID in orderedNodeIDs)
+        {
+            if (addedNodeIDs.Add(nodeID) && nodeByID.TryGetValue(nodeID, out var node))
+                result.Add(node);
+        }
+
+        foreach (var node in nodes)
+        {
+            if (node.NodeID is not null && addedNodeIDs.Add(node.NodeID.Value))
+                result.Add(node);
+        }
+
+        return result;
     }
 
     private static List<AssetAllocationNode> CloneNodes(IEnumerable<AssetAllocationNode> nodes) =>

@@ -104,22 +104,10 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(UserBookmarkDeletedEvent), nameof(UserBookmarkDeletedEvent))]
 [JsonDerivedType(typeof(ReportCreatedEvent), nameof(ReportCreatedEvent))]
 [JsonDerivedType(typeof(ReportModifiedEvent), nameof(ReportModifiedEvent))]
-public interface IEventBase : IType
+public interface IEventBase : IAuditEventBase
 {
-    [EventProperty(Description = "Event type", Order = 0)]
-    string Type { get; }
-
-    [EventProperty(Description = "Event ID", Order = 10)]
-    EventID EventID { get; }
-
-    [EventProperty(Description = "User ID", Order = 20)]
-    UserID UserID { get; }
-
     [EventProperty(Description = "Event time", Order = 30)]
     EventDateTime EventDateTime { get; }
-
-    [EventProperty(Description = "Audit time", Order = 40)]
-    AuditDateTime AuditDateTime { get; }
 
     [EventProperty(Description = "Reason", Order = 50)]
     string Reason { get; }

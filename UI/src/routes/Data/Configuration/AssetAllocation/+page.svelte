@@ -86,7 +86,7 @@
   </section>
 
   <section class="page-container page-section grid gap-5">
-    <form class="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm" method="GET">
+    <form class="house-form grid gap-4" method="GET">
       {#if data.auditDateTime}
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
@@ -138,12 +138,12 @@
           </details>
         </div>
 
-        <button class="h-10 rounded-md bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!selectedValuationSettingID || !selectedAccountIDs.length} type="submit">Apply</button>
+        <button class="btn btn-primary" disabled={!selectedValuationSettingID || !selectedAccountIDs.length} type="submit">Apply</button>
       </div>
     </form>
 
     {#if data.error}
-      <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">{data.error}</div>
+      <div class="status-panel status-panel-error" role="status">{data.error}</div>
     {/if}
 
     {#if form?.message}

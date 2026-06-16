@@ -61,7 +61,10 @@
       left.eventID.localeCompare(right.eventID);
   }
 
-  function dateValue(value: string) {
+  function dateValue(value: string | null | undefined) {
+    if (!value)
+      return 0;
+
     const time = new Date(value).getTime();
     return Number.isFinite(time) ? time : 0;
   }
@@ -189,7 +192,7 @@
     return '-';
   }
 
-  function formatDateTime(value: string) {
+  function formatDateTime(value: string | null | undefined) {
     if (!value)
       return '-';
 
@@ -315,14 +318,18 @@
 
     {#if mode === 'raw' || mode === 'minimal'}
       <dl class="history-event-compact-details">
-        <div>
-          <dt>Event Date Time</dt>
-          <dd>{formatDateTime(event.eventDateTime)}</dd>
-        </div>
-        <div>
-          <dt>Reason</dt>
-          <dd>{event.reason || '-'}</dd>
-        </div>
+        {#if event.eventDateTime}
+          <div>
+            <dt>Event Date Time</dt>
+            <dd>{formatDateTime(event.eventDateTime)}</dd>
+          </div>
+        {/if}
+        {#if event.reason}
+          <div>
+            <dt>Reason</dt>
+            <dd>{event.reason}</dd>
+          </div>
+        {/if}
         <div>
           <dt>Audit Date Time</dt>
           <dd>{formatDateTime(event.auditDateTime)}</dd>

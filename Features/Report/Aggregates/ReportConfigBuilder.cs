@@ -10,6 +10,7 @@ public static class ReportConfigBuilder
         ReportValuationColumnKey.ISIN,
         ReportValuationColumnKey.Sedol,
         ReportValuationColumnKey.QuotePrice,
+        ReportValuationColumnKey.Quantity,
         ReportValuationColumnKey.BookValue,
         ReportValuationColumnKey.BookCost,
         ReportValuationColumnKey.Weight,
@@ -23,9 +24,7 @@ public static class ReportConfigBuilder
             createdEvent.ReportID,
             createdEvent.Name,
             createdEvent.Active,
-            DateOnly(createdEvent.EffectiveDateTime),
             CloneNodes(createdEvent.Nodes),
-            createdEvent.EventDateTime,
             createdEvent.AuditDateTime,
             createdEvent.EventID);
 
@@ -34,7 +33,6 @@ public static class ReportConfigBuilder
         {
             Name = modifiedEvent.Name,
             Active = modifiedEvent.Active,
-            EffectiveDateTime = DateOnly(modifiedEvent.EffectiveDateTime),
             Nodes = CloneNodes(modifiedEvent.Nodes),
             LastEventID = modifiedEvent.EventID,
             LastAuditDateTime = new LastAuditDateTime(modifiedEvent.AuditDateTime.Value)

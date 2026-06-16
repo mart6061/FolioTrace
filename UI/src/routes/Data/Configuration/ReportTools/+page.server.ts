@@ -1,4 +1,4 @@
-import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
@@ -12,13 +12,14 @@ import {
   type ReportModifiedRequest,
   type ReportNodeRequest
 } from '$lib/server/api';
-import type { ReportChartType, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
+import type { ReportChartPieLevel, ReportChartType, ReportNodePageOrientation, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
 
 const valuationColumnKeys: ReportValuationColumnKey[] = [
   'InstrumentName',
   'ISIN',
   'Sedol',
   'QuotePrice',
+  'Quantity',
   'BookValue',
   'BookCost',
   'Weight',
@@ -79,21 +80,13 @@ export const actions = {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const name = getFormString(formData, 'name') || 'New Report';
-    const effectiveDate = getFormString(formData, 'effectiveDate');
-    const eventDateTime = effectiveDate ? dateInputToApiStartOfDay(effectiveDate) : '';
-    const values = { effectiveDate, name };
-
-    if (!effectiveDate)
-      return fail(400, failure('createReport', 'Effective date is required.', values));
+    const values = { name };
 
     try {
       const reportCreatedRequest: ReportCreatedRequest = {
         active: true,
-        effectiveDateTime: eventDateTime,
-        eventDateTime,
         name,
-        nodes: [],
-        reason: `Create report ${name}`
+        nodes: []
       };
 
       const result = await postReportCreatedEvent(fetch, reportCreatedRequest, currentUser.userID);
@@ -115,13 +108,11 @@ export const actions = {
     const reportID = getFormString(formData, 'reportID');
     const name = getFormString(formData, 'name');
     const active = getFormString(formData, 'active') === 'true';
-    const effectiveDate = getFormString(formData, 'effectiveDate');
-    const eventDateTime = effectiveDate ? dateInputToApiStartOfDay(effectiveDate) : '';
     const nodesJson = getFormString(formData, 'nodesJson');
-    const values = { active, effectiveDate, name, nodesJson, reportID };
+    const values = { active, name, nodesJson, reportID };
 
-    if (!reportID || !name || !effectiveDate || !nodesJson)
-      return fail(400, failure('saveReport', 'Report ID, name, effective date, and nodes are required.', values));
+    if (!reportID || !name || !nodesJson)
+      return fail(400, failure('saveReport', 'Report ID, name, and nodes are required.', values));
 
     const nodesResult = parseReportNodes(nodesJson);
     if (!nodesResult.valid)
@@ -130,11 +121,8 @@ export const actions = {
     try {
       const reportModifiedRequest: ReportModifiedRequest = {
         active,
-        effectiveDateTime: eventDateTime,
-        eventDateTime,
         name,
         nodes: nodesResult.nodes,
-        reason: `Modify report ${name}`,
         reportID
       };
 
@@ -184,14 +172,16 @@ function normalizeReportNode(value: unknown): ReportNodeRequest | null {
   const displayOrder = readNumber(record, 'displayOrder', 'DisplayOrder');
   const name = readString(record, 'name', 'Name');
   const title = readString(record, 'title', 'Title');
+  const pageOrientation = readPageOrientation(record);
   const assetAllocationID = readString(record, 'assetAllocationID', 'AssetAllocationID');
   const chartType = readChartType(record);
+  const pieLevel = readPieLevel(record);
   const columnsResult = type === 'ReportNodeValuation' ? readValuationColumns(record) : { valid: true as const, columns: undefined };
 
   if (!type || !reportNodeID || displayOrder < 1 || !name || !title || !columnsResult.valid)
     return null;
 
-  const node: ReportNodeRequest = { type, reportNodeID, displayOrder, name, title };
+  const node: ReportNodeRequest = { type, reportNodeID, displayOrder, name, title, pageOrientation };
 
   if (requiresAssetAllocation(type)) {
     if (!assetAllocationID)
@@ -199,11 +189,19 @@ function normalizeReportNode(value: unknown): ReportNodeRequest | null {
     node.assetAllocationID = assetAllocationID;
   }
 
-  if (type === 'ReportNodeChart')
+  if (type === 'ReportNodeChart') {
     node.chartType = chartType;
+    if (chartType === 'Pie')
+      node.pieLevel = pieLevel;
+  }
 
-  if (type === 'ReportNodeValuation' && columnsResult.columns !== undefined)
-    node.columns = columnsResult.columns;
+  if (type === 'ReportNodeValuation') {
+    node.colourBullet = readBoolean(record, true, 'colourBullet', 'ColourBullet');
+    node.colourText = readBoolean(record, false, 'colourText', 'ColourText');
+
+    if (columnsResult.columns !== undefined)
+      node.columns = columnsResult.columns;
+  }
 
   return node;
 }
@@ -224,6 +222,16 @@ function isReportNodeType(value: string): value is ReportNodeType {
 function readChartType(source: Record<string, unknown>): ReportChartType {
   const value = readString(source, 'chartType', 'ChartType');
   return value === 'Bar' ? 'Bar' : 'Pie';
+}
+
+function readPieLevel(source: Record<string, unknown>): ReportChartPieLevel {
+  const value = readNumber(source, 'pieLevel', 'PieLevel');
+  return value === 2 || value === 3 ? value : 1;
+}
+
+function readPageOrientation(source: Record<string, unknown>): ReportNodePageOrientation {
+  const value = readString(source, 'pageOrientation', 'PageOrientation');
+  return value === 'Landscape' ? 'Landscape' : 'Portrait';
 }
 
 function readValuationColumns(source: Record<string, unknown>): { valid: true; columns?: ReportValuationColumn[] | null } | { valid: false } {
@@ -293,6 +301,23 @@ function readNumber(source: Record<string, unknown>, ...keys: string[]) {
   }
 
   return 0;
+}
+
+function readBoolean(source: Record<string, unknown>, fallback: boolean, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'boolean')
+      return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true')
+        return true;
+      if (normalized === 'false')
+        return false;
+    }
+  }
+
+  return fallback;
 }
 
 function failure(intent: string, message: string, values: Record<string, unknown>) {

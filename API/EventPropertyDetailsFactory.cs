@@ -23,7 +23,7 @@ public static partial class EventPropertyDetailsFactory
         "propertyDetails"
     };
 
-    public static EventResponseWithPropertyDetails WithPropertyDetails(IEventBase @event, object response, object? nestedDetails = null)
+    public static EventResponseWithPropertyDetails WithPropertyDetails(IAuditEventBase @event, object response, object? nestedDetails = null)
     {
         var properties = ToExtensionProperties(response);
         properties.Remove("type");
@@ -56,7 +56,7 @@ public static partial class EventPropertyDetailsFactory
             type.GetCustomAttribute<EventClassAttribute>(inherit: false)?.Description ??
             FormatPropertyName(type.Name));
 
-    private static IReadOnlyList<EventPropertyDetail> CreatePropertyDetails(IEventBase @event, object response)
+    private static IReadOnlyList<EventPropertyDetail> CreatePropertyDetails(IAuditEventBase @event, object response)
     {
         var metadataByProperty = GetPropertyMetadata(@event.GetType());
         var details = new List<EventPropertyDetail>();
@@ -111,7 +111,10 @@ public static partial class EventPropertyDetailsFactory
 
     private static IEnumerable<Type> GetMetadataTypes(Type eventType)
     {
-        yield return typeof(IEventBase);
+        yield return typeof(IAuditEventBase);
+
+        if (typeof(IEventBase).IsAssignableFrom(eventType))
+            yield return typeof(IEventBase);
 
         for (var type = eventType; type is not null; type = type.BaseType)
             yield return type;

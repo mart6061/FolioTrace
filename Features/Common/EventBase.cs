@@ -104,11 +104,7 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(UserBookmarkDeletedEvent), nameof(UserBookmarkDeletedEvent))]
 [JsonDerivedType(typeof(ReportCreatedEvent), nameof(ReportCreatedEvent))]
 [JsonDerivedType(typeof(ReportModifiedEvent), nameof(ReportModifiedEvent))]
-public abstract record EventBase(EventID EventID, UserID UserID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason) : IEventBase
+public abstract record EventBase(EventID EventID, UserID UserID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason)
+    : AuditEventBase(EventID, UserID, AuditDateTime), IEventBase
 {
-    [JsonIgnore]
-    public Guid Id => EventID.Value;
-
-    [JsonPropertyName("$type")]
-    public abstract string Type { get; }
 }

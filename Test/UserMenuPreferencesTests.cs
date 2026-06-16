@@ -155,7 +155,7 @@ public sealed class UserMenuPreferencesTests
 
     private sealed class FakeEventRepository(params IEventBase[] events) : IEventRepository
     {
-        private readonly List<IEventBase> events = events.ToList();
+        private readonly List<IAuditEventBase> events = [.. events];
 
         public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, 1, this.events.Count, 0, 0, []);
 
@@ -167,7 +167,7 @@ public sealed class UserMenuPreferencesTests
             return Task.CompletedTask;
         }
 
-        public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase =>
+        public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IAuditEventBase =>
             Task.FromResult(events.SingleOrDefault(@event => @event.EventID == eventId) as T);
 
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, CancellationToken cancellationToken = default) =>
@@ -176,7 +176,7 @@ public sealed class UserMenuPreferencesTests
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, DateTime valuationDateTime, DateTime? asOfDateTime = null, CancellationToken cancellationToken = default)
         {
             var latest = events
-                .Where(@event => @event.EventDateTime.Value <= valuationDateTime && (!asOfDateTime.HasValue || @event.AuditDateTime.Value <= asOfDateTime.Value))
+                .OfType<IEventBase>().Where(@event => @event.EventDateTime.Value <= valuationDateTime && (!asOfDateTime.HasValue || @event.AuditDateTime.Value <= asOfDateTime.Value))
                 .OrderBy(@event => @event.EventDateTime.Value)
                 .ThenBy(@event => @event.AuditDateTime.Value)
                 .ThenBy(@event => @event.EventID.Value)
@@ -185,29 +185,29 @@ public sealed class UserMenuPreferencesTests
             return Task.FromResult(latest?.EventID);
         }
 
-        public Task<IReadOnlyList<IEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
-            Task.FromResult((IReadOnlyList<IEventBase>)events.ToList());
+        public Task<IReadOnlyList<IAuditEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<IAuditEventBase>)events.ToList());
 
         public Task<IReadOnlyList<TEvent>> LoadStreamAsync<TEvent>(Guid streamId, CancellationToken cancellationToken = default)
-            where TEvent : class, IEventBase =>
+            where TEvent : class, IAuditEventBase =>
             Task.FromResult((IReadOnlyList<TEvent>)events.OfType<TEvent>().ToList());
 
         public Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
             where TAggregate : class
-            where TEvent : class, IEventBase
+            where TEvent : class, IAuditEventBase
         {
             this.events.Clear();
             this.events.AddRange(events);
             return Task.CompletedTask;
         }
 
-        public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase
+        public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
         {
             events.Add(@event);
             return Task.CompletedTask;
         }
 
-        public Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default)
+        public Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default)
         {
             this.events.AddRange(events);
             return Task.CompletedTask;

@@ -16,8 +16,6 @@ public static class ValuationSettingBuilder
             createdEvent.Active,
             createdEvent.RootNodeID,
             CloneNodes(createdEvent.Nodes),
-            DateOnly(createdEvent.EffectiveDateTime ?? createdEvent.EventDateTime),
-            createdEvent.EventDateTime,
             createdEvent.AuditDateTime,
             createdEvent.EventID);
     }
@@ -35,8 +33,6 @@ public static class ValuationSettingBuilder
             Name = modifiedEvent.Name,
             RootNodeID = modifiedEvent.RootNodeID,
             Nodes = CloneNodes(modifiedEvent.Nodes),
-            EffectiveDateTime = DateOnly(modifiedEvent.EffectiveDateTime ?? modifiedEvent.EventDateTime),
-            ValuationDateTime = modifiedEvent.EventDateTime,
             AsOfDateTime = modifiedEvent.AuditDateTime,
             LastEventID = modifiedEvent.EventID,
             LastAuditDateTime = modifiedEvent.AuditDateTime
@@ -54,7 +50,6 @@ public static class ValuationSettingBuilder
         return setting with
         {
             AccountIDs = CloneAccountIDs(accountIDsSetEvent.AccountIDs),
-            ValuationDateTime = accountIDsSetEvent.EventDateTime,
             AsOfDateTime = accountIDsSetEvent.AuditDateTime,
             LastEventID = accountIDsSetEvent.EventID,
             LastAuditDateTime = accountIDsSetEvent.AuditDateTime
@@ -72,7 +67,6 @@ public static class ValuationSettingBuilder
         return setting with
         {
             Active = activeSetEvent.Active,
-            ValuationDateTime = activeSetEvent.EventDateTime,
             AsOfDateTime = activeSetEvent.AuditDateTime,
             LastEventID = activeSetEvent.EventID,
             LastAuditDateTime = activeSetEvent.AuditDateTime

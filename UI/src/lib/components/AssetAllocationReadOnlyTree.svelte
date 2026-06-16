@@ -35,10 +35,20 @@
     const root = byID.get(rootID);
     const nextRows: TreeRow[] = [];
 
-    if (!root)
-      return nextRows;
+    if (root) {
+      for (const childNodeID of root.nodes) {
+        const childNode = byID.get(childNodeID);
 
-    appendRows(root, 0, null, byID, new Set<string>(), nextRows);
+        if (childNode)
+          appendRows(childNode, 0, null, byID, new Set<string>(), nextRows);
+      }
+
+      return nextRows;
+    }
+
+    for (const topLevelNode of topLevelNodes(sourceNodes))
+      appendRows(topLevelNode, 0, null, byID, new Set<string>(), nextRows);
+
     return nextRows;
   }
 
@@ -104,6 +114,11 @@
     return node.name.trim().toLocaleLowerCase() === SPECIAL_NODE_NAME.toLocaleLowerCase();
   }
 
+  function topLevelNodes(sourceNodes: AssetAllocationNode[]) {
+    const childNodeIDs = new SvelteSet(sourceNodes.flatMap((node) => node.nodes));
+    return sourceNodes.filter((node) => !childNodeIDs.has(node.nodeID));
+  }
+
   function displayColour(colour: string | null | undefined) {
     return isHexColour(colour) ? colour : DEFAULT_NODE_COLOUR;
   }
@@ -160,7 +175,7 @@
       {/if}
     </section>
   {:else}
-    <div class="allocation-tree-message">Root node is missing.</div>
+    <div class="allocation-tree-message">No allocation nodes configured.</div>
   {/each}
 </div>
 

@@ -1,4 +1,4 @@
-import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
@@ -56,28 +56,17 @@ export const actions = {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();
     const name = getFormString(formData, 'name');
-    const effectiveDate = getFormString(formData, 'effectiveDate');
-    const eventDateTime = effectiveDate ? dateInputToApiStartOfDay(effectiveDate) : '';
     const accountIDs = getFormStrings(formData, 'accountIDs');
     const active = getFormString(formData, 'active') === 'true';
-    const values = { accountIDs, active, effectiveDate, name };
+    const values = { accountIDs, active, name };
 
-    if (!name || !effectiveDate)
-      return fail(400, failure('createAllocation', 'Name and effective date are required.', values));
+    if (!name)
+      return fail(400, failure('createAllocation', 'Name is required.', values));
 
     const rootNodeID = crypto.randomUUID();
     const specialNodeID = crypto.randomUUID();
     const assetNodeID = crypto.randomUUID();
     const nodes: AssetAllocationNodeRequest[] = [
-      {
-        accountSettings: [],
-        hidden: true,
-        name,
-        nodeID: rootNodeID,
-        nodes: [specialNodeID, assetNodeID],
-        subtotal: false,
-        colour: '#0f766e'
-      },
       {
         accountSettings: [],
         hidden: false,
@@ -108,11 +97,8 @@ export const actions = {
       const assetAllocationCreatedRequest: AssetAllocationCreatedRequest = {
         accountIDs,
         active,
-        effectiveDateTime: eventDateTime,
-        eventDateTime,
         name,
         nodes,
-        reason: `Create asset allocation ${name}`,
         rootNodeID
       };
 
@@ -136,12 +122,10 @@ export const actions = {
     const name = getFormString(formData, 'name');
     const rootNodeID = getFormString(formData, 'rootNodeID');
     const nodesJson = getFormString(formData, 'nodesJson');
-    const effectiveDate = getFormString(formData, 'effectiveDate');
-    const eventDateTime = effectiveDate ? dateInputToApiStartOfDay(effectiveDate) : '';
-    const values = { assetAllocationID, effectiveDate, name, nodesJson, rootNodeID };
+    const values = { assetAllocationID, name, nodesJson, rootNodeID };
 
-    if (!assetAllocationID || !name || !rootNodeID || !nodesJson || !effectiveDate)
-      return fail(400, failure('modifyAllocation', 'Allocation ID, name, root node, node JSON, and effective date are required.', values));
+    if (!assetAllocationID || !name || !rootNodeID || !nodesJson)
+      return fail(400, failure('modifyAllocation', 'Allocation ID, name, root node, and node JSON are required.', values));
 
     const nodesResult = parseNodes(nodesJson);
     if (!nodesResult.valid)
@@ -150,11 +134,8 @@ export const actions = {
     try {
       const assetAllocationModifiedRequest: AssetAllocationModifiedRequest = {
         assetAllocationID,
-        effectiveDateTime: eventDateTime,
-        eventDateTime,
         name,
-        nodes: normaliseAllocationNodes(nodesResult.nodes, rootNodeID, name),
-        reason: `Modify asset allocation ${name}`,
+        nodes: normaliseAllocationNodes(nodesResult.nodes, rootNodeID),
         rootNodeID
       };
 
@@ -177,19 +158,16 @@ export const actions = {
     const formData = await request.formData();
     const assetAllocationID = getFormString(formData, 'assetAllocationID');
     const name = getFormString(formData, 'name');
-    const eventDateTime = getFormString(formData, 'eventDateTime');
     const accountIDs = getFormStrings(formData, 'accountIDs');
-    const values = { accountIDs, assetAllocationID, eventDateTime, name };
+    const values = { accountIDs, assetAllocationID, name };
 
-    if (!assetAllocationID || !eventDateTime)
-      return fail(400, failure('setAccounts', 'Allocation ID and effective date are required.', values));
+    if (!assetAllocationID)
+      return fail(400, failure('setAccounts', 'Allocation ID is required.', values));
 
     try {
       const assetAllocationAccountIDsSetRequest: AssetAllocationAccountIDsSetRequest = {
         accountIDs,
-        assetAllocationID,
-        eventDateTime: toApiDateTime(eventDateTime),
-        reason: `Set accounts for asset allocation ${name || assetAllocationID}`
+        assetAllocationID
       };
 
       const result = await postAssetAllocationAccountIDsSetEvent(fetch, assetAllocationAccountIDsSetRequest, currentUser.userID);
@@ -212,18 +190,15 @@ export const actions = {
     const assetAllocationID = getFormString(formData, 'assetAllocationID');
     const name = getFormString(formData, 'name');
     const active = getFormString(formData, 'active') === 'true';
-    const eventDateTime = getFormString(formData, 'eventDateTime');
-    const values = { active, assetAllocationID, eventDateTime, name };
+    const values = { active, assetAllocationID, name };
 
-    if (!assetAllocationID || !eventDateTime)
-      return fail(400, failure('setActive', 'Allocation ID and effective date are required.', values));
+    if (!assetAllocationID)
+      return fail(400, failure('setActive', 'Allocation ID is required.', values));
 
     try {
       const assetAllocationActiveSetRequest: AssetAllocationActiveSetRequest = {
         active,
-        assetAllocationID,
-        eventDateTime: toApiDateTime(eventDateTime),
-        reason: `${active ? 'Activate' : 'Deactivate'} asset allocation ${name || assetAllocationID}`
+        assetAllocationID
       };
 
       const result = await postAssetAllocationActiveSetEvent(fetch, assetAllocationActiveSetRequest, currentUser.userID);
@@ -279,18 +254,13 @@ function parseNodes(nodesJson: string): { valid: true; nodes: AssetAllocationNod
   }
 }
 
-function normaliseAllocationNodes(nodes: AssetAllocationNodeRequest[], rootNodeID: string, name: string) {
-  const nextNodes = nodes.map((node) => ({
+function normaliseAllocationNodes(nodes: AssetAllocationNodeRequest[], rootNodeID: string) {
+  const legacyRootNode = nodes.find((node) => node.nodeID === rootNodeID);
+  const nextNodes = nodes.filter((node) => node.nodeID !== rootNodeID).map((node) => ({
     ...node,
     accountSettings: node.accountSettings.map((setting) => ({ ...setting })),
     nodes: [...node.nodes]
   }));
-  const rootNode = nextNodes.find((node) => node.nodeID === rootNodeID);
-
-  if (!rootNode)
-    return nextNodes;
-
-  rootNode.name = name;
 
   let specialNode = nextNodes.find((node) => isSpecialNode(node));
   if (!specialNode) {
@@ -306,6 +276,7 @@ function normaliseAllocationNodes(nodes: AssetAllocationNodeRequest[], rootNodeI
     nextNodes.push(specialNode);
   }
 
+  const legacyTopLevelNodeIDs = legacyRootNode?.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID) ?? [];
   const specialChildNodes = specialNode.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID);
   specialNode.accountSettings = [];
   specialNode.colour = SPECIAL_NODE_COLOUR;
@@ -315,21 +286,42 @@ function normaliseAllocationNodes(nodes: AssetAllocationNodeRequest[], rootNodeI
   specialNode.subtotal = false;
 
   for (const node of nextNodes) {
-    if (node.nodeID !== rootNodeID)
-      node.nodes = node.nodes.filter((nodeID) => nodeID !== specialNode.nodeID);
+    node.nodes = node.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID);
   }
 
-  rootNode.nodes = [
-    specialNode.nodeID,
-    ...specialChildNodes,
-    ...rootNode.nodes.filter((nodeID) => nodeID !== rootNodeID && nodeID !== specialNode.nodeID)
-  ];
-
-  return nextNodes;
+  return orderAllocationNodes(nextNodes, specialNode.nodeID, [...specialChildNodes, ...legacyTopLevelNodeIDs]);
 }
 
 function isSpecialNode(node: AssetAllocationNodeRequest) {
   return node.name.trim().toLocaleLowerCase() === SPECIAL_NODE_NAME.toLocaleLowerCase();
+}
+
+function orderAllocationNodes(nodes: AssetAllocationNodeRequest[], specialNodeID: string, preferredTopLevelNodeIDs: string[]) {
+  const byID = new Map(nodes.map((node) => [node.nodeID, node]));
+  const childNodeIDs = new Set(nodes.flatMap((node) => node.nodes));
+  const orderedNodeIDs = [
+    specialNodeID,
+    ...preferredTopLevelNodeIDs,
+    ...nodes.filter((node) => !childNodeIDs.has(node.nodeID)).map((node) => node.nodeID)
+  ].filter(Boolean);
+  const addedNodeIDs = new Set<string>();
+  const orderedNodes: AssetAllocationNodeRequest[] = [];
+
+  for (const nodeID of orderedNodeIDs) {
+    const node = byID.get(nodeID);
+
+    if (node && !addedNodeIDs.has(nodeID)) {
+      orderedNodes.push(node);
+      addedNodeIDs.add(nodeID);
+    }
+  }
+
+  for (const node of nodes) {
+    if (!addedNodeIDs.has(node.nodeID))
+      orderedNodes.push(node);
+  }
+
+  return orderedNodes;
 }
 
 function normalizeNode(value: unknown): AssetAllocationNodeRequest | null {

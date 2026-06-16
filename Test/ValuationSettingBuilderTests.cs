@@ -12,17 +12,17 @@ public sealed class ValuationSettingBuilderTests
     {
         var events = SeedRepository.CreateInitialAssetAllocationCreatedEvents();
         var createdEvent = Assert.Single(events);
-        var settings = new ValuationSettings(createdEvent.EventDateTime, events.Cast<IValuationSettingEvent>().ToList());
+        var settings = new ValuationSettings(Constants.Initialisation.EventDateTime, events.Cast<IValuationSettingEvent>().ToList());
 
         var setting = Assert.Single(settings.Items);
         Assert.Equal("Current", setting.Name);
         Assert.True(setting.Active);
-        Assert.Equal(createdEvent.EventDateTime.Value, setting.EffectiveDateTime.Value);
+        Assert.Equal(createdEvent.EventID, setting.LastEventID);
+        Assert.Equal(createdEvent.AuditDateTime.Value, setting.LastAuditDateTime.Value);
 
-        var rootNode = Assert.Single(setting.Nodes, node => node.NodeID == setting.RootNodeID);
         var unallocatedNode = Assert.Single(setting.Nodes, node => node.Name == "Unallocated");
-        Assert.True(rootNode.Hidden);
-        Assert.Equal(unallocatedNode.NodeID, rootNode.Nodes[0]);
+        Assert.DoesNotContain(setting.Nodes, node => node.NodeID == setting.RootNodeID);
+        Assert.Equal(unallocatedNode.NodeID, setting.Nodes[0].NodeID);
         Assert.Equal("#dc2626", unallocatedNode.Colour);
         Assert.Empty(unallocatedNode.AccountSettings);
 
@@ -35,7 +35,7 @@ public sealed class ValuationSettingBuilderTests
     }
 
     [Fact]
-    public void CreatedEvent_BuildsAssetAllocationWithHiddenRootAndTargets()
+    public void CreatedEvent_BuildsAssetAllocationWithVirtualRootAndTargets()
     {
         var accountID = AccountIDBuilder.Create();
         var assetAllocationID = AssetAllocationIDBuilder.Create();
@@ -64,13 +64,13 @@ public sealed class ValuationSettingBuilderTests
         Assert.Equal(assetAllocationID, setting.AssetAllocationID);
         Assert.Equal("Balanced", setting.Name);
         Assert.True(setting.Active);
-        Assert.Equal(Constants.Initialisation.EventDateTime.Value, setting.EffectiveDateTime.Value);
+        Assert.Equal(result.Value!.EventID, setting.LastEventID);
+        Assert.Equal(result.Value.AuditDateTime.Value, setting.LastAuditDateTime.Value);
         Assert.Equal(rootNodeID, setting.RootNodeID);
-        Assert.Equal(3, setting.Nodes.Count);
-        var rootNode = setting.Nodes.Single(node => node.NodeID == rootNodeID);
+        Assert.Equal(2, setting.Nodes.Count);
         var specialNode = setting.Nodes.Single(node => node.Name == "Unallocated");
-        Assert.True(rootNode.Hidden);
-        Assert.Equal(specialNode.NodeID, rootNode.Nodes[0]);
+        Assert.DoesNotContain(setting.Nodes, node => node.NodeID == rootNodeID);
+        Assert.Equal(specialNode.NodeID, setting.Nodes[0].NodeID);
         Assert.Equal("#dc2626", specialNode.Colour);
         Assert.Empty(specialNode.AccountSettings);
         Assert.Empty(specialNode.Nodes);
@@ -78,7 +78,7 @@ public sealed class ValuationSettingBuilderTests
     }
 
     [Fact]
-    public void CreatedEvent_RejectsEffectiveDateWithTimePart()
+    public void CreatedEvent_IgnoresLegacyEffectiveDateArgument()
     {
         var accountID = AccountIDBuilder.Create();
         var rootNodeID = NodeIDBuilder.Create();
@@ -96,8 +96,12 @@ public sealed class ValuationSettingBuilderTests
             rootNodeID,
             CreateNodes(rootNodeID, assetNodeID, accountID));
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.ValidationErrors, message => message.Contains("EffectiveDateTime must be a date only value", StringComparison.Ordinal));
+        Assert.True(result.IsValid);
+
+        var settings = new ValuationSettings(Constants.Initialisation.EventDateTime, [result.Value!]);
+        var setting = Assert.Single(settings.Items);
+        Assert.Equal(result.Value!.EventID, setting.LastEventID);
+        Assert.Equal(result.Value.AuditDateTime.Value, setting.LastAuditDateTime.Value);
     }
 
     [Fact]
@@ -249,7 +253,7 @@ public sealed class ValuationSettingBuilderTests
             true,
             rootNodeID,
             [
-                new AssetAllocationNode(rootNodeID, [NodeIDBuilder.Create()], "Root", false, true, [])
+                new AssetAllocationNode(NodeIDBuilder.Create(), [NodeIDBuilder.Create()], "Assets", false, false, [])
             ]);
 
         Assert.False(result.IsValid);
@@ -273,12 +277,11 @@ public sealed class ValuationSettingBuilderTests
             true,
             rootNodeID,
             [
-                new AssetAllocationNode(rootNodeID, [], "Root", false, true, []),
-                new AssetAllocationNode(orphanNodeID, [], "Orphan", false, false, [])
+                new AssetAllocationNode(orphanNodeID, [orphanNodeID], "Orphan", false, false, [])
             ]);
 
         Assert.False(result.IsValid);
-        Assert.Contains(result.ValidationErrors, message => message.Contains("is not reachable from RootNodeID", StringComparison.Ordinal));
+        Assert.Contains(result.ValidationErrors, message => message.Contains("is not reachable from a top-level node", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -299,7 +302,6 @@ public sealed class ValuationSettingBuilderTests
             true,
             rootNodeID,
             [
-                new AssetAllocationNode(rootNodeID, [firstNodeID], "Root", false, true, []),
                 new AssetAllocationNode(firstNodeID, [secondNodeID], "First", false, false, []),
                 new AssetAllocationNode(secondNodeID, [firstNodeID], "Second", false, false, [])
             ]);
@@ -326,8 +328,8 @@ public sealed class ValuationSettingBuilderTests
             true,
             rootNodeID,
             [
-                new AssetAllocationNode(rootNodeID, [firstNodeID, secondNodeID], "Root", false, true, []),
                 new AssetAllocationNode(firstNodeID, [secondNodeID], "First", false, false, []),
+                new AssetAllocationNode(NodeIDBuilder.Create(), [secondNodeID], "Other", false, false, []),
                 new AssetAllocationNode(secondNodeID, [], "Second", false, false, [])
             ]);
 
@@ -352,7 +354,7 @@ public sealed class ValuationSettingBuilderTests
             true,
             rootNodeID,
             [
-                new AssetAllocationNode(rootNodeID, [assetNodeID, assetNodeID], "Root", false, true, []),
+                new AssetAllocationNode(NodeIDBuilder.Create(), [assetNodeID, assetNodeID], "Parent", false, false, []),
                 new AssetAllocationNode(assetNodeID, [], "Asset", false, false, [])
             ]);
 
@@ -413,9 +415,8 @@ public sealed class ValuationSettingBuilderTests
         Assert.True(result.IsValid);
 
         var settings = new ValuationSettings(Constants.Initialisation.EventDateTime, [result.Value!]);
-        var rootNode = Assert.Single(settings.Items.Single().Nodes, node => node.NodeID == rootNodeID);
         var specialNode = Assert.Single(settings.Items.Single().Nodes, node => node.Name == "Unallocated");
-        Assert.Equal([specialNode.NodeID, secondNodeID, firstNodeID], rootNode.Nodes);
+        Assert.Equal([specialNode.NodeID, secondNodeID, firstNodeID], settings.Items.Single().Nodes.Select(node => node.NodeID).Take(3).ToList());
     }
 
     private static List<AssetAllocationNode> CreateNodes(NodeID rootNodeID, NodeID assetNodeID, AccountID accountID) =>

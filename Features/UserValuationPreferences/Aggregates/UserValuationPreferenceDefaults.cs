@@ -4,6 +4,10 @@ public static class UserValuationPreferenceDefaults
 {
     public const UserValuationDateOption ValuationDateOption = UserValuationDateOption.TodayEndOfDay;
 
+    public const UserValuationDateOption StartValuationDateOption = UserValuationDateOption.TodayEndOfDay;
+
+    public const UserValuationDateOption EndValuationDateOption = UserValuationDateOption.TodayEndOfDay;
+
     public const HoldingDateBasis HoldingDateBasis = FolioTrace.Aggregates.HoldingDateBasis.EventDateTime;
 
     public const bool ShowZeroBalances = false;

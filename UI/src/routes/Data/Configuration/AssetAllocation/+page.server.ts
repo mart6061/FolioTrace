@@ -303,6 +303,9 @@ function findUnallocatedNodeID(nodes: AssetAllocationNode[], rootID: string) {
   if (firstChild && nodes.some((node) => node.nodeID === firstChild))
     return firstChild;
 
+  if (nodes[0]?.name.trim().toLocaleLowerCase() === 'unallocated')
+    return nodes[0].nodeID;
+
   return nodes.find((node) => node.name.trim().toLocaleLowerCase() === 'unallocated')?.nodeID ?? '';
 }
 
@@ -311,10 +314,20 @@ function findMappableNodeIDs(nodes: AssetAllocationNode[], rootID: string) {
   const root = byID.get(rootID);
   const mappable = new Set<string>();
 
-  if (!root)
-    return mappable;
+  if (root) {
+    for (const childNodeID of root.nodes) {
+      const childNode = byID.get(childNodeID);
 
-  visitReachableLeafNodes(root, byID, new Set<string>(), mappable);
+      if (childNode)
+        visitReachableLeafNodes(childNode, byID, new Set<string>(), mappable);
+    }
+
+    return mappable;
+  }
+
+  for (const topLevelNode of topLevelNodes(nodes))
+    visitReachableLeafNodes(topLevelNode, byID, new Set<string>(), mappable);
+
   return mappable;
 }
 
@@ -336,6 +349,11 @@ function visitReachableLeafNodes(node: AssetAllocationNode, byID: Map<string, As
     if (childNode)
       visitReachableLeafNodes(childNode, byID, nextPath, mappable);
   }
+}
+
+function topLevelNodes(nodes: AssetAllocationNode[]) {
+  const childNodeIDs = new Set(nodes.flatMap((node) => node.nodes));
+  return nodes.filter((node) => !childNodeIDs.has(node.nodeID));
 }
 
 function failure(intent: string, message: string, values: Record<string, unknown>) {

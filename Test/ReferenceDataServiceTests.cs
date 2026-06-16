@@ -43,7 +43,7 @@ public sealed class ReferenceDataServiceTests
 
         public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IEventBase =>
+        public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default) where T : class, IAuditEventBase =>
             Task.FromResult<T?>(null);
 
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, CancellationToken cancellationToken = default) =>
@@ -52,22 +52,22 @@ public sealed class ReferenceDataServiceTests
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, DateTime valuationDateTime, DateTime? asOfDateTime = null, CancellationToken cancellationToken = default) =>
             Task.FromResult<EventID?>(null);
 
-        public Task<IReadOnlyList<IEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<IEventBase>>([]);
+        public Task<IReadOnlyList<IAuditEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IAuditEventBase>>([]);
 
         public Task<IReadOnlyList<TEvent>> LoadStreamAsync<TEvent>(Guid streamId, CancellationToken cancellationToken = default)
-            where TEvent : class, IEventBase =>
+            where TEvent : class, IAuditEventBase =>
             Task.FromResult<IReadOnlyList<TEvent>>([]);
 
         public Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
             where TAggregate : class
-            where TEvent : class, IEventBase =>
+            where TEvent : class, IAuditEventBase =>
             Task.CompletedTask;
 
-        public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IEventBase =>
+        public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase =>
             Task.CompletedTask;
 
-        public Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default) =>
+        public Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 }

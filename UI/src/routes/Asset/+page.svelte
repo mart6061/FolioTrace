@@ -271,7 +271,7 @@
         </div>
         <div class="page-header-aside">
           <button
-            class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:border-teal-600 hover:text-teal-700"
+            class="btn btn-secondary"
             onclick={toggleValuationHistory}
             type="button"
           >
@@ -283,7 +283,7 @@
   </section>
 
   <section class="page-container page-section grid gap-5">
-    <form class="grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-[minmax(260px,0.9fr)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(8rem,0.45fr)_auto]" method="GET">
+    <form class="house-form grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,0.9fr)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_minmax(8rem,0.45fr)_auto]" method="GET">
       {#if data.auditDateTime}
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
@@ -338,7 +338,7 @@
     </form>
 
     {#if data.error}
-      <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">{data.error}</div>
+      <div class="status-panel status-panel-error" role="status">{data.error}</div>
     {:else if valuations}
       {#each valuationDependencyKinds as aggregateKind (aggregateKind)}
         <AggregateUpdateWatcher {aggregateKind} valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={valuations.lastEventID} />
@@ -356,7 +356,7 @@
           {#if valuationHistory.loading}
             <div class="text-sm text-slate-600">Loading history...</div>
           {:else if valuationHistory.error}
-            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{valuationHistory.error}</div>
+            <div class="status-panel status-panel-error">{valuationHistory.error}</div>
           {:else}
             <HistoryEventsCard
               eventDateTime={valuations.valuationDateTime ?? data.valuationDate}
@@ -369,15 +369,15 @@
       {/if}
 
       {#each valuations.accounts as account (account.accountID)}
-        <section class="grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
+        <section class="house-card grid gap-3">
+          <div class="house-card-header">
             <div>
-              <h2 class="text-base font-semibold text-slate-950">{account.accountName}</h2>
-              <p class="text-sm text-slate-500">Book currency {account.bookCurrency} | Valuation currency {account.valuationCurrency}</p>
+              <h2 class="house-heading">{account.accountName}</h2>
+              <p class="house-muted text-sm">Book currency {account.bookCurrency} | Valuation currency {account.valuationCurrency}</p>
             </div>
             <div class="text-right text-sm">
               <div class="font-semibold text-slate-950">{formatMoney(account.totals.bookValue, account.valuationCurrency)}</div>
-              <div class="text-slate-500">Cost {formatMoney(account.totals.bookCost, account.valuationCurrency)}</div>
+              <div class="house-muted">Cost {formatMoney(account.totals.bookCost, account.valuationCurrency)}</div>
             </div>
           </div>
 
@@ -421,7 +421,7 @@
                     <td class="px-3 py-2 text-right font-mono">{formatMoney(item.bookCost, item.valuationCurrency)}</td>
                     <td class="px-3 py-2 text-right">
                       <div class="flex items-center justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(item.holdingID)} type="button">
+                        <button class="btn btn-secondary" onclick={() => toggleHistory(item.holdingID)} type="button">
                           {openHistoryHoldingID === item.holdingID ? 'Hide' : 'History'}
                         </button>
                         <button
@@ -450,7 +450,7 @@
                           {#if history?.loading}
                             <div class="text-sm text-slate-600">Loading history...</div>
                           {:else if history?.error}
-                            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                            <div class="status-panel status-panel-error">{history.error}</div>
                           {:else}
                             <HistoryEventsCard
                               eventDateTime={valuations.valuationDateTime ?? data.valuationDate}

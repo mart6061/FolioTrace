@@ -387,8 +387,8 @@
 
 <main class="min-h-screen">
   <section class="page-header">
-    <div class="page-container flex flex-col gap-5">
-      <div class="flex flex-col gap-1">
+    <div class="page-container">
+      <div class="page-header-main">
         <p class="page-kicker">Value Data</p>
         <div class="page-title-row">
           <h1 class="page-title">Instrument Values</h1>
@@ -396,7 +396,7 @@
         </div>
       </div>
 
-      <form class="grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
@@ -406,17 +406,17 @@
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
 
-        <button class="h-10 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-teal-800" type="submit">Apply</button>
+        <button class="btn btn-primary" type="submit">Apply</button>
       </form>
     </div>
   </section>
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{data.error}</div>
+      <div class="status-panel status-panel-error">{data.error}</div>
     {:else if data.instrumentValues}
       {#if form?.message}
-        <div class={`mb-4 rounded-md border px-4 py-3 text-sm ${form.status === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`} role="status">{form.message}</div>
+        <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']} role="status">{form.message}</div>
       {/if}
 
       <AggregateUpdateWatcher aggregateKind="InstrumentValues" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.instrumentValues.lastEventID} />
@@ -566,7 +566,7 @@
                                   {#if history?.loading}
                                     <div class="text-sm text-slate-600">Loading history...</div>
                                   {:else if history?.error}
-                                    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{history.error}</div>
+                                    <div class="status-panel status-panel-error">{history.error}</div>
                                   {:else}
                                     <HistoryEventsCard
                                       eventDateTime={data.instrumentValues.valuationDateTime ?? data.valuationDate}

@@ -7,6 +7,7 @@ namespace FolioTrace.Aggregates;
 
 public sealed record ValuationSettings : IAggregate
 {
+    [JsonIgnore]
     public required EventDateTime ValuationDateTime { get; init; }
 
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -40,7 +41,7 @@ public sealed record ValuationSettings : IAggregate
             throw new ArgumentException("Value must not contain null valuation setting events.", nameof(items));
 
         var includedItems = items
-            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
+            .Where(@event => @event.AuditDateTime.Value <= asOfDateTime.Value)
             .ToList();
 
         if (!includedItems.Any())
@@ -54,8 +55,7 @@ public sealed record ValuationSettings : IAggregate
         }
 
         var orderedItems = includedItems
-            .OrderBy(@event => @event.EventDateTime.Value)
-            .ThenBy(@event => @event.AuditDateTime.Value)
+            .OrderBy(@event => @event.AuditDateTime.Value)
             .ThenBy(@event => @event.EventID.Value)
             .ToList();
 
@@ -153,9 +153,7 @@ public sealed record ValuationSettings : IAggregate
         if (items.Any(@event => @event is null))
             throw new ArgumentException("Value must not contain null valuation setting events.", nameof(items));
 
-        var includedItems = items
-            .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value)
-            .ToList();
+        var includedItems = items.ToList();
 
         if (!includedItems.Any())
             return Constants.Initialisation.AuditDateTime;

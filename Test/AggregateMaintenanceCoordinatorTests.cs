@@ -190,8 +190,8 @@ public sealed class AggregateMaintenanceCoordinatorTests
 
     private sealed class TestEventRepository : IEventRepository
     {
-        private readonly Dictionary<Guid, List<IEventBase>> streams = [];
-        private readonly Dictionary<Guid, IEventBase> eventsById = [];
+        private readonly Dictionary<Guid, List<IAuditEventBase>> streams = [];
+        private readonly Dictionary<Guid, IAuditEventBase> eventsById = [];
 
         public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, streams.Count, eventsById.Count, 0, 0, []);
 
@@ -205,7 +205,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         }
 
         public Task<T?> LoadAsync<T>(EventID eventId, CancellationToken cancellationToken = default)
-            where T : class, IEventBase =>
+            where T : class, IAuditEventBase =>
             Task.FromResult(eventsById.TryGetValue(eventId.Value, out var @event) ? @event as T : null);
 
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, CancellationToken cancellationToken = default)
@@ -224,26 +224,29 @@ public sealed class AggregateMaintenanceCoordinatorTests
             IEventBase? latest = null;
             foreach (var @event in events)
             {
-                if (@event.EventDateTime.Value > valuationDateTime || (asOfDateTime.HasValue && @event.AuditDateTime.Value > asOfDateTime.Value))
+                if (@event is not IEventBase timedEvent)
                     continue;
 
-                if (latest is null || CompareEventOrder(@event, latest) > 0)
-                    latest = @event;
+                if (timedEvent.EventDateTime.Value > valuationDateTime || (asOfDateTime.HasValue && timedEvent.AuditDateTime.Value > asOfDateTime.Value))
+                    continue;
+
+                if (latest is null || CompareEventOrder(timedEvent, latest) > 0)
+                    latest = timedEvent;
             }
 
             return Task.FromResult(latest?.EventID);
         }
 
-        public Task<IReadOnlyList<IEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<IEventBase>>(streams.TryGetValue(streamId, out var events) ? events.ToList() : []);
+        public Task<IReadOnlyList<IAuditEventBase>> LoadStreamAsync(Guid streamId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IAuditEventBase>>(streams.TryGetValue(streamId, out var events) ? events.ToList() : []);
 
         public Task<IReadOnlyList<TEvent>> LoadStreamAsync<TEvent>(Guid streamId, CancellationToken cancellationToken = default)
-            where TEvent : class, IEventBase =>
+            where TEvent : class, IAuditEventBase =>
             Task.FromResult<IReadOnlyList<TEvent>>(streams.TryGetValue(streamId, out var events) ? events.OfType<TEvent>().ToList() : []);
 
         public Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
             where TAggregate : class
-            where TEvent : class, IEventBase
+            where TEvent : class, IAuditEventBase
         {
             streams[streamId] = [];
             foreach (var @event in events)
@@ -253,13 +256,13 @@ public sealed class AggregateMaintenanceCoordinatorTests
         }
 
         public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default)
-            where T : class, IEventBase
+            where T : class, IAuditEventBase
         {
             AddEvent(streamId, @event);
             return Task.CompletedTask;
         }
 
-        public Task AppendAsync(Guid streamId, IEnumerable<IEventBase> events, CancellationToken cancellationToken = default)
+        public Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default)
         {
             foreach (var @event in events)
                 AddEvent(streamId, @event);
@@ -267,7 +270,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
             return Task.CompletedTask;
         }
 
-        private void AddEvent(Guid streamId, IEventBase @event)
+        private void AddEvent(Guid streamId, IAuditEventBase @event)
         {
             if (!streams.TryGetValue(streamId, out var events))
             {

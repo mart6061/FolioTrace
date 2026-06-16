@@ -14,7 +14,7 @@ public static class EventEndpointFactory
         Func<Result<TEvent>> createEvent,
         CancellationToken cancellationToken,
         Func<TEvent, CancellationToken, Task>? afterAppend = null)
-        where TEvent : class, IEventBase
+        where TEvent : class, IAuditEventBase
     {
         var result = Create(createEvent);
         if (!result.IsValid || result.Value is null)
@@ -29,7 +29,7 @@ public static class EventEndpointFactory
         return Results.Accepted(eventRoute, CreateAcceptedEventResponse(eventRoute, result.Value));
     }
 
-    public static object CreateAcceptedEventResponse(string eventRoute, IEventBase @event) =>
+    public static object CreateAcceptedEventResponse(string eventRoute, IAuditEventBase @event) =>
         new
         {
             EventID = @event.EventID.Value,

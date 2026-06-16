@@ -1,4 +1,5 @@
 using FolioTrace.Aggregates;
+using FolioTrace;
 using Repository;
 using System.Text.Json;
 
@@ -11,12 +12,13 @@ public sealed class ReportConfigBuilderTests
     {
         var events = SeedRepository.CreateInitialReportCreatedEvents();
         var createdEvent = Assert.Single(events);
-        var reports = new ReportConfigs(createdEvent.EventDateTime, events.Cast<IReportEvent>().ToList());
+        var reports = new ReportConfigs(Constants.Initialisation.EventDateTime, events.Cast<IReportEvent>().ToList());
 
         var report = Assert.Single(reports.Items);
         Assert.Equal("Current", report.Name);
         Assert.True(report.Active);
-        Assert.Equal(createdEvent.EventDateTime.Value.Date, report.EffectiveDateTime.Value);
+        Assert.Equal(createdEvent.EventID, report.LastEventID);
+        Assert.Equal(createdEvent.AuditDateTime.Value, report.LastAuditDateTime.Value);
         Assert.Collection(
             report.Nodes,
             node => Assert.IsType<ReportNodeCoverPage>(node),

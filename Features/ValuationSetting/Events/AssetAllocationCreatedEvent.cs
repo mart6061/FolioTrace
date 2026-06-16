@@ -5,7 +5,7 @@ using FolioTrace.Types;
 namespace FolioTrace.Aggregates;
 
 [EventClass(EventType = EventClassTypeEnum.Created, Description = "Asset Allocation Created Event")]
-public sealed record AssetAllocationCreatedEvent : EventBase, IValuationSettingEvent
+public sealed record AssetAllocationCreatedEvent : ConfigEventBase, IValuationSettingEvent
 {
     [EventProperty(Description = "Asset Allocation ID")]
     public AssetAllocationID AssetAllocationID { get; init; } = null!;
@@ -25,17 +25,14 @@ public sealed record AssetAllocationCreatedEvent : EventBase, IValuationSettingE
     [EventProperty(Description = "Nodes")]
     public List<AssetAllocationNode> Nodes { get; init; } = [];
 
-    [EventProperty(Description = "Effective Date Time")]
-    public EventDateTime? EffectiveDateTime { get; init; }
-
     [JsonConstructor]
     private AssetAllocationCreatedEvent()
-        : base(null!, null!, null!, null!, string.Empty)
+        : base(null!, null!, null!)
     {
     }
 
-    internal AssetAllocationCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes, EventDateTime effectiveDateTime)
-        : base(eventId, userId, eventDateTime, auditDateTime, reason)
+    internal AssetAllocationCreatedEvent(EventID eventId, UserID userId, AuditDateTime auditDateTime, AssetAllocationID assetAllocationID, string name, List<AccountID> accountIDs, bool active, NodeID rootNodeID, List<AssetAllocationNode> nodes)
+        : base(eventId, userId, auditDateTime)
     {
         AssetAllocationID = assetAllocationID;
         Name = name?.Trim() ?? string.Empty;
@@ -43,7 +40,6 @@ public sealed record AssetAllocationCreatedEvent : EventBase, IValuationSettingE
         Active = active;
         RootNodeID = rootNodeID;
         Nodes = ValuationSettingBuilder.CloneNodes(nodes);
-        EffectiveDateTime = ValuationSettingBuilder.DateOnly(effectiveDateTime);
     }
 
     public override string Type => nameof(AssetAllocationCreatedEvent);

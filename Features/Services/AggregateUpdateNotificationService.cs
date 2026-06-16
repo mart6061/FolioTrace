@@ -12,7 +12,7 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
     private AggregateUpdateNotification? lastNotification;
     private BuildProgressNotification? lastBuildProgress;
 
-    public Type EventType => typeof(IEventBase);
+    public Type EventType => typeof(IAuditEventBase);
 
     public AggregateUpdateNotificationDiagnostics GetDiagnostics() =>
         new(
@@ -49,7 +49,7 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
             });
     }
 
-    public int Invalidate(IEventBase @event)
+    public int Invalidate(IAuditEventBase @event)
     {
         var notifications = CreateNotifications(@event);
         foreach (var notification in notifications)
@@ -87,23 +87,25 @@ public sealed class AggregateUpdateNotificationService : IAggregateCacheInvalida
             subscriber.Writer.TryWrite(notification);
     }
 
-    private static IReadOnlyList<AggregateUpdateNotification> CreateNotifications(IEventBase @event)
+    private static IReadOnlyList<AggregateUpdateNotification> CreateNotifications(IAuditEventBase @event)
     {
         var kinds = AggregateKindsFor(@event).Distinct(StringComparer.Ordinal).ToArray();
+        var eventDateTime = @event is IEventBase timedEvent ? timedEvent.EventDateTime.Value : (DateTime?)null;
+        var reason = @event is IEventBase reasonedEvent ? reasonedEvent.Reason : string.Empty;
 
         return kinds
             .Select(kind => new AggregateUpdateNotification(
                 "AggregateUpdated",
                 kind,
                 @event.EventID.Value,
-                @event.EventDateTime.Value,
+                eventDateTime,
                 @event.AuditDateTime.Value,
-                @event.EventDateTime.Value,
-                @event.Reason))
+                eventDateTime ?? @event.AuditDateTime.Value,
+                reason))
             .ToArray();
     }
 
-    private static IEnumerable<string> AggregateKindsFor(IEventBase @event) =>
+    private static IEnumerable<string> AggregateKindsFor(IAuditEventBase @event) =>
         @event switch
         {
             IAccountEvent => ["Accounts"],
