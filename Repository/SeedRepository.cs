@@ -8,7 +8,7 @@ namespace Repository;
 
 public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository) : ISeedRepository
 {
-    private const int TotalBuildSteps = 14;
+    private const int TotalBuildSteps = 16;
     private const int SeedTransactionMonths = 12;
     private const int SeedStocksPerAccount = 3;
 
@@ -39,6 +39,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         await CreateCurrencySetupEvents(progress, cancellationToken);
         await CreateBrokerSetupEvents(progress, cancellationToken);
         await CreateAccountSetupEvents(progress, cancellationToken);
+        await CreateValuationSettingSetupEvents(progress, cancellationToken);
+        await CreateReportSetupEvents(progress, cancellationToken);
         await CreateFXSetupEvents(progress, cancellationToken);
         await CreateInstrumentSetupEvents(progress, cancellationToken);
         await CreateHoldingSetupEvents(progress, cancellationToken);
@@ -333,6 +335,176 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 account.Item2).Value!)
             .ToList();
     }
+
+    private async Task CreateValuationSettingSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var createdEvents = CreateInitialAssetAllocationCreatedEvents();
+        var eventCount = createdEvents.Count;
+
+        progress("Asset allocation tools", $"Seeding {eventCount:N0} asset allocation configuration events.", 0, false);
+
+        await StoreEvents<ValuationSettings, AssetAllocationCreatedEvent>(
+            Constants.Initialisation.ValuationSettingsStreamId,
+            createdEvents,
+            cancellationToken);
+
+        progress("Asset allocation tools", $"Seeded {eventCount:N0} asset allocation configuration events.", eventCount, true);
+    }
+
+    public static IReadOnlyList<AssetAllocationCreatedEvent> CreateInitialAssetAllocationCreatedEvents()
+    {
+        var assetAllocationID = AssetAllocationIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current"));
+        var rootNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-root"));
+        var unallocatedNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-unallocated"));
+        var growthNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-growth"));
+        var internationalNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-international"));
+        var cashIncomeNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-cash-income"));
+        var accountIDs = SeedAccounts.Select(account => account.AccountID).ToList();
+        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(45));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(45));
+
+        return
+        [
+            AssetAllocationCreatedEventBuilder.CreateSeed(
+                Guid.CreateGuid7(),
+                Constants.Initialisation.UserID,
+                eventDateTime,
+                eventDateTime,
+                auditDateTime,
+                Constants.Initialisation.Reason,
+                assetAllocationID,
+                "Current",
+                accountIDs,
+                true,
+                rootNodeID,
+                [
+                    new AssetAllocationNode(rootNodeID, [unallocatedNodeID, growthNodeID, internationalNodeID, cashIncomeNodeID], "Current", false, true, [], "#0f766e"),
+                    new AssetAllocationNode(unallocatedNodeID, [], "Unallocated", false, false, [], "#dc2626"),
+                    new AssetAllocationNode(
+                        growthNodeID,
+                        [],
+                        "Growth",
+                        false,
+                        false,
+                        CreateSeedAllocationSettings(
+                            (SeedAccounts[0].AccountID, 0.60m, 0.70m, 0.50m, 0.02m),
+                            (SeedAccounts[1].AccountID, 0.80m, 0.90m, 0.70m, 0.01m),
+                            (SeedAccounts[2].AccountID, 0.70m, 0.80m, 0.60m, 0.02m),
+                            (SeedAccounts[9].AccountID, 0.65m, 0.75m, 0.55m, 0.02m)),
+                        "#0f766e"),
+                    new AssetAllocationNode(
+                        internationalNodeID,
+                        [],
+                        "International",
+                        false,
+                        false,
+                        CreateSeedAllocationSettings(
+                            (SeedAccounts[3].AccountID, 0.75m, 0.85m, 0.65m, 0.01m),
+                            (SeedAccounts[4].AccountID, 0.70m, 0.80m, 0.60m, 0.02m),
+                            (SeedAccounts[7].AccountID, 0.55m, 0.65m, 0.45m, 0.01m),
+                            (SeedAccounts[8].AccountID, 0.50m, 0.60m, 0.40m, 0.01m)),
+                        "#2563eb"),
+                    new AssetAllocationNode(
+                        cashIncomeNodeID,
+                        [],
+                        "Cash and Income",
+                        false,
+                        false,
+                        CreateSeedAllocationSettings(
+                            (SeedAccounts[5].AccountID, 0.85m, 0.95m, 0.75m, 0.04m),
+                            (SeedAccounts[6].AccountID, 0.90m, 1.00m, 0.80m, 0.03m)),
+                        "#7c3aed")
+                ]).Value!
+        ];
+    }
+
+    private static List<AssetAllocationNodeAccountSetting> CreateSeedAllocationSettings(params (AccountID AccountID, decimal TargetWeight, decimal TargetWeightMax, decimal TargetWeightMin, decimal TargetYield)[] settings) =>
+        settings
+            .Select(setting => new AssetAllocationNodeAccountSetting(setting.AccountID, setting.TargetWeight, setting.TargetWeightMax, setting.TargetWeightMin, setting.TargetYield))
+            .ToList();
+
+    private async Task CreateReportSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var createdEvents = CreateInitialReportCreatedEvents();
+        var eventCount = createdEvents.Count;
+
+        progress("Report tools", $"Seeding {eventCount:N0} report configuration events.", 0, false);
+
+        await StoreEvents<ReportConfigs, ReportCreatedEvent>(
+            Constants.Initialisation.ReportConfigsStreamId,
+            createdEvents,
+            cancellationToken);
+
+        progress("Report tools", $"Seeded {eventCount:N0} report configuration events.", eventCount, true);
+    }
+
+    public static IReadOnlyList<ReportCreatedEvent> CreateInitialReportCreatedEvents()
+    {
+        var allocationEvents = CreateInitialAssetAllocationCreatedEvents();
+        var valuationSettings = new ValuationSettings(
+            EventDateTimeBuilder.Create(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            allocationEvents.Cast<IValuationSettingEvent>().ToList());
+        var assetAllocationID = valuationSettings.Items.Single(setting => setting.Name == "Current").AssetAllocationID;
+        var reportID = ReportIDBuilder.Create(CreateDeterministicGuid("report-current"));
+        var eventDateTime = EventDateTimeBuilder.Create(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(46));
+
+        return
+        [
+            ReportCreatedEventBuilder.CreateSeed(
+                Guid.CreateGuid7(),
+                Constants.Initialisation.UserID,
+                eventDateTime,
+                auditDateTime,
+                Constants.Initialisation.Reason,
+                reportID,
+                "Current",
+                true,
+                eventDateTime,
+                CreateCurrentReportNodes(assetAllocationID),
+                valuationSettings: valuationSettings).Value!
+        ];
+    }
+
+    private static List<ReportNodeBase> CreateCurrentReportNodes(AssetAllocationID assetAllocationID) =>
+    [
+        new ReportNodeCoverPage(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-current-cover-page")),
+            1,
+            "Cover Page",
+            "Cover Page"),
+        new ReportNodeIndex(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-current-index")),
+            2,
+            "Index",
+            "Index"),
+        new ReportNodeChart(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-current-asset-allocation-chart")),
+            3,
+            "Chart",
+            "Asset Allocation Chart",
+            assetAllocationID,
+            ReportChartType.Pie),
+        new ReportNodeValuation(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-current-valuation")),
+            4,
+            "Valuation",
+            "Valuation",
+            assetAllocationID,
+            ReportConfigBuilder.DefaultValuationColumns()) { PageOrientation = ReportNodePageOrientation.Landscape },
+        new ReportNodeTransactions(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-current-transactions")),
+            5,
+            "Transactions",
+            "Transactions",
+            assetAllocationID) { PageOrientation = ReportNodePageOrientation.Landscape },
+        new ReportNodeCash(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-current-cash")),
+            6,
+            "Cash",
+            "Cash",
+            assetAllocationID) { PageOrientation = ReportNodePageOrientation.Landscape }
+    ];
 
     private async Task CreateHoldingSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
@@ -954,6 +1126,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var accountEvents = CreateInitialAccountCreatedEvents().Count
             + CreateInitialAccountModifiedEvents().Count
             + CreateInitialAccountActiveModifiedEvents().Count;
+        var valuationSettingEvents = CreateInitialAssetAllocationCreatedEvents().Count;
+        var reportEvents = CreateInitialReportCreatedEvents().Count;
         var pairSeeds = SeedFXData.CreatePairSeeds();
         var fxEvents = CreateInitialFXCreatedEvents(pairSeeds).Count
             + CreateInitialFXRateSetEvents(pairSeeds).Count();
@@ -967,7 +1141,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var holdingEvents = holdingCreatedEvents.Count;
         var transactionEvents = CreateInitialTransactionEvents(instrumentSeeds, holdingCreatedEvents).Count;
 
-        return countryEvents + currencyEvents + brokerEvents + accountEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents;
+        return countryEvents + currencyEvents + brokerEvents + accountEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents;
     }
 
     private sealed class SeedPositionState

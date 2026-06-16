@@ -38,12 +38,11 @@ export const load = async ({ fetch, locals, url }) => {
     const selectedValuationSetting = activeValuationSettings.find((setting) => setting.assetAllocationID === valuationSettingID) ?? null;
     const accountIDs = selectedAccountIDs(url.searchParams, activeAccounts, selectedValuationSetting);
     const selectedAccountIDSet = new Set(accountIDs);
-    const allocationEffectiveDateTime = selectedValuationSetting?.effectiveDateTime || apiValuationDate;
 
     const [holdingPositions, assetAllocationMappings] = selectedAccountIDSet.size && valuationSettingID
       ? await Promise.all([
-          getHoldingPositions(fetch, allocationEffectiveDateTime, apiAuditDateTime, holdingDateBasis, null, true),
-          getAssetAllocationMappings(fetch, allocationEffectiveDateTime, apiAuditDateTime, valuationSettingID, null)
+          getHoldingPositions(fetch, apiValuationDate, apiAuditDateTime, holdingDateBasis, null, true),
+          getAssetAllocationMappings(fetch, apiValuationDate, apiAuditDateTime, valuationSettingID, null)
         ])
       : [null, null] as const;
 

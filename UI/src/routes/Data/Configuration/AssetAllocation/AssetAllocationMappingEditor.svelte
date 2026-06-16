@@ -8,12 +8,14 @@
     assetAllocationMappings,
     auditDateTime,
     holdingPositions,
+    mappingEventDateTime,
     valuationSetting
   }: {
     accountIDs: string[];
     assetAllocationMappings: AssetAllocationMapping[];
     auditDateTime: string;
     holdingPositions: HoldingPosition[];
+    mappingEventDateTime: string;
     valuationSetting: ValuationSetting;
   } = $props();
 
@@ -151,7 +153,7 @@
     <input name="accountIDs" type="hidden" value={accountID} />
   {/each}
   <input name="assetAllocationID" type="hidden" value={valuationSetting.assetAllocationID} />
-  <input name="eventDateTime" type="hidden" value={valuationSetting.effectiveDateTime} />
+  <input name="eventDateTime" type="hidden" value={mappingEventDateTime} />
   <input name="auditDateTime" type="hidden" value={auditDateTime} />
   <input name="mappingsJson" type="hidden" value={JSON.stringify(dirtyMappings)} />
 

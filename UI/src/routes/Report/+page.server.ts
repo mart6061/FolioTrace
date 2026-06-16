@@ -2,9 +2,22 @@ import { clampFutureInputDateTime, endOfDayForInput, nowForInput, todayEndForInp
 import { getAccounts, getReportConfigs, getUserValuationPreferences, getValuationSettings } from '$lib/server/api';
 import { requireCurrentUser } from '$lib/server/auth';
 import { defaultUserValuationPreferences, normalizeHoldingDateBasis } from '$lib/valuationPreferences';
-import type { Account, InstrumentPriceBasis, ReportConfig, UserValuationDateOption, ValuationSetting } from '$lib/types';
+import type { Account, InstrumentPriceBasis, ReportConfig, ReportNodePageOrientation, UserValuationDateOption, ValuationSetting } from '$lib/types';
 
 const instrumentPriceBasisOptions: InstrumentPriceBasis[] = ['Mid', 'Bid', 'Ask', 'NAV'];
+
+type ReportDocumentSection = {
+  reportNodeID: string;
+  name: string;
+  pageOrientation: ReportNodePageOrientation;
+};
+
+type ReportDocument = {
+  reportID: string;
+  name: string;
+  valuationHeading: string;
+  sections: ReportDocumentSection[];
+};
 
 export const load = async ({ fetch, locals, url }) => {
   const currentUser = requireCurrentUser(locals);
@@ -15,6 +28,7 @@ export const load = async ({ fetch, locals, url }) => {
   const apiValuationDate = toApiDateTime(valuationDate);
   const holdingDateBasis = normalizeHoldingDateBasis(url.searchParams.get('holdingDateBasis') || valuationPreferences.holdingDateBasis);
   const instrumentPriceBasis = normalizeInstrumentPriceBasis(url.searchParams.get('instrumentPriceBasis'));
+  const shouldCreateDocument = url.searchParams.get('create') === 'true';
 
   try {
     const [accounts, valuationSettings, reportConfigs] = await Promise.all([
@@ -27,6 +41,7 @@ export const load = async ({ fetch, locals, url }) => {
     const accountID = selectedID(url.searchParams.get('accountID'), activeAccounts, 'accountID');
     const matchingReportConfigs = sortReportConfigs(filterReportConfigsForAccount(reportConfigs.items, activeValuationSettings, accountID));
     const reportID = selectedID(url.searchParams.get('reportID'), matchingReportConfigs, 'reportID');
+    const selectedReportConfig = matchingReportConfigs.find((reportConfig) => reportConfig.reportID === reportID) ?? null;
 
     return {
       accountID,
@@ -36,6 +51,7 @@ export const load = async ({ fetch, locals, url }) => {
       holdingDateBasis,
       instrumentPriceBasis,
       instrumentPriceBasisOptions,
+      reportDocument: shouldCreateDocument && selectedReportConfig ? createReportDocument(selectedReportConfig, valuationDate) : null,
       reportConfigs: matchingReportConfigs,
       reportID,
       valuationDate,
@@ -50,6 +66,7 @@ export const load = async ({ fetch, locals, url }) => {
       holdingDateBasis,
       instrumentPriceBasis,
       instrumentPriceBasisOptions,
+      reportDocument: null,
       reportConfigs: [],
       reportID: '',
       valuationDate,
@@ -129,4 +146,29 @@ function filterReportConfigsForAccount(reportConfigs: ReportConfig[], valuationS
 
 function sortReportConfigs(reportConfigs: ReportConfig[]) {
   return [...reportConfigs].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function createReportDocument(reportConfig: ReportConfig, valuationDate: string): ReportDocument {
+  return {
+    reportID: reportConfig.reportID,
+    name: reportConfig.name,
+    valuationHeading: formatReportValuationHeading(valuationDate),
+    sections: [...reportConfig.nodes]
+      .sort((left, right) => left.displayOrder - right.displayOrder || left.name.localeCompare(right.name))
+      .map((node) => ({
+        reportNodeID: node.reportNodeID,
+        name: node.name,
+        pageOrientation: node.pageOrientation ?? 'Portrait'
+      }))
+  };
+}
+
+function formatReportValuationHeading(valuationDate: string) {
+  const datePart = valuationDate.split('T')[0];
+  const date = new Date(`${datePart}T00:00:00`);
+
+  if (Number.isNaN(date.getTime()))
+    return 'Valuation';
+
+  return `Valuation ${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 }

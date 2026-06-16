@@ -3,13 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(ReportNodeCoverPage), nameof(ReportNodeCoverPage))]
-[JsonDerivedType(typeof(ReportNodeIndex), nameof(ReportNodeIndex))]
-[JsonDerivedType(typeof(ReportNodeChart), nameof(ReportNodeChart))]
-[JsonDerivedType(typeof(ReportNodeValuation), nameof(ReportNodeValuation))]
-[JsonDerivedType(typeof(ReportNodeTransactions), nameof(ReportNodeTransactions))]
-[JsonDerivedType(typeof(ReportNodeCash), nameof(ReportNodeCash))]
+[JsonConverter(typeof(ReportNodeBaseJsonConverter))]
 public abstract record ReportNodeBase(
     ReportNodeID ReportNodeID,
     int DisplayOrder,

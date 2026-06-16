@@ -326,6 +326,8 @@ export type ValuationSettings = {
 
 export type ReportChartType = 'Pie' | 'Bar';
 
+export type ReportChartPieLevel = 1 | 2 | 3;
+
 export type ReportValuationColumnKey =
   | 'InstrumentName'
   | 'ISIN'
@@ -351,6 +353,8 @@ export type ReportNodeType =
   | 'ReportNodeTransactions'
   | 'ReportNodeCash';
 
+export type ReportNodePageOrientation = 'Portrait' | 'Landscape';
+
 export type ReportNodeBase = {
   $type?: ReportNodeType;
   type?: ReportNodeType;
@@ -358,8 +362,10 @@ export type ReportNodeBase = {
   displayOrder: number;
   name: string;
   title: string;
+  pageOrientation?: ReportNodePageOrientation;
   assetAllocationID?: string;
   chartType?: ReportChartType;
+  pieLevel?: ReportChartPieLevel;
   columns?: ReportValuationColumn[] | null;
 };
 

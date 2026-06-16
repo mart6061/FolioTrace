@@ -173,6 +173,7 @@
           assetAllocationMappings={data.assetAllocationMappings?.items ?? []}
           auditDateTime={data.auditDateTime}
           holdingPositions={data.holdingPositions?.items ?? []}
+          mappingEventDateTime={data.valuationDate}
           valuationSetting={data.selectedValuationSetting}
         />
       {/key}

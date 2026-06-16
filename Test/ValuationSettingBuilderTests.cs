@@ -1,11 +1,39 @@
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
+using Repository;
 
 namespace Test;
 
 public sealed class ValuationSettingBuilderTests
 {
+    [Fact]
+    public void SeedData_CreatesCurrentAssetAllocationConfiguration()
+    {
+        var events = SeedRepository.CreateInitialAssetAllocationCreatedEvents();
+        var createdEvent = Assert.Single(events);
+        var settings = new ValuationSettings(createdEvent.EventDateTime, events.Cast<IValuationSettingEvent>().ToList());
+
+        var setting = Assert.Single(settings.Items);
+        Assert.Equal("Current", setting.Name);
+        Assert.True(setting.Active);
+        Assert.Equal(createdEvent.EventDateTime.Value, setting.EffectiveDateTime.Value);
+
+        var rootNode = Assert.Single(setting.Nodes, node => node.NodeID == setting.RootNodeID);
+        var unallocatedNode = Assert.Single(setting.Nodes, node => node.Name == "Unallocated");
+        Assert.True(rootNode.Hidden);
+        Assert.Equal(unallocatedNode.NodeID, rootNode.Nodes[0]);
+        Assert.Equal("#dc2626", unallocatedNode.Colour);
+        Assert.Empty(unallocatedNode.AccountSettings);
+
+        var configuredAccountIDs = setting.Nodes
+            .SelectMany(node => node.AccountSettings)
+            .Select(accountSetting => accountSetting.AccountID)
+            .ToHashSet();
+
+        Assert.Equal(setting.AccountIDs.ToHashSet(), configuredAccountIDs);
+    }
+
     [Fact]
     public void CreatedEvent_BuildsAssetAllocationWithHiddenRootAndTargets()
     {
