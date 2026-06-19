@@ -17,7 +17,7 @@ internal static class HoldingEventValidation
     }
 
     public static void ValidateDefinition<TExpectedHolding>(List<string> messages, string? name, bool isDefault)
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         if (!HoldingKindRuntime.IsPositionMemo<TExpectedHolding>() && string.IsNullOrWhiteSpace(name))
             messages.Add("Name is required for all holding kinds except PositionMemo.");
@@ -47,7 +47,7 @@ internal static class HoldingEventValidation
     }
 
     public static void ValidateCreatedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings? holdings)
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         if (holdingID is null || holdings is null)
             return;
@@ -58,8 +58,8 @@ internal static class HoldingEventValidation
         ValidateDefaultForKind<TExpectedHolding>(messages, holdingID, accountID, instrumentID, isDefault, holdings);
     }
 
-    public static Holding? ValidateModifiedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, bool isDefault, Holdings? holdings)
-        where TExpectedHolding : Holding
+    public static HoldingBase? ValidateModifiedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, bool isDefault, Holdings? holdings)
+        where TExpectedHolding : HoldingBase
     {
         if (holdingID is null || holdings is null)
             return null;
@@ -88,20 +88,23 @@ internal static class HoldingEventValidation
     }
 
     private static void ValidateDefaultForKind<TExpectedHolding>(List<string> messages, HoldingID holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings holdings)
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         if (!isDefault || accountID is null || instrumentID is null)
             return;
 
         var holdingKind = HoldingKindRuntime.GetKindName<TExpectedHolding>();
+        var isNominal = HoldingKindRuntime.IsNominal<TExpectedHolding>();
         if (holdings.Items.Any(holding =>
             holding.HoldingID != holdingID &&
             holding.AccountID == accountID &&
-            holding.InstrumentID == instrumentID &&
             holding.GetHoldingKindName() == holdingKind &&
+            (isNominal || holding.InstrumentID == instrumentID) &&
             holding.Default))
         {
-            messages.Add($"A default {holdingKind} holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.");
+            messages.Add(isNominal
+                ? $"A default {holdingKind} holding already exists for AccountID '{accountID}'."
+                : $"A default {holdingKind} holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.");
         }
     }
 }

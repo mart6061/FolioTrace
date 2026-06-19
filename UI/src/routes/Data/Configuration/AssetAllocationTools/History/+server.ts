@@ -72,10 +72,10 @@ function readAccountSettings(source: Record<string, unknown>) {
       const record = setting as Record<string, unknown>;
       return {
         accountID: readString(record, 'accountID', 'accountId', 'AccountID'),
-        targetWeight: readNumber(record, 'targetWeight', 'TargetWeight'),
-        targetWeightMax: readNumber(record, 'targetWeightMax', 'TargetWeightMax'),
-        targetWeightMin: readNumber(record, 'targetWeightMin', 'TargetWeightMin'),
-        targetYield: readNumber(record, 'targetYield', 'TargetYield')
+        targetWeight: readNullableNumber(record, 'targetWeight', 'TargetWeight'),
+        targetWeightMax: readNullableNumber(record, 'targetWeightMax', 'TargetWeightMax'),
+        targetWeightMin: readNullableNumber(record, 'targetWeightMin', 'TargetWeightMin'),
+        targetYield: readNullableNumber(record, 'targetYield', 'TargetYield')
       };
     })
     .filter((setting) => setting !== null);
@@ -135,13 +135,22 @@ function readOptionalBoolean(source: Record<string, unknown>, ...keys: string[])
   return undefined;
 }
 
-function readNumber(source: Record<string, unknown>, ...keys: string[]) {
+function readNullableNumber(source: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
     const value = source[key];
 
+    if (value === null)
+      return null;
+
     if (typeof value === 'number')
-      return value;
+      return Number.isFinite(value) ? value : null;
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed))
+        return parsed;
+    }
   }
 
-  return 0;
+  return null;
 }

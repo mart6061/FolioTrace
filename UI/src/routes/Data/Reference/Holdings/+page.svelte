@@ -13,7 +13,7 @@
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   type SortKey = 'name' | 'type' | 'account' | 'instrument' | 'status' | 'lastAudit';
 
-  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InSpecieIn', 'InSpecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'NominalInflow', 'NominalOutflow', 'NominalInSpecieIn', 'NominalInSpecieOut', 'NominalFeesCustodian', 'NominalFeesAdministrator', 'NominalFeesBank', 'NominalIncome', 'NominalInterest'];
   const historyDatePropertyNames = new Set(['ValuationDateTime', 'EventDateTime', 'SettlementDateTime', 'CancelledDateTime', 'CancellationDateTime', 'AuditDateTime']);
   const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const holdingCount = $derived(data.holdings?.items.length ?? 0);
@@ -105,7 +105,13 @@
   }
 
   function displayName(holding: Holding) {
-    return holding.name || holding.holdingKind;
+    return holding.name || holdingKindLabel(holding.holdingKind);
+  }
+
+  function holdingKindLabel(holdingKind: HoldingKind) {
+    return holdingKind
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^Nominal /, '');
   }
 
   function isBankHolding(holding: Holding) {
@@ -435,17 +441,17 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
 
-        <button class="btn btn-primary" type="submit">Apply</button>
+        <button class="house-button house-button-primary house-button-md" type="submit">Apply</button>
       </form>
     </div>
   </section>
@@ -507,16 +513,16 @@
                     <form id="holding-create" action="?/createHolding" method="POST" use:enhance={enhanceHoldingCreate}>
                       <label class="grid gap-1 text-xs font-medium text-slate-600">
                         <span>Name</span>
-                        <input class="h-8 w-40 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" type="text" value={form?.intent === 'createHolding' ? (form.values?.name ?? '') : ''} />
+                        <input class="house-control house-control-sm w-40" name="name" type="text" value={form?.intent === 'createHolding' ? (form.values?.name ?? '') : ''} />
                       </label>
                     </form>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Type</span>
-                      <select class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="holdingKind">
+                      <select class="house-control house-control-sm" form="holding-create" name="holdingKind">
                         {#each holdingKinds as holdingKind (holdingKind)}
-                          <option value={holdingKind}>{holdingKind}</option>
+                          <option value={holdingKind}>{holdingKindLabel(holdingKind)}</option>
                         {/each}
                       </select>
                     </label>
@@ -524,18 +530,18 @@
                   <td class="px-3 py-2">
                     <div class="grid gap-1 text-xs font-medium text-slate-600">
                       <span>Bank account</span>
-                      <input class="h-8 w-36 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="bankName" placeholder="Bank" type="text" value={form?.intent === 'createHolding' ? (form.values?.bankName ?? '') : ''} />
-                      <input class="h-8 w-36 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="accountName" placeholder="Account" type="text" value={form?.intent === 'createHolding' ? (form.values?.accountName ?? '') : ''} />
+                      <input class="house-control house-control-sm w-36" form="holding-create" name="bankName" placeholder="Bank" type="text" value={form?.intent === 'createHolding' ? (form.values?.bankName ?? '') : ''} />
+                      <input class="house-control house-control-sm w-36" form="holding-create" name="accountName" placeholder="Account" type="text" value={form?.intent === 'createHolding' ? (form.values?.accountName ?? '') : ''} />
                       <div class="flex gap-1">
-                        <input class="h-8 w-20 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="sortCode" placeholder="Sort" type="text" value={form?.intent === 'createHolding' ? (form.values?.sortCode ?? '') : ''} />
-                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="accountNumber" placeholder="Number" type="text" value={form?.intent === 'createHolding' ? (form.values?.accountNumber ?? '') : ''} />
+                        <input class="house-control house-control-sm w-20" form="holding-create" name="sortCode" placeholder="Sort" type="text" value={form?.intent === 'createHolding' ? (form.values?.sortCode ?? '') : ''} />
+                        <input class="house-control house-control-sm w-24" form="holding-create" name="accountNumber" placeholder="Number" type="text" value={form?.intent === 'createHolding' ? (form.values?.accountNumber ?? '') : ''} />
                       </div>
                     </div>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Account</span>
-                      <select class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="accountID" required>
+                      <select class="house-control house-control-sm w-44" form="holding-create" name="accountID" required>
                         {#each data.accounts?.items ?? [] as account (account.accountID)}
                           <option value={account.accountID}>{account.name}</option>
                         {/each}
@@ -545,7 +551,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Instrument</span>
-                      <select class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="instrumentID" required>
+                      <select class="house-control house-control-sm w-44" form="holding-create" name="instrumentID" required>
                         {#each data.instruments?.items ?? [] as instrument (instrument.instrumentID)}
                           <option value={instrument.instrumentID}>{instrument.name}</option>
                         {/each}
@@ -555,7 +561,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Default</span>
-                      <select class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="default">
+                      <select class="house-control house-control-sm" form="holding-create" name="default">
                         <option value="false">No</option>
                         <option value="true">Yes</option>
                       </select>
@@ -565,7 +571,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Status</span>
-                      <select class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form="holding-create" name="active">
+                      <select class="house-control house-control-sm" form="holding-create" name="active">
                         <option value="true">Active</option>
                         <option value="false">Inactive</option>
                       </select>
@@ -574,15 +580,15 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Event date</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="holding-create" name="eventDateTime" required step="1" value={eventDateDefault} />
+                      <DateTimeInput size="sm" form="holding-create" name="eventDateTime" required step="1" value={eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAdd} type="button">Cancel</button>
-                        <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingCreate} form="holding-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={cancelAdd} type="button">Cancel</button>
+                        <button class="house-button house-button-primary house-button-sm" disabled={submittingCreate} form="holding-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
                       </div>
                     </div>
                   </td>
@@ -600,19 +606,19 @@
                         <input name="iban" type="hidden" value={holding.iban ?? ''} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Name</span>
-                          <input class="h-8 w-40 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.name ?? holding.name) : holding.name} />
+                          <input class="house-control house-control-sm w-40" name="name" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.name ?? holding.name) : holding.name} />
                         </label>
                       </form>
                     </td>
-                    <td class="px-3 py-2 text-slate-700">{holding.holdingKind}</td>
+                    <td class="px-3 py-2 text-slate-700">{holdingKindLabel(holding.holdingKind)}</td>
                     <td class="px-3 py-2">
                       {#if isBankHolding(holding)}
                         <div class="grid gap-1">
-                          <input class="h-8 w-36 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="bankName" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.bankName ?? holding.bankName ?? '') : (holding.bankName ?? '')} />
-                          <input class="h-8 w-36 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="accountName" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.accountName ?? holding.accountName ?? '') : (holding.accountName ?? '')} />
+                          <input class="house-control house-control-sm w-36" form={`holding-edit-${holding.holdingID}`} name="bankName" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.bankName ?? holding.bankName ?? '') : (holding.bankName ?? '')} />
+                          <input class="house-control house-control-sm w-36" form={`holding-edit-${holding.holdingID}`} name="accountName" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.accountName ?? holding.accountName ?? '') : (holding.accountName ?? '')} />
                           <div class="flex gap-1">
-                            <input class="h-8 w-20 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="sortCode" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.sortCode ?? holding.sortCode ?? '') : (holding.sortCode ?? '')} />
-                            <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="accountNumber" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.accountNumber ?? holding.accountNumber ?? '') : (holding.accountNumber ?? '')} />
+                            <input class="house-control house-control-sm w-20" form={`holding-edit-${holding.holdingID}`} name="sortCode" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.sortCode ?? holding.sortCode ?? '') : (holding.sortCode ?? '')} />
+                            <input class="house-control house-control-sm w-24" form={`holding-edit-${holding.holdingID}`} name="accountNumber" type="text" value={form?.holdingID === holding.holdingID ? (form.values?.accountNumber ?? holding.accountNumber ?? '') : (holding.accountNumber ?? '')} />
                           </div>
                         </div>
                       {:else}
@@ -622,7 +628,7 @@
                     <td class="px-3 py-2 text-slate-700">{accountsByID.get(holding.accountID) ?? holding.accountID}</td>
                     <td class="px-3 py-2 text-slate-700">{instrumentsByID.get(holding.instrumentID) ?? holding.instrumentID}</td>
                     <td class="px-3 py-2">
-                      <select class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" form={`holding-edit-${holding.holdingID}`} name="default">
+                      <select class="house-control house-control-sm" form={`holding-edit-${holding.holdingID}`} name="default">
                         <option selected={!holding.default} value="false">No</option>
                         <option selected={holding.default} value="true">Yes</option>
                       </select>
@@ -632,20 +638,20 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`holding-edit-${holding.holdingID}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`holding-edit-${holding.holdingID}`} name="eventDateTime" required step="1" value={eventDateDefault} />
+                        <DateTimeInput size="sm" form={`holding-edit-${holding.holdingID}`} name="eventDateTime" required step="1" value={eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
-                        <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingHoldingID === holding.holdingID} form={`holding-edit-${holding.holdingID}`} type="submit">{submittingHoldingID === holding.holdingID ? 'Saving' : 'Save'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={cancelEdit} type="button">Cancel</button>
+                        <button class="house-button house-button-primary house-button-sm" disabled={submittingHoldingID === holding.holdingID} form={`holding-edit-${holding.holdingID}`} type="submit">{submittingHoldingID === holding.holdingID ? 'Saving' : 'Save'}</button>
                       </div>
                     </td>
                   </tr>
                 {:else}
                   <tr class="hover:bg-slate-50">
                     <td class="px-3 py-2 font-medium text-slate-950">{displayName(holding)}</td>
-                    <td class="px-3 py-2 text-slate-700">{holding.holdingKind}</td>
+                    <td class="px-3 py-2 text-slate-700">{holdingKindLabel(holding.holdingKind)}</td>
                     <td class="px-3 py-2 text-slate-700">{bankSummary(holding)}</td>
                     <td class="px-3 py-2 text-slate-700">{accountsByID.get(holding.accountID) ?? holding.accountID}</td>
                     <td class="px-3 py-2 text-slate-700">{instrumentsByID.get(holding.instrumentID) ?? holding.instrumentID}</td>
@@ -657,14 +663,14 @@
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(holding.lastAuditDateTime)}</td>
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(holding.holdingID)} type="button">{openHistoryHoldingID === holding.holdingID ? 'Hide' : 'History'}</button>
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(holding.holdingID)} type="button">Edit</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(holding.holdingID)} type="button">{openHistoryHoldingID === holding.holdingID ? 'Hide' : 'History'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => startEdit(holding.holdingID)} type="button">Edit</button>
                         <form action="?/modifyHoldingActive" method="POST" use:enhance={enhanceHoldingActive}>
                           <input name="holdingID" type="hidden" value={holding.holdingID} />
                           <input name="name" type="hidden" value={displayName(holding)} />
                           <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                           <input name="active" type="hidden" value={holding.active ? 'false' : 'true'} />
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={submittingHoldingID === holding.holdingID} type="submit">{holding.active ? 'Deactivate' : 'Activate'}</button>
+                          <button class="house-button house-button-secondary house-button-sm" disabled={submittingHoldingID === holding.holdingID} type="submit">{holding.active ? 'Deactivate' : 'Activate'}</button>
                         </form>
                       </div>
                     </td>

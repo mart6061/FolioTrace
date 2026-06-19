@@ -8,30 +8,60 @@ namespace Test;
 public sealed class ValuationSettingBuilderTests
 {
     [Fact]
-    public void SeedData_CreatesCurrentAssetAllocationConfiguration()
+    public void SeedData_CreatesDetailedSummaryAndAssetsListAssetAllocationConfigurations()
     {
         var events = SeedRepository.CreateInitialAssetAllocationCreatedEvents();
-        var createdEvent = Assert.Single(events);
+        Assert.Equal(3, events.Count);
         var settings = new ValuationSettings(Constants.Initialisation.EventDateTime, events.Cast<IValuationSettingEvent>().ToList());
 
-        var setting = Assert.Single(settings.Items);
-        Assert.Equal("Current", setting.Name);
-        Assert.True(setting.Active);
-        Assert.Equal(createdEvent.EventID, setting.LastEventID);
-        Assert.Equal(createdEvent.AuditDateTime.Value, setting.LastAuditDateTime.Value);
+        Assert.Equal(3, settings.Items.Count);
+        var detailed = settings.Items.Single(setting => setting.Name == "Detailed");
+        var summary = settings.Items.Single(setting => setting.Name == "Summary");
+        var assetsList = settings.Items.Single(setting => setting.Name == "Assets List");
 
-        var unallocatedNode = Assert.Single(setting.Nodes, node => node.Name == "Unallocated");
-        Assert.DoesNotContain(setting.Nodes, node => node.NodeID == setting.RootNodeID);
-        Assert.Equal(unallocatedNode.NodeID, setting.Nodes[0].NodeID);
-        Assert.Equal("#dc2626", unallocatedNode.Colour);
-        Assert.Empty(unallocatedNode.AccountSettings);
+        Assert.True(detailed.Active);
+        Assert.True(summary.Active);
+        Assert.True(assetsList.Active);
+        Assert.Equal(detailed.AccountIDs.ToHashSet(), summary.AccountIDs.ToHashSet());
+        Assert.Equal(detailed.AccountIDs.ToHashSet(), assetsList.AccountIDs.ToHashSet());
 
-        var configuredAccountIDs = setting.Nodes
-            .SelectMany(node => node.AccountSettings)
-            .Select(accountSetting => accountSetting.AccountID)
-            .ToHashSet();
+        AssertSeedAllocationHasUnallocatedNode(detailed);
+        AssertSeedAllocationHasUnallocatedNode(summary);
+        AssertSeedAllocationHasUnallocatedNode(assetsList);
 
-        Assert.Equal(setting.AccountIDs.ToHashSet(), configuredAccountIDs);
+        var equities = detailed.Nodes.Single(node => node.Name == "Equities");
+        Assert.Null(equities.Colour);
+        Assert.Equal(["UK", "Europe", "US", "Other"], NodeNames(detailed, equities.Nodes));
+        Assert.Equal(["#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa"], NodeColours(detailed, equities.Nodes));
+
+        var fixedInterest = detailed.Nodes.Single(node => node.Name == "Fixed Interest");
+        Assert.Null(fixedInterest.Colour);
+        Assert.Equal(["Government", "Corp"], NodeNames(detailed, fixedInterest.Nodes));
+        Assert.Equal(["#047857", "#34d399"], NodeColours(detailed, fixedInterest.Nodes));
+
+        Assert.Equal("#7c3aed", detailed.Nodes.Single(node => node.Name == "Alternative").Colour);
+        Assert.Equal("#64748b", detailed.Nodes.Single(node => node.Name == "Memo").Colour);
+        Assert.Equal("#059669", detailed.Nodes.Single(node => node.Name == "Cash").Colour);
+
+        var uk = detailed.Nodes.Single(node => node.Name == "UK");
+        Assert.Equal(
+            ["Basic Materials", "Consumer Discretionary", "Consumer Staples", "Energy", "Financials", "Health Care", "Industrials", "Real Estate", "Technology", "Telecommunications"],
+            NodeNames(detailed, uk.Nodes));
+        Assert.Equal(
+            ["Mining", "Chemicals", "Forestry & Paper"],
+            NodeNames(detailed, detailed.Nodes.Single(node => node.Name == "Basic Materials").Nodes));
+        Assert.Equal(
+            ["Software & Computer Services", "Technology Hardware & Equipment"],
+            NodeNames(detailed, detailed.Nodes.Single(node => node.Name == "Technology").Nodes));
+        Assert.Equal(
+            ["Telecommunication Service Providers"],
+            NodeNames(detailed, detailed.Nodes.Single(node => node.Name == "Telecommunications").Nodes));
+
+        Assert.Equal(["Equities", "Fixed Interest", "Alternative", "Memo", "Cash"], summary.Nodes.Where(node => node.Name != "Unallocated").Select(node => node.Name).ToList());
+        Assert.Equal(["#2563eb", "#059669", "#7c3aed", "#64748b", "#059669"], summary.Nodes.Where(node => node.Name != "Unallocated").Select(node => node.Colour).ToList());
+
+        Assert.Equal(["Assets", "Cash"], assetsList.Nodes.Where(node => node.Name != "Unallocated").Select(node => node.Name).ToList());
+        Assert.Equal(["#000000", "#6b7280"], assetsList.Nodes.Where(node => node.Name != "Unallocated").Select(node => node.Colour).ToList());
     }
 
     [Fact]
@@ -76,6 +106,25 @@ public sealed class ValuationSettingBuilderTests
         Assert.Empty(specialNode.Nodes);
         Assert.Equal(accountID, setting.Nodes.Single(node => node.NodeID == assetNodeID).AccountSettings.Single().AccountID);
     }
+
+    private static void AssertSeedAllocationHasUnallocatedNode(ValuationSetting setting)
+    {
+        var unallocatedNode = Assert.Single(setting.Nodes, node => node.Name == "Unallocated");
+        Assert.DoesNotContain(setting.Nodes, node => node.NodeID == setting.RootNodeID);
+        Assert.Equal(unallocatedNode.NodeID, setting.Nodes[0].NodeID);
+        Assert.Equal("#dc2626", unallocatedNode.Colour);
+        Assert.Empty(unallocatedNode.AccountSettings);
+    }
+
+    private static List<string> NodeNames(ValuationSetting setting, IEnumerable<NodeID> nodeIDs) =>
+        nodeIDs
+            .Select(nodeID => setting.Nodes.Single(node => node.NodeID == nodeID).Name)
+            .ToList();
+
+    private static List<string?> NodeColours(ValuationSetting setting, IEnumerable<NodeID> nodeIDs) =>
+        nodeIDs
+            .Select(nodeID => setting.Nodes.Single(node => node.NodeID == nodeID).Colour)
+            .ToList();
 
     [Fact]
     public void CreatedEvent_IgnoresLegacyEffectiveDateArgument()

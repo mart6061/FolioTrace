@@ -9,15 +9,15 @@ const holdingKinds: HoldingKind[] = [
   'CashDebt',
   'CashInvestable',
   'CashNonInvestable',
-  'Inflow',
-  'Outflow',
-  'InSpecieIn',
-  'InSpecieOut',
-  'FeesCustodian',
-  'FeesAdministrator',
-  'FeesBank',
-  'Income',
-  'Interest'
+  'NominalInflow',
+  'NominalOutflow',
+  'NominalInSpecieIn',
+  'NominalInSpecieOut',
+  'NominalFeesCustodian',
+  'NominalFeesAdministrator',
+  'NominalFeesBank',
+  'NominalIncome',
+  'NominalInterest'
 ];
 
 export const GET = async ({ fetch, url }) => {

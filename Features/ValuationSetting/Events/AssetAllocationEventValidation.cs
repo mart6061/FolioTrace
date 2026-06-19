@@ -169,7 +169,7 @@ internal static class AssetAllocationEventValidation
                 if (accountIDSet.Count > 0 && !accountIDSet.Contains(setting.AccountID.Value))
                     messages.Add($"Node '{node.NodeID}' has target settings for AccountID '{setting.AccountID}' which is not assigned to the allocation.");
 
-                if (setting.TargetWeightMin > setting.TargetWeightMax)
+                if (setting.TargetWeightMin.HasValue && setting.TargetWeightMax.HasValue && setting.TargetWeightMin > setting.TargetWeightMax)
                     messages.Add($"Node '{node.NodeID}' has TargetWeightMin greater than TargetWeightMax for AccountID '{setting.AccountID}'.");
             }
         }

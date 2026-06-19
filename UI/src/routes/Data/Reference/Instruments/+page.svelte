@@ -325,17 +325,17 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
 
-        <button class="btn btn-primary" type="submit">Apply</button>
+        <button class="house-button house-button-primary house-button-md" type="submit">Apply</button>
       </form>
     </div>
   </section>
@@ -406,43 +406,43 @@
                     <form id="instrument-create" action="?/createInstrument" method="POST" use:enhance={enhanceInstrumentCreate}></form>
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Name</span>
-                      <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="name" required type="text" value={createValue('name')} />
+                      <input class="house-control house-control-sm house-control-full" form="instrument-create" name="name" required type="text" value={createValue('name')} />
                     </label>
                     <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Formal name</span>
-                      <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="formalName" type="text" value={createValue('formalName')} />
+                      <input class="house-control house-control-sm house-control-full" form="instrument-create" name="formalName" type="text" value={createValue('formalName')} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Ticker</span>
-                      <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="ticker" type="text" value={createValue('ticker')} />
+                      <input class="house-control house-control-sm w-28 font-mono uppercase" form="instrument-create" name="ticker" type="text" value={createValue('ticker')} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Exchange</span>
-                      <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="exchange" required type="text" value={createValue('exchange')} />
+                      <input class="house-control house-control-sm w-28 font-mono uppercase" form="instrument-create" name="exchange" required type="text" value={createValue('exchange')} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>CFI</span>
-                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="6" minlength="6" name="cfi" required type="text" value={createValue('cfi') || 'ESVUFR'} />
+                      <input class="house-control house-control-sm w-24 font-mono uppercase" form="instrument-create" maxlength="6" minlength="6" name="cfi" required type="text" value={createValue('cfi') || 'ESVUFR'} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Price country</span>
-                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="2" minlength="2" name="priceCountry" required type="text" value={createValue('priceCountry')} />
+                      <input class="house-control house-control-sm w-24 font-mono uppercase" form="instrument-create" maxlength="2" minlength="2" name="priceCountry" required type="text" value={createValue('priceCountry')} />
                     </label>
                     <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Price currency</span>
-                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="3" minlength="3" name="priceCurrency" required type="text" value={createValue('priceCurrency')} />
+                      <input class="house-control house-control-sm w-24 font-mono uppercase" form="instrument-create" maxlength="3" minlength="3" name="priceCurrency" required type="text" value={createValue('priceCurrency')} />
                     </label>
                     <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Income country</span>
-                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" maxlength="2" minlength="2" name="incomeCountry" type="text" value={createValue('incomeCountry')} />
+                      <input class="house-control house-control-sm w-24 font-mono uppercase" form="instrument-create" maxlength="2" minlength="2" name="incomeCountry" type="text" value={createValue('incomeCountry')} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -454,15 +454,15 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>Event date</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="instrument-create" name="eventDateTime" required step="1" value={createValue('eventDateTime') || eventDateDefault} />
+                      <DateTimeInput size="sm" form="instrument-create" name="eventDateTime" required step="1" value={createValue('eventDateTime') || eventDateDefault} />
                     </label>
                   </td>
                   <td class="sticky right-0 bg-teal-50 px-3 py-2 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.6)]">
                     <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAdd} type="button">Cancel</button>
-                        <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingCreate} form="instrument-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={cancelAdd} type="button">Cancel</button>
+                        <button class="house-button house-button-primary house-button-sm" disabled={submittingCreate} form="instrument-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
                       </div>
                     </div>
                   </td>
@@ -483,12 +483,12 @@
                         <input name="logoSvg" type="hidden" value={instrument.logo?.svg ?? ''} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Name</span>
-                          <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={editValue(instrument.instrumentID, 'name') ?? instrument.name} />
+                          <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={editValue(instrument.instrumentID, 'name') ?? instrument.name} />
                         </label>
                       </form>
                       <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Formal name</span>
-                        <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} name="formalName" type="text" value={editValue(instrument.instrumentID, 'formalName') ?? instrument.formalName} />
+                        <input class="house-control house-control-sm house-control-full" form={`instrument-edit-${instrument.instrumentID}`} name="formalName" type="text" value={editValue(instrument.instrumentID, 'formalName') ?? instrument.formalName} />
                       </label>
                       {#if instrument.identifiers.length}
                         <div class="mt-2 flex max-w-xl flex-wrap gap-1.5">
@@ -513,7 +513,7 @@
                         <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                         <label class="grid gap-0.5 text-[11px] font-medium text-slate-500">
                           <span>Identifier</span>
-                          <select class="h-7 rounded border border-slate-300 bg-white px-1.5 text-xs text-slate-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="identifierType">
+                          <select class="house-control house-control-compact" name="identifierType">
                             {#each identifierTypeOptions as identifierType (identifierType)}
                               <option value={identifierType}>{identifierType}</option>
                             {/each}
@@ -521,9 +521,9 @@
                         </label>
                         <label class="grid gap-0.5 text-[11px] font-medium text-slate-500">
                           <span>Value</span>
-                          <input class="h-7 w-32 rounded border border-slate-300 bg-white px-1.5 font-mono text-xs uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="identifierValue" required type="text" />
+                          <input class="house-control house-control-compact w-32 font-mono uppercase" name="identifierValue" required type="text" />
                         </label>
-                        <button class="h-7 rounded border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-60" disabled={submittingIdentifierKey.endsWith('|setIdentifier') && submittingIdentifierKey.startsWith(`${instrument.instrumentID}|`)} type="submit">Set</button>
+                        <button class="house-button house-button-secondary house-button-compact" disabled={submittingIdentifierKey.endsWith('|setIdentifier') && submittingIdentifierKey.startsWith(`${instrument.instrumentID}|`)} type="submit">Set</button>
                       </form>
                     </td>
                     <td class="px-3 py-2 font-mono">
@@ -532,27 +532,27 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Exchange</span>
-                        <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} name="exchange" required type="text" value={editValue(instrument.instrumentID, 'exchange') ?? instrument.exchange} />
+                        <input class="house-control house-control-sm w-28 font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} name="exchange" required type="text" value={editValue(instrument.instrumentID, 'exchange') ?? instrument.exchange} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>CFI</span>
-                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="6" minlength="6" name="cfi" required type="text" value={editValue(instrument.instrumentID, 'cfi') ?? instrument.cfi} />
+                        <input class="house-control house-control-sm w-24 font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} maxlength="6" minlength="6" name="cfi" required type="text" value={editValue(instrument.instrumentID, 'cfi') ?? instrument.cfi} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Price country</span>
-                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="2" minlength="2" name="priceCountry" required type="text" value={editValue(instrument.instrumentID, 'priceCountry') ?? instrument.priceCountry} />
+                        <input class="house-control house-control-sm w-24 font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} maxlength="2" minlength="2" name="priceCountry" required type="text" value={editValue(instrument.instrumentID, 'priceCountry') ?? instrument.priceCountry} />
                       </label>
                       <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Price currency</span>
-                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="3" minlength="3" name="priceCurrency" required type="text" value={editValue(instrument.instrumentID, 'priceCurrency') ?? instrument.priceCurrency} />
+                        <input class="house-control house-control-sm w-24 font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} maxlength="3" minlength="3" name="priceCurrency" required type="text" value={editValue(instrument.instrumentID, 'priceCurrency') ?? instrument.priceCurrency} />
                       </label>
                       <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Income country</span>
-                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} maxlength="2" minlength="2" name="incomeCountry" type="text" value={editValue(instrument.instrumentID, 'incomeCountry') ?? instrument.incomeCountry} />
+                        <input class="house-control house-control-sm w-24 font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} maxlength="2" minlength="2" name="incomeCountry" type="text" value={editValue(instrument.instrumentID, 'incomeCountry') ?? instrument.incomeCountry} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
@@ -561,15 +561,15 @@
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={editValue(instrument.instrumentID, 'eventDateTime') ?? eventDateDefault} />
+                        <DateTimeInput size="sm" form={`instrument-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={editValue(instrument.instrumentID, 'eventDateTime') ?? eventDateDefault} />
                       </label>
                     </td>
                     <td class="sticky right-0 bg-teal-50 px-3 py-2 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.6)]">
                       <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                         <span>Actions</span>
                         <div class="flex justify-end gap-2">
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
-                          <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingInstrumentID === instrument.instrumentID} form={`instrument-edit-${instrument.instrumentID}`} type="submit">{submittingInstrumentID === instrument.instrumentID ? 'Saving' : 'Save'}</button>
+                          <button class="house-button house-button-secondary house-button-sm" onclick={cancelEdit} type="button">Cancel</button>
+                          <button class="house-button house-button-primary house-button-sm" disabled={submittingInstrumentID === instrument.instrumentID} form={`instrument-edit-${instrument.instrumentID}`} type="submit">{submittingInstrumentID === instrument.instrumentID ? 'Saving' : 'Save'}</button>
                         </div>
                       </div>
                     </td>
@@ -605,10 +605,10 @@
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(instrument.lastAuditDateTime)}</td>
                     <td class="sticky right-0 bg-white px-3 py-2 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.6)] group-hover:bg-slate-50">
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(instrument.instrumentID)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(instrument.instrumentID)} type="button">
                           {openHistoryInstrumentID === instrument.instrumentID ? 'Hide' : 'History'}
                         </button>
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(instrument.instrumentID)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => startEdit(instrument.instrumentID)} type="button">
                           Edit
                         </button>
                       </div>

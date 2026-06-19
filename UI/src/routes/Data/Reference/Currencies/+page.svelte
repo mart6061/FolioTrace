@@ -301,11 +301,11 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput
-            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            fullWidth
             name="valuationDate"
             step="1"
             value={data.valuationDate}
@@ -317,7 +317,7 @@
         {/if}
 
         <button
-          class="btn btn-primary"
+          class="house-button house-button-primary house-button-md"
           type="submit"
         >
           Apply
@@ -408,40 +408,40 @@
                     <form id="currency-create" action="?/createCurrency" method="POST" use:enhance={enhanceCurrencyCreate}>
                       <label class="grid gap-1 text-xs font-medium text-slate-600">
                         <span>Currency</span>
-                        <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={form?.intent === 'createCurrency' ? (form.values?.name ?? '') : ''} />
+                        <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={form?.intent === 'createCurrency' ? (form.values?.name ?? '') : ''} />
                       </label>
                     </form>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="currency-create">
                       <span>Alphabetic</span>
-                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" maxlength="3" minlength="3" name="alphabeticCode" required type="text" value={form?.intent === 'createCurrency' ? (form.values?.alphabeticCode ?? '') : ''} />
+                      <input class="house-control house-control-sm w-24 font-mono uppercase" form="currency-create" maxlength="3" minlength="3" name="alphabeticCode" required type="text" value={form?.intent === 'createCurrency' ? (form.values?.alphabeticCode ?? '') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2 text-right">
                     <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form="currency-create">
                       <span>Numeric</span>
-                      <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" max="999" min="0" name="numericCode" required type="number" value={form?.intent === 'createCurrency' ? (form.values?.numericCode ?? '') : ''} />
+                      <input class="house-control house-control-sm w-24 text-right font-mono" form="currency-create" max="999" min="0" name="numericCode" required type="number" value={form?.intent === 'createCurrency' ? (form.values?.numericCode ?? '') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2 text-right">
                     <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form="currency-create">
                       <span>Decimals</span>
-                      <input class="h-8 w-20 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" min="0" name="decimalPlace" required type="number" value={form?.intent === 'createCurrency' ? (form.values?.decimalPlace ?? '') : ''} />
+                      <input class="house-control house-control-sm w-20 text-right font-mono" form="currency-create" min="0" name="decimalPlace" required type="number" value={form?.intent === 'createCurrency' ? (form.values?.decimalPlace ?? '') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="currency-create">
                       <span>Event date</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="currency-create" name="eventDateTime" required step="1" value={form?.intent === 'createCurrency' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
+                      <DateTimeInput size="sm" form="currency-create" name="eventDateTime" required step="1" value={form?.intent === 'createCurrency' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAdd} type="button">Cancel</button>
-                        <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingCreate} form="currency-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={cancelAdd} type="button">Cancel</button>
+                        <button class="house-button house-button-primary house-button-sm" disabled={submittingCreate} form="currency-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
                       </div>
                     </div>
                   </td>
@@ -456,7 +456,7 @@
                         <input name="alphabeticCode" type="hidden" value={currency.alphabeticCode} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Currency</span>
-                          <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.name ?? currency.name) : currency.name} />
+                          <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.name ?? currency.name) : currency.name} />
                         </label>
                       </form>
                     </td>
@@ -469,27 +469,27 @@
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`currency-edit-${currency.alphabeticCode}`}>
                         <span>Numeric</span>
-                        <input class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} max="999" min="0" name="numericCode" required type="number" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.numericCode ?? currency.numericCode.toString().padStart(3, '0')) : currency.numericCode.toString().padStart(3, '0')} />
+                        <input class="house-control house-control-sm w-24 text-right font-mono" form={`currency-edit-${currency.alphabeticCode}`} max="999" min="0" name="numericCode" required type="number" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.numericCode ?? currency.numericCode.toString().padStart(3, '0')) : currency.numericCode.toString().padStart(3, '0')} />
                       </label>
                     </td>
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`currency-edit-${currency.alphabeticCode}`}>
                         <span>Decimals</span>
-                        <input class="h-8 w-20 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} min="0" name="decimalPlace" required type="number" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.decimalPlace ?? currency.decimalPlace) : currency.decimalPlace} />
+                        <input class="house-control house-control-sm w-20 text-right font-mono" form={`currency-edit-${currency.alphabeticCode}`} min="0" name="decimalPlace" required type="number" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.decimalPlace ?? currency.decimalPlace) : currency.decimalPlace} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`currency-edit-${currency.alphabeticCode}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`currency-edit-${currency.alphabeticCode}`} name="eventDateTime" required step="1" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
+                        <DateTimeInput size="sm" form={`currency-edit-${currency.alphabeticCode}`} name="eventDateTime" required step="1" value={form?.alphabeticCode === currency.alphabeticCode ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                         <span>Actions</span>
                         <div class="flex justify-end gap-2">
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
-                          <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingCode === currency.alphabeticCode} form={`currency-edit-${currency.alphabeticCode}`} type="submit">{submittingCode === currency.alphabeticCode ? 'Saving' : 'Save'}</button>
+                          <button class="house-button house-button-secondary house-button-sm" onclick={cancelEdit} type="button">Cancel</button>
+                          <button class="house-button house-button-primary house-button-sm" disabled={submittingCode === currency.alphabeticCode} form={`currency-edit-${currency.alphabeticCode}`} type="submit">{submittingCode === currency.alphabeticCode ? 'Saving' : 'Save'}</button>
                         </div>
                       </div>
                     </td>
@@ -503,10 +503,10 @@
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(currency.lastAuditDateTime)}</td>
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(currency.alphabeticCode)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(currency.alphabeticCode)} type="button">
                           {openHistoryCode === currency.alphabeticCode ? 'Hide' : 'History'}
                         </button>
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(currency.alphabeticCode)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => startEdit(currency.alphabeticCode)} type="button">
                           Edit
                         </button>
                       </div>

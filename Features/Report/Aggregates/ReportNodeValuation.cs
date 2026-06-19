@@ -11,4 +11,5 @@ public sealed record ReportNodeValuation(
     AssetAllocationID AssetAllocationID,
     List<ReportValuationColumn>? Columns = null,
     bool ColourBullet = true,
-    bool ColourText = false) : ReportNodeBase(ReportNodeID, DisplayOrder, Name, Title);
+    bool ColourText = false,
+    bool DisplayHoldings = true) : ReportNodeBase(ReportNodeID, DisplayOrder, Name, Title);

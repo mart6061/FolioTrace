@@ -3,6 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
@@ -95,7 +96,7 @@
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
   const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
   const holdingByID = $derived(new Map((data.holdings?.items ?? []).map((holding) => [holding.holdingID, holding])));
-  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'Inflow', 'Outflow', 'InSpecieIn', 'InSpecieOut', 'FeesCustodian', 'FeesAdministrator', 'FeesBank', 'Income', 'Interest'];
+  const holdingKindOrder: HoldingKind[] = ['PositionCash', 'PositionMemo', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'NominalInflow', 'NominalOutflow', 'NominalInSpecieIn', 'NominalInSpecieOut', 'NominalFeesCustodian', 'NominalFeesAdministrator', 'NominalFeesBank', 'NominalIncome', 'NominalInterest'];
   const accountFormValues = $derived(
     (form?.intent === 'createAccount' || form?.intent === 'modifyAccount') && form.values
       ? form.values as AccountFormValues
@@ -156,7 +157,7 @@
     (data.holdings?.items ?? [])
       .filter((holding) =>
         holding.active &&
-        (holding.holdingKind === 'FeesCustodian' || holding.holdingKind === 'FeesAdministrator' || holding.holdingKind === 'FeesBank')
+        (holding.holdingKind === 'NominalFeesCustodian' || holding.holdingKind === 'NominalFeesAdministrator' || holding.holdingKind === 'NominalFeesBank')
       )
       .sort((left, right) => cashInHoldingLabel(left).localeCompare(cashInHoldingLabel(right)))
   );
@@ -748,7 +749,7 @@
   }
 
   function accountEventSummary(event: HistoryEvent) {
-    if (event.$type === 'AccountActiveModifiedEvent' && 'active' in event)
+    if ((event.$type === 'AccountActiveSetEvent' || event.$type === 'AccountActiveModifiedEvent') && 'active' in event)
       return event.active ? 'Activated' : 'Deactivated';
     if (!('name' in event) || !('formalName' in event) || !('bookCurrency' in event))
       return '';
@@ -825,7 +826,7 @@
   }
 
   function holdingDisplayName(holding: Holding) {
-    return holding.name || holding.holdingKind;
+    return holding.name || holdingKindLabel(holding.holdingKind);
   }
 
   function holdingKindLabel(holdingKind: HoldingKind) {
@@ -837,7 +838,9 @@
       case 'PositionAsset':
         return 'Position asset';
       default:
-        return holdingKind;
+        return holdingKind
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/^Nominal /, '');
     }
   }
 
@@ -998,7 +1001,7 @@
 
   function transactionHoldingName(event: TransactionReferenceEvent) {
     const holding = event.holdingID ? holdingByID.get(event.holdingID) : null;
-    return holding ? `${holdingDisplayName(holding)} (${holding.holdingKind})` : event.holdingID ?? '';
+    return holding ? `${holdingDisplayName(holding)} (${holdingKindLabel(holding.holdingKind)})` : event.holdingID ?? '';
   }
 
   function activeTransactionMovements(cards: TransactionSetCard[]) {
@@ -1152,11 +1155,11 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput
-            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            fullWidth
             name="valuationDate"
             step="1"
             value={data.valuationDate}
@@ -1172,7 +1175,7 @@
         {/if}
 
         <button
-          class="btn btn-primary"
+          class="house-button house-button-primary house-button-md"
           type="submit"
         >
           Apply
@@ -1300,7 +1303,7 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600">
                         <span>Name</span>
                         <input
-                          class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          class="house-control house-control-sm house-control-full"
                           name="name"
                           required
                           type="text"
@@ -1313,7 +1316,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
                       <span>Formal name</span>
                       <input
-                        class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        class="house-control house-control-sm house-control-full"
                         form="account-create"
                         name="formalName"
                         required
@@ -1326,7 +1329,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
                       <span>Book currency</span>
                       <input
-                        class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        class="house-control house-control-sm w-24 font-mono uppercase"
                         form="account-create"
                         maxlength="3"
                         minlength="3"
@@ -1357,7 +1360,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
                       <span>Event date</span>
                       <DateTimeInput
-                        class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        size="sm"
                         form="account-create"
                         name="eventDateTime"
                         required
@@ -1371,14 +1374,14 @@
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
                         <button
-                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                          class="house-button house-button-secondary house-button-sm"
                           onclick={cancelAdd}
                           type="button"
                         >
                           Cancel
                         </button>
                         <button
-                          class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                          class="house-button house-button-primary house-button-sm"
                           disabled={submittingCreate}
                           form="account-create"
                           type="submit"
@@ -1412,7 +1415,7 @@
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Name</span>
                           <input
-                            class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                            class="house-control house-control-sm house-control-full"
                             name="name"
                             required
                             type="text"
@@ -1425,7 +1428,7 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`account-edit-${account.accountID}`}>
                         <span>Formal name</span>
                         <input
-                          class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          class="house-control house-control-sm house-control-full"
                           form={`account-edit-${account.accountID}`}
                           name="formalName"
                           required
@@ -1458,7 +1461,7 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`account-edit-${account.accountID}`}>
                         <span>Event date</span>
                         <DateTimeInput
-                          class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          size="sm"
                           form={`account-edit-${account.accountID}`}
                           name="eventDateTime"
                           required
@@ -1472,14 +1475,14 @@
                         <span>Actions</span>
                         <div class="flex justify-end gap-2">
                           <button
-                            class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                            class="house-button house-button-secondary house-button-sm"
                             onclick={cancelEdit}
                             type="button"
                           >
                             Cancel
                           </button>
                           <button
-                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={submittingAccountID === account.accountID}
                             form={`account-edit-${account.accountID}`}
                             type="submit"
@@ -1508,14 +1511,14 @@
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
                         <button
-                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          class="house-button house-button-secondary house-button-sm"
                           onclick={() => toggleHistory(account.accountID)}
                           type="button"
                         >
                           {openHistoryAccountID === account.accountID ? 'Hide' : 'History'}
                         </button>
                         <button
-                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          class="house-button house-button-secondary house-button-sm"
                           onclick={() => startEdit(account.accountID)}
                           type="button"
                         >
@@ -1527,7 +1530,7 @@
                           <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                           <input name="active" type="hidden" value={account.active ? 'false' : 'true'} />
                           <button
-                            class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70"
+                            class="house-button house-button-secondary house-button-sm"
                             disabled={submittingAccountID === account.accountID}
                             type="submit"
                           >
@@ -1573,33 +1576,25 @@
                                           <input name="iban" type="hidden" value={holding.iban ?? ''} />
                                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                                             <span>Name</span>
-                                            <input class="h-8 min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" type="text" value={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.name ?? holding.name) : holding.name} required />
+                                            <input class="house-control house-control-sm" name="name" type="text" value={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.name ?? holding.name) : holding.name} required />
                                           </label>
                                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                                             <span>Event date</span>
-                                            <DateTimeInput class="h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="eventDateTime" required step="1" value={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
+                                            <DateTimeInput size="sm" name="eventDateTime" required step="1" value={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                                           </label>
                                           <div class="flex gap-2 md:justify-end">
-                                            <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelHoldingEdit} type="button">Cancel</button>
-                                            <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingHoldingID === holding.holdingID} type="submit">{submittingHoldingID === holding.holdingID ? 'Saving' : 'Save'}</button>
+                                            <button class="house-button house-button-secondary house-button-sm" onclick={cancelHoldingEdit} type="button">Cancel</button>
+                                            <button class="house-button house-button-primary house-button-sm" disabled={submittingHoldingID === holding.holdingID} type="submit">{submittingHoldingID === holding.holdingID ? 'Saving' : 'Save'}</button>
                                           </div>
                                           <div class="flex flex-wrap gap-4 md:col-span-3">
-                                            <label class="flex items-center gap-2 text-xs font-medium text-slate-600">
-                                              <span>Default</span>
-                                              <span class="trace-toggle">
-                                                <input checked={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.default ?? holding.default) : holding.default} name="default" type="checkbox" value="true" />
-                                                <span aria-hidden="true"></span>
-                                              </span>
+                                            <span class="flex items-center gap-2 text-xs font-medium text-slate-600">
+                                              <Toggle checked={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.default ?? holding.default) : holding.default} label="Default" name="default" value="true" />
                                               <input name="default" type="hidden" value="false" />
-                                            </label>
-                                            <label class="flex items-center gap-2 text-xs font-medium text-slate-600">
-                                              <span>Active</span>
-                                              <span class="trace-toggle">
-                                                <input checked={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.active ?? holding.active) : holding.active} name="active" type="checkbox" value="true" />
-                                                <span aria-hidden="true"></span>
-                                              </span>
+                                            </span>
+                                            <span class="flex items-center gap-2 text-xs font-medium text-slate-600">
+                                              <Toggle checked={form?.holdingID === holding.holdingID ? (holdingCardFormValues?.active ?? holding.active) : holding.active} label="Active" name="active" value="true" />
                                               <input name="active" type="hidden" value="false" />
-                                            </label>
+                                            </span>
                                           </div>
                                         </form>
                                       </li>
@@ -1607,7 +1602,7 @@
                                       <li class="grid min-w-0 gap-2 px-3 py-2 text-sm md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_104px_96px_144px] md:items-center">
                                         <div class="min-w-0">
                                           <div class="truncate font-medium text-slate-950">{holdingDisplayName(holding)}</div>
-                                          <div class="truncate text-xs text-slate-500">{holding.holdingKind}</div>
+                                          <div class="truncate text-xs text-slate-500">{holdingKindLabel(holding.holdingKind)}</div>
                                         </div>
                                         <div class="min-w-0 truncate text-slate-600">{holdingInstrumentName(holding)}</div>
                                         <div class="flex md:justify-end">
@@ -1627,8 +1622,8 @@
                                           {/if}
                                         </div>
                                         <div class="flex gap-2 md:justify-end">
-                                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHoldingHistory(holding.holdingID)} type="button">{openHistoryHoldingID === holding.holdingID ? 'Hide' : 'History'}</button>
-                                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startHoldingEdit(holding.holdingID)} type="button">Edit</button>
+                                          <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHoldingHistory(holding.holdingID)} type="button">{openHistoryHoldingID === holding.holdingID ? 'Hide' : 'History'}</button>
+                                          <button class="house-button house-button-secondary house-button-sm" onclick={() => startHoldingEdit(holding.holdingID)} type="button">Edit</button>
                                         </div>
                                       </li>
                                       {#if openHistoryHoldingID === holding.holdingID}
@@ -1803,7 +1798,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Event date</span>
                             <DateTimeInput
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                              size="md"
                               name="eventDateTime"
                               required
                               step="1"
@@ -1814,7 +1809,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Investable holding</span>
                             <select
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                              class="house-control house-control-md"
                               name="holdingID"
                               required
                             >
@@ -1836,7 +1831,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Amount</span>
                             <input
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                              class="house-control house-control-md"
                               min="0.00000001"
                               name="amount"
                               required
@@ -1848,14 +1843,14 @@
 
                           <div class="flex justify-end gap-2">
                             <button
-                              class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                              class="house-button house-button-secondary house-button-md"
                               onclick={cashMovementMode === 'out' ? cancelCashOut : cancelCashIn}
                               type="button"
                             >
                               Cancel
                             </button>
                             <button
-                              class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                              class="house-button house-button-primary house-button-md"
                               disabled={(cashMovementMode === 'out' ? submittingCashOut : submittingCashIn) || !rowCashInHoldings.length}
                               type="submit"
                             >
@@ -1875,7 +1870,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Event date</span>
                             <DateTimeInput
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              size="md"
                               name="eventDateTime"
                               required
                               step="1"
@@ -1886,7 +1881,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Cash holding</span>
                             <select
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              class="house-control house-control-md"
                               name="cashHoldingID"
                               required
                             >
@@ -1908,7 +1903,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Fee holding</span>
                             <select
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              class="house-control house-control-md"
                               name="feeHoldingID"
                               required
                             >
@@ -1930,7 +1925,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Amount</span>
                             <input
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20"
+                              class="house-control house-control-md"
                               min="0.00000001"
                               name="amount"
                               required
@@ -1942,14 +1937,14 @@
 
                           <div class="flex justify-end gap-2">
                             <button
-                              class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                              class="house-button house-button-secondary house-button-md"
                               onclick={feeMovementMode === 'out' ? cancelFeesOut : cancelFeesIn}
                               type="button"
                             >
                               Cancel
                             </button>
                             <button
-                              class="h-9 rounded-md bg-amber-700 px-3 text-sm font-medium text-white hover:bg-amber-800 disabled:cursor-wait disabled:opacity-70"
+                              class="house-button house-button-primary house-button-md"
                               disabled={(feeMovementMode === 'out' ? submittingFeesOut : submittingFeesIn) || !rowFeeCashHoldings.length || !rowFeeHoldings.length}
                               type="submit"
                             >
@@ -1969,7 +1964,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Event date</span>
                             <DateTimeInput
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              size="md"
                               name="eventDateTime"
                               required
                               step="1"
@@ -1980,7 +1975,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Instrument</span>
                             <input
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              class="house-control house-control-md"
                               list={`instrument-options-${account.accountID}`}
                               name="instrumentID"
                               placeholder="Search instruments"
@@ -2000,7 +1995,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Quantity</span>
                             <input
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              class="house-control house-control-md"
                               min="0.00000001"
                               name="quantity"
                               required
@@ -2013,7 +2008,7 @@
                           <label class="grid gap-1 text-xs font-medium text-slate-600">
                             <span>Book cost</span>
                             <input
-                              class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                              class="house-control house-control-md"
                               min="0"
                               name="bookCost"
                               step="0.00000001"
@@ -2024,14 +2019,14 @@
 
                           <div class="flex justify-end gap-2">
                             <button
-                              class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                              class="house-button house-button-secondary house-button-md"
                               onclick={inSpecieMovementMode === 'out' ? cancelInSpecieOut : cancelInSpecieIn}
                               type="button"
                             >
                               Cancel
                             </button>
                             <button
-                              class="h-9 rounded-md bg-indigo-700 px-3 text-sm font-medium text-white hover:bg-indigo-800 disabled:cursor-wait disabled:opacity-70"
+                              class="house-button house-button-primary house-button-md"
                               disabled={(inSpecieMovementMode === 'out' ? submittingInSpecieOut : submittingInSpecieIn) || !sortedInstruments.length}
                               type="submit"
                             >
@@ -2042,7 +2037,7 @@
                       {:else}
                         <div class="flex flex-wrap gap-2">
                           <button
-                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={!account.active}
                             onclick={() => startCashIn(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create a cash-in transaction for ${account.name}`}
@@ -2051,7 +2046,7 @@
                             Cash In
                           </button>
                           <button
-                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={!account.active}
                             onclick={() => startCashOut(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create a cash-out transaction for ${account.name}`}
@@ -2060,7 +2055,7 @@
                             Cash Out
                           </button>
                           <button
-                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={!account.active}
                             onclick={() => startFeesIn(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create a fees-in transaction for ${account.name}`}
@@ -2069,7 +2064,7 @@
                             Fees In
                           </button>
                           <button
-                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={!account.active}
                             onclick={() => startFeesOut(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create a fees-out transaction for ${account.name}`}
@@ -2078,7 +2073,7 @@
                             Fees Out
                           </button>
                           <button
-                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={!account.active}
                             onclick={() => startInSpecieIn(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create an InSpecie-in transaction for ${account.name}`}
@@ -2087,7 +2082,7 @@
                             InSpecie In
                           </button>
                           <button
-                            class="h-8 rounded-md bg-sky-700 px-3 text-sm font-medium text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={!account.active}
                             onclick={() => startInSpecieOut(account.accountID)}
                             title={!account.active ? 'Account is inactive' : `Create an InSpecie-out transaction for ${account.name}`}

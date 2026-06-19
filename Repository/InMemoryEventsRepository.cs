@@ -7,6 +7,7 @@ namespace Repository;
 public sealed class InMemoryEventsRepository(MartenEventRepository durableRepository) : IEventRepository
 {
     private readonly SemaphoreSlim loadLock = new(1, 1);
+    private readonly SemaphoreSlim writeLock = new(1, 1);
     private readonly Lock sync = new();
     private readonly Dictionary<Guid, List<IAuditEventBase>> streams = [];
     private readonly Dictionary<Guid, IAuditEventBase> eventsById = [];
@@ -31,14 +32,22 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
 
     public async Task ClearAsync(CancellationToken cancellationToken = default)
     {
-        await durableRepository.ClearAsync(cancellationToken);
-
-        lock (sync)
+        await writeLock.WaitAsync(cancellationToken);
+        try
         {
-            streams.Clear();
-            eventsById.Clear();
-            unprocessedEvents.Clear();
-            isLoaded = true;
+            await durableRepository.ClearAsync(cancellationToken);
+
+            lock (sync)
+            {
+                streams.Clear();
+                eventsById.Clear();
+                unprocessedEvents.Clear();
+                isLoaded = true;
+            }
+        }
+        finally
+        {
+            writeLock.Release();
         }
     }
 
@@ -118,13 +127,21 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             throw new ArgumentNullException(nameof(events));
 
         await EnsureLoadedAsync(cancellationToken);
-        await durableRepository.StartStreamAsync<TAggregate, TEvent>(streamId, events, cancellationToken);
-
-        lock (sync)
+        await writeLock.WaitAsync(cancellationToken);
+        try
         {
-            streams[streamId] = [];
-            foreach (var @event in events)
-                AddEvent(streamId, @event);
+            await durableRepository.StartStreamAsync<TAggregate, TEvent>(streamId, events, cancellationToken);
+
+            lock (sync)
+            {
+                streams[streamId] = [];
+                foreach (var @event in events)
+                    AddEvent(streamId, @event);
+            }
+        }
+        finally
+        {
+            writeLock.Release();
         }
     }
 
@@ -134,11 +151,19 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             throw new ArgumentNullException(nameof(@event));
 
         await EnsureLoadedAsync(cancellationToken);
-        await durableRepository.AppendAsync(streamId, @event, cancellationToken);
-
-        lock (sync)
+        await writeLock.WaitAsync(cancellationToken);
+        try
         {
-            AddEvent(streamId, @event);
+            await durableRepository.AppendAsync(streamId, @event, cancellationToken);
+
+            lock (sync)
+            {
+                AddEvent(streamId, @event);
+            }
+        }
+        finally
+        {
+            writeLock.Release();
         }
     }
 
@@ -155,12 +180,20 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             return;
 
         await EnsureLoadedAsync(cancellationToken);
-        await durableRepository.AppendAsync(streamId, eventData, cancellationToken);
-
-        lock (sync)
+        await writeLock.WaitAsync(cancellationToken);
+        try
         {
-            foreach (var @event in eventData)
-                AddEvent(streamId, @event);
+            await durableRepository.AppendAsync(streamId, eventData, cancellationToken);
+
+            lock (sync)
+            {
+                foreach (var @event in eventData)
+                    AddEvent(streamId, @event);
+            }
+        }
+        finally
+        {
+            writeLock.Release();
         }
     }
 

@@ -60,7 +60,7 @@ export function valuationStartDateFromOption(option: UserValuationDateOption, no
 }
 
 export function valuationEndDateFromOption(option: UserValuationDateOption, now = new Date()) {
-  return option === 'Now' ? nowForInput(now) : endOfDayForInput(relativeValuationDate(option, now), '0.001');
+  return option === 'Now' ? nowForInput(now) : endOfDayForInput(relativeValuationDate(option, now));
 }
 
 function relativeValuationDate(option: UserValuationDateOption, now: Date) {

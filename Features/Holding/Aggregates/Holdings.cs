@@ -11,7 +11,7 @@ public sealed record Holdings : IAggregate
     public required AuditDateTime AsOfDateTime { get; init; }
     public EventID LastEventID { get; private set; }
     public LastAuditDateTime LastAuditDateTime { get; private set; }
-    public required List<Holding> Items { get; init; }
+    public required List<HoldingBase> Items { get; init; }
 
     [SetsRequiredMembers]
     public Holdings(EventDateTime valuationDateTime, List<IHoldingEvent> items)
@@ -84,8 +84,8 @@ public sealed record Holdings : IAggregate
         if (Items.Any(holding => holding.HoldingID == createdEvent.HoldingID))
             throw new InvalidOperationException($"Holding already exists for HoldingID '{createdEvent.HoldingID}'.");
         var createdKind = createdEvent.GetHoldingKindName();
-        if (createdEvent.Default && Items.Any(holding => holding.AccountID == createdEvent.AccountID && holding.InstrumentID == createdEvent.InstrumentID && holding.GetHoldingKindName() == createdKind && holding.Default))
-            throw new InvalidOperationException($"A default {createdKind} holding already exists for AccountID '{createdEvent.AccountID}' and InstrumentID '{createdEvent.InstrumentID}'.");
+        if (createdEvent.Default && Items.Any(holding => HasDefaultConflict(holding, createdEvent.AccountID, createdEvent.InstrumentID, createdKind)))
+            throw new InvalidOperationException(DefaultConflictMessage(createdKind, createdEvent.AccountID, createdEvent.InstrumentID));
 
         Items.Add(HoldingBuilder.Create(createdEvent));
         LastEventID = createdEvent.EventID;
@@ -100,8 +100,8 @@ public sealed record Holdings : IAggregate
 
         var existing = Items[index];
         var modifiedKind = modifiedEvent.GetHoldingKindName();
-        if (modifiedEvent.Default && Items.Where((_, itemIndex) => itemIndex != index).Any(holding => holding.AccountID == existing.AccountID && holding.InstrumentID == existing.InstrumentID && holding.GetHoldingKindName() == modifiedKind && holding.Default))
-            throw new InvalidOperationException($"A default {modifiedKind} holding already exists for AccountID '{existing.AccountID}' and InstrumentID '{existing.InstrumentID}'.");
+        if (modifiedEvent.Default && Items.Where((_, itemIndex) => itemIndex != index).Any(holding => HasDefaultConflict(holding, existing.AccountID, existing.InstrumentID, modifiedKind)))
+            throw new InvalidOperationException(DefaultConflictMessage(modifiedKind, existing.AccountID, existing.InstrumentID));
 
         Items[index] = existing.Apply(modifiedEvent);
         LastEventID = modifiedEvent.EventID;
@@ -119,8 +119,19 @@ public sealed record Holdings : IAggregate
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
-    private static LastAuditDateTime GetLastAuditDateTime(List<Holding> items) =>
+    private static LastAuditDateTime GetLastAuditDateTime(List<HoldingBase> items) =>
         new(items.Max(holding => holding.LastAuditDateTime.Value));
+
+    private static bool HasDefaultConflict(HoldingBase holding, AccountID accountID, InstrumentID instrumentID, string holdingKind) =>
+        holding.AccountID == accountID &&
+        holding.GetHoldingKindName() == holdingKind &&
+        holding.Default &&
+        (HoldingKindRuntime.IsNominalKindName(holdingKind) || holding.InstrumentID == instrumentID);
+
+    private static string DefaultConflictMessage(string holdingKind, AccountID accountID, InstrumentID instrumentID) =>
+        HoldingKindRuntime.IsNominalKindName(holdingKind)
+            ? $"A default {holdingKind} holding already exists for AccountID '{accountID}'."
+            : $"A default {holdingKind} holding already exists for AccountID '{accountID}' and InstrumentID '{instrumentID}'.";
 
     private static AuditDateTime GetLatestAuditDateTime(EventDateTime valuationDateTime, List<IHoldingEvent> items)
     {

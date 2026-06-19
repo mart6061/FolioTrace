@@ -151,10 +151,10 @@ export type CurrencyCreatedRequest = CurrencyModifiedRequest;
 
 export type AssetAllocationNodeAccountSettingRequest = {
   accountID: string;
-  targetWeight: number;
-  targetWeightMax: number;
-  targetWeightMin: number;
-  targetYield: number;
+  targetWeight: number | null;
+  targetWeightMax: number | null;
+  targetWeightMin: number | null;
+  targetYield: number | null;
 };
 
 export type AssetAllocationNodeRequest = {
@@ -1316,7 +1316,7 @@ export async function postAccountActiveModifiedEvent(
   request: AccountActiveModifiedRequest,
   userID: string
 ) {
-  return postAccountEvent(fetchApi, 'AccountActiveModifiedEvent', request, userID);
+  return postAccountEvent(fetchApi, 'AccountActiveSetEvent', request, userID);
 }
 
 export async function postAccountDisplayOrderSetEvent(
@@ -2117,7 +2117,7 @@ async function postCountryEvent(
 
 async function postAccountEvent(
   fetchApi: typeof fetch,
-  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveModifiedEvent' | 'AccountDisplayOrderSetEvent',
+  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveSetEvent' | 'AccountDisplayOrderSetEvent',
   request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest | AccountDisplayOrderSetRequest,
   userID: string
 ) {
@@ -2222,24 +2222,24 @@ function holdingEventPrefix(holdingKind: HoldingKind) {
       return 'HoldingCashInvestable';
     case 'CashNonInvestable':
       return 'HoldingCashNonInvestable';
-    case 'Inflow':
-      return 'HoldingInflow';
-    case 'Outflow':
-      return 'HoldingOutflow';
-    case 'InSpecieIn':
-      return 'HoldingInSpecieIn';
-    case 'InSpecieOut':
-      return 'HoldingInSpecieOut';
-    case 'FeesCustodian':
-      return 'HoldingFeesCustodian';
-    case 'FeesAdministrator':
-      return 'HoldingFeesAdministrator';
-    case 'FeesBank':
-      return 'HoldingFeesBank';
-    case 'Income':
-      return 'HoldingIncome';
-    case 'Interest':
-      return 'HoldingInterest';
+    case 'NominalInflow':
+      return 'HoldingNominalInflow';
+    case 'NominalOutflow':
+      return 'HoldingNominalOutflow';
+    case 'NominalInSpecieIn':
+      return 'HoldingNominalInSpecieIn';
+    case 'NominalInSpecieOut':
+      return 'HoldingNominalInSpecieOut';
+    case 'NominalFeesCustodian':
+      return 'HoldingNominalFeesCustodian';
+    case 'NominalFeesAdministrator':
+      return 'HoldingNominalFeesAdministrator';
+    case 'NominalFeesBank':
+      return 'HoldingNominalFeesBank';
+    case 'NominalIncome':
+      return 'HoldingNominalIncome';
+    case 'NominalInterest':
+      return 'HoldingNominalInterest';
   }
 }
 
@@ -2261,15 +2261,15 @@ function isHoldingKind(value: string): value is HoldingKind {
     'CashDebt',
     'CashInvestable',
     'CashNonInvestable',
-    'Inflow',
-    'Outflow',
-    'InSpecieIn',
-    'InSpecieOut',
-    'FeesCustodian',
-    'FeesAdministrator',
-    'FeesBank',
-    'Income',
-    'Interest'
+    'NominalInflow',
+    'NominalOutflow',
+    'NominalInSpecieIn',
+    'NominalInSpecieOut',
+    'NominalFeesCustodian',
+    'NominalFeesAdministrator',
+    'NominalFeesBank',
+    'NominalIncome',
+    'NominalInterest'
   ].includes(value);
 }
 
@@ -2571,6 +2571,7 @@ function toReportNodeBody(node: ReportNodeRequest) {
   if (type === 'ReportNodeValuation') {
     body.ColourBullet = node.colourBullet ?? true;
     body.ColourText = node.colourText ?? false;
+    body.DisplayHoldings = node.displayHoldings ?? true;
   }
 
   return body;

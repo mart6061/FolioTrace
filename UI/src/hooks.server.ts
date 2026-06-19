@@ -1,4 +1,6 @@
 import { authKit, authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
+import { dev } from '$app/environment';
+import { env } from '$env/dynamic/private';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
@@ -23,6 +25,13 @@ const authGateHandle: Handle = async ({ event, resolve }) => {
 
   if (isPublicPath(event.url.pathname))
     return resolve(event);
+
+  const devCurrentUser = getDevCurrentUser();
+  if (devCurrentUser) {
+    event.locals.currentUser = devCurrentUser;
+    await ensureFolioTraceUser(event.fetch, devCurrentUser);
+    return resolve(event);
+  }
 
   if (!authKitConfigured)
     return new Response('WorkOS AuthKit is not configured.', { status: 503 });
@@ -52,4 +61,20 @@ function isPublicPath(pathname: string) {
     || pathname.startsWith('/brand/')
     || pathname === '/favicon.ico'
     || pathname === '/robots.txt';
+}
+
+function getDevCurrentUser() {
+  if (!dev)
+    return null;
+
+  const email = env.FOLIOTRACE_DEV_AUTH_EMAIL?.trim();
+  if (!email)
+    return null;
+
+  return currentUserFromWorkOSUser({
+    id: `foliotrace-dev:${email.toLowerCase()}`,
+    email,
+    firstName: env.FOLIOTRACE_DEV_AUTH_NAME?.trim() || 'FolioTrace Dev',
+    lastName: ''
+  });
 }

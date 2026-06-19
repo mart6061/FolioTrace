@@ -14,5 +14,5 @@ public sealed record HoldingPositionCashCreatedEvent : HoldingCreatedEvent
         : base(eventId, userId, eventDateTime, auditDateTime, reason, holdingID, accountID, instrumentID, name, active, isDefault) { }
 
     public override string Type => nameof(HoldingPositionCashCreatedEvent);
-    internal override Holding CreateHolding() => new HoldingPositionCash(HoldingID, AccountID, InstrumentID, Name, Active, Default, EventDateTime, AuditDateTime, EventID, AuditDateTime);
+    internal override HoldingBase CreateHolding() => new HoldingPositionCash(HoldingID, AccountID, InstrumentID, Name, Active, Default, EventDateTime, AuditDateTime, EventID, AuditDateTime);
 }

@@ -43,13 +43,15 @@ type ReportDocumentSection = {
   name: string;
   title: string;
   pageOrientation: ReportNodePageOrientation;
-  sectionType: 'Default' | 'Pie' | 'Transactions' | 'Valuation';
+  sectionType: 'Cash' | 'Default' | 'Pie' | 'Transactions' | 'Valuation';
+  cashGroups: ReportCashGroup[];
   currency: string;
   pieSlices: ReportPieSlice[];
   transactionRows: ReportTransactionRow[];
   valuationColumns: ReportValuationColumnDefinition[];
   valuationColourBullet: boolean;
   valuationColourText: boolean;
+  valuationDisplayHoldings: boolean;
   valuationGroups: ReportValuationGroup[];
   valuationRows: ReportValuationRow[];
 };
@@ -108,7 +110,7 @@ type ReportValuationGroup = {
 
 type ReportValuationRow = {
   rowID: string;
-  rowType: 'Group' | 'Asset' | 'Subtotal';
+  rowType: 'Group' | 'Asset' | 'Subtotal' | 'Total';
   level: number;
   colour: string;
   name: string;
@@ -138,6 +140,21 @@ type ReportTransactionRow = {
   instrumentName: string;
   quantity: number;
   bookCost: number;
+};
+
+type ReportCashRow = {
+  rowID: string;
+  displayDateTime: string;
+  holdingID: string;
+  name: string;
+  quantity: number;
+};
+
+type ReportCashGroup = {
+  holdingID: string;
+  name: string;
+  totalQuantity: number;
+  rows: ReportCashRow[];
 };
 
 type ReportDocument = {
@@ -250,11 +267,14 @@ function normalizeReportValuationRange(start: string, end: string) {
     };
 
   if (startDate.getTime() <= endDate.getTime())
-    return { start, end };
+    return {
+      start: startOfDayForInput(startDate),
+      end: endOfDayForInput(endDate)
+    };
 
   return {
     start: startOfDayForInput(endDate),
-    end: endOfDayForInput(endDate, '1')
+    end: endOfDayForInput(endDate)
   };
 }
 
@@ -343,6 +363,7 @@ async function createReportDocument(
   const holdingsByID = new Map(holdings.items.map((holding) => [holding.holdingID, holding]));
   const instrumentsByID = new Map(instruments.items.map((instrument) => [instrument.instrumentID, instrument]));
   const mappingsByAllocationID = new Map(allocationMappingResults.map((result) => [result.assetAllocationID, result.mappings]));
+  const cashGroups = createCashGroups(transactionEvents, holdingsByID, options.valuationStartDate, options.valuationDate, options.holdingDateBasis);
   const transactionRows = createTransactionRows(transactionEvents, holdingsByID, instrumentsByID, options.valuationStartDate, options.valuationDate, options.holdingDateBasis);
 
   return {
@@ -356,6 +377,7 @@ async function createReportDocument(
         holdingPositions.items,
         instrumentsByID,
         valuationsByHoldingID,
+        cashGroups,
         transactionRows,
         allocationByID.get(node.assetAllocationID ?? ''),
         mappingsByAllocationID.get(node.assetAllocationID ?? '') ?? [],
@@ -370,6 +392,7 @@ function createReportSection(
   holdings: HoldingPosition[],
   instrumentsByID: Map<string, Instrument>,
   valuationsByHoldingID: Map<string, ValuationItem>,
+  cashGroups: ReportCashGroup[],
   transactionRows: ReportTransactionRow[],
   allocation: ValuationSetting | undefined,
   mappings: AssetAllocationMapping[],
@@ -384,15 +407,24 @@ function createReportSection(
     title,
     pageOrientation: node.pageOrientation ?? 'Portrait',
     sectionType,
+    cashGroups: [],
     currency,
     pieSlices: [],
     transactionRows: [],
     valuationColumns: [],
     valuationColourBullet: false,
     valuationColourText: false,
+    valuationDisplayHoldings: true,
     valuationGroups: [],
     valuationRows: []
   };
+
+  if (sectionType === 'Cash') {
+    return {
+      ...base,
+      cashGroups
+    };
+  }
 
   if (sectionType === 'Transactions') {
     return {
@@ -421,7 +453,8 @@ function createReportSection(
       valuationColumns: normalizeValuationColumns(node.columns),
       valuationColourBullet: node.colourBullet ?? true,
       valuationColourText: node.colourText ?? false,
-      valuationRows: createValuationRows(allocation, mappedHoldings, mappingByHoldingID, accountID)
+      valuationDisplayHoldings: node.displayHoldings ?? true,
+      valuationRows: createValuationRows(allocation, mappedHoldings, mappingByHoldingID, accountID, node.displayHoldings ?? true)
     };
   }
 
@@ -439,6 +472,9 @@ function reportSectionType(node: ReportNodeBase): ReportDocumentSection['section
 
   if (nodeType === 'ReportNodeTransactions')
     return 'Transactions';
+
+  if (nodeType === 'ReportNodeCash')
+    return 'Cash';
 
   return 'Default';
 }
@@ -483,14 +519,38 @@ function createValuationRows(
   allocation: ValuationSetting,
   holdings: ReportValuationAsset[],
   mappingByHoldingID: Map<string, string>,
-  accountID: string
+  accountID: string,
+  displayHoldings: boolean
 ): ReportValuationRow[] {
   const byID = new Map(allocation.nodes.map((node) => [node.nodeID, node]));
   const rows: ReportValuationRow[] = [];
   const assetsByNodeID = groupAssetsByMappedNode(allocation, holdings, mappingByHoldingID);
+  let total = zeroSubtotal();
 
   for (const node of orderedRootNodes(allocation))
-    appendValuationRows(node, byID, assetsByNodeID, rows, 1, accountID, new Set<string>(), null);
+    total = addSubtotals(total, appendValuationRows(node, byID, assetsByNodeID, rows, 1, accountID, displayHoldings, new Set<string>(), null));
+
+  if (!isZeroSubtotal(total)) {
+    rows.push({
+      rowID: 'valuation:total',
+      rowType: 'Total',
+      level: 1,
+      colour: '#0f172a',
+      name: 'Total',
+      instrumentName: '',
+      isin: '',
+      sedol: '',
+      quantity: total.quantity,
+      quotePrice: null,
+      weightPercent: total.weightPercent,
+      targetPercent: null,
+      targetMinPercent: null,
+      targetMaxPercent: null,
+      variancePercent: null,
+      bookValue: total.bookValue,
+      bookCost: total.bookCost
+    });
+  }
 
   return rows;
 }
@@ -502,14 +562,19 @@ function appendValuationRows(
   rows: ReportValuationRow[],
   level: number,
   accountID: string,
+  displayHoldings: boolean,
   visited: Set<string>,
   inheritedColour: string | null
-) {
+): ReportValuationSubtotal {
   if (visited.has(node.nodeID) || node.hidden)
     return zeroSubtotal();
 
   const colour = normaliseNodeColour(node.colour) ?? inheritedColour ?? reportPalette[rows.length % reportPalette.length];
   const subtotal = nodeSubTotal(node, byID, assetsByNodeID, new Set<string>());
+
+  if (isUnallocatedNode(node) && isZeroSubtotal(subtotal))
+    return subtotal;
+
   const target = nodeTarget(node, accountID);
   rows.push({
     rowID: `${node.nodeID}:group`,
@@ -524,47 +589,51 @@ function appendValuationRows(
     ...withTarget(subtotal, target)
   });
 
-  for (const asset of assetsByNodeID.get(node.nodeID) ?? []) {
-    rows.push({
-      rowID: `${node.nodeID}:asset:${asset.holdingID}`,
-      rowType: 'Asset',
-      level: level + 1,
-      colour,
-      name: asset.name,
-      instrumentName: asset.instrumentName,
-      isin: asset.isin,
-      sedol: asset.sedol,
-      quantity: asset.quantity,
-      quotePrice: asset.quotePrice,
-      weightPercent: asset.weightPercent,
-      targetPercent: null,
-      targetMinPercent: null,
-      targetMaxPercent: null,
-      variancePercent: null,
-      bookValue: asset.bookValue,
-      bookCost: asset.bookCost
-    });
+  if (displayHoldings) {
+    for (const asset of assetsByNodeID.get(node.nodeID) ?? []) {
+      rows.push({
+        rowID: `${node.nodeID}:asset:${asset.holdingID}`,
+        rowType: 'Asset',
+        level: level + 1,
+        colour,
+        name: asset.name,
+        instrumentName: asset.instrumentName,
+        isin: asset.isin,
+        sedol: asset.sedol,
+        quantity: asset.quantity,
+        quotePrice: asset.quotePrice,
+        weightPercent: asset.weightPercent,
+        targetPercent: null,
+        targetMinPercent: null,
+        targetMaxPercent: null,
+        variancePercent: null,
+        bookValue: asset.bookValue,
+        bookCost: asset.bookCost
+      });
+    }
   }
 
   for (const childNodeID of node.nodes) {
     const childNode = byID.get(childNodeID);
 
     if (childNode)
-      appendValuationRows(childNode, byID, assetsByNodeID, rows, level + 1, accountID, new Set([...visited, node.nodeID]), colour);
+      appendValuationRows(childNode, byID, assetsByNodeID, rows, level + 1, accountID, displayHoldings, new Set([...visited, node.nodeID]), colour);
   }
 
-  rows.push({
-    rowID: `${node.nodeID}:subtotal`,
-    rowType: 'Subtotal',
-    level,
-    colour,
-    name: 'Subtotal',
-    instrumentName: '',
-    isin: '',
-    sedol: '',
-    quotePrice: null,
-    ...withTarget(subtotal, target)
-  });
+  if (displayHoldings) {
+    rows.push({
+      rowID: `${node.nodeID}:subtotal`,
+      rowType: 'Subtotal',
+      level,
+      colour,
+      name: node.nodes.length > 0 ? node.name : '',
+      instrumentName: '',
+      isin: '',
+      sedol: '',
+      quotePrice: null,
+      ...withTarget(subtotal, target)
+    });
+  }
 
   return subtotal;
 }
@@ -647,6 +716,14 @@ function zeroSubtotal(): ReportValuationSubtotal {
   return { quantity: 0, weightPercent: 0, bookValue: 0, bookCost: 0, targetMinPercent: null, targetMaxPercent: null };
 }
 
+function isZeroSubtotal(subtotal: ReportValuationSubtotal) {
+  return subtotal.quantity === 0 && subtotal.weightPercent === 0 && subtotal.bookValue === 0 && subtotal.bookCost === 0;
+}
+
+function isUnallocatedNode(node: AssetAllocationNode) {
+  return node.name.trim().toLocaleLowerCase() === 'unallocated';
+}
+
 function buildPathsByNodeID(allocation: ValuationSetting) {
   const byID = new Map(allocation.nodes.map((node) => [node.nodeID, node]));
   const paths = new Map<string, AssetAllocationNode[]>();
@@ -725,10 +802,10 @@ function findUnallocatedNodeID(nodes: AssetAllocationNode[], rootID: string) {
   if (firstChild && byID.has(firstChild))
     return firstChild;
 
-  if (nodes[0]?.name.trim().toLocaleLowerCase() === 'unallocated')
+  if (nodes[0] && isUnallocatedNode(nodes[0]))
     return nodes[0].nodeID;
 
-  return nodes.find((node) => node.name.trim().toLocaleLowerCase() === 'unallocated')?.nodeID ?? '';
+  return nodes.find(isUnallocatedNode)?.nodeID ?? '';
 }
 
 function createPieSlices(
@@ -886,6 +963,58 @@ function nullableNumberValue(value: number | null | undefined) {
   return Number.isFinite(value) ? Number(value) : null;
 }
 
+function createCashGroups(
+  events: TransactionReferenceEvent[],
+  holdingsByID: Map<string, Holding>,
+  valuationStartDate: string,
+  valuationEndDate: string,
+  holdingDateBasis: HoldingDateBasis
+): ReportCashGroup[] {
+  const startTime = new Date(valuationStartDate).getTime();
+  const endTime = new Date(valuationEndDate).getTime();
+  const cancelledEventIDs = cancelledTransactionEventIDs(events);
+
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime))
+    return [];
+
+  const rows = events
+    .filter((event) => event.applicationStatus !== 'omitted')
+    .filter(isTransactionMovementEvent)
+    .filter((event) => !cancelledEventIDs.has(event.eventID))
+    .map((event) => cashRow(event, holdingsByID, holdingDateBasis))
+    .filter((row): row is ReportCashRow => Boolean(row))
+    .filter((row) => {
+      const time = new Date(row.displayDateTime).getTime();
+      return Number.isFinite(time) && time >= startTime && time <= endTime;
+    })
+    .sort((left, right) =>
+      left.name.localeCompare(right.name)
+      || new Date(left.displayDateTime).getTime() - new Date(right.displayDateTime).getTime()
+      || left.rowID.localeCompare(right.rowID));
+
+  const groupsByHoldingID = new Map<string, ReportCashGroup>();
+
+  for (const row of rows) {
+    const group = groupsByHoldingID.get(row.holdingID);
+
+    if (group) {
+      group.rows.push(row);
+      group.totalQuantity += row.quantity;
+      continue;
+    }
+
+    groupsByHoldingID.set(row.holdingID, {
+      holdingID: row.holdingID,
+      name: row.name,
+      rows: [row],
+      totalQuantity: row.quantity
+    });
+  }
+
+  return [...groupsByHoldingID.values()]
+    .sort((left, right) => left.name.localeCompare(right.name) || left.holdingID.localeCompare(right.holdingID));
+}
+
 function createTransactionRows(
   events: TransactionReferenceEvent[],
   holdingsByID: Map<string, Holding>,
@@ -896,10 +1025,7 @@ function createTransactionRows(
 ): ReportTransactionRow[] {
   const startTime = new Date(valuationStartDate).getTime();
   const endTime = new Date(valuationEndDate).getTime();
-  const cancelledEventIDs = new Set(events
-    .filter((event) => event.applicationStatus !== 'omitted' && event.$type === 'TransactionCancellationEvent')
-    .map((event) => event.cancelledEventID)
-    .filter((eventID): eventID is string => Boolean(eventID)));
+  const cancelledEventIDs = cancelledTransactionEventIDs(events);
 
   if (!Number.isFinite(startTime) || !Number.isFinite(endTime))
     return [];
@@ -923,6 +1049,37 @@ function createTransactionRows(
 
 function isTransactionMovementEvent(event: TransactionReferenceEvent) {
   return event.$type === 'TransactionCreditEvent' || event.$type === 'TransactionDebitEvent';
+}
+
+function cancelledTransactionEventIDs(events: TransactionReferenceEvent[]) {
+  return new Set(events
+    .filter((event) => event.applicationStatus !== 'omitted' && event.$type === 'TransactionCancellationEvent')
+    .map((event) => event.cancelledEventID)
+    .filter((eventID): eventID is string => Boolean(eventID)));
+}
+
+function cashRow(
+  event: TransactionReferenceEvent,
+  holdingsByID: Map<string, Holding>,
+  holdingDateBasis: HoldingDateBasis
+) {
+  const holding = event.holdingID ? holdingsByID.get(event.holdingID) : undefined;
+
+  if (!holding || !isCashHoldingKind(holding.holdingKind))
+    return null;
+
+  const displayDateTime = holdingDateBasis === 'SettlementDateTime'
+    ? event.settlementDateTime || event.eventDateTime
+    : event.eventDateTime;
+  const quantity = numberValue(event.quantity);
+
+  return {
+    rowID: event.eventID,
+    displayDateTime,
+    holdingID: holding.holdingID,
+    name: holding.name,
+    quantity: event.$type === 'TransactionDebitEvent' ? -quantity : quantity
+  } satisfies ReportCashRow;
 }
 
 function transactionRow(

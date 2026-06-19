@@ -75,6 +75,35 @@ public sealed class HoldingBuilderTests
     }
 
     [Fact]
+    public void HoldingCreatedEventBuilder_RejectsDuplicateDefaultNominalForSameAccountAcrossInstruments()
+    {
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments();
+        var existing = HoldingNominalInflowCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create default inflow",
+            HoldingIDBuilder.Create(),
+            AccountID,
+            CashInstrumentID,
+            "Inflow",
+            true,
+            true,
+            accounts,
+            instruments,
+            null).Value!;
+        var holdings = CreateHoldings(accounts, instruments, existing);
+        var request = new HoldingNominalInflowCreatedRequest(UserID, EventDate, "Create holding", null, AccountID, EquityInstrumentID, "Equity inflow", true, true);
+
+        var result = HoldingNominalInflowCreatedEventBuilder.Create(request, accounts, instruments, holdings);
+
+        Assert.False(result.IsValid);
+        Assert.Contains($"A default NominalInflow holding already exists for AccountID '{AccountID}'.", result.ValidationErrors);
+    }
+
+    [Fact]
     public void HoldingCreatedEventBuilder_AllowsDefaultForDifferentKinds()
     {
         var accounts = CreateAccounts();
@@ -88,7 +117,7 @@ public sealed class HoldingBuilderTests
     }
 
     [Fact]
-    public void HoldingBankCreatedEventBuilder_RejectsMissingBankDetails()
+    public void HoldingCashBaseCreatedEventBuilder_RejectsMissingBankDetails()
     {
         var request = new HoldingCashDebtCreatedRequest(UserID, EventDate, "Create holding", null, AccountID, CashInstrumentID, "Debt", true, false, string.Empty, string.Empty, null!, null!, null!, null!);
 
@@ -113,7 +142,7 @@ public sealed class HoldingBuilderTests
     }
 
     [Fact]
-    public void HoldingBankModifiedEventBuilder_UpdatesBankDetails()
+    public void HoldingCashBaseModifiedEventBuilder_UpdatesBankDetails()
     {
         var accounts = CreateAccounts();
         var instruments = CreateInstruments();
@@ -150,22 +179,22 @@ public sealed class HoldingBuilderTests
         Assert.Equal(10, events.OfType<HoldingCashDebtCreatedEvent>().Count(@event => @event.Name == "Debt" && !@event.Default));
         Assert.Equal(50, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name.StartsWith("Investable ") && !@event.Default));
         Assert.Equal(10, events.OfType<HoldingCashNonInvestableCreatedEvent>().Count(@event => @event.Name == "Income" && !@event.Default));
-        Assert.Equal(50, events.OfType<HoldingInflowCreatedEvent>().Count());
-        Assert.Equal(50, events.OfType<HoldingOutflowCreatedEvent>().Count());
-        Assert.Equal(30, events.OfType<HoldingInSpecieInCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie In ") && !@event.Default));
-        Assert.Equal(30, events.OfType<HoldingInSpecieOutCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie Out ") && !@event.Default));
+        Assert.Equal(50, events.OfType<HoldingNominalInflowCreatedEvent>().Count());
+        Assert.Equal(50, events.OfType<HoldingNominalOutflowCreatedEvent>().Count());
+        Assert.Equal(30, events.OfType<HoldingNominalInSpecieInCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie In ") && !@event.Default));
+        Assert.Equal(30, events.OfType<HoldingNominalInSpecieOutCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie Out ") && !@event.Default));
         Assert.All(investableCurrencies, currency =>
         {
             Assert.Equal(10, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name == $"Investable {currency}"));
-            Assert.Equal(10, events.OfType<HoldingInflowCreatedEvent>().Count(@event => @event.Name == $"Inflow {currency}"));
-            Assert.Equal(10, events.OfType<HoldingOutflowCreatedEvent>().Count(@event => @event.Name == $"Outflow {currency}"));
+            Assert.Equal(10, events.OfType<HoldingNominalInflowCreatedEvent>().Count(@event => @event.Name == $"Inflow {currency}"));
+            Assert.Equal(10, events.OfType<HoldingNominalOutflowCreatedEvent>().Count(@event => @event.Name == $"Outflow {currency}"));
         });
-        Assert.Equal(19, events.OfType<HoldingFeesCustodianCreatedEvent>().Count());
-        Assert.Equal(9, events.OfType<HoldingFeesAdministratorCreatedEvent>().Count());
-        Assert.Equal(10, events.OfType<HoldingFeesBankCreatedEvent>().Count());
-        Assert.Equal(10, events.OfType<HoldingIncomeCreatedEvent>().Count());
-        Assert.Equal(10, events.OfType<HoldingInterestCreatedEvent>().Count());
-        Assert.All(events.OfType<HoldingBankCreatedEvent>(), @event =>
+        Assert.Equal(19, events.OfType<HoldingNominalFeesCustodianCreatedEvent>().Count());
+        Assert.Equal(9, events.OfType<HoldingNominalFeesAdministratorCreatedEvent>().Count());
+        Assert.Equal(10, events.OfType<HoldingNominalFeesBankCreatedEvent>().Count());
+        Assert.Equal(10, events.OfType<HoldingNominalIncomeCreatedEvent>().Count());
+        Assert.Equal(10, events.OfType<HoldingNominalInterestCreatedEvent>().Count());
+        Assert.All(events.OfType<HoldingCashBaseCreatedEvent>(), @event =>
         {
             Assert.False(string.IsNullOrWhiteSpace(@event.BankName));
             Assert.False(string.IsNullOrWhiteSpace(@event.AccountName));
@@ -174,9 +203,9 @@ public sealed class HoldingBuilderTests
             Assert.False(string.IsNullOrWhiteSpace(@event.BIC.Value));
             Assert.False(string.IsNullOrWhiteSpace(@event.IBAN.Value));
         });
-        Assert.All(events.OfType<HoldingFeesCustodianCreatedEvent>(), @event => Assert.Contains(@event.Name, custodianNames));
-        Assert.All(events.OfType<HoldingFeesAdministratorCreatedEvent>(), @event => Assert.Contains(@event.Name, administratorNames));
-        Assert.All(events.Where(@event => @event is HoldingFeesBankCreatedEvent or HoldingIncomeCreatedEvent or HoldingInterestCreatedEvent), @event => Assert.Contains(@event.Name, bankNames));
+        Assert.All(events.OfType<HoldingNominalFeesCustodianCreatedEvent>(), @event => Assert.Contains(@event.Name, custodianNames));
+        Assert.All(events.OfType<HoldingNominalFeesAdministratorCreatedEvent>(), @event => Assert.Contains(@event.Name, administratorNames));
+        Assert.All(events.Where(@event => @event is HoldingNominalFeesBankCreatedEvent or HoldingNominalIncomeCreatedEvent or HoldingNominalInterestCreatedEvent), @event => Assert.Contains(@event.Name, bankNames));
     }
 
     [Fact]
@@ -213,7 +242,7 @@ public sealed class HoldingBuilderTests
             accounts,
             instruments,
             CreateCashHolding(cashHoldingID, true),
-            CreateNonValuationHolding(inflowHoldingID, typeof(HoldingInflow)),
+            CreateNonValuationHolding(inflowHoldingID, typeof(HoldingNominalInflow)),
             CreatePositionHolding(equityHoldingID));
         var deposit = TransactionBuilder.Create(new TransactionSetRequest(
             UserID,
@@ -265,8 +294,8 @@ public sealed class HoldingBuilderTests
             CreateBankHolding(cashDebtID, typeof(HoldingCashDebt), "Debt"),
             CreateBankHolding(cashInvestableID, typeof(HoldingCashInvestable), "Investable"),
             CreateBankHolding(cashNonInvestableID, typeof(HoldingCashNonInvestable), "Income"),
-            CreateNonValuationHolding(inflowID, typeof(HoldingInflow)),
-            CreateNonValuationHolding(outflowID, typeof(HoldingOutflow)));
+            CreateNonValuationHolding(inflowID, typeof(HoldingNominalInflow)),
+            CreateNonValuationHolding(outflowID, typeof(HoldingNominalOutflow)));
         var transactionEvents = TransactionBuilder.Create(new TransactionSetRequest(
             UserID,
             EventDate,
@@ -296,7 +325,7 @@ public sealed class HoldingBuilderTests
         var instruments = CreateInstruments();
         var cashHoldingID = HoldingIDBuilder.Create();
         var inflowHoldingID = HoldingIDBuilder.Create();
-        var holdings = CreateHoldings(accounts, instruments, CreateCashHolding(cashHoldingID, true), CreateNonValuationHolding(inflowHoldingID, typeof(HoldingInflow)));
+        var holdings = CreateHoldings(accounts, instruments, CreateCashHolding(cashHoldingID, true), CreateNonValuationHolding(inflowHoldingID, typeof(HoldingNominalInflow)));
         var transactionEvents = TransactionBuilder.Create(new TransactionSetRequest(
             UserID,
             EventDate,
@@ -324,7 +353,7 @@ public sealed class HoldingBuilderTests
         var instruments = CreateInstruments();
         var cashHoldingID = HoldingIDBuilder.Create();
         var inflowHoldingID = HoldingIDBuilder.Create();
-        var holdings = CreateHoldings(accounts, instruments, CreateCashHolding(cashHoldingID, true), CreateNonValuationHolding(inflowHoldingID, typeof(HoldingInflow)));
+        var holdings = CreateHoldings(accounts, instruments, CreateCashHolding(cashHoldingID, true), CreateNonValuationHolding(inflowHoldingID, typeof(HoldingNominalInflow)));
         var originalEvents = TransactionBuilder.Create(new TransactionSetRequest(
             UserID,
             EventDate,
@@ -490,15 +519,15 @@ public sealed class HoldingBuilderTests
 
         return holdingType.Name switch
         {
-            nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInSpecieIn) => HoldingInSpecieInCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInSpecieOut) => HoldingInSpecieOutCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingIncome) => HoldingIncomeCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
-            nameof(HoldingInterest) => HoldingInterestCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalInflow) => HoldingNominalInflowCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalOutflow) => HoldingNominalOutflowCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalInSpecieIn) => HoldingNominalInSpecieInCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalInSpecieOut) => HoldingNominalInSpecieOutCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalFeesCustodian) => HoldingNominalFeesCustodianCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalFeesAdministrator) => HoldingNominalFeesAdministratorCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalFeesBank) => HoldingNominalFeesBankCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalIncome) => HoldingNominalIncomeCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
+            nameof(HoldingNominalInterest) => HoldingNominalInterestCreatedEventBuilder.CreateSeed(new EventID(Guid.CreateGuid7()), UserID, EventDate, AuditDate, "Create holding", holdingID, AccountID, CashInstrumentID, name, true, false).Value!,
             _ => throw new ArgumentException($"Unsupported nominal holding type '{holdingType}'.", nameof(holdingType))
         };
     }

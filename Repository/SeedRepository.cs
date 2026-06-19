@@ -353,74 +353,217 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     public static IReadOnlyList<AssetAllocationCreatedEvent> CreateInitialAssetAllocationCreatedEvents()
     {
-        var assetAllocationID = AssetAllocationIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current"));
-        var rootNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-root"));
-        var unallocatedNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-unallocated"));
-        var growthNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-growth"));
-        var internationalNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-international"));
-        var cashIncomeNodeID = NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-current-cash-income"));
         var accountIDs = SeedAccounts.Select(account => account.AccountID).ToList();
-        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(45));
-        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(45));
+        var detailedEventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(45));
+        var detailedAuditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(45));
+        var summaryEventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(46));
+        var summaryAuditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(46));
+        var assetsListEventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(47));
+        var assetsListAuditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(47));
 
         return
         [
             AssetAllocationCreatedEventBuilder.CreateSeed(
                 Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
-                eventDateTime,
-                eventDateTime,
-                auditDateTime,
+                detailedEventDateTime,
+                detailedEventDateTime,
+                detailedAuditDateTime,
                 Constants.Initialisation.Reason,
-                assetAllocationID,
-                "Current",
+                AssetAllocationIDBuilder.Create(CreateDeterministicGuid("asset-allocation-detailed")),
+                "Detailed",
                 accountIDs,
                 true,
-                rootNodeID,
-                [
-                    new AssetAllocationNode(unallocatedNodeID, [], "Unallocated", false, false, [], "#dc2626"),
-                    new AssetAllocationNode(
-                        growthNodeID,
-                        [],
-                        "Growth",
-                        false,
-                        false,
-                        CreateSeedAllocationSettings(
-                            (SeedAccounts[0].AccountID, 0.60m, 0.70m, 0.50m, 0.02m),
-                            (SeedAccounts[1].AccountID, 0.80m, 0.90m, 0.70m, 0.01m),
-                            (SeedAccounts[2].AccountID, 0.70m, 0.80m, 0.60m, 0.02m),
-                            (SeedAccounts[9].AccountID, 0.65m, 0.75m, 0.55m, 0.02m)),
-                        "#0f766e"),
-                    new AssetAllocationNode(
-                        internationalNodeID,
-                        [],
-                        "International",
-                        false,
-                        false,
-                        CreateSeedAllocationSettings(
-                            (SeedAccounts[3].AccountID, 0.75m, 0.85m, 0.65m, 0.01m),
-                            (SeedAccounts[4].AccountID, 0.70m, 0.80m, 0.60m, 0.02m),
-                            (SeedAccounts[7].AccountID, 0.55m, 0.65m, 0.45m, 0.01m),
-                            (SeedAccounts[8].AccountID, 0.50m, 0.60m, 0.40m, 0.01m)),
-                        "#2563eb"),
-                    new AssetAllocationNode(
-                        cashIncomeNodeID,
-                        [],
-                        "Cash and Income",
-                        false,
-                        false,
-                        CreateSeedAllocationSettings(
-                            (SeedAccounts[5].AccountID, 0.85m, 0.95m, 0.75m, 0.04m),
-                            (SeedAccounts[6].AccountID, 0.90m, 1.00m, 0.80m, 0.03m)),
-                        "#7c3aed")
-                ]).Value!
+                NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-detailed-root")),
+                CreateDetailedAssetAllocationNodes()).Value!,
+            AssetAllocationCreatedEventBuilder.CreateSeed(
+                Guid.CreateGuid7(),
+                Constants.Initialisation.UserID,
+                summaryEventDateTime,
+                summaryEventDateTime,
+                summaryAuditDateTime,
+                Constants.Initialisation.Reason,
+                AssetAllocationIDBuilder.Create(CreateDeterministicGuid("asset-allocation-summary")),
+                "Summary",
+                accountIDs,
+                true,
+                NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-summary-root")),
+                CreateSummaryAssetAllocationNodes()).Value!,
+            AssetAllocationCreatedEventBuilder.CreateSeed(
+                Guid.CreateGuid7(),
+                Constants.Initialisation.UserID,
+                assetsListEventDateTime,
+                assetsListEventDateTime,
+                assetsListAuditDateTime,
+                Constants.Initialisation.Reason,
+                AssetAllocationIDBuilder.Create(CreateDeterministicGuid("asset-allocation-assets-list")),
+                "Assets List",
+                accountIDs,
+                true,
+                NodeIDBuilder.Create(CreateDeterministicGuid("asset-allocation-assets-list-root")),
+                CreateAssetsListAssetAllocationNodes()).Value!
         ];
     }
 
-    private static List<AssetAllocationNodeAccountSetting> CreateSeedAllocationSettings(params (AccountID AccountID, decimal TargetWeight, decimal TargetWeightMax, decimal TargetWeightMin, decimal TargetYield)[] settings) =>
-        settings
-            .Select(setting => new AssetAllocationNodeAccountSetting(setting.AccountID, setting.TargetWeight, setting.TargetWeightMax, setting.TargetWeightMin, setting.TargetYield))
-            .ToList();
+    private static List<AssetAllocationNode> CreateDetailedAssetAllocationNodes()
+    {
+        var nodeIDs = CreateNodeIDs(
+            "Detailed/Equities",
+            "Detailed/Equities/UK",
+            "Detailed/Equities/Europe",
+            "Detailed/Equities/US",
+            "Detailed/Equities/Other",
+            "Detailed/Fixed Interest",
+            "Detailed/Fixed Interest/Government",
+            "Detailed/Fixed Interest/Corp",
+            "Detailed/Alternative",
+            "Detailed/Memo",
+            "Detailed/Cash",
+            "Detailed/Equities/UK/Basic Materials",
+            "Detailed/Equities/UK/Basic Materials/Mining",
+            "Detailed/Equities/UK/Basic Materials/Chemicals",
+            "Detailed/Equities/UK/Basic Materials/Forestry & Paper",
+            "Detailed/Equities/UK/Consumer Discretionary",
+            "Detailed/Equities/UK/Consumer Discretionary/Automotive",
+            "Detailed/Equities/UK/Consumer Discretionary/Household Goods",
+            "Detailed/Equities/UK/Consumer Discretionary/Leisure Goods",
+            "Detailed/Equities/UK/Consumer Discretionary/Media",
+            "Detailed/Equities/UK/Consumer Discretionary/Travel & Leisure",
+            "Detailed/Equities/UK/Consumer Discretionary/Retailers",
+            "Detailed/Equities/UK/Consumer Staples",
+            "Detailed/Equities/UK/Consumer Staples/Food Producers",
+            "Detailed/Equities/UK/Consumer Staples/Beverages",
+            "Detailed/Equities/UK/Consumer Staples/Tobacco",
+            "Detailed/Equities/UK/Consumer Staples/Personal Care, Drug & Grocery Stores",
+            "Detailed/Equities/UK/Energy",
+            "Detailed/Equities/UK/Energy/Oil, Gas & Coal",
+            "Detailed/Equities/UK/Energy/Energy Equipment & Services",
+            "Detailed/Equities/UK/Financials",
+            "Detailed/Equities/UK/Financials/Banks",
+            "Detailed/Equities/UK/Financials/Insurance",
+            "Detailed/Equities/UK/Financials/Financial Services",
+            "Detailed/Equities/UK/Financials/Investment Banking & Brokerage",
+            "Detailed/Equities/UK/Health Care",
+            "Detailed/Equities/UK/Health Care/Medical Equipment & Services",
+            "Detailed/Equities/UK/Health Care/Pharmaceuticals & Biotechnology",
+            "Detailed/Equities/UK/Industrials",
+            "Detailed/Equities/UK/Industrials/Construction & Materials",
+            "Detailed/Equities/UK/Industrials/Aerospace & Defense",
+            "Detailed/Equities/UK/Industrials/Electronic & Electrical Equipment",
+            "Detailed/Equities/UK/Industrials/Industrial Engineering",
+            "Detailed/Equities/UK/Industrials/Industrial Transportation",
+            "Detailed/Equities/UK/Industrials/Support Services",
+            "Detailed/Equities/UK/Real Estate",
+            "Detailed/Equities/UK/Real Estate/Real Estate Holding & Development",
+            "Detailed/Equities/UK/Real Estate/Real Estate Investment Trusts (REITs)",
+            "Detailed/Equities/UK/Technology",
+            "Detailed/Equities/UK/Technology/Software & Computer Services",
+            "Detailed/Equities/UK/Technology/Technology Hardware & Equipment",
+            "Detailed/Equities/UK/Telecommunications",
+            "Detailed/Equities/UK/Telecommunications/Telecommunication Service Providers");
+
+        return
+        [
+            CreateSeedNode(nodeIDs, "Detailed/Equities", "Equities", ["Detailed/Equities/UK", "Detailed/Equities/Europe", "Detailed/Equities/US", "Detailed/Equities/Other"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK", "UK", ["Detailed/Equities/UK/Basic Materials", "Detailed/Equities/UK/Consumer Discretionary", "Detailed/Equities/UK/Consumer Staples", "Detailed/Equities/UK/Energy", "Detailed/Equities/UK/Financials", "Detailed/Equities/UK/Health Care", "Detailed/Equities/UK/Industrials", "Detailed/Equities/UK/Real Estate", "Detailed/Equities/UK/Technology", "Detailed/Equities/UK/Telecommunications"], "#1d4ed8"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/Europe", "Europe", [], "#2563eb"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/US", "US", [], "#3b82f6"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/Other", "Other", [], "#60a5fa"),
+            CreateSeedNode(nodeIDs, "Detailed/Fixed Interest", "Fixed Interest", ["Detailed/Fixed Interest/Government", "Detailed/Fixed Interest/Corp"]),
+            CreateSeedNode(nodeIDs, "Detailed/Fixed Interest/Government", "Government", [], "#047857"),
+            CreateSeedNode(nodeIDs, "Detailed/Fixed Interest/Corp", "Corp", [], "#34d399"),
+            CreateSeedNode(nodeIDs, "Detailed/Alternative", "Alternative", [], "#7c3aed"),
+            CreateSeedNode(nodeIDs, "Detailed/Memo", "Memo", [], "#64748b"),
+            CreateSeedNode(nodeIDs, "Detailed/Cash", "Cash", [], "#059669"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Basic Materials", "Basic Materials", ["Detailed/Equities/UK/Basic Materials/Mining", "Detailed/Equities/UK/Basic Materials/Chemicals", "Detailed/Equities/UK/Basic Materials/Forestry & Paper"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Basic Materials/Mining", "Mining"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Basic Materials/Chemicals", "Chemicals"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Basic Materials/Forestry & Paper", "Forestry & Paper"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary", "Consumer Discretionary", ["Detailed/Equities/UK/Consumer Discretionary/Automotive", "Detailed/Equities/UK/Consumer Discretionary/Household Goods", "Detailed/Equities/UK/Consumer Discretionary/Leisure Goods", "Detailed/Equities/UK/Consumer Discretionary/Media", "Detailed/Equities/UK/Consumer Discretionary/Travel & Leisure", "Detailed/Equities/UK/Consumer Discretionary/Retailers"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary/Automotive", "Automotive"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary/Household Goods", "Household Goods"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary/Leisure Goods", "Leisure Goods"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary/Media", "Media"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary/Travel & Leisure", "Travel & Leisure"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Discretionary/Retailers", "Retailers"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Staples", "Consumer Staples", ["Detailed/Equities/UK/Consumer Staples/Food Producers", "Detailed/Equities/UK/Consumer Staples/Beverages", "Detailed/Equities/UK/Consumer Staples/Tobacco", "Detailed/Equities/UK/Consumer Staples/Personal Care, Drug & Grocery Stores"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Staples/Food Producers", "Food Producers"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Staples/Beverages", "Beverages"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Staples/Tobacco", "Tobacco"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Consumer Staples/Personal Care, Drug & Grocery Stores", "Personal Care, Drug & Grocery Stores"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Energy", "Energy", ["Detailed/Equities/UK/Energy/Oil, Gas & Coal", "Detailed/Equities/UK/Energy/Energy Equipment & Services"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Energy/Oil, Gas & Coal", "Oil, Gas & Coal"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Energy/Energy Equipment & Services", "Energy Equipment & Services"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Financials", "Financials", ["Detailed/Equities/UK/Financials/Banks", "Detailed/Equities/UK/Financials/Insurance", "Detailed/Equities/UK/Financials/Financial Services", "Detailed/Equities/UK/Financials/Investment Banking & Brokerage"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Financials/Banks", "Banks"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Financials/Insurance", "Insurance"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Financials/Financial Services", "Financial Services"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Financials/Investment Banking & Brokerage", "Investment Banking & Brokerage"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Health Care", "Health Care", ["Detailed/Equities/UK/Health Care/Medical Equipment & Services", "Detailed/Equities/UK/Health Care/Pharmaceuticals & Biotechnology"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Health Care/Medical Equipment & Services", "Medical Equipment & Services"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Health Care/Pharmaceuticals & Biotechnology", "Pharmaceuticals & Biotechnology"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials", "Industrials", ["Detailed/Equities/UK/Industrials/Construction & Materials", "Detailed/Equities/UK/Industrials/Aerospace & Defense", "Detailed/Equities/UK/Industrials/Electronic & Electrical Equipment", "Detailed/Equities/UK/Industrials/Industrial Engineering", "Detailed/Equities/UK/Industrials/Industrial Transportation", "Detailed/Equities/UK/Industrials/Support Services"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials/Construction & Materials", "Construction & Materials"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials/Aerospace & Defense", "Aerospace & Defense"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials/Electronic & Electrical Equipment", "Electronic & Electrical Equipment"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials/Industrial Engineering", "Industrial Engineering"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials/Industrial Transportation", "Industrial Transportation"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Industrials/Support Services", "Support Services"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Real Estate", "Real Estate", ["Detailed/Equities/UK/Real Estate/Real Estate Holding & Development", "Detailed/Equities/UK/Real Estate/Real Estate Investment Trusts (REITs)"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Real Estate/Real Estate Holding & Development", "Real Estate Holding & Development"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Real Estate/Real Estate Investment Trusts (REITs)", "Real Estate Investment Trusts (REITs)"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Technology", "Technology", ["Detailed/Equities/UK/Technology/Software & Computer Services", "Detailed/Equities/UK/Technology/Technology Hardware & Equipment"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Technology/Software & Computer Services", "Software & Computer Services"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Technology/Technology Hardware & Equipment", "Technology Hardware & Equipment"),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Telecommunications", "Telecommunications", ["Detailed/Equities/UK/Telecommunications/Telecommunication Service Providers"]),
+            CreateSeedNode(nodeIDs, "Detailed/Equities/UK/Telecommunications/Telecommunication Service Providers", "Telecommunication Service Providers")
+        ];
+    }
+
+    private static List<AssetAllocationNode> CreateSummaryAssetAllocationNodes()
+    {
+        var nodeIDs = CreateNodeIDs(
+            "Summary/Equities",
+            "Summary/Fixed Interest",
+            "Summary/Alternative",
+            "Summary/Memo",
+            "Summary/Cash");
+
+        return
+        [
+            CreateSeedNode(nodeIDs, "Summary/Equities", "Equities", [], "#2563eb"),
+            CreateSeedNode(nodeIDs, "Summary/Fixed Interest", "Fixed Interest", [], "#059669"),
+            CreateSeedNode(nodeIDs, "Summary/Alternative", "Alternative", [], "#7c3aed"),
+            CreateSeedNode(nodeIDs, "Summary/Memo", "Memo", [], "#64748b"),
+            CreateSeedNode(nodeIDs, "Summary/Cash", "Cash", [], "#059669")
+        ];
+    }
+
+    private static List<AssetAllocationNode> CreateAssetsListAssetAllocationNodes()
+    {
+        var nodeIDs = CreateNodeIDs(
+            "Assets List/Assets",
+            "Assets List/Cash");
+
+        return
+        [
+            CreateSeedNode(nodeIDs, "Assets List/Assets", "Assets", [], "#000000"),
+            CreateSeedNode(nodeIDs, "Assets List/Cash", "Cash", [], "#6b7280")
+        ];
+    }
+
+    private static Dictionary<string, NodeID> CreateNodeIDs(params string[] paths) =>
+        paths.ToDictionary(path => path, path => NodeIDBuilder.Create(CreateDeterministicGuid($"asset-allocation-node-{path}")));
+
+    private static AssetAllocationNode CreateSeedNode(Dictionary<string, NodeID> nodeIDs, string path, string name, IReadOnlyList<string>? childPaths = null, string? colour = null) =>
+        new(
+            nodeIDs[path],
+            childPaths?.Select(childPath => nodeIDs[childPath]).ToList() ?? [],
+            name,
+            false,
+            false,
+            [],
+            colour);
 
     private async Task CreateReportSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
@@ -443,10 +586,13 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var valuationSettings = new ValuationSettings(
             EventDateTimeBuilder.Create(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
             allocationEvents.Cast<IValuationSettingEvent>().ToList());
-        var assetAllocationID = valuationSettings.Items.Single(setting => setting.Name == "Current").AssetAllocationID;
+        var detailedAssetAllocationID = valuationSettings.Items.Single(setting => setting.Name == "Detailed").AssetAllocationID;
+        var summaryAssetAllocationID = valuationSettings.Items.Single(setting => setting.Name == "Summary").AssetAllocationID;
         var reportID = ReportIDBuilder.Create(CreateDeterministicGuid("report-current"));
+        var imReportID = ReportIDBuilder.Create(CreateDeterministicGuid("report-im"));
         var eventDateTime = EventDateTimeBuilder.Create(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(46));
+        var imAuditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(47));
 
         return
         [
@@ -460,7 +606,19 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 "Current",
                 true,
                 eventDateTime,
-                CreateCurrentReportNodes(assetAllocationID),
+                CreateCurrentReportNodes(detailedAssetAllocationID),
+                valuationSettings: valuationSettings).Value!,
+            ReportCreatedEventBuilder.CreateSeed(
+                Guid.CreateGuid7(),
+                Constants.Initialisation.UserID,
+                eventDateTime,
+                imAuditDateTime,
+                Constants.Initialisation.Reason,
+                imReportID,
+                "IM",
+                true,
+                eventDateTime,
+                CreateIMReportNodes(summaryAssetAllocationID, detailedAssetAllocationID),
                 valuationSettings: valuationSettings).Value!
         ];
     }
@@ -505,6 +663,30 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             assetAllocationID) { PageOrientation = ReportNodePageOrientation.Landscape }
     ];
 
+    private static List<ReportNodeBase> CreateIMReportNodes(AssetAllocationID summaryAssetAllocationID, AssetAllocationID detailedAssetAllocationID) =>
+    [
+        new ReportNodeValuation(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-im-summary-valuation")),
+            1,
+            "Summary Valuation",
+            "Summary Valuation",
+            summaryAssetAllocationID,
+            ReportConfigBuilder.DefaultValuationColumns(),
+            ColourBullet: true,
+            ColourText: false,
+            DisplayHoldings: false) { PageOrientation = ReportNodePageOrientation.Landscape },
+        new ReportNodeValuation(
+            ReportNodeIDBuilder.Create(CreateDeterministicGuid("report-im-detailed-valuation")),
+            2,
+            "Detailed Valuation",
+            "Detailed Valuation",
+            detailedAssetAllocationID,
+            ReportConfigBuilder.DefaultValuationColumns(),
+            ColourBullet: true,
+            ColourText: false,
+            DisplayHoldings: true) { PageOrientation = ReportNodePageOrientation.Landscape }
+    ];
+
     private async Task CreateHoldingSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
         var instrumentSeeds = SeedInstrumentData.CreateInstrumentSeeds();
@@ -542,8 +724,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 .Select(currency => instrumentSeeds.Single(seed => seed.Kind is InstrumentSeedKind.Cash && seed.Currency == currency)))
             {
                 events.Add(CreateSeedBankHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingCashInvestable), $"Investable {investableCashInstrument.Currency}", true, false, account, accountIndex));
-                events.Add(CreateSeedHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingInflow), $"Inflow {investableCashInstrument.Currency}", true, false));
-                events.Add(CreateSeedHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingOutflow), $"Outflow {investableCashInstrument.Currency}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingNominalInflow), $"Inflow {investableCashInstrument.Currency}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, investableCashInstrument.InstrumentID, typeof(HoldingNominalOutflow), $"Outflow {investableCashInstrument.Currency}", true, false));
             }
 
             AddNonValuationSeedHoldings(events, ref index, account, cashInstrument.InstrumentID);
@@ -551,8 +733,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             foreach (var equity in SelectSeedEquitiesForAccount(instrumentSeeds, accountIndex))
             {
                 events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingPositionAsset), $"Asset {equity.Ticker}", true, false));
-                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingInSpecieIn), $"InSpecie In {equity.Ticker}", true, false));
-                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingInSpecieOut), $"InSpecie Out {equity.Ticker}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingNominalInSpecieIn), $"InSpecie In {equity.Ticker}", true, false));
+                events.Add(CreateSeedHolding(index++, account.AccountID, equity.InstrumentID, typeof(HoldingNominalInSpecieOut), $"InSpecie Out {equity.Ticker}", true, false));
             }
         }
 
@@ -602,8 +784,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             var random = CreateSeedRandom(account.AccountID);
             var cashInstrument = instrumentSeeds.Single(seed => seed.Kind is InstrumentSeedKind.Cash && seed.Currency == account.BookCurrency);
             var cashHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingCashInvestable), $"Investable {account.BookCurrency}");
-            var inflowHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingInflow), $"Inflow {account.BookCurrency}");
-            var outflowHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingOutflow), $"Outflow {account.BookCurrency}");
+            var inflowHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingNominalInflow), $"Inflow {account.BookCurrency}");
+            var outflowHolding = FindSeedHolding(holdings, account.AccountID, cashInstrument.InstrumentID, typeof(HoldingNominalOutflow), $"Outflow {account.BookCurrency}");
             var selectedEquities = SelectSeedEquitiesForAccount(instrumentSeeds, accountIndex);
             var positionStates = selectedEquities.ToDictionary(equity => equity.InstrumentID, _ => new SeedPositionState());
             var previousInflow = RoundMoney(random.Next(10_000, 2_000_001));
@@ -651,7 +833,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                             continue;
 
                         var assetHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingPositionAsset), $"Asset {equity.Seed.Ticker}");
-                        var inSpecieInHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingInSpecieIn), $"InSpecie In {equity.Seed.Ticker}");
+                        var inSpecieInHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingNominalInSpecieIn), $"InSpecie In {equity.Seed.Ticker}");
                         var positionState = positionStates[equity.Seed.InstrumentID];
 
                         events.AddRange(CreateSeedTransactionSet(
@@ -677,7 +859,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                     continue;
 
                 var outAssetHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingPositionAsset), $"Asset {outEquity.Ticker}");
-                var inSpecieOutHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingInSpecieOut), $"InSpecie Out {outEquity.Ticker}");
+                var inSpecieOutHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingNominalInSpecieOut), $"InSpecie Out {outEquity.Ticker}");
 
                 events.AddRange(CreateSeedTransactionSet(
                     holdings,
@@ -701,7 +883,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             .ToList();
     }
 
-    private static IReadOnlyList<ITransactionEvent> CreateSeedTransactionSet(Holdings holdings, Holding creditHolding, Holding debitHolding, InstrumentID instrumentID, decimal quantity, decimal bookCost, DateTime eventDateTime, string reason)
+    private static IReadOnlyList<ITransactionEvent> CreateSeedTransactionSet(Holdings holdings, HoldingBase creditHolding, HoldingBase debitHolding, InstrumentID instrumentID, decimal quantity, decimal bookCost, DateTime eventDateTime, string reason)
     {
         var request = new TransactionSetRequest(
             Constants.Initialisation.UserID,
@@ -718,7 +900,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         throw new InvalidOperationException($"Unable to create seed transaction '{reason}': {string.Join("; ", result.ValidationErrors)}");
     }
 
-    private static Holding FindSeedHolding(Holdings holdings, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name)
+    private static HoldingBase FindSeedHolding(Holdings holdings, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name)
     {
         var holdingKind = HoldingKindRuntime.GetKindName(holdingType);
         return holdings.Items.Single(holding =>
@@ -765,14 +947,14 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var bankNames = new[] { "HSBC", "Barclays" };
 
         foreach (var name in custodianNames.Take(1 + accountIndex % custodianNames.Length))
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingFeesCustodian), name, true, false));
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingNominalFeesCustodian), name, true, false));
 
         foreach (var name in administratorNames.Take(accountIndex % administratorNames.Length))
-            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingFeesAdministrator), name, true, false));
+            events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingNominalFeesAdministrator), name, true, false));
 
-        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingFeesBank), bankNames[accountIndex % bankNames.Length], true, false));
-        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingIncome), bankNames[(accountIndex + 1) % bankNames.Length], true, false));
-        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingInterest), bankNames[accountIndex % bankNames.Length], true, false));
+        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingNominalFeesBank), bankNames[accountIndex % bankNames.Length], true, false));
+        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingNominalIncome), bankNames[(accountIndex + 1) % bankNames.Length], true, false));
+        events.Add(CreateSeedHolding(index++, account.AccountID, cashInstrumentID, typeof(HoldingNominalInterest), bankNames[accountIndex % bankNames.Length], true, false));
     }
 
     private static HoldingCreatedEvent CreateSeedHolding(int index, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name, bool active, bool isDefault)
@@ -788,15 +970,15 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             nameof(HoldingPositionMemo) => HoldingPositionMemoCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingPositionCash) => HoldingPositionCashCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             nameof(HoldingPositionAsset) => HoldingPositionAssetCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingInflow) => HoldingInflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingOutflow) => HoldingOutflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingInSpecieIn) => HoldingInSpecieInCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingInSpecieOut) => HoldingInSpecieOutCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingFeesCustodian) => HoldingFeesCustodianCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingFeesAdministrator) => HoldingFeesAdministratorCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingFeesBank) => HoldingFeesBankCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingIncome) => HoldingIncomeCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
-            nameof(HoldingInterest) => HoldingInterestCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalInflow) => HoldingNominalInflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalOutflow) => HoldingNominalOutflowCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalInSpecieIn) => HoldingNominalInSpecieInCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalInSpecieOut) => HoldingNominalInSpecieOutCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalFeesCustodian) => HoldingNominalFeesCustodianCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalFeesAdministrator) => HoldingNominalFeesAdministratorCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalFeesBank) => HoldingNominalFeesBankCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalIncome) => HoldingNominalIncomeCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
+            nameof(HoldingNominalInterest) => HoldingNominalInterestCreatedEventBuilder.CreateSeed(eventId, Constants.Initialisation.UserID, eventDateTime, auditDateTime, Constants.Initialisation.Reason, holdingID, accountID, instrumentID, name, active, isDefault).Value!,
             _ => throw new InvalidOperationException($"Unsupported seed holding kind '{holdingKind}'.")
         };
     }

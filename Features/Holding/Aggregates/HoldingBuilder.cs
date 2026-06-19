@@ -2,7 +2,7 @@ namespace FolioTrace.Aggregates;
 
 public static class HoldingBuilder
 {
-    public static Holding Create(HoldingCreatedEvent createdEvent)
+    public static HoldingBase Create(HoldingCreatedEvent createdEvent)
     {
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
@@ -10,9 +10,9 @@ public static class HoldingBuilder
         return createdEvent.CreateHolding();
     }
 
-    extension(Holding holding)
+    extension(HoldingBase holding)
     {
-        public Holding Apply(HoldingModifiedEvent modifiedEvent)
+        public HoldingBase Apply(HoldingModifiedEvent modifiedEvent)
         {
             if (holding is null)
                 throw new ArgumentNullException(nameof(holding));
@@ -23,7 +23,7 @@ public static class HoldingBuilder
             return modifiedEvent.Apply(holding);
         }
 
-        public Holding Apply(HoldingActiveModifiedEvent activeModifiedEvent)
+        public HoldingBase Apply(HoldingActiveModifiedEvent activeModifiedEvent)
         {
             if (holding is null)
                 throw new ArgumentNullException(nameof(holding));

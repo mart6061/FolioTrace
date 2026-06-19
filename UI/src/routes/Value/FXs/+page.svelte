@@ -161,17 +161,17 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
 
-        <button class="btn btn-primary" type="submit">Apply</button>
+        <button class="house-button house-button-primary house-button-md" type="submit">Apply</button>
       </form>
     </div>
   </section>
@@ -253,13 +253,13 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="fx-create">
                       Base
-                      <input class="h-8 w-36 rounded-md border border-slate-300 bg-white px-2 font-mono uppercase text-slate-950" form="fx-create" list="fx-country-alpha3-options" maxlength="3" minlength="3" name="baseCurrency" placeholder="Alpha-3" required value={form?.intent === 'createFX' ? (form.values?.baseCurrency ?? '') : ''} />
+                      <input class="house-control house-control-sm w-36 font-mono uppercase" form="fx-create" list="fx-country-alpha3-options" maxlength="3" minlength="3" name="baseCurrency" placeholder="Alpha-3" required value={form?.intent === 'createFX' ? (form.values?.baseCurrency ?? '') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="fx-create">
                       Quote
-                      <input class="h-8 w-36 rounded-md border border-slate-300 bg-white px-2 font-mono uppercase text-slate-950" form="fx-create" list="fx-country-alpha3-options" maxlength="3" minlength="3" name="quoteCurrency" placeholder="Alpha-3" required value={form?.intent === 'createFX' ? (form.values?.quoteCurrency ?? '') : ''} />
+                      <input class="house-control house-control-sm w-36 font-mono uppercase" form="fx-create" list="fx-country-alpha3-options" maxlength="3" minlength="3" name="quoteCurrency" placeholder="Alpha-3" required value={form?.intent === 'createFX' ? (form.values?.quoteCurrency ?? '') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -271,15 +271,15 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="fx-create">
                       Event date
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form="fx-create" name="eventDateTime" required step="1" value={form?.intent === 'createFX' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
+                      <DateTimeInput size="sm" form="fx-create" name="eventDateTime" required step="1" value={form?.intent === 'createFX' ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700" onclick={cancelAdd} type="button">Cancel</button>
-                        <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white disabled:opacity-70" disabled={submittingCreate} form="fx-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={cancelAdd} type="button">Cancel</button>
+                        <button class="house-button house-button-primary house-button-sm" disabled={submittingCreate} form="fx-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
                       </div>
                     </div>
                   </td>
@@ -303,7 +303,7 @@
                       <input name="pair" type="hidden" value={fx.pair} />
                       <input name="active" type="hidden" value={String(!fx.active)} />
                       <input name="eventDateTime" type="hidden" value={eventDateDefault} />
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:opacity-70" disabled={submittingPair === fx.pair} type="submit">
+                      <button class="house-button house-button-secondary house-button-sm" disabled={submittingPair === fx.pair} type="submit">
                         {fx.active ? 'Deactivate' : 'Activate'}
                       </button>
                     </form>

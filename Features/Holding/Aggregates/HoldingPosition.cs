@@ -26,7 +26,7 @@ public sealed record HoldingPosition : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public HoldingPosition(Holding holding, string accountName, string instrumentName, decimal quantity, decimal bookCost, EventDateTime valuationDateTime, HoldingDateBasis holdingDateBasis, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public HoldingPosition(HoldingBase holding, string accountName, string instrumentName, decimal quantity, decimal bookCost, EventDateTime valuationDateTime, HoldingDateBasis holdingDateBasis, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         if (holding is null)
             throw new ArgumentNullException(nameof(holding));

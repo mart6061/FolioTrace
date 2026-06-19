@@ -125,6 +125,35 @@ public sealed class TransactionBuilderTests
     }
 
     [Fact]
+    public void Create_RejectsTransactionsForInactiveAccount()
+    {
+        var request = CreateRequest(
+            credits: [CreateLeg(10m)],
+            debits: [CreateLeg(10m)]);
+
+        var result = TransactionBuilder.Create(request, CreateHoldings(), CreateAccounts(active: false, aggregateDate: request.EventDateTime));
+
+        Assert.False(result.IsValid);
+        Assert.Contains($"AccountID '{AccountID}' is inactive.", result.ValidationErrors);
+    }
+
+    [Fact]
+    public void Create_RejectsTransactionsBeforeAccountStartDate()
+    {
+        var accountStartDate = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-5));
+        var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10));
+        var request = CreateRequest(eventDateTime, credits: [CreateLeg(10m)], debits: [CreateLeg(10m)]);
+
+        var result = TransactionBuilder.Create(
+            request,
+            CreateHoldings(),
+            CreateAccounts(accountEventDate: accountStartDate, aggregateDate: EventDateTimeBuilder.Create(DateTime.UtcNow)));
+
+        Assert.False(result.IsValid);
+        Assert.Contains($"Transaction EventDateTime must be on or after account StartDate '{accountStartDate.Value:O}'.", result.ValidationErrors);
+    }
+
+    [Fact]
     public void Create_RejectsMixedAccountSet()
     {
         var result = TransactionBuilder.Create(CreateRequest(
@@ -342,6 +371,25 @@ public sealed class TransactionBuilderTests
             false).Value!;
 
         return new Holdings(HoldingEventDate, HoldingAuditDate, [holdingCreated, otherHoldingCreated]);
+    }
+
+    private static Accounts CreateAccounts(bool active = true, EventDateTime? accountEventDate = null, EventDateTime? aggregateDate = null)
+    {
+        var eventDate = accountEventDate ?? EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-30));
+        var auditDate = AuditDateTimeBuilder.Create(eventDate.Value.AddMinutes(1));
+        var created = AccountCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            eventDate,
+            auditDate,
+            "Create account",
+            AccountID,
+            "General",
+            "General Account",
+            Alpha3Builder.Create("GBP"),
+            active).Value!;
+
+        return new Accounts(aggregateDate ?? eventDate, auditDate, [created]);
     }
 
     private static IReadOnlyList<ITransactionMovementEvent> CreateBalancedSet()

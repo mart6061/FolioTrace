@@ -1,10 +1,11 @@
 <script lang="ts">
   import AssetAllocationReadOnlyTree from '$lib/components/AssetAllocationReadOnlyTree.svelte';
-  import type { AssetAllocationMapping, AssetAllocationNode, HoldingPosition, ValuationSetting } from '$lib/types';
+  import type { Account, AssetAllocationMapping, AssetAllocationNode, HoldingPosition, ValuationSetting } from '$lib/types';
   import { SvelteSet } from 'svelte/reactivity';
 
   let {
     accountIDs,
+    accounts = [],
     assetAllocationMappings,
     auditDateTime,
     holdingPositions,
@@ -12,6 +13,7 @@
     valuationSetting
   }: {
     accountIDs: string[];
+    accounts?: Account[];
     assetAllocationMappings: AssetAllocationMapping[];
     auditDateTime: string;
     holdingPositions: HoldingPosition[];
@@ -181,11 +183,12 @@
       <p class="text-sm text-slate-600">{holdingPositions.length} holdings</p>
     </div>
 
-    <button class="h-9 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300" disabled={saveDisabled} type="submit">Save</button>
+    <button class="house-button house-button-primary house-button-md" disabled={saveDisabled} type="submit">Save</button>
   </div>
 
   {#if unallocatedNodeID}
     <AssetAllocationReadOnlyTree
+      {accounts}
       holdingsByNodeID={holdingsByNodeID}
       nodes={selectedNodes}
       onHoldingDragStart={startHoldingDrag}

@@ -5,12 +5,12 @@ namespace FolioTrace.Aggregates;
 
 public static class TransactionBuilder
 {
-    public static Result<IReadOnlyList<ITransactionMovementEvent>> Create(TransactionSetRequest request, Holdings? holdings = null)
+    public static Result<IReadOnlyList<ITransactionMovementEvent>> Create(TransactionSetRequest request, Holdings? holdings = null, Accounts? accounts = null)
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
-        var validationErrors = ValidateRequest(request, holdings);
+        var validationErrors = ValidateRequest(request, holdings, accounts);
         if (validationErrors.Count > 0)
             return Result<IReadOnlyList<ITransactionMovementEvent>>.Invalid(validationErrors);
 
@@ -63,7 +63,7 @@ public static class TransactionBuilder
         return Result<IReadOnlyList<ITransactionMovementEvent>>.Success(events);
     }
 
-    private static List<string> ValidateRequest(TransactionSetRequest request, Holdings? holdings)
+    private static List<string> ValidateRequest(TransactionSetRequest request, Holdings? holdings, Accounts? accounts)
     {
         var messages = new List<string>();
         if (request.UserID is null) messages.Add("UserID is required.");
@@ -86,11 +86,12 @@ public static class TransactionBuilder
         var accountIds = request.Credits
             .Concat(request.Debits)
             .Where(leg => leg?.AccountID is not null)
-            .Select(leg => leg.AccountID.Value)
+            .Select(leg => leg.AccountID)
             .Distinct()
             .ToList();
         if (accountIds.Count > 1)
             messages.Add("All transaction movements in a set must have the same AccountID.");
+        ValidateAccountState(messages, request.EventDateTime, accountIds, accounts);
 
         ValidateLegs(messages, "Credit", request.Credits, holdings);
         ValidateLegs(messages, "Debit", request.Debits, holdings);
@@ -101,6 +102,25 @@ public static class TransactionBuilder
             messages.Add("Transaction book cost must balance: credits less debits must equal zero.");
 
         return messages;
+    }
+
+    private static void ValidateAccountState(List<string> messages, EventDateTime? eventDateTime, IReadOnlyList<AccountID> accountIds, Accounts? accounts)
+    {
+        if (accounts is null || accountIds.Count != 1)
+            return;
+
+        var accountID = accountIds[0];
+        var account = accounts.Items.SingleOrDefault(item => item.AccountID == accountID);
+        if (account is null)
+        {
+            messages.Add($"No matching Account found for AccountID '{accountID}'.");
+            return;
+        }
+
+        if (eventDateTime is not null && eventDateTime.Value < account.ValuationDateTime.Value)
+            messages.Add($"Transaction EventDateTime must be on or after account StartDate '{account.ValuationDateTime.Value:O}'.");
+        if (!account.Active)
+            messages.Add($"AccountID '{accountID}' is inactive.");
     }
 
     private static void ValidateLegs(List<string> messages, string side, IReadOnlyList<TransactionRequest> legs, Holdings? holdings)

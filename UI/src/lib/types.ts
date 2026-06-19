@@ -137,15 +137,15 @@ export type HoldingKind =
   | 'PositionMemo'
   | 'PositionCash'
   | 'PositionAsset'
-  | 'Inflow'
-  | 'Outflow'
-  | 'InSpecieIn'
-  | 'InSpecieOut'
-  | 'FeesCustodian'
-  | 'FeesAdministrator'
-  | 'FeesBank'
-  | 'Income'
-  | 'Interest';
+  | 'NominalInflow'
+  | 'NominalOutflow'
+  | 'NominalInSpecieIn'
+  | 'NominalInSpecieOut'
+  | 'NominalFeesCustodian'
+  | 'NominalFeesAdministrator'
+  | 'NominalFeesBank'
+  | 'NominalIncome'
+  | 'NominalInterest';
 
 export type Holding = {
   holdingID: string;
@@ -288,10 +288,10 @@ export type Currencies = {
 
 export type AssetAllocationNodeAccountSetting = {
   accountID: string;
-  targetWeight: number;
-  targetWeightMax: number;
-  targetWeightMin: number;
-  targetYield: number;
+  targetWeight: number | null;
+  targetWeightMax: number | null;
+  targetWeightMin: number | null;
+  targetYield: number | null;
 };
 
 export type AssetAllocationNode = {
@@ -369,6 +369,7 @@ export type ReportNodeBase = {
   columns?: ReportValuationColumn[] | null;
   colourBullet?: boolean;
   colourText?: boolean;
+  displayHoldings?: boolean;
 };
 
 export type ReportConfig = {

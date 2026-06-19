@@ -17,4 +17,4 @@ public sealed record HoldingCashNonInvestableCreatedRequest(
     SortCode SortCode,
     BankAccountNumber AccountNumber,
     BIC BIC,
-    IBAN IBAN) : IHoldingBankCreatedRequest;
+    IBAN IBAN) : IHoldingCashBaseCreatedRequest;

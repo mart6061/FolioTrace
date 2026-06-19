@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "ensure-dev-cert": "node scripts/ensure-dev-cert.mjs",
-    "dev": "node scripts/run-vite.mjs dev --host localhost --port 5173",
+    "dev": "node scripts/run-vite.mjs dev --host 0.0.0.0 --port 5173 --strictPort",
     "build": "vite build",
-    "preview": "node scripts/run-vite.mjs preview --host localhost --port 4173",
+    "preview": "node scripts/run-vite.mjs preview --host 0.0.0.0 --port 4173 --strictPort",
     "start": "node build/index.js",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },

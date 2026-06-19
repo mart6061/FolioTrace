@@ -6,6 +6,8 @@ TestResults/
 .build/
 **/.build/
 API/Logs/
+API/FixLog/
+API/FixStore/
 *.user
 *.suo
 *.rsuser

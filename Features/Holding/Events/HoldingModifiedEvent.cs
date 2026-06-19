@@ -24,5 +24,5 @@ public abstract record HoldingModifiedEvent : EventBase, IHoldingEvent
         Default = isDefault;
     }
 
-    internal abstract Holding Apply(Holding holding);
+    internal abstract HoldingBase Apply(HoldingBase holding);
 }
