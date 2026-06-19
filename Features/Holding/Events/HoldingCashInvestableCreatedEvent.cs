@@ -5,7 +5,7 @@ using FolioTrace.Common;
 namespace FolioTrace.Aggregates;
 
 [EventClass(EventType = EventClassTypeEnum.Created, Description = "Holding Cash Investable Created Event")]
-public sealed record HoldingCashInvestableCreatedEvent : HoldingBankCreatedEvent
+public sealed record HoldingCashInvestableCreatedEvent : HoldingCashBaseCreatedEvent
 {
     [JsonConstructor]
     private HoldingCashInvestableCreatedEvent() { }
@@ -14,5 +14,5 @@ public sealed record HoldingCashInvestableCreatedEvent : HoldingBankCreatedEvent
         : base(eventId, userId, eventDateTime, auditDateTime, reason, holdingID, accountID, instrumentID, name, active, isDefault, bankName, accountName, sortCode, accountNumber, bic, iban) { }
 
     public override string Type => nameof(HoldingCashInvestableCreatedEvent);
-    internal override Holding CreateHolding() => new HoldingCashInvestable(HoldingID, AccountID, InstrumentID, Name, Active, Default, EventDateTime, AuditDateTime, EventID, AuditDateTime, BankName, AccountName, SortCode, AccountNumber, BIC, IBAN);
+    internal override HoldingBase CreateHolding() => new HoldingCashInvestable(HoldingID, AccountID, InstrumentID, Name, Active, Default, EventDateTime, AuditDateTime, EventID, AuditDateTime, BankName, AccountName, SortCode, AccountNumber, BIC, IBAN);
 }

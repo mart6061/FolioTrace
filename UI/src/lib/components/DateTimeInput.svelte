@@ -1,11 +1,14 @@
 <script lang="ts">
+  import { classNames, controlClass, type ControlSize } from '$lib/components/forms/controls';
   import { clampFutureInputDateTime, endOfDayForInput, nowForInput, startOfDayForInput } from '$lib/dates';
 
   type Props = {
     class?: string;
     disabled?: boolean;
     form?: string;
+    fullWidth?: boolean;
     futureLimited?: boolean;
+    invalid?: boolean;
     max?: string;
     min?: string;
     name?: string;
@@ -13,6 +16,7 @@
     required?: boolean;
     showShortcuts?: boolean;
     shortcutMode?: 'adjacent' | 'embedded';
+    size?: ControlSize;
     step?: string | number;
     value?: string;
   };
@@ -21,7 +25,9 @@
     class: className = '',
     disabled = false,
     form,
+    fullWidth = false,
     futureLimited = false,
+    invalid = false,
     max,
     min,
     name,
@@ -29,19 +35,31 @@
     required = false,
     showShortcuts = true,
     shortcutMode = 'embedded',
+    size = 'md',
     step = '1',
     value = $bindable('')
   }: Props = $props();
 
-  let effectiveMax = $state('');
+  let maxRefreshKey = $state(0);
+  const effectiveMax = $derived(currentEffectiveMax(maxRefreshKey));
   const useEmbeddedShortcuts = $derived(showShortcuts && shortcutMode === 'embedded');
+  const containerClass = $derived(
+    classNames(
+      'datetime-input-control',
+      useEmbeddedShortcuts && 'datetime-input-control-embedded',
+      `datetime-input-control-${size}`,
+      fullWidth && 'datetime-input-control-full',
+      invalid && 'datetime-input-control-invalid'
+    )
+  );
+  const inputClass = $derived(controlClass(size, fullWidth, invalid, className));
 
-  $effect(() => {
-    effectiveMax = futureLimited ? nowForInput() : (max ?? '');
-  });
+  function currentEffectiveMax(_refreshKey: number) {
+    return futureLimited ? nowForInput() : (max ?? '');
+  }
 
   function refreshEffectiveMax() {
-    effectiveMax = futureLimited ? nowForInput() : (max ?? '');
+    maxRefreshKey += 1;
   }
 
   function clampToLimits(nextValue: string) {
@@ -65,7 +83,7 @@
   }
 
   function setEndOfDay() {
-    setShortcut(endOfDayForInput(value, step));
+    setShortcut(endOfDayForInput(value));
   }
 
   function setNow() {
@@ -82,9 +100,10 @@
   }
 </script>
 
-<span class={`datetime-input-control ${useEmbeddedShortcuts ? 'datetime-input-control-embedded' : ''}`}>
+<span class={containerClass}>
   <input
-    class={className}
+    aria-invalid={invalid ? 'true' : undefined}
+    class={inputClass}
     bind:value
     {disabled}
     {form}

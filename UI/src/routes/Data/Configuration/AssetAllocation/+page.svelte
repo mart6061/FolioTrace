@@ -1,17 +1,21 @@
 <script lang="ts">
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { MultiSelect } from '$lib/components/forms';
   import AssetAllocationMappingEditor from './AssetAllocationMappingEditor.svelte';
 
   let { data, form } = $props();
 
   let selectedValuationSettingIDOverride = $state('');
   let selectedAccountIDOverrides = $state<string[] | null>(null);
+  let accountDropdownOpen = $state(false);
 
   const selectedValuationSettingID = $derived(validSelectedValuationSettingID());
   const selectedControlSetting = $derived(data.valuationSettings.find((setting) => setting.assetAllocationID === selectedValuationSettingID) ?? null);
   const accountOptions = $derived(accountsForSetting(selectedValuationSettingID));
   const selectedAccountIDs = $derived(validSelectedAccountIDs());
+  const selectedAccounts = $derived(accountOptions.filter((account) => selectedAccountIDs.includes(account.accountID)));
   const selectedAccountSummary = $derived(accountSummary());
   const pageKey = $derived(`${data.valuationDate}|${data.auditDateTime}|${data.accountIDs.join(',')}|${data.valuationSettingID}|${data.holdingDateBasis}`);
 
@@ -79,6 +83,7 @@
           <p class="page-kicker">Configuration</p>
           <div class="page-title-row">
             <h1 class="page-title">Asset Allocation</h1>
+            <BookmarkButton />
           </div>
         </div>
       </div>
@@ -91,15 +96,15 @@
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
 
-      <div class="grid gap-3 lg:grid-cols-[minmax(220px,18rem)_minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
+      <div class="grid gap-3 lg:grid-cols-[minmax(0,var(--house-datetime-width))_minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <DateTimeInput class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Valuation config
-          <select class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.valuationSettings.length} name="valuationSettingID" onchange={(event) => changeValuationSetting(event.currentTarget.value)} required>
+          <select class="house-control house-control-md house-control-full" disabled={!data.valuationSettings.length} name="valuationSettingID" onchange={(event) => changeValuationSetting(event.currentTarget.value)} required>
             {#each data.valuationSettings as setting (setting.assetAllocationID)}
               <option selected={setting.assetAllocationID === selectedValuationSettingID} value={setting.assetAllocationID}>{setting.name}</option>
             {:else}
@@ -110,35 +115,27 @@
 
         <div class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Account
-          <details class="relative">
-            <summary class="flex h-10 cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none hover:border-teal-600 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
-              <span class="truncate">{selectedAccountSummary}</span>
-              <span class="text-xs text-slate-500">v</span>
-            </summary>
-
-            <div class="absolute z-20 mt-2 grid max-h-64 w-full min-w-72 gap-1 overflow-auto rounded-md border border-slate-200 bg-white p-2 text-sm shadow-lg">
-              {#if selectedControlSetting && accountOptions.length}
-                {#each accountOptions as account (account.accountID)}
-                  <label class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 font-normal text-slate-800 hover:bg-teal-50">
-                    <input
-                      checked={selectedAccountIDs.includes(account.accountID)}
-                      class="h-4 w-4 accent-teal-700"
-                      name="accountIDs"
-                      onchange={(event) => toggleAccount(account.accountID, event.currentTarget.checked)}
-                      type="checkbox"
-                      value={account.accountID}
-                    />
-                    <span class="truncate">{account.name}</span>
-                  </label>
-                {/each}
-              {:else}
-                <div class="px-2 py-1.5 font-normal text-slate-500">No accounts are assigned to this config.</div>
-              {/if}
-            </div>
-          </details>
+          <MultiSelect bind:open={accountDropdownOpen} summary={selectedAccountSummary}>
+            {#if selectedControlSetting && accountOptions.length}
+              {#each accountOptions as account (account.accountID)}
+                <label class="house-checkbox-option">
+                  <input
+                    checked={selectedAccountIDs.includes(account.accountID)}
+                    name="accountIDs"
+                    onchange={(event) => toggleAccount(account.accountID, event.currentTarget.checked)}
+                    type="checkbox"
+                    value={account.accountID}
+                  />
+                  <span class="truncate">{account.name}</span>
+                </label>
+              {/each}
+            {:else}
+              <div class="px-2 py-1.5 font-normal text-slate-500">No accounts are assigned to this config.</div>
+            {/if}
+          </MultiSelect>
         </div>
 
-        <button class="btn btn-primary" disabled={!selectedValuationSettingID || !selectedAccountIDs.length} type="submit">Apply</button>
+        <button class="house-button house-button-primary house-button-md" disabled={!selectedValuationSettingID || !selectedAccountIDs.length} type="submit">Apply</button>
       </div>
     </form>
 
@@ -170,6 +167,7 @@
       {#key pageKey}
         <AssetAllocationMappingEditor
           accountIDs={data.accountIDs}
+          accounts={selectedAccounts}
           assetAllocationMappings={data.assetAllocationMappings?.items ?? []}
           auditDateTime={data.auditDateTime}
           holdingPositions={data.holdingPositions?.items ?? []}

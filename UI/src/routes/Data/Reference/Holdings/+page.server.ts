@@ -174,15 +174,15 @@ function isHoldingKind(value: string): value is HoldingKind {
     'PositionMemo',
     'PositionCash',
     'PositionAsset',
-    'Inflow',
-    'Outflow',
-    'InSpecieIn',
-    'InSpecieOut',
-    'FeesCustodian',
-    'FeesAdministrator',
-    'FeesBank',
-    'Income',
-    'Interest'
+    'NominalInflow',
+    'NominalOutflow',
+    'NominalInSpecieIn',
+    'NominalInSpecieOut',
+    'NominalFeesCustodian',
+    'NominalFeesAdministrator',
+    'NominalFeesBank',
+    'NominalIncome',
+    'NominalInterest'
   ].includes(value);
 }
 

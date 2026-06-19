@@ -198,6 +198,7 @@ function normalizeReportNode(value: unknown): ReportNodeRequest | null {
   if (type === 'ReportNodeValuation') {
     node.colourBullet = readBoolean(record, true, 'colourBullet', 'ColourBullet');
     node.colourText = readBoolean(record, false, 'colourText', 'ColourText');
+    node.displayHoldings = readBoolean(record, true, 'displayHoldings', 'DisplayHoldings');
 
     if (columnsResult.columns !== undefined)
       node.columns = columnsResult.columns;

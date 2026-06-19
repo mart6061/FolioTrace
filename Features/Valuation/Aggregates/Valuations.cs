@@ -56,10 +56,14 @@ public sealed record Valuations : IAggregate
             .ToDictionary(account => account.AccountID.Value);
         var instrumentLookup = instrumentValues.Items.ToDictionary(instrument => instrument.InstrumentID.Value);
 
-        var items = positions.Items
+        var unweightedItems = positions.Items
             .Where(position => position.IncludeInValuation)
             .Where(position => accountLookup.ContainsKey(position.AccountID.Value))
             .Select(position => BuildItem(position, instrumentLookup.GetValueOrDefault(position.InstrumentID.Value), fxRates, instrumentPriceBasis, valuationCurrency))
+            .ToList();
+        var totalBookValue = unweightedItems.Sum(item => item.BookValue ?? 0m);
+        var items = unweightedItems
+            .Select(item => ApplyWeight(item, totalBookValue))
             .OrderBy(item => item.AccountName)
             .ThenBy(item => HoldingKindRank(item.HoldingKind))
             .ThenBy(item => item.Name)
@@ -100,9 +104,6 @@ public sealed record Valuations : IAggregate
         var complete = localPrice.HasValue && fxSelection.FXRate.HasValue;
         var quotePrice = complete ? localPrice.GetValueOrDefault() * fxSelection.FXRate.GetValueOrDefault() : (decimal?)null;
         var bookValue = quotePrice.HasValue ? position.Quantity * quotePrice.Value : (decimal?)null;
-        var weightPercent = bookValue.HasValue && position.Quantity != 0m
-            ? decimal.Round(bookValue.Value / position.Quantity, 2, MidpointRounding.AwayFromZero)
-            : (decimal?)null;
         var incompleteReason = BuildIncompleteReason(instrument is null, localPrice.HasValue, fxSelection.FXRate.HasValue, priceCurrency, valuationCurrency);
 
         return new ValuationItem
@@ -124,12 +125,20 @@ public sealed record Valuations : IAggregate
             LocalPrice = localPrice,
             QuotePrice = quotePrice,
             BookValue = bookValue,
-            WeightPercent = weightPercent,
+            WeightPercent = null,
             BookCost = position.BookCost,
             Complete = complete,
             IncompleteReason = incompleteReason
         };
     }
+
+    private static ValuationItem ApplyWeight(ValuationItem item, decimal totalBookValue) =>
+        item with
+        {
+            WeightPercent = item.BookValue.HasValue && totalBookValue != 0m
+                ? item.BookValue.Value / totalBookValue * 100m
+                : null
+        };
 
     private static decimal? SelectInstrumentPrice(IInstrumentPrice? price, InstrumentPriceBasis basis) =>
         price switch

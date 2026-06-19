@@ -32,5 +32,5 @@ public abstract record HoldingCreatedEvent : EventBase, IHoldingEvent
         Default = isDefault;
     }
 
-    internal abstract Holding CreateHolding();
+    internal abstract HoldingBase CreateHolding();
 }

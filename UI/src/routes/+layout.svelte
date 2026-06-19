@@ -2,7 +2,9 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { closeOnOutside } from '$lib/actions/dropdown';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { Toggle } from '$lib/components/forms';
   import { formatBookmarkMenuUrl, formatBookmarkType } from '$lib/bookmarks';
   import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
   import { normalizeMenuPreferenceItems } from '$lib/menuPreferences';
@@ -51,12 +53,6 @@
       tint: '#e7e7f3',
       tintText: '#454178'
     },
-    todo: {
-      border: '#dda0b4',
-      strong: '#a33a5e',
-      tint: '#f4dfe7',
-      tintText: '#7d2d49'
-    },
     danger: {
       border: '#ee9a92',
       strong: '#b42318',
@@ -100,16 +96,16 @@
     tone: MenuTone;
   };
   type TopMenuID = 'bookmarks' | 'system' | '';
-  type DataBranchID = 'data' | 'value' | 'reference' | 'configuration' | 'internals' | '';
+  type DataBranchID = 'data' | 'value' | 'reference' | 'configuration' | 'tools' | 'internals' | '';
   const topMenuItems: MenuItem[] = [
     { id: 'home', label: 'Home', path: '/', tone: menuTones.home },
     { id: 'bookmarks', label: 'Bookmarks', tone: menuTones.home },
     { id: 'blotter', label: 'Blotter', path: '/Blotter', tone: menuTones.tickets },
+    { id: 'viewer', label: 'Viewer', path: '/Viewer', tone: menuTones.value },
     { id: 'asset', label: 'Asset', path: '/Asset', tone: menuTones.value },
     { id: 'report', label: 'Report', path: '/Report', tone: menuTones.value },
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
-    { id: 'system', label: 'System', tone: menuTones.logs },
-    { id: 'todo', label: 'To Do', path: '/ToDo', tone: menuTones.todo }
+    { id: 'system', label: 'System', tone: menuTones.logs }
   ];
   const dataMenuItem: MenuItem = { id: 'data', label: 'Data', tone: menuTones.value };
   const dataBranchItems: MenuItem[] = [
@@ -130,7 +126,11 @@
     { id: 'reference-instrument', label: 'Instrument', path: '/Data/Reference/Instruments', tone: menuTones.reference }
   ];
   const configurationItems: MenuItem[] = [
-    { id: 'configuration-asset-allocation', label: 'Asset Allocation', path: '/Data/Configuration/AssetAllocation', tone: menuTones.configuration },
+    { id: 'configuration-asset-allocation', label: 'Asset Allocation', path: '/Data/Configuration/AssetAllocation', tone: menuTones.configuration }
+  ];
+  const toolsMenuItem: MenuItem = { id: 'tools', label: 'Tools', tone: menuTones.configuration };
+  const toolsItems: MenuItem[] = [
+    { id: 'configuration-account-tools', label: 'Account Tools', path: '/Data/Configuration/AccountTools', tone: menuTones.configuration },
     { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', path: '/Data/Configuration/AssetAllocationTools', tone: menuTones.configuration },
     { id: 'configuration-report-tools', label: 'Report Tools', path: '/Data/Configuration/ReportTools', tone: menuTones.configuration }
   ];
@@ -141,14 +141,17 @@
     { id: 'system-stats', label: 'Stats for Nerds', path: '/StatsForNerds', tone: menuTones.logs }
   ];
   const topLeafItems = topMenuItems.filter((item) => item.path);
-  const leafMenuItems = [...valueItems, ...referenceItems, ...configurationItems, ...internalsItems, ...topLeafItems];
+  const systemBranchItems: MenuItem[] = [dataMenuItem, toolsMenuItem, internalsMenuItem];
+  const leafMenuItems = [...valueItems, ...referenceItems, ...configurationItems, ...toolsItems, ...internalsItems, ...topLeafItems];
   const menuVisibility = $derived(new Map(normalizeMenuPreferenceItems(data.menuPreferences?.items).map((item) => [item.menuItemID, item.visible])));
   const visibleTopMenuItems = $derived(topMenuItems.filter((item) => isMenuItemVisible(item)));
   const visibleDataBranchItems = $derived(dataBranchItems.filter((item) => isMenuItemVisible(item)));
   const visibleValueItems = $derived(valueItems.filter((item) => isMenuItemVisible(item)));
   const visibleReferenceItems = $derived(referenceItems.filter((item) => isMenuItemVisible(item)));
   const visibleConfigurationItems = $derived(configurationItems.filter((item) => isMenuItemVisible(item)));
+  const visibleToolsItems = $derived(toolsItems.filter((item) => isMenuItemVisible(item)));
   const visibleInternalsItems = $derived(internalsItems.filter((item) => isMenuItemVisible(item)));
+  const visibleSystemBranchItems = $derived(systemBranchItems.filter((item) => isMenuItemVisible(item)));
   const bookmarkMenuItems: MenuItem[] = $derived((data.userBookmarks?.items ?? []).map((bookmark) => ({
     id: `bookmark-${bookmark.bookmarkID}`,
     label: `${formatBookmarkType(bookmark.bookmarkType)}: ${formatBookmarkMenuUrl(bookmark.url)}`,
@@ -311,6 +314,12 @@
     openDataBranch = openDataBranch === id ? '' : id;
   }
 
+  function closeMenus() {
+    openTopMenu = '';
+    openDataBranch = '';
+    selectedMenuItemID = '';
+  }
+
   function handleLeafClick(item: MenuItem) {
     selectedMenuItemID = item.id;
 
@@ -329,6 +338,12 @@
     if (configurationItems.includes(item)) {
       openTopMenu = 'system';
       openDataBranch = 'configuration';
+      return;
+    }
+
+    if (toolsItems.includes(item)) {
+      openTopMenu = 'system';
+      openDataBranch = 'tools';
       return;
     }
 
@@ -358,7 +373,7 @@
     if (!activeItem)
       return '';
 
-    if (valueItems.includes(activeItem) || referenceItems.includes(activeItem) || configurationItems.includes(activeItem) || internalsItems.includes(activeItem))
+    if (valueItems.includes(activeItem) || referenceItems.includes(activeItem) || configurationItems.includes(activeItem) || toolsItems.includes(activeItem) || internalsItems.includes(activeItem))
       return 'system';
 
     if (bookmarkMenuItems.includes(activeItem))
@@ -381,6 +396,9 @@
 
     if (configurationItems.includes(activeItem))
       return 'configuration';
+
+    if (toolsItems.includes(activeItem))
+      return 'tools';
 
     if (internalsItems.includes(activeItem))
       return 'internals';
@@ -418,11 +436,17 @@
     if (configurationItems.includes(item))
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible('configuration') && isConfiguredMenuVisible(item.id);
 
+    if (toolsItems.includes(item))
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('tools') && isConfiguredMenuVisible(item.id);
+
     if (internalsItems.includes(item))
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('internals') && isConfiguredMenuVisible(item.id);
 
     if (item.id === 'value' || item.id === 'reference' || item.id === 'configuration')
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('data') && isConfiguredMenuVisible(item.id);
+
+    if (item.id === 'tools')
+      return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('tools');
 
     if (item.id === 'internals')
       return isConfiguredMenuVisible('system') && isConfiguredMenuVisible('internals');
@@ -470,7 +494,11 @@
       </a>
 
       <div class="system-search">
-        <nav class="system-menu" aria-label="Primary menu">
+        <nav
+          aria-label="Primary menu"
+          class="system-menu"
+          use:closeOnOutside={{ close: closeMenus, enabled: Boolean(openTopMenu || openDataBranch || selectedMenuItemID) }}
+        >
           {#each visibleTopMenuItems as item, topIndex (item.id)}
             {#if item.id === 'bookmarks'}
               <div class="system-menu-bookmark-cluster">
@@ -502,21 +530,17 @@
               </button>
               {:else if item.path}
                 <a
-                  aria-label={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
+                  aria-label={item.id === 'home' ? item.label : undefined}
                   aria-current={isActiveMenuItem(item) ? 'page' : undefined}
-                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' || item.id === 'todo' ? 'system-menu-pill-icon-only' : ''} ${item.id === 'todo' ? 'system-menu-pill-todo' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
+                  class={`system-menu-pill system-menu-pill-top ${item.id === 'home' ? 'system-menu-pill-icon-only' : ''} ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
                   href={menuHref(item)}
                 onclick={() => handleLeafClick(item)}
                 style={menuStyle(item.tone, 40 - topIndex)}
-                title={item.id === 'home' || item.id === 'todo' ? item.label : undefined}
+                title={item.id === 'home' ? item.label : undefined}
               >
                   {#if item.id === 'home'}
                     <span aria-hidden="true" class="system-menu-home-icon">
                       <svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
-                    </span>
-                  {:else if item.id === 'todo'}
-                    <span aria-hidden="true" class="system-menu-todo-icon">
-                      <svg viewBox="0 0 24 24"><path d="M8 7h10" /><path d="M8 12h10" /><path d="M8 17h10" /><path d="m3.5 7 1 1 2-2" /><path d="m3.5 12 1 1 2-2" /><path d="m3.5 17 1 1 2-2" /></svg>
                     </span>
                   {:else}
                     <span>{item.label}</span>
@@ -535,7 +559,7 @@
             {/if}
 
           {#if item.id === 'system' && openTopMenu === 'system'}
-              {#if openDataBranch !== 'internals' && openDataBranch && isMenuItemVisible(dataMenuItem)}
+              {#if openDataBranch !== 'tools' && openDataBranch !== 'internals' && openDataBranch && isMenuItemVisible(dataMenuItem)}
                 <button
                   aria-expanded="true"
                   class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
@@ -608,6 +632,28 @@
                     </button>
                   {/each}
                 {/if}
+              {:else if openDataBranch === 'tools' && isMenuItemVisible(toolsMenuItem)}
+                <button
+                  aria-expanded="true"
+                  class="system-menu-pill system-menu-pill-secondary system-menu-pill-open system-menu-pill-overlap"
+                  onclick={() => toggleDataBranch('tools')}
+                  style={menuLevelStyle(toolsMenuItem.tone, 2, 39 - topIndex)}
+                  type="button"
+                >
+                  {toolsMenuItem.label}
+                </button>
+
+                {#each visibleSubmenuItems(visibleToolsItems) as toolsLeaf, toolsIndex (toolsLeaf.id)}
+                  <a
+                    aria-current={isActiveMenuItem(toolsLeaf) ? 'page' : undefined}
+                    class={`system-menu-pill system-menu-pill-tertiary system-menu-pill-overlap ${isActiveMenuItem(toolsLeaf) ? 'system-menu-pill-active' : ''}`}
+                    href={menuHref(toolsLeaf)}
+                    onclick={() => handleLeafClick(toolsLeaf)}
+                    style={menuLevelStyle(toolsLeaf.tone, 3, 38 - topIndex - toolsIndex)}
+                  >
+                    {toolsLeaf.label}
+                  </a>
+                {/each}
               {:else if openDataBranch === 'internals' && isMenuItemVisible(internalsMenuItem)}
                 <button
                   aria-expanded="true"
@@ -631,29 +677,17 @@
                   </a>
                 {/each}
               {:else}
-                {#if isMenuItemVisible(dataMenuItem)}
+                {#each visibleSystemBranchItems as branchItem, branchIndex (branchItem.id)}
                   <button
                     aria-expanded="false"
                     class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
-                    onclick={() => toggleDataBranch('data')}
-                    style={menuLevelStyle(dataMenuItem.tone, 2, 39 - topIndex)}
+                    onclick={() => toggleDataBranch(branchItem.id as DataBranchID)}
+                    style={menuLevelStyle(branchItem.tone, 2, 39 - topIndex - branchIndex)}
                     type="button"
                   >
-                    {dataMenuItem.label}
+                    {branchItem.label}
                   </button>
-                {/if}
-
-                {#if isMenuItemVisible(internalsMenuItem)}
-                  <button
-                    aria-expanded="false"
-                    class="system-menu-pill system-menu-pill-secondary system-menu-pill-overlap"
-                    onclick={() => toggleDataBranch('internals')}
-                    style={menuLevelStyle(internalsMenuItem.tone, 2, 38 - topIndex)}
-                    type="button"
-                  >
-                    {internalsMenuItem.label}
-                  </button>
-                {/if}
+                {/each}
               {/if}
           {/if}
           {/each}
@@ -681,15 +715,7 @@
             </span>
           </span>
           <span>Trace Mode</span>
-          <label class="trace-toggle">
-            <input
-              aria-label="Trace Mode"
-              bind:checked={traceMode}
-              onchange={handleTraceModeChange}
-              type="checkbox"
-            />
-            <span></span>
-          </label>
+          <Toggle bind:checked={traceMode} label="Trace Mode" labelVisible={false} onchange={handleTraceModeChange} />
         </div>
 
         {#if traceMode}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import { MultiSelect, Toggle } from '$lib/components/forms';
   import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -52,6 +54,7 @@
   let submitting = $state('');
   let templateDragInProgress = $state(false);
   let draggedReportNodeID = $state<string | null>(null);
+  let accountDropdownOpen = $state(false);
 
   const draftNodesJson = $derived(JSON.stringify(normalizeDraftNodes(draftNodes)));
 
@@ -95,7 +98,8 @@
       pieLevel: reportNodeType(node) === 'ReportNodeChart' ? normalizePieLevel(node.pieLevel) : undefined,
       columns: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined,
       colourBullet: reportNodeType(node) === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
-      colourText: reportNodeType(node) === 'ReportNodeValuation' ? node.colourText ?? false : undefined
+      colourText: reportNodeType(node) === 'ReportNodeValuation' ? node.colourText ?? false : undefined,
+      displayHoldings: reportNodeType(node) === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined
     }));
   }
 
@@ -118,7 +122,8 @@
         pieLevel: type === 'ReportNodeChart' && (node.chartType ?? 'Pie') === 'Pie' ? normalizePieLevel(node.pieLevel) : undefined,
         columns: type === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined,
         colourBullet: type === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
-        colourText: type === 'ReportNodeValuation' ? node.colourText ?? false : undefined
+        colourText: type === 'ReportNodeValuation' ? node.colourText ?? false : undefined,
+        displayHoldings: type === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined
       };
     });
   }
@@ -170,6 +175,7 @@
       node.columns = defaultValuationColumns();
       node.colourBullet = true;
       node.colourText = false;
+      node.displayHoldings = true;
     }
 
     return node;
@@ -311,7 +317,7 @@
   }
 
   function isAssetAllocationColumn(columnKey: ReportValuationColumnKey) {
-    return columnKey === 'Weight' || columnKey === 'Target' || columnKey === 'Min' || columnKey === 'Max';
+    return columnKey === 'Target' || columnKey === 'Min' || columnKey === 'Max';
   }
 
   function valuationColumnToneClass(columnKey: ReportValuationColumnKey) {
@@ -436,6 +442,15 @@
   function assetAllocationName(assetAllocationID: string | undefined) {
     return assetAllocations.find((allocation) => allocation.assetAllocationID === assetAllocationID)?.name ?? 'Asset allocation';
   }
+
+  function reportNodeSummaryLabel(node: ReportNodeBase) {
+    const name = node.name || nodeTypeLabel(reportNodeType(node));
+    const allocationName = requiresAssetAllocation(reportNodeType(node)) && node.assetAllocationID
+      ? assetAllocationName(node.assetAllocationID)
+      : '';
+
+    return allocationName ? `${name} (${allocationName})` : name;
+  }
 </script>
 
 <svelte:head>
@@ -445,14 +460,15 @@
 <main class="min-h-screen">
   <section class="page-header">
     <div class="page-container">
+      <p class="page-kicker">Data / Configuration</p>
       <div class="page-header-content">
         <div class="page-header-main">
-          <p class="page-kicker">Data / Configuration</p>
           <div class="page-title-row">
             <h1 class="page-title">Report Tools</h1>
           </div>
         </div>
         <div class="page-header-aside">
+          <BookmarkButton />
           <div class="page-header-summary">Report configs to {data.valuationDate} as-of {data.auditDateTime || 'now'}</div>
         </div>
       </div>
@@ -467,25 +483,16 @@
       <form class="report-tools-filter" method="GET">
         <label class="field report-account-filter">
           <span>Accounts</span>
-          <details class="report-multiselect">
-            <summary>{selectedAccountIDs.length === accounts.length ? 'All accounts' : `${selectedAccountIDs.length} selected`}</summary>
-            <div class="report-multiselect-options">
-              {#each accounts as account (account.accountID)}
-                <label class="report-checkbox-option">
-                  <input name="accountID" type="checkbox" value={account.accountID} checked={selectedAccountIDs.includes(account.accountID)} onchange={submitFilterChange} />
-                  <span>{account.name}</span>
-                </label>
-              {/each}
-            </div>
-          </details>
+          <MultiSelect bind:open={accountDropdownOpen} summary={selectedAccountIDs.length === accounts.length ? 'All accounts' : `${selectedAccountIDs.length} selected`}>
+            {#each accounts as account (account.accountID)}
+              <label class="house-checkbox-option">
+                <input name="accountID" type="checkbox" value={account.accountID} checked={selectedAccountIDs.includes(account.accountID)} onchange={submitFilterChange} />
+                <span>{account.name}</span>
+              </label>
+            {/each}
+          </MultiSelect>
         </label>
-        <label class="toggle-row report-show-all-toggle">
-          <span>Show All</span>
-          <span class="report-switch">
-            <input name="showAll" type="checkbox" value="true" checked={data.showAll} onchange={submitFilterChange} />
-            <span class="report-switch-track" aria-hidden="true"></span>
-          </span>
-        </label>
+        <Toggle checked={data.showAll} class="toggle-row report-show-all-toggle" label="Show All" name="showAll" onchange={submitFilterChange} value="true" />
       </form>
 
       <form class="report-new-form table-actions" aria-label="Report actions" method="POST" action="?/createReport" use:enhance={enhanceAction('createReport')}>
@@ -506,18 +513,27 @@
       {#each reportConfigs as report (report.reportID)}
         <article class="report-config-card">
           <div class="report-config-summary">
-            <div>
+            <div class="report-config-title">
               <h2>{report.name}</h2>
               <div class="report-config-meta">
                 <span>{report.active ? 'Active' : 'Disabled'}</span>
                 <span>{report.nodes.length} nodes</span>
               </div>
             </div>
+            {#if editingReportID !== report.reportID}
+              <div class="report-config-node-list" aria-label={`${report.name} nodes`}>
+                {#each sortReportNodes(report.nodes) as node (node.reportNodeID)}
+                  <span class="report-config-node-pill">{reportNodeSummaryLabel(node)}</span>
+                {:else}
+                  <span class="report-config-node-empty">No nodes</span>
+                {/each}
+              </div>
+            {/if}
             <div class="report-config-actions">
               {#if editingReportID === report.reportID}
-                <button class="btn btn-primary" type="submit" form={`report-editor-${report.reportID}`} disabled={submitting === `saveReport-${report.reportID}`}>Save</button>
+                <button class="house-button house-button-primary house-button-md" type="submit" form={`report-editor-${report.reportID}`} disabled={submitting === `saveReport-${report.reportID}`}>Save</button>
               {/if}
-              <button class="btn btn-secondary" type="button" onclick={() => editingReportID === report.reportID ? closeEdit() : startEdit(report)}>
+              <button class="house-button house-button-secondary house-button-md" type="button" onclick={() => editingReportID === report.reportID ? closeEdit() : startEdit(report)}>
                 {editingReportID === report.reportID ? 'Close' : 'Edit'}
               </button>
             </div>
@@ -533,13 +549,12 @@
                   <span>Name</span>
                   <input class="input" name="name" bind:value={draftName} required />
                 </label>
-                <label class="toggle-row report-active-toggle">
-                  <span>Active</span>
-                  <span class="report-switch">
-                    <input name="active" type="checkbox" value="true" bind:checked={draftActive} />
-                    <span class="report-switch-track" aria-hidden="true"></span>
-                  </span>
-                </label>
+                <Toggle
+                  class="toggle-row report-active-toggle"
+                  name="active"
+                  bind:checked={draftActive}
+                  label="Active"
+                />
               </div>
 
               <div class="report-builder-layout">
@@ -669,14 +684,9 @@
                       {#if type === 'ReportNodeValuation'}
                         {@const valuationColumns = valuationNodeColumns(node)}
                         <div class="report-valuation-display-options" aria-label="Valuation display options">
-                          <label class="report-valuation-colour-option">
-                            <input bind:checked={node.colourBullet} type="checkbox" />
-                            <span>Colour Bullet</span>
-                          </label>
-                          <label class="report-valuation-colour-option">
-                            <input bind:checked={node.colourText} type="checkbox" />
-                            <span>Colour Text</span>
-                          </label>
+                          <Toggle bind:checked={node.displayHoldings} class="report-valuation-toggle" label="Display Holdings" />
+                          <Toggle bind:checked={node.colourBullet} class="report-valuation-toggle" label="Colour Bullet" />
+                          <Toggle bind:checked={node.colourText} class="report-valuation-toggle" label="Colour Text" />
                         </div>
                         <div class="report-valuation-columns">
                           <aside class="report-column-source">
@@ -770,16 +780,19 @@
   .report-config-card,
   .report-editor {
     border: 1px solid var(--line);
-    border-radius: 0.5rem;
-    background: var(--panel);
+    border-radius: var(--house-radius);
+    background:
+      linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--panel-muted) 28%, var(--panel)));
+    box-shadow: var(--house-panel-shadow);
   }
 
   .report-tools-toolbar {
+    border-top: 3px solid var(--house-panel-top);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem;
     align-items: end;
-    padding: 0.75rem;
+    padding: 1rem;
   }
 
   .report-tools-filter {
@@ -792,51 +805,6 @@
   .report-new-form {
     display: flex;
     align-items: end;
-  }
-
-  .report-multiselect {
-    position: relative;
-    border: 1px solid var(--line);
-    border-radius: 0.45rem;
-    background: var(--panel);
-  }
-
-  .report-multiselect summary {
-    min-height: 2.25rem;
-    padding: 0.5rem 0.65rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 700;
-    list-style: none;
-  }
-
-  .report-multiselect summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .report-multiselect-options {
-    position: absolute;
-    z-index: 30;
-    top: calc(100% + 0.3rem);
-    left: 0;
-    min-width: max(100%, 18rem);
-    max-height: 18rem;
-    overflow: auto;
-    border: 1px solid var(--line);
-    border-radius: 0.45rem;
-    background: var(--panel);
-    box-shadow: 0 0.9rem 1.6rem color-mix(in srgb, var(--ink) 14%, transparent);
-  }
-
-  .report-checkbox-option {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.45rem;
-    align-items: center;
-    padding: 0.35rem 0.65rem;
-    border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-    font-size: 0.8125rem;
-    font-weight: 650;
   }
 
   .toggle-row {
@@ -854,63 +822,6 @@
     white-space: nowrap;
   }
 
-  .report-switch {
-    position: relative;
-    display: inline-flex;
-    width: 2.4rem;
-    height: 1.35rem;
-    cursor: pointer;
-    align-items: center;
-  }
-
-  .report-switch input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-
-  .report-switch-track {
-    position: relative;
-    width: 2.4rem;
-    height: 1.35rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--line) 72%, var(--panel));
-    transition:
-      background 160ms ease,
-      border-color 160ms ease;
-  }
-
-  .report-switch-track::after {
-    position: absolute;
-    top: 0.15rem;
-    left: 0.15rem;
-    width: 0.95rem;
-    height: 0.95rem;
-    border-radius: 999px;
-    background: var(--panel);
-    box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 24%, transparent);
-    content: '';
-    transition: transform 160ms ease;
-  }
-
-  .report-switch input:checked + .report-switch-track {
-    border-color: var(--accent);
-    background: var(--accent);
-  }
-
-  .report-switch input:checked + .report-switch-track::after {
-    transform: translateX(1.05rem);
-  }
-
-  .report-switch input:focus-visible + .report-switch-track {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
   .report-active-toggle {
     align-self: end;
     gap: 0.55rem;
@@ -919,16 +830,29 @@
 
   .report-config-list {
     display: grid;
-    gap: 0.85rem;
-    margin-top: 0.85rem;
+    gap: 1rem;
+    margin-top: 1rem;
   }
 
   .report-config-summary {
     display: flex;
     gap: 1rem;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    padding: 0.85rem;
+    border-bottom: 1px solid var(--line);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 38%, transparent), transparent 58%);
+    padding: 0.75rem 1rem;
+  }
+
+  .report-config-title {
+    flex: 0 0 auto;
+    min-width: min(16rem, 100%);
+  }
+
+  .report-config-card {
+    overflow: hidden;
+    border-top: 3px solid var(--house-panel-top);
   }
 
   .report-config-summary h2 {
@@ -939,6 +863,7 @@
 
   .report-config-actions {
     display: inline-flex;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     gap: 0.45rem;
     align-items: center;
@@ -955,12 +880,45 @@
     font-weight: 680;
   }
 
+  .report-config-node-list {
+    display: flex;
+    flex: 1 1 20rem;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .report-config-node-pill,
+  .report-config-node-empty {
+    border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--panel) 72%, var(--panel-muted));
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    max-width: 18rem;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.24rem 0.55rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .report-config-node-empty {
+    font-style: italic;
+  }
+
   .report-editor {
     display: grid;
     gap: 0.85rem;
-    margin: 0 0.85rem 0.85rem;
-    padding: 0.85rem;
-    background: var(--panel-muted);
+    margin: 1rem;
+    border-top: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--panel-muted) 80%, var(--panel)), color-mix(in srgb, var(--panel-muted) 54%, var(--panel)));
+    padding: 1rem;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
   }
 
   .report-editor-fields {
@@ -992,14 +950,24 @@
 
   .report-node-template {
     border: 1px solid var(--line);
-    border-radius: 0.45rem;
+    border-radius: var(--house-radius-sm);
     background: var(--panel);
+    box-shadow: 0 1px 2px var(--surface-shadow);
     color: var(--ink);
     cursor: grab;
-    padding: 0.45rem 0.6rem;
+    min-height: var(--house-control-height);
+    padding: 0.45rem 0.625rem;
     text-align: left;
     font-size: 0.8125rem;
     font-weight: 720;
+  }
+
+  .report-node-template:hover,
+  .report-node-template:focus-visible {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    outline: none;
   }
 
   .report-flow {
@@ -1032,10 +1000,19 @@
     display: grid;
     gap: 0.65rem;
     border: 1px solid var(--line);
-    border-radius: 0.5rem;
-    background: var(--panel);
+    border-radius: var(--house-radius);
+    background:
+      linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--panel-muted) 18%, var(--panel)));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--surface-shadow) 64%, transparent);
     cursor: grab;
     padding: 0.75rem;
+  }
+
+  .report-node-card.is-dragging {
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 3px var(--focus-ring),
+      0 10px 22px color-mix(in srgb, var(--surface-shadow) 72%, transparent);
   }
 
   .report-node-card:active {
@@ -1094,8 +1071,9 @@
     height: 1.55rem;
     place-items: center;
     border: 1px solid var(--line);
-    border-radius: 0.35rem;
+    border-radius: var(--house-radius-sm);
     background: var(--panel);
+    box-shadow: 0 1px 2px var(--surface-shadow);
     color: var(--muted);
     cursor: pointer;
   }
@@ -1106,7 +1084,7 @@
     height: 1.55rem;
     place-items: center;
     border: 1px solid var(--danger);
-    border-radius: 0.35rem;
+    border-radius: var(--house-radius-sm);
     background: var(--danger);
     color: white;
     cursor: pointer;
@@ -1154,11 +1132,12 @@
   .report-segmented-control {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    min-height: 2.25rem;
+    min-height: var(--house-control-height);
     overflow: hidden;
     border: 1px solid var(--line);
-    border-radius: 0.45rem;
+    border-radius: var(--house-radius-sm);
     background: var(--panel);
+    box-shadow: 0 1px 2px var(--surface-shadow);
   }
 
   .report-segmented-control label {
@@ -1185,7 +1164,7 @@
     display: grid;
     width: 100%;
     min-width: 0;
-    min-height: 2.25rem;
+    min-height: var(--house-control-height);
     place-items: center;
     padding: 0 0.45rem;
     color: var(--muted);
@@ -1213,24 +1192,12 @@
     padding-top: 0.7rem;
   }
 
-  .report-valuation-colour-option {
-    display: inline-flex;
-    gap: 0.4rem;
-    align-items: center;
+  :global(.report-valuation-toggle) {
+    min-height: var(--house-control-height);
     border: 1px solid var(--line);
-    border-radius: 0.45rem;
+    border-radius: var(--house-radius-sm);
     background: var(--panel);
-    color: var(--ink);
-    cursor: pointer;
-    padding: 0.38rem 0.55rem;
-    font-size: 0.78rem;
-    font-weight: 720;
-  }
-
-  .report-valuation-colour-option input {
-    width: 0.95rem;
-    height: 0.95rem;
-    accent-color: var(--accent);
+    padding: 0.35rem 0.55rem;
   }
 
   .report-valuation-columns {
@@ -1271,7 +1238,7 @@
     gap: 0.35rem 0.25rem;
     align-items: center;
     border: 1px dashed color-mix(in srgb, var(--line) 85%, transparent);
-    border-radius: 0.5rem;
+    border-radius: var(--house-radius-sm);
     background: color-mix(in srgb, var(--panel) 72%, var(--panel-muted));
     padding: 0.35rem;
   }
@@ -1361,7 +1328,8 @@
 
   .report-flow-empty {
     border: 1px dashed var(--line);
-    border-radius: 0.5rem;
+    border-radius: var(--house-radius);
+    background: color-mix(in srgb, var(--panel) 72%, var(--panel-muted));
     padding: 1rem;
     color: var(--muted);
     font-size: 0.875rem;
@@ -1391,6 +1359,19 @@
 
     .report-new-form {
       justify-content: flex-end;
+    }
+
+    .report-config-summary {
+      flex-direction: column;
+    }
+
+    .report-config-node-list,
+    .report-config-actions {
+      width: 100%;
+    }
+
+    .report-config-actions {
+      justify-content: flex-start;
     }
   }
 </style>

@@ -2,6 +2,8 @@
   import { enhance } from '$app/forms';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { MultiSelect } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
   import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
@@ -31,6 +33,7 @@
   let tradeDateTimeDrafts = $state<Record<number, string>>({});
   let settlementDateDrafts = $state<Record<number, string>>({});
   let openHistoryTicketNumber = $state(0);
+  let openAccountAddTicketNumber = $state(0);
   let submittedTicketNumber = $state(0);
   let historyByTicketNumber = $state<Record<number, { events: TicketReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = '';
@@ -53,6 +56,11 @@
     [...activeInstruments].sort((left, right) => instrumentLabel(left).localeCompare(instrumentLabel(right)))
   );
   const asOfSummary = $derived(data.auditDateTime && data.tickets ? formatDisplayDateTime(data.tickets.asOfDateTime) : 'now');
+  const liveUpdateLastEventIDs = $derived([
+    data.tickets?.lastEventID ?? null,
+    data.foleoTraderOrders?.lastEventID ?? null
+  ]);
+  const hasActiveFoleoTraderOrders = $derived(foleoTraderOrders.some((order) => order.status === 'Submitted' || order.status === 'PartiallyFilled'));
   const formTicketNumber = $derived(form?.status === 'failure' ? readFormTicketNumber(form) || submittedTicketNumber : 0);
   const historyContextKey = $derived([
     data.valuationDate,
@@ -258,6 +266,22 @@
   function availableAccounts(ticket: Ticket) {
     const selected = new Set(ticket.accountIDs);
     return activeAccounts.filter((account) => !selected.has(account.accountID));
+  }
+
+  function handleAccountAddToggle(event: Event, ticketNumber: number) {
+    const details = event.currentTarget;
+    if (!(details instanceof HTMLDetailsElement))
+      return;
+
+    if (details.open)
+      openAccountAddTicketNumber = ticketNumber;
+    else if (openAccountAddTicketNumber === ticketNumber)
+      openAccountAddTicketNumber = 0;
+  }
+
+  function closeAccountAdd(ticketNumber: number) {
+    if (openAccountAddTicketNumber === ticketNumber)
+      openAccountAddTicketNumber = 0;
   }
 
   function equityPrice(price: InstrumentValue['price']): InstrumentPriceEquity | null {
@@ -963,7 +987,14 @@
   </section>
 
   <section class="page-container page-section space-y-6">
-    <AggregateUpdateWatcher aggregateKind={['Tickets', 'FoleoTraderOrders']} autoReload={!editingTicket.ticketNumber && !cancelConfirmingTicketNumber} valuationDate={data.valuationDate} lastEventID={data.tickets?.lastEventID ?? null} auditDateTime={data.auditDateTime} />
+    <AggregateUpdateWatcher
+      aggregateKind={['Tickets', 'FoleoTraderOrders']}
+      autoReload={!editingTicket.ticketNumber && !cancelConfirmingTicketNumber}
+      valuationDate={data.valuationDate}
+      lastEventIDs={liveUpdateLastEventIDs}
+      pollIntervalMs={hasActiveFoleoTraderOrders ? 2000 : 0}
+      auditDateTime={data.auditDateTime}
+    />
 
     {#if data.error}
       <div class="status-panel status-panel-error">{data.error}</div>
@@ -993,7 +1024,7 @@
         <div class="create-ticket-field">
           <input
             aria-label="Instrument"
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+            class="house-control house-control-md"
             bind:value={createTicketInstrument}
             list="ticket-instrument-options"
             name="instrumentID"
@@ -1065,7 +1096,7 @@
         <label class="create-ticket-field ticket-text-filter">
           <input
             aria-label="Filter tickets"
-            class="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+            class="house-control house-control-md"
             bind:value={freeTextFilter}
             placeholder="Filter tickets"
             type="search"
@@ -1352,16 +1383,22 @@
                   <form class="account-add-form" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <details class="account-add-select" aria-disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}>
-                      <summary>{accountsAvailableForAdd.length === 0 ? 'No accounts available' : 'Add accounts'}</summary>
+                    <MultiSelect
+                      class="ticket-account-add-select"
+                      close={() => closeAccountAdd(ticket.ticketNumber)}
+                      disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}
+                      open={openAccountAddTicketNumber === ticket.ticketNumber}
+                      ontoggle={(event) => handleAccountAddToggle(event, ticket.ticketNumber)}
+                      summary={accountsAvailableForAdd.length === 0 ? 'No accounts available' : 'Add accounts'}
+                    >
                       {#each accountsAvailableForAdd as account (account.accountID)}
-                        <label class="account-add-option">
+                        <label class="house-checkbox-option">
                           <input name="accountIDs" type="checkbox" value={account.accountID} disabled={!proposalInputActive} />
                           <span>{account.name} {account.bookCurrency}</span>
                         </label>
                       {/each}
-                    </details>
-                    <button class="btn btn-secondary account-add-button" type="submit" disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}>Add</button>
+                    </MultiSelect>
+                    <button class="house-button house-button-secondary house-button-md account-add-button" type="submit" disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}>Add</button>
                   </form>
                 {/if}
                 <div class="account-allocation-table">
@@ -1426,7 +1463,7 @@
                       <label class="field">
                         <span>Trade date/time</span>
                         {#if tradeInputActive && canEditTrade(ticket)}
-                          <input form={saveFormID} class="input ticket-term-input" name="tradeDateTime" type="datetime-local" step="1" value={tradeDateTimeInputValue(ticket)} onchange={(event) => updateTradeDateTimeDraft(ticket.ticketNumber, event)} required />
+                          <DateTimeInput class="ticket-term-input" form={saveFormID} fullWidth name="tradeDateTime" onchange={(event) => updateTradeDateTimeDraft(ticket.ticketNumber, event)} required showShortcuts={false} step="1" value={tradeDateTimeInputValue(ticket)} />
                         {:else}
                           <span class="ticket-readonly-value">{tradeDateDisplay(ticket)}</span>
                         {/if}
@@ -1553,7 +1590,7 @@
                       <input class="input" type="text" inputmode="numeric" pattern={integerInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanIntegerInput} required />
                       <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillBookCost" placeholder="Book" oninput={cleanDecimalInput} required />
                       <input class="input" name="fillNote" placeholder="Note" />
-                      <button class="btn btn-secondary" type="submit" disabled={activeBrokers.length === 0 || savedFillRemaining <= 0 || savedFillBookCostRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
+                      <button class="house-button house-button-secondary house-button-sm" type="submit" disabled={activeBrokers.length === 0 || savedFillRemaining <= 0 || savedFillBookCostRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
                     {:else}
                       <span class="ticket-readonly-value">Edit Trade to add fills</span>
                     {/if}

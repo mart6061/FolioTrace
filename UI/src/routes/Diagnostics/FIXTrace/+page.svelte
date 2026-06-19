@@ -133,10 +133,10 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-3 md:grid-cols-2 xl:grid-cols-[120px_96px_92px_minmax(130px,0.8fr)_minmax(130px,0.8fr)_190px_190px_minmax(150px,1fr)_auto] xl:items-end">
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+      <form class="house-form fix-trace-filter-form">
+        <label class="fix-trace-filter-field fix-trace-filter-select">
           Direction
-          <select class="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="direction">
+          <select class="house-control house-control-md house-control-full" name="direction">
             <option value="">All</option>
             {#each ['Inbound', 'Outbound'] as direction (direction)}
               <option selected={data.filters.direction === direction} value={direction}>{direction}</option>
@@ -144,9 +144,9 @@
           </select>
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="fix-trace-filter-field fix-trace-filter-select">
           Channel
-          <select class="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="channel">
+          <select class="house-control house-control-md house-control-full" name="channel">
             <option value="">All</option>
             {#each ['Admin', 'App'] as channel (channel)}
               <option selected={data.filters.channel === channel} value={channel}>{channel}</option>
@@ -154,10 +154,10 @@
           </select>
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="fix-trace-filter-field fix-trace-filter-msg">
           Msg
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             name="msgType"
             placeholder="D"
             type="search"
@@ -165,50 +165,52 @@
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="fix-trace-filter-field fix-trace-filter-id">
           ClOrdID
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             name="clOrdID"
             type="search"
             value={data.filters.clOrdID}
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="fix-trace-filter-field fix-trace-filter-id">
           ExecID
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             name="execID"
             type="search"
             value={data.filters.execID}
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <span class="fix-trace-filter-break" aria-hidden="true"></span>
+
+        <label class="fix-trace-filter-field fix-trace-filter-date">
           From UTC
           <DateTimeInput
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            fullWidth
             name="fromUtc"
             step="1"
             value={data.filters.fromUtc}
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="fix-trace-filter-field fix-trace-filter-date">
           To UTC
           <DateTimeInput
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            fullWidth
             name="toUtc"
             step="1"
             value={data.filters.toUtc}
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="fix-trace-filter-field fix-trace-filter-search">
           Search
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             name="text"
             type="search"
             value={data.filters.text}
@@ -216,7 +218,7 @@
         </label>
 
         <button
-          class="h-9 rounded-md bg-teal-700 px-4 text-sm font-medium text-white hover:bg-teal-800 md:self-end"
+          class="house-button house-button-primary house-button-md fix-trace-filter-apply"
           type="submit"
         >
           Apply
@@ -281,7 +283,7 @@
                   </td>
                   <td class="sticky right-0 bg-white px-3 py-2 text-right shadow-[-8px_0_12px_-12px_rgb(15_23_42_/_0.45)]">
                     <button
-                      class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                      class="house-button house-button-secondary house-button-sm"
                       onclick={() => toggleExpanded(operation.eventID)}
                       type="button"
                     >
@@ -329,6 +331,73 @@
     {/if}
   </section>
 </main>
+
+<style>
+  .fix-trace-filter-form {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem;
+  }
+
+  .fix-trace-filter-field {
+    display: grid;
+    flex: 1 1 12rem;
+    min-width: 0;
+    gap: 0.25rem;
+    color: var(--muted);
+    font-size: var(--house-label-size);
+    font-weight: 700;
+  }
+
+  .fix-trace-filter-select {
+    flex-basis: 7.5rem;
+    flex-grow: 0;
+  }
+
+  .fix-trace-filter-msg {
+    flex-basis: 5.75rem;
+    flex-grow: 0;
+  }
+
+  .fix-trace-filter-id {
+    flex-basis: 10rem;
+  }
+
+  .fix-trace-filter-date {
+    flex-basis: var(--house-datetime-width);
+    flex-grow: 0;
+  }
+
+  .fix-trace-filter-search {
+    flex-basis: 12rem;
+  }
+
+  .fix-trace-filter-apply {
+    flex: 0 0 auto;
+  }
+
+  .fix-trace-filter-break {
+    display: none;
+  }
+
+  @media (min-width: 1024px) and (max-width: 1535px) {
+    .fix-trace-filter-break {
+      display: block;
+      flex: 0 0 100%;
+      height: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .fix-trace-filter-field,
+    .fix-trace-filter-apply {
+      flex-basis: 100%;
+      width: 100%;
+    }
+  }
+</style>
 
 {#snippet OperationDetail(operation: FIXOperation)}
   <div class="grid gap-3">

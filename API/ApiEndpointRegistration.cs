@@ -39,7 +39,6 @@ public static class ApiEndpointRegistration
     {
         var api = app.MapGroup("");
 
-        api.MapGet("/HelloWorld", () => "Hello World!").WithTags("System");
         api.MapDiagnosticsEndpoints();
         api.MapNotificationEndpoints();
         api.MapSystemEndpoints();
@@ -1412,15 +1411,15 @@ public static class ApiEndpointRegistration
         MapHoldingCreatedEndpoint<HoldingCashDebtCreatedRequest, HoldingCashDebtCreatedEvent>(holdingEvents, nameof(HoldingCashDebtCreatedEvent), HoldingCashDebtCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashInvestableCreatedRequest, HoldingCashInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashInvestableCreatedEvent), HoldingCashInvestableCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashNonInvestableCreatedRequest, HoldingCashNonInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashNonInvestableCreatedEvent), HoldingCashNonInvestableCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingInflowCreatedRequest, HoldingInflowCreatedEvent>(holdingEvents, nameof(HoldingInflowCreatedEvent), HoldingInflowCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingOutflowCreatedRequest, HoldingOutflowCreatedEvent>(holdingEvents, nameof(HoldingOutflowCreatedEvent), HoldingOutflowCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingInSpecieInCreatedRequest, HoldingInSpecieInCreatedEvent>(holdingEvents, nameof(HoldingInSpecieInCreatedEvent), HoldingInSpecieInCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingInSpecieOutCreatedRequest, HoldingInSpecieOutCreatedEvent>(holdingEvents, nameof(HoldingInSpecieOutCreatedEvent), HoldingInSpecieOutCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingFeesCustodianCreatedRequest, HoldingFeesCustodianCreatedEvent>(holdingEvents, nameof(HoldingFeesCustodianCreatedEvent), HoldingFeesCustodianCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingFeesAdministratorCreatedRequest, HoldingFeesAdministratorCreatedEvent>(holdingEvents, nameof(HoldingFeesAdministratorCreatedEvent), HoldingFeesAdministratorCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingFeesBankCreatedRequest, HoldingFeesBankCreatedEvent>(holdingEvents, nameof(HoldingFeesBankCreatedEvent), HoldingFeesBankCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingIncomeCreatedRequest, HoldingIncomeCreatedEvent>(holdingEvents, nameof(HoldingIncomeCreatedEvent), HoldingIncomeCreatedEventBuilder.Create);
-        MapHoldingCreatedEndpoint<HoldingInterestCreatedRequest, HoldingInterestCreatedEvent>(holdingEvents, nameof(HoldingInterestCreatedEvent), HoldingInterestCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalInflowCreatedRequest, HoldingNominalInflowCreatedEvent>(holdingEvents, nameof(HoldingNominalInflowCreatedEvent), HoldingNominalInflowCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalOutflowCreatedRequest, HoldingNominalOutflowCreatedEvent>(holdingEvents, nameof(HoldingNominalOutflowCreatedEvent), HoldingNominalOutflowCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalInSpecieInCreatedRequest, HoldingNominalInSpecieInCreatedEvent>(holdingEvents, nameof(HoldingNominalInSpecieInCreatedEvent), HoldingNominalInSpecieInCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalInSpecieOutCreatedRequest, HoldingNominalInSpecieOutCreatedEvent>(holdingEvents, nameof(HoldingNominalInSpecieOutCreatedEvent), HoldingNominalInSpecieOutCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalFeesCustodianCreatedRequest, HoldingNominalFeesCustodianCreatedEvent>(holdingEvents, nameof(HoldingNominalFeesCustodianCreatedEvent), HoldingNominalFeesCustodianCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalFeesAdministratorCreatedRequest, HoldingNominalFeesAdministratorCreatedEvent>(holdingEvents, nameof(HoldingNominalFeesAdministratorCreatedEvent), HoldingNominalFeesAdministratorCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalFeesBankCreatedRequest, HoldingNominalFeesBankCreatedEvent>(holdingEvents, nameof(HoldingNominalFeesBankCreatedEvent), HoldingNominalFeesBankCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalIncomeCreatedRequest, HoldingNominalIncomeCreatedEvent>(holdingEvents, nameof(HoldingNominalIncomeCreatedEvent), HoldingNominalIncomeCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingNominalInterestCreatedRequest, HoldingNominalInterestCreatedEvent>(holdingEvents, nameof(HoldingNominalInterestCreatedEvent), HoldingNominalInterestCreatedEventBuilder.Create);
 
         MapHoldingModifiedEndpoint<HoldingPositionMemoModifiedRequest, HoldingPositionMemoModifiedEvent>(holdingEvents, nameof(HoldingPositionMemoModifiedEvent), HoldingPositionMemoModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingPositionCashModifiedRequest, HoldingPositionCashModifiedEvent>(holdingEvents, nameof(HoldingPositionCashModifiedEvent), HoldingPositionCashModifiedEventBuilder.Create);
@@ -1428,15 +1427,15 @@ public static class ApiEndpointRegistration
         MapHoldingModifiedEndpoint<HoldingCashDebtModifiedRequest, HoldingCashDebtModifiedEvent>(holdingEvents, nameof(HoldingCashDebtModifiedEvent), HoldingCashDebtModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashInvestableModifiedRequest, HoldingCashInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashInvestableModifiedEvent), HoldingCashInvestableModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashNonInvestableModifiedRequest, HoldingCashNonInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashNonInvestableModifiedEvent), HoldingCashNonInvestableModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingInflowModifiedRequest, HoldingInflowModifiedEvent>(holdingEvents, nameof(HoldingInflowModifiedEvent), HoldingInflowModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingOutflowModifiedRequest, HoldingOutflowModifiedEvent>(holdingEvents, nameof(HoldingOutflowModifiedEvent), HoldingOutflowModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingInSpecieInModifiedRequest, HoldingInSpecieInModifiedEvent>(holdingEvents, nameof(HoldingInSpecieInModifiedEvent), HoldingInSpecieInModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingInSpecieOutModifiedRequest, HoldingInSpecieOutModifiedEvent>(holdingEvents, nameof(HoldingInSpecieOutModifiedEvent), HoldingInSpecieOutModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingFeesCustodianModifiedRequest, HoldingFeesCustodianModifiedEvent>(holdingEvents, nameof(HoldingFeesCustodianModifiedEvent), HoldingFeesCustodianModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingFeesAdministratorModifiedRequest, HoldingFeesAdministratorModifiedEvent>(holdingEvents, nameof(HoldingFeesAdministratorModifiedEvent), HoldingFeesAdministratorModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingFeesBankModifiedRequest, HoldingFeesBankModifiedEvent>(holdingEvents, nameof(HoldingFeesBankModifiedEvent), HoldingFeesBankModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingIncomeModifiedRequest, HoldingIncomeModifiedEvent>(holdingEvents, nameof(HoldingIncomeModifiedEvent), HoldingIncomeModifiedEventBuilder.Create);
-        MapHoldingModifiedEndpoint<HoldingInterestModifiedRequest, HoldingInterestModifiedEvent>(holdingEvents, nameof(HoldingInterestModifiedEvent), HoldingInterestModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalInflowModifiedRequest, HoldingNominalInflowModifiedEvent>(holdingEvents, nameof(HoldingNominalInflowModifiedEvent), HoldingNominalInflowModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalOutflowModifiedRequest, HoldingNominalOutflowModifiedEvent>(holdingEvents, nameof(HoldingNominalOutflowModifiedEvent), HoldingNominalOutflowModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalInSpecieInModifiedRequest, HoldingNominalInSpecieInModifiedEvent>(holdingEvents, nameof(HoldingNominalInSpecieInModifiedEvent), HoldingNominalInSpecieInModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalInSpecieOutModifiedRequest, HoldingNominalInSpecieOutModifiedEvent>(holdingEvents, nameof(HoldingNominalInSpecieOutModifiedEvent), HoldingNominalInSpecieOutModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalFeesCustodianModifiedRequest, HoldingNominalFeesCustodianModifiedEvent>(holdingEvents, nameof(HoldingNominalFeesCustodianModifiedEvent), HoldingNominalFeesCustodianModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalFeesAdministratorModifiedRequest, HoldingNominalFeesAdministratorModifiedEvent>(holdingEvents, nameof(HoldingNominalFeesAdministratorModifiedEvent), HoldingNominalFeesAdministratorModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalFeesBankModifiedRequest, HoldingNominalFeesBankModifiedEvent>(holdingEvents, nameof(HoldingNominalFeesBankModifiedEvent), HoldingNominalFeesBankModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalIncomeModifiedRequest, HoldingNominalIncomeModifiedEvent>(holdingEvents, nameof(HoldingNominalIncomeModifiedEvent), HoldingNominalIncomeModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingNominalInterestModifiedRequest, HoldingNominalInterestModifiedEvent>(holdingEvents, nameof(HoldingNominalInterestModifiedEvent), HoldingNominalInterestModifiedEventBuilder.Create);
 
         holdingEvents.MapPost($"/{nameof(HoldingActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, HoldingActiveModifiedRequest request, CancellationToken cancellationToken) =>
         {
@@ -1717,8 +1716,10 @@ public static class ApiEndpointRegistration
 
         transactionEvents.MapPost("/TransactionSet", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TransactionSetRequest request, CancellationToken cancellationToken) =>
         {
-            var holdings = await TryGetHoldings(request.EventDateTime, AuditDateTimeBuilder.Create(), eventRepository, cancellationToken);
-            var result = TransactionBuilder.Create(request, holdings);
+            var asAt = AuditDateTimeBuilder.Create();
+            var accounts = await TryGetAccounts(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var holdings = await TryGetHoldings(request.EventDateTime, asAt, eventRepository, cancellationToken);
+            var result = TransactionBuilder.Create(request, holdings, accounts);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
@@ -2870,7 +2871,8 @@ public static class ApiEndpointRegistration
                 AssetAllocationID = valuation.AssetAllocationID.Value,
                 Columns = ToReportValuationColumnResponses(valuation.Columns),
                 valuation.ColourBullet,
-                valuation.ColourText
+                valuation.ColourText,
+                valuation.DisplayHoldings
             },
             ReportNodeTransactions transactions => new
             {
@@ -2931,12 +2933,12 @@ public static class ApiEndpointRegistration
                 createdEvent.Name,
                 createdEvent.Active,
                 createdEvent.Default,
-                BankName = createdEvent is HoldingBankCreatedEvent bankEvent ? bankEvent.BankName : null,
-                AccountName = createdEvent is HoldingBankCreatedEvent accountEvent ? accountEvent.AccountName : null,
-                SortCode = createdEvent is HoldingBankCreatedEvent sortEvent ? sortEvent.SortCode.Value : null,
-                AccountNumber = createdEvent is HoldingBankCreatedEvent numberEvent ? numberEvent.AccountNumber.Value : null,
-                BIC = createdEvent is HoldingBankCreatedEvent bicEvent ? bicEvent.BIC.Value : null,
-                IBAN = createdEvent is HoldingBankCreatedEvent ibanEvent ? ibanEvent.IBAN.Value : null
+                BankName = createdEvent is HoldingCashBaseCreatedEvent bankEvent ? bankEvent.BankName : null,
+                AccountName = createdEvent is HoldingCashBaseCreatedEvent accountEvent ? accountEvent.AccountName : null,
+                SortCode = createdEvent is HoldingCashBaseCreatedEvent sortEvent ? sortEvent.SortCode.Value : null,
+                AccountNumber = createdEvent is HoldingCashBaseCreatedEvent numberEvent ? numberEvent.AccountNumber.Value : null,
+                BIC = createdEvent is HoldingCashBaseCreatedEvent bicEvent ? bicEvent.BIC.Value : null,
+                IBAN = createdEvent is HoldingCashBaseCreatedEvent ibanEvent ? ibanEvent.IBAN.Value : null
             },
             HoldingModifiedEvent modifiedEvent => new
             {
@@ -2950,12 +2952,12 @@ public static class ApiEndpointRegistration
                 HoldingKind = modifiedEvent.GetHoldingKindName(),
                 modifiedEvent.Name,
                 modifiedEvent.Default,
-                BankName = modifiedEvent is HoldingBankModifiedEvent bankEvent ? bankEvent.BankName : null,
-                AccountName = modifiedEvent is HoldingBankModifiedEvent accountEvent ? accountEvent.AccountName : null,
-                SortCode = modifiedEvent is HoldingBankModifiedEvent sortEvent ? sortEvent.SortCode.Value : null,
-                AccountNumber = modifiedEvent is HoldingBankModifiedEvent numberEvent ? numberEvent.AccountNumber.Value : null,
-                BIC = modifiedEvent is HoldingBankModifiedEvent bicEvent ? bicEvent.BIC.Value : null,
-                IBAN = modifiedEvent is HoldingBankModifiedEvent ibanEvent ? ibanEvent.IBAN.Value : null
+                BankName = modifiedEvent is HoldingCashBaseModifiedEvent bankEvent ? bankEvent.BankName : null,
+                AccountName = modifiedEvent is HoldingCashBaseModifiedEvent accountEvent ? accountEvent.AccountName : null,
+                SortCode = modifiedEvent is HoldingCashBaseModifiedEvent sortEvent ? sortEvent.SortCode.Value : null,
+                AccountNumber = modifiedEvent is HoldingCashBaseModifiedEvent numberEvent ? numberEvent.AccountNumber.Value : null,
+                BIC = modifiedEvent is HoldingCashBaseModifiedEvent bicEvent ? bicEvent.BIC.Value : null,
+                IBAN = modifiedEvent is HoldingCashBaseModifiedEvent ibanEvent ? ibanEvent.IBAN.Value : null
             },
             HoldingActiveModifiedEvent activeEvent => new
             {

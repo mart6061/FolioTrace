@@ -1,9 +1,12 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
 import { requireCurrentUser } from '$lib/server/auth';
+import type { AssetAllocationMapping, AssetAllocationNode, HoldingPosition, ValuationSetting } from '$lib/types';
 import {
   getAccounts,
+  getAssetAllocationMappings,
   getApiBaseUrl,
+  getHoldingPositions,
   getValuationSettings,
   postAssetAllocationAccountIDsSetEvent,
   postAssetAllocationActiveSetEvent,
@@ -26,16 +29,31 @@ export const load = async ({ fetch, url }) => {
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, valuationSettings] = await Promise.all([
+    const [accounts, holdingPositions, valuationSettings] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
+      getHoldingPositions(fetch, valuationDateTime, asAtDateTime, 'EventDateTime', null, true),
       getValuationSettings(fetch, valuationDateTime, asAtDateTime)
     ]);
+    const mappingsByAllocationID = new Map(
+      await Promise.all(
+        valuationSettings.items.map(async (setting) => [
+          setting.assetAllocationID,
+          await getAssetAllocationMappings(fetch, valuationDateTime, asAtDateTime, setting.assetAllocationID, null)
+        ] as const)
+      )
+    );
 
     return {
       accounts,
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       error: '',
+      nodeHoldingCountsByAllocationID: Object.fromEntries(
+        valuationSettings.items.map((setting) => [
+          setting.assetAllocationID,
+          countHoldingsByNode(setting, holdingPositions.items, mappingsByAllocationID.get(setting.assetAllocationID)?.items ?? [])
+        ])
+      ),
       valuationDate,
       valuationSettings
     };
@@ -45,6 +63,7 @@ export const load = async ({ fetch, url }) => {
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load asset allocation tools.',
+      nodeHoldingCountsByAllocationID: {},
       valuationDate,
       valuationSettings: null
     };
@@ -79,10 +98,10 @@ export const actions = {
       {
         accountSettings: accountIDs.map((accountID) => ({
           accountID,
-          targetWeight: 0,
-          targetWeightMax: 0,
-          targetWeightMin: 0,
-          targetYield: 0
+          targetWeight: null,
+          targetWeightMax: null,
+          targetWeightMin: null,
+          targetYield: null
         })),
         hidden: false,
         name,
@@ -237,6 +256,87 @@ function failure(intent: string, message: string, values: Record<string, unknown
   };
 }
 
+function countHoldingsByNode(setting: ValuationSetting, holdings: HoldingPosition[], mappings: AssetAllocationMapping[]) {
+  const linkedAccountIDs = new Set(setting.accountIDs);
+  const mappingByHoldingID = new Map(mappings.map((mapping) => [mapping.holdingID, mapping.nodeID]));
+  const mappableNodeIDs = findMappableValuationNodeIDs(setting.nodes, setting.rootNodeID);
+  const unallocatedNodeID = findUnallocatedValuationNodeID(setting.nodes, setting.rootNodeID);
+  const counts: Record<string, number> = {};
+
+  for (const holding of holdings) {
+    if (!linkedAccountIDs.has(holding.accountID))
+      continue;
+
+    const mappedNodeID = mappingByHoldingID.get(holding.holdingID);
+    const nodeID = mappedNodeID && mappableNodeIDs.has(mappedNodeID) ? mappedNodeID : unallocatedNodeID;
+
+    if (nodeID)
+      counts[nodeID] = (counts[nodeID] ?? 0) + 1;
+  }
+
+  return counts;
+}
+
+function findUnallocatedValuationNodeID(nodes: AssetAllocationNode[], rootID: string) {
+  const root = nodes.find((node) => node.nodeID === rootID);
+  const firstChild = root?.nodes[0];
+
+  if (firstChild && nodes.some((node) => node.nodeID === firstChild))
+    return firstChild;
+
+  if (nodes[0]?.name.trim().toLocaleLowerCase() === SPECIAL_NODE_NAME.toLocaleLowerCase())
+    return nodes[0].nodeID;
+
+  return nodes.find((node) => node.name.trim().toLocaleLowerCase() === SPECIAL_NODE_NAME.toLocaleLowerCase())?.nodeID ?? '';
+}
+
+function findMappableValuationNodeIDs(nodes: AssetAllocationNode[], rootID: string) {
+  const byID = new Map(nodes.map((node) => [node.nodeID, node]));
+  const root = byID.get(rootID);
+  const mappable = new Set<string>();
+
+  if (root) {
+    for (const childNodeID of root.nodes) {
+      const childNode = byID.get(childNodeID);
+
+      if (childNode)
+        visitReachableValuationLeafNodes(childNode, byID, new Set<string>(), mappable);
+    }
+
+    return mappable;
+  }
+
+  for (const topLevelNode of topLevelValuationNodes(nodes))
+    visitReachableValuationLeafNodes(topLevelNode, byID, new Set<string>(), mappable);
+
+  return mappable;
+}
+
+function visitReachableValuationLeafNodes(node: AssetAllocationNode, byID: Map<string, AssetAllocationNode>, path: Set<string>, mappable: Set<string>) {
+  if (path.has(node.nodeID))
+    return;
+
+  const nextPath = new Set(path);
+  nextPath.add(node.nodeID);
+
+  if (node.nodes.length === 0) {
+    mappable.add(node.nodeID);
+    return;
+  }
+
+  for (const childNodeID of node.nodes) {
+    const childNode = byID.get(childNodeID);
+
+    if (childNode)
+      visitReachableValuationLeafNodes(childNode, byID, nextPath, mappable);
+  }
+}
+
+function topLevelValuationNodes(nodes: AssetAllocationNode[]) {
+  const childNodeIDs = new Set(nodes.flatMap((node) => node.nodes));
+  return nodes.filter((node) => !childNodeIDs.has(node.nodeID));
+}
+
 function parseNodes(nodesJson: string): { valid: true; nodes: AssetAllocationNodeRequest[] } | { valid: false; message: string } {
   try {
     const parsed = JSON.parse(nodesJson) as unknown;
@@ -361,10 +461,10 @@ function readAccountSettings(source: Record<string, unknown>) {
 
       return {
         accountID,
-        targetWeight: readNumber(record, 'targetWeight', 'TargetWeight'),
-        targetWeightMax: readNumber(record, 'targetWeightMax', 'TargetWeightMax'),
-        targetWeightMin: readNumber(record, 'targetWeightMin', 'TargetWeightMin'),
-        targetYield: readNumber(record, 'targetYield', 'TargetYield')
+        targetWeight: readNullableNumber(record, 'targetWeight', 'TargetWeight'),
+        targetWeightMax: readNullableNumber(record, 'targetWeightMax', 'TargetWeightMax'),
+        targetWeightMin: readNullableNumber(record, 'targetWeightMin', 'TargetWeightMin'),
+        targetYield: readNullableNumber(record, 'targetYield', 'TargetYield')
       };
     })
     .filter((setting): setting is AssetAllocationNodeRequest['accountSettings'][number] => setting !== null);
@@ -412,11 +512,16 @@ function readBoolean(source: Record<string, unknown>, ...keys: string[]) {
   return false;
 }
 
-function readNumber(source: Record<string, unknown>, ...keys: string[]) {
+function readNullableNumber(source: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
     const value = source[key];
+
+    if (value === null)
+      return null;
+
     if (typeof value === 'number')
-      return value;
+      return Number.isFinite(value) ? value : null;
+
     if (typeof value === 'string' && value.trim() !== '') {
       const parsed = Number(value);
       if (Number.isFinite(parsed))
@@ -424,5 +529,5 @@ function readNumber(source: Record<string, unknown>, ...keys: string[]) {
     }
   }
 
-  return 0;
+  return null;
 }

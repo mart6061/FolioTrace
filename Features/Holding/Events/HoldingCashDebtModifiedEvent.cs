@@ -5,7 +5,7 @@ using FolioTrace.Types;
 namespace FolioTrace.Aggregates;
 
 [EventClass(EventType = EventClassTypeEnum.Modified, Description = "Holding Cash Debt Modified Event")]
-public sealed record HoldingCashDebtModifiedEvent : HoldingBankModifiedEvent
+public sealed record HoldingCashDebtModifiedEvent : HoldingCashBaseModifiedEvent
 {
     [JsonConstructor]
     private HoldingCashDebtModifiedEvent() { }
@@ -14,7 +14,7 @@ public sealed record HoldingCashDebtModifiedEvent : HoldingBankModifiedEvent
         : base(eventId, userId, eventDateTime, auditDateTime, reason, holdingID, name, isDefault, bankName, accountName, sortCode, accountNumber, bic, iban) { }
 
     public override string Type => nameof(HoldingCashDebtModifiedEvent);
-    internal override Holding Apply(Holding holding) =>
+    internal override HoldingBase Apply(HoldingBase holding) =>
         holding is HoldingCashDebt existing
             ? existing with { Name = Name, Default = Default, BankName = BankName, AccountName = AccountName, SortCode = SortCode, AccountNumber = AccountNumber, BIC = BIC, IBAN = IBAN, ValuationDateTime = EventDateTime, AsOfDateTime = AuditDateTime, LastEventID = EventID, LastAuditDateTime = AuditDateTime }
             : throw new InvalidOperationException($"HoldingID '{HoldingID}' is not a {this.GetHoldingKindName()} holding.");

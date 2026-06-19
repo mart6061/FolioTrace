@@ -304,11 +304,11 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput
-            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            fullWidth
             name="valuationDate"
             step="1"
             value={data.valuationDate}
@@ -324,7 +324,7 @@
         {/if}
 
         <button
-          class="btn btn-primary"
+          class="house-button house-button-primary house-button-md"
           type="submit"
         >
           Apply
@@ -447,7 +447,7 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600">
                         <span>Country</span>
                         <input
-                          class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          class="house-control house-control-sm house-control-full"
                           name="name"
                           required
                           type="text"
@@ -460,7 +460,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="country-create">
                       <span>Alpha-2</span>
                       <input
-                        class="h-8 w-20 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        class="house-control house-control-sm w-20 font-mono uppercase"
                         form="country-create"
                         maxlength="2"
                         minlength="2"
@@ -475,7 +475,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="country-create">
                       <span>Alpha-3</span>
                       <input
-                        class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        class="house-control house-control-sm w-24 font-mono uppercase"
                         form="country-create"
                         maxlength="3"
                         minlength="3"
@@ -490,7 +490,7 @@
                     <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form="country-create">
                       <span>Numeric</span>
                       <input
-                        class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        class="house-control house-control-sm w-24 text-right font-mono"
                         form="country-create"
                         max="999"
                         min="0"
@@ -505,7 +505,7 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="country-create">
                       <span>Event date</span>
                       <DateTimeInput
-                        class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        size="sm"
                         form="country-create"
                         name="eventDateTime"
                         required
@@ -519,14 +519,14 @@
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
                         <button
-                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                          class="house-button house-button-secondary house-button-sm"
                           onclick={cancelAdd}
                           type="button"
                         >
                           Cancel
                         </button>
                         <button
-                          class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                          class="house-button house-button-primary house-button-sm"
                           disabled={submittingCreate}
                           form="country-create"
                           type="submit"
@@ -558,7 +558,7 @@
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Country</span>
                           <input
-                            class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                            class="house-control house-control-sm house-control-full"
                             name="name"
                             required
                             type="text"
@@ -579,7 +579,7 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`country-edit-${country.alpha2}`}>
                         <span>Alpha-3</span>
                         <input
-                          class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          class="house-control house-control-sm w-24 font-mono uppercase"
                           form={`country-edit-${country.alpha2}`}
                           maxlength="3"
                           minlength="3"
@@ -594,7 +594,7 @@
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`country-edit-${country.alpha2}`}>
                         <span>Numeric</span>
                         <input
-                          class="h-8 w-24 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          class="house-control house-control-sm w-24 text-right font-mono"
                           form={`country-edit-${country.alpha2}`}
                           max="999"
                           min="0"
@@ -609,7 +609,7 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`country-edit-${country.alpha2}`}>
                         <span>Event date</span>
                         <DateTimeInput
-                          class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                          size="sm"
                           form={`country-edit-${country.alpha2}`}
                           name="eventDateTime"
                           required
@@ -623,14 +623,14 @@
                         <span>Actions</span>
                         <div class="flex justify-end gap-2">
                           <button
-                            class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400"
+                            class="house-button house-button-secondary house-button-sm"
                             onclick={cancelEdit}
                             type="button"
                           >
                             Cancel
                           </button>
                           <button
-                            class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70"
+                            class="house-button house-button-primary house-button-sm"
                             disabled={submittingAlpha2 === country.alpha2}
                             form={`country-edit-${country.alpha2}`}
                             type="submit"
@@ -658,14 +658,14 @@
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
                         <button
-                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          class="house-button house-button-secondary house-button-sm"
                           onclick={() => toggleHistory(country.alpha2)}
                           type="button"
                         >
                           {openHistoryAlpha2 === country.alpha2 ? 'Hide' : 'History'}
                         </button>
                         <button
-                          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                          class="house-button house-button-secondary house-button-sm"
                           onclick={() => startEdit(country.alpha2)}
                           type="button"
                         >

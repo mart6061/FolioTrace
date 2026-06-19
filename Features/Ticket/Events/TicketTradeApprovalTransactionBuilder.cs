@@ -31,7 +31,7 @@ public static partial class TicketEventBuilder
                 ? CreateTransactionSetRequest(request, ticket, legs.AssetLeg, legs.CashLeg)
                 : CreateTransactionSetRequest(request, ticket, legs.CashLeg, legs.AssetLeg);
 
-            var transactionResult = TransactionBuilder.Create(transactionRequest, effectiveHoldings);
+            var transactionResult = TransactionBuilder.Create(transactionRequest, effectiveHoldings, accounts);
             if (!transactionResult.IsValid || transactionResult.Value is null)
                 return Result<TicketTradeApprovalTransactionResult>.Invalid(transactionResult.ValidationErrors);
 

@@ -1,9 +1,11 @@
+import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
 import { getApiBaseUrl, getFIXOperations } from '$lib/server/api';
 
 export const load = async ({ fetch, url }) => {
+  const today = new Date();
   const filters = {
-    fromUtc: url.searchParams.get('fromUtc') || '',
-    toUtc: url.searchParams.get('toUtc') || '',
+    fromUtc: url.searchParams.get('fromUtc') || startOfDayForInput(today),
+    toUtc: url.searchParams.get('toUtc') || endOfDayForInput(today),
     direction: url.searchParams.get('direction') || '',
     channel: url.searchParams.get('channel') || '',
     msgType: url.searchParams.get('msgType') || '',

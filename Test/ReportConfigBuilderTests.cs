@@ -11,10 +11,11 @@ public sealed class ReportConfigBuilderTests
     public void SeedData_CreatesCurrentReportConfiguration()
     {
         var events = SeedRepository.CreateInitialReportCreatedEvents();
-        var createdEvent = Assert.Single(events);
+        Assert.Equal(2, events.Count);
         var reports = new ReportConfigs(Constants.Initialisation.EventDateTime, events.Cast<IReportEvent>().ToList());
 
-        var report = Assert.Single(reports.Items);
+        var report = reports.Items.Single(report => report.Name == "Current");
+        var createdEvent = events.Single(@event => @event.Name == "Current");
         Assert.Equal("Current", report.Name);
         Assert.True(report.Active);
         Assert.Equal(createdEvent.EventID, report.LastEventID);
@@ -35,6 +36,7 @@ public sealed class ReportConfigBuilderTests
         var valuation = Assert.IsType<ReportNodeValuation>(report.Nodes[3]);
         Assert.Equal(ReportNodePageOrientation.Landscape, valuation.PageOrientation);
         Assert.Equal(ReportConfigBuilder.DefaultValuationColumns(), valuation.Columns);
+        Assert.True(valuation.DisplayHoldings);
 
         var allocationBackedNodes = report.Nodes
             .OfType<ReportNodeChart>()
@@ -46,13 +48,50 @@ public sealed class ReportConfigBuilderTests
             .ToList();
 
         Assert.Single(allocationBackedNodes);
-        Assert.Equal(SeedRepository.CreateInitialAssetAllocationCreatedEvents().Single().AssetAllocationID, allocationBackedNodes.Single());
+        Assert.Equal(SeedRepository.CreateInitialAssetAllocationCreatedEvents().Single(@event => @event.Name == "Detailed").AssetAllocationID, allocationBackedNodes.Single());
+    }
+
+    [Fact]
+    public void SeedData_CreatesIMReportConfigurationForModelPortfolio()
+    {
+        var allocationEvents = SeedRepository.CreateInitialAssetAllocationCreatedEvents();
+        var summaryAssetAllocationID = allocationEvents.Single(@event => @event.Name == "Summary").AssetAllocationID;
+        var detailedAssetAllocationID = allocationEvents.Single(@event => @event.Name == "Detailed").AssetAllocationID;
+        var events = SeedRepository.CreateInitialReportCreatedEvents();
+        var reports = new ReportConfigs(Constants.Initialisation.EventDateTime, events.Cast<IReportEvent>().ToList());
+
+        var report = reports.Items.Single(report => report.Name == "IM");
+        Assert.True(report.Active);
+        Assert.Collection(
+            report.Nodes,
+            node =>
+            {
+                var valuation = Assert.IsType<ReportNodeValuation>(node);
+                Assert.Equal(1, valuation.DisplayOrder);
+                Assert.Equal("Summary Valuation", valuation.Name);
+                Assert.Equal(summaryAssetAllocationID, valuation.AssetAllocationID);
+                Assert.Equal(ReportNodePageOrientation.Landscape, valuation.PageOrientation);
+                Assert.False(valuation.DisplayHoldings);
+                Assert.True(valuation.ColourBullet);
+                Assert.False(valuation.ColourText);
+            },
+            node =>
+            {
+                var valuation = Assert.IsType<ReportNodeValuation>(node);
+                Assert.Equal(2, valuation.DisplayOrder);
+                Assert.Equal("Detailed Valuation", valuation.Name);
+                Assert.Equal(detailedAssetAllocationID, valuation.AssetAllocationID);
+                Assert.Equal(ReportNodePageOrientation.Landscape, valuation.PageOrientation);
+                Assert.True(valuation.DisplayHoldings);
+                Assert.True(valuation.ColourBullet);
+                Assert.False(valuation.ColourText);
+            });
     }
 
     [Fact]
     public void ReportCreatedEvent_SerializesNodeTypeDiscriminators()
     {
-        var createdEvent = SeedRepository.CreateInitialReportCreatedEvents().Single();
+        var createdEvent = SeedRepository.CreateInitialReportCreatedEvents().Single(@event => @event.Name == "Current");
 
         var json = JsonSerializer.Serialize(createdEvent);
         using var document = JsonDocument.Parse(json);
@@ -63,6 +102,7 @@ public sealed class ReportConfigBuilderTests
         Assert.NotNull(roundTripped);
         Assert.IsType<ReportNodeCoverPage>(roundTripped.Nodes[0]);
         Assert.IsType<ReportNodeChart>(roundTripped.Nodes[2]);
-        Assert.IsType<ReportNodeValuation>(roundTripped.Nodes[3]);
+        var valuation = Assert.IsType<ReportNodeValuation>(roundTripped.Nodes[3]);
+        Assert.True(valuation.DisplayHoldings);
     }
 }

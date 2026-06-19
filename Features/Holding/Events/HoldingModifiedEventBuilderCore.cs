@@ -10,7 +10,7 @@ internal static class HoldingModifiedEventBuilderCore
         Func<EventID, UserID, EventDateTime, AuditDateTime, string, HoldingID, string, bool, TEvent> factory,
         Holdings? holdings = null)
         where TEvent : HoldingModifiedEvent
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
@@ -40,7 +40,7 @@ internal static class HoldingModifiedEventBuilderCore
         Func<EventID, UserID, EventDateTime, AuditDateTime, string, HoldingID, string, bool, TEvent> factory,
         Holdings? holdings = null)
         where TEvent : HoldingModifiedEvent
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         var validationErrors = HoldingEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, holdingID);
         HoldingEventValidation.ValidateDefinition<TExpectedHolding>(validationErrors, name, isDefault);
@@ -52,11 +52,11 @@ internal static class HoldingModifiedEventBuilderCore
     }
 
     public static Result<TEvent> CreateBank<TEvent, TExpectedHolding>(
-        IHoldingBankModifiedRequest request,
+        IHoldingCashBaseModifiedRequest request,
         Func<EventID, UserID, EventDateTime, AuditDateTime, string, HoldingID, string, bool, string, string, SortCode, BankAccountNumber, BIC, IBAN, TEvent> factory,
         Holdings? holdings = null)
-        where TEvent : HoldingBankModifiedEvent
-        where TExpectedHolding : HoldingBank
+        where TEvent : HoldingCashBaseModifiedEvent
+        where TExpectedHolding : HoldingCashBase
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
@@ -97,8 +97,8 @@ internal static class HoldingModifiedEventBuilderCore
         IBAN iban,
         Func<EventID, UserID, EventDateTime, AuditDateTime, string, HoldingID, string, bool, string, string, SortCode, BankAccountNumber, BIC, IBAN, TEvent> factory,
         Holdings? holdings = null)
-        where TEvent : HoldingBankModifiedEvent
-        where TExpectedHolding : HoldingBank
+        where TEvent : HoldingCashBaseModifiedEvent
+        where TExpectedHolding : HoldingCashBase
     {
         var validationErrors = HoldingEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, holdingID);
         HoldingEventValidation.ValidateDefinition<TExpectedHolding>(validationErrors, name, isDefault);

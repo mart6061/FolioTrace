@@ -199,10 +199,10 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-3 md:grid-cols-2 lg:grid-cols-[88px_minmax(110px,0.55fr)_76px_76px_190px_190px_minmax(120px,0.5fr)_auto] lg:items-end">
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+      <form class="house-form request-trace-filter-form">
+        <label class="request-trace-filter-field request-trace-filter-method">
           Method
-          <select class="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950" name="method">
+          <select class="house-control house-control-md house-control-full" name="method">
             <option value="">All</option>
             {#each ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as method (method)}
               <option selected={data.filters.method === method} value={method}>{method}</option>
@@ -210,10 +210,10 @@
           </select>
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="request-trace-filter-field request-trace-filter-path">
           Path
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             name="path"
             placeholder="/Events/Country"
             type="search"
@@ -221,10 +221,10 @@
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="request-trace-filter-field request-trace-filter-number">
           Status
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             max="599"
             min="100"
             name="statusCode"
@@ -233,10 +233,10 @@
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="request-trace-filter-field request-trace-filter-number">
           Min ms
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             min="0"
             name="minimumDurationMilliseconds"
             type="number"
@@ -244,30 +244,32 @@
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <span class="request-trace-filter-break" aria-hidden="true"></span>
+
+        <label class="request-trace-filter-field request-trace-filter-date">
           From UTC
           <DateTimeInput
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            fullWidth
             name="fromUtc"
             step="1"
             value={data.filters.fromUtc}
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="request-trace-filter-field request-trace-filter-date">
           To UTC
           <DateTimeInput
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            fullWidth
             name="toUtc"
             step="1"
             value={data.filters.toUtc}
           />
         </label>
 
-        <label class="grid min-w-0 gap-1 text-xs font-medium text-slate-600">
+        <label class="request-trace-filter-field request-trace-filter-search">
           Search
           <input
-            class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950"
+            class="house-control house-control-md house-control-full"
             name="text"
             type="search"
             value={data.filters.text}
@@ -275,7 +277,7 @@
         </label>
 
         <button
-          class="h-9 rounded-md bg-teal-700 px-4 text-sm font-medium text-white hover:bg-teal-800 md:self-end"
+          class="house-button house-button-primary house-button-md request-trace-filter-apply"
           type="submit"
         >
           Apply
@@ -334,7 +336,7 @@
                   <td class="px-3 py-2 text-right font-mono text-slate-700">{exchange.durationMilliseconds} ms</td>
                   <td class="sticky right-0 bg-white px-3 py-2 text-right shadow-[-8px_0_12px_-12px_rgb(15_23_42_/_0.45)]">
                     <button
-                      class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700"
+                      class="house-button house-button-secondary house-button-sm"
                       onclick={() => toggleExpanded(exchange.id)}
                       type="button"
                     >
@@ -376,6 +378,73 @@
     {/if}
   </section>
 </main>
+
+<style>
+  .request-trace-filter-form {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem;
+  }
+
+  .request-trace-filter-field {
+    display: grid;
+    flex: 1 1 12rem;
+    min-width: 0;
+    gap: 0.25rem;
+    color: var(--muted);
+    font-size: var(--house-label-size);
+    font-weight: 700;
+  }
+
+  .request-trace-filter-method {
+    flex-basis: 8rem;
+    flex-grow: 0;
+  }
+
+  .request-trace-filter-path {
+    flex-basis: 14rem;
+  }
+
+  .request-trace-filter-number {
+    flex-basis: 7rem;
+    flex-grow: 0;
+  }
+
+  .request-trace-filter-date {
+    flex-basis: var(--house-datetime-width);
+    flex-grow: 0;
+  }
+
+  .request-trace-filter-search {
+    flex-basis: 12rem;
+  }
+
+  .request-trace-filter-apply {
+    flex: 0 0 auto;
+  }
+
+  .request-trace-filter-break {
+    display: none;
+  }
+
+  @media (min-width: 1024px) and (max-width: 1535px) {
+    .request-trace-filter-break {
+      display: block;
+      flex: 0 0 100%;
+      height: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .request-trace-filter-field,
+    .request-trace-filter-apply {
+      flex-basis: 100%;
+      width: 100%;
+    }
+  }
+</style>
 
 {#snippet ExchangeDetail(exchange: ApiExchange)}
   <div class="grid gap-3">

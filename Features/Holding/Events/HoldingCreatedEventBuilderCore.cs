@@ -3,7 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-internal delegate TEvent HoldingBankCreatedEventFactory<out TEvent>(
+internal delegate TEvent HoldingCashBaseCreatedEventFactory<out TEvent>(
     EventID eventId,
     UserID userId,
     EventDateTime eventDateTime,
@@ -31,7 +31,7 @@ internal static class HoldingCreatedEventBuilderCore
         Instruments? instruments = null,
         Holdings? holdings = null)
         where TEvent : HoldingCreatedEvent
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
@@ -71,7 +71,7 @@ internal static class HoldingCreatedEventBuilderCore
         Instruments? instruments = null,
         Holdings? holdings = null)
         where TEvent : HoldingCreatedEvent
-        where TExpectedHolding : Holding
+        where TExpectedHolding : HoldingBase
     {
         var validationErrors = HoldingEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, holdingID);
         HoldingEventValidation.ValidateReferences(validationErrors, accountID, instrumentID, accounts, instruments);
@@ -84,13 +84,13 @@ internal static class HoldingCreatedEventBuilderCore
     }
 
     public static Result<TEvent> CreateBank<TEvent, TExpectedHolding>(
-        IHoldingBankCreatedRequest request,
-        HoldingBankCreatedEventFactory<TEvent> factory,
+        IHoldingCashBaseCreatedRequest request,
+        HoldingCashBaseCreatedEventFactory<TEvent> factory,
         Accounts? accounts = null,
         Instruments? instruments = null,
         Holdings? holdings = null)
-        where TEvent : HoldingBankCreatedEvent
-        where TExpectedHolding : HoldingBank
+        where TEvent : HoldingCashBaseCreatedEvent
+        where TExpectedHolding : HoldingCashBase
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
@@ -137,12 +137,12 @@ internal static class HoldingCreatedEventBuilderCore
         BankAccountNumber accountNumber,
         BIC bic,
         IBAN iban,
-        HoldingBankCreatedEventFactory<TEvent> factory,
+        HoldingCashBaseCreatedEventFactory<TEvent> factory,
         Accounts? accounts = null,
         Instruments? instruments = null,
         Holdings? holdings = null)
-        where TEvent : HoldingBankCreatedEvent
-        where TExpectedHolding : HoldingBank
+        where TEvent : HoldingCashBaseCreatedEvent
+        where TExpectedHolding : HoldingCashBase
     {
         var validationErrors = HoldingEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, holdingID);
         HoldingEventValidation.ValidateReferences(validationErrors, accountID, instrumentID, accounts, instruments);

@@ -5,21 +5,24 @@
   const DEFAULT_NODE_COLOUR = '#0f766e';
   const SPECIAL_NODE_NAME = 'Unallocated';
   const SPECIAL_NODE_COLOUR = '#dc2626';
+  const EMPTY_SPECIAL_NODE_COLOUR = '#64748b';
 
   type EditableNode = AssetAllocationNode & { colour?: string | null };
-  type NodeRow = { colourInherited: boolean; depth: number; displayedColour: string | null; node: EditableNode };
+  type NodeRow = { colourInherited: boolean; depth: number; displayedColour: string | null; hasChildren: boolean; node: EditableNode };
   type ParseResult = { message: string; nodes: EditableNode[] };
 
   let {
     addRequest = 0,
     accounts,
     allocationAccountIDs,
+    nodeHoldingCounts = {},
     nodesJson = $bindable(''),
     rootNodeID
   }: {
     addRequest?: number;
     accounts: Account[];
     allocationAccountIDs: string[];
+    nodeHoldingCounts?: Record<string, number>;
     nodesJson: string;
     rootNodeID: string;
   } = $props();
@@ -27,6 +30,9 @@
   let editorMessage = $state('');
   let draggedNodeID = $state('');
   let dragOverNodeID = $state('');
+  let collapsedNodeIDs = $state<string[]>([]);
+  let collapsedAccountNodeIDs = $state<string[]>([]);
+  let editingAccountNodeIDs = $state<string[]>([]);
   let nodes = $state<EditableNode[]>([]);
 
   const allocationAccounts = $derived(accounts.filter((account) => allocationAccountIDs.includes(account.accountID)));
@@ -37,6 +43,7 @@
   const initialNodes = initialParse.message ? initialParse.nodes : normaliseNodes(initialParse.nodes);
   editorMessage = initialParse.message || validateNodes(initialNodes);
   nodes = initialNodes;
+  collapsedAccountNodeIDs = defaultCollapsedAccountNodeIDs(initialNodes);
 
   if (!initialParse.message)
     nodesJson = JSON.stringify(initialNodes.map(toJsonNode), null, 2);
@@ -55,19 +62,19 @@
     addChild(null);
   });
 
-  const rows = $derived.by(() => buildRows(nodes));
+  const rows = $derived.by(() => buildRows(nodes, collapsedNodeIDs));
 
-  function buildRows(sourceNodes: EditableNode[]) {
+  function buildRows(sourceNodes: EditableNode[], collapsedIDs: string[]) {
     const byID = nodeMap(sourceNodes);
     const nextRows: NodeRow[] = [];
 
     for (const topLevelNode of topLevelNodes(sourceNodes))
-      appendRows(topLevelNode, 0, null, byID, new SvelteSet<string>(), nextRows);
+      appendRows(topLevelNode, 0, null, byID, new SvelteSet<string>(), nextRows, collapsedIDs);
 
     return nextRows;
   }
 
-  function appendRows(node: EditableNode, depth: number, inheritedColour: string | null, byID: Map<string, EditableNode>, path: Set<string>, nextRows: NodeRow[]) {
+  function appendRows(node: EditableNode, depth: number, inheritedColour: string | null, byID: Map<string, EditableNode>, path: Set<string>, nextRows: NodeRow[], collapsedIDs: string[]) {
     if (path.has(node.nodeID))
       return;
 
@@ -75,7 +82,11 @@
     const special = isSpecialNodeShape(node);
     const colourInherited = inheritedColour !== null && !special;
     const displayedColour = special ? nodeColour ?? inheritedColour : inheritedColour ?? nodeColour;
-    nextRows.push({ colourInherited, depth, displayedColour, node });
+    const hasChildren = hasVisibleChildren(node, byID);
+    nextRows.push({ colourInherited, depth, displayedColour, hasChildren, node });
+
+    if (hasChildren && collapsedIDs.includes(node.nodeID))
+      return;
 
     const nextPath = new SvelteSet(path);
     nextPath.add(node.nodeID);
@@ -84,8 +95,33 @@
       const childNode = byID.get(childNodeID);
 
       if (childNode)
-        appendRows(childNode, depth + 1, special ? inheritedColour : displayedColour, byID, nextPath, nextRows);
+        appendRows(childNode, depth + 1, special ? inheritedColour : displayedColour, byID, nextPath, nextRows, collapsedIDs);
     }
+  }
+
+  function toggleNodeCollapsed(nodeID: string) {
+    collapsedNodeIDs = collapsedNodeIDs.includes(nodeID)
+      ? collapsedNodeIDs.filter((collapsedNodeID) => collapsedNodeID !== nodeID)
+      : [...collapsedNodeIDs, nodeID];
+  }
+
+  function toggleAccountNodeCollapsed(nodeID: string) {
+    if (collapsedAccountNodeIDs.includes(nodeID)) {
+      collapsedAccountNodeIDs = collapsedAccountNodeIDs.filter((collapsedNodeID) => collapsedNodeID !== nodeID);
+      return;
+    }
+
+    collapsedAccountNodeIDs = [...collapsedAccountNodeIDs, nodeID];
+    editingAccountNodeIDs = editingAccountNodeIDs.filter((editingNodeID) => editingNodeID !== nodeID);
+  }
+
+  function toggleAccountNodeEditing(nodeID: string) {
+    if (collapsedAccountNodeIDs.includes(nodeID))
+      return;
+
+    editingAccountNodeIDs = editingAccountNodeIDs.includes(nodeID)
+      ? editingAccountNodeIDs.filter((editingNodeID) => editingNodeID !== nodeID)
+      : [...editingAccountNodeIDs, nodeID];
   }
 
   function parseNodesJson(value: string, fallbackNodes: EditableNode[] = []): ParseResult {
@@ -132,7 +168,17 @@
 
   function commitVisualNodes(nextNodes: EditableNode[]) {
     const normalisedNodes = normaliseNodes(nextNodes);
+    const previousNodeIDs = new SvelteSet(nodes.map((node) => node.nodeID));
+    const nextNodeIDs = new SvelteSet(normalisedNodes.map((node) => node.nodeID));
+    const nextMetricNodeIDs = new SvelteSet(defaultCollapsedAccountNodeIDs(normalisedNodes));
+    const retainedCollapsedAccountNodeIDs = collapsedAccountNodeIDs.filter((nodeID) => nextNodeIDs.has(nodeID));
     nodes = normalisedNodes;
+    collapsedNodeIDs = collapsedNodeIDs.filter((nodeID) => nextNodeIDs.has(nodeID));
+    collapsedAccountNodeIDs = [
+      ...retainedCollapsedAccountNodeIDs,
+      ...defaultCollapsedAccountNodeIDs(normalisedNodes).filter((nodeID) => !previousNodeIDs.has(nodeID) && !retainedCollapsedAccountNodeIDs.includes(nodeID))
+    ];
+    editingAccountNodeIDs = editingAccountNodeIDs.filter((nodeID) => nextMetricNodeIDs.has(nodeID) && !collapsedAccountNodeIDs.includes(nodeID));
     editorMessage = validateNodes(normalisedNodes);
     nodesJson = JSON.stringify(normalisedNodes.map(toJsonNode), null, 2);
   }
@@ -647,6 +693,14 @@
     return node.name.trim().toLocaleLowerCase() === SPECIAL_NODE_NAME.toLocaleLowerCase();
   }
 
+  function hasVisibleChildren(node: EditableNode, byID: Map<string, EditableNode>) {
+    return node.nodes.some((childNodeID) => byID.has(childNodeID));
+  }
+
+  function isLeafNode(node: EditableNode) {
+    return node.nodes.length === 0;
+  }
+
   function settingsForNode(node: EditableNode) {
     if (isSpecialNodeID(node.nodeID) || isSpecialNodeShape(node))
       return [];
@@ -661,11 +715,55 @@
   function defaultAccountSetting(accountID: string): AssetAllocationNodeAccountSetting {
     return {
       accountID,
-      targetWeight: 0,
-      targetWeightMax: 0,
-      targetWeightMin: 0,
-      targetYield: 0
+      targetWeight: null,
+      targetWeightMax: null,
+      targetWeightMin: null,
+      targetYield: null
     };
+  }
+
+  function accountSettingForNode(node: EditableNode, accountID: string) {
+    return node.accountSettings.find((setting) => setting.accountID === accountID) ?? defaultAccountSetting(accountID);
+  }
+
+  function setAccountSetting(nodeID: string, accountID: string, key: keyof Omit<AssetAllocationNodeAccountSetting, 'accountID'>, value: string) {
+    if (isSpecialNodeID(nodeID))
+      return;
+
+    const nextNodes = cloneNodes(nodes);
+    const node = nextNodes.find((item) => item.nodeID === nodeID);
+
+    if (!node)
+      return;
+
+    const settingIndex = node.accountSettings.findIndex((setting) => setting.accountID === accountID);
+    const currentSetting = settingIndex === -1
+      ? defaultAccountSetting(accountID)
+      : node.accountSettings[settingIndex];
+    const nextSetting = {
+      ...currentSetting,
+      [key]: readPercentageInput(value)
+    };
+
+    node.accountSettings = settingIndex === -1
+      ? [...node.accountSettings, nextSetting]
+      : node.accountSettings.map((setting, index) => index === settingIndex ? nextSetting : setting);
+
+    commitVisualNodes(nextNodes);
+  }
+
+  function defaultCollapsedAccountNodeIDs(sourceNodes: EditableNode[]) {
+    return sourceNodes
+      .filter((node) => !isSpecialNodeShape(node))
+      .map((node) => node.nodeID);
+  }
+
+  function readPercentageInput(value: string) {
+    if (!value.trim())
+      return null;
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed / 100 : null;
   }
 
   function parentIDFor(nodeID: string, sourceNodes: EditableNode[]) {
@@ -740,10 +838,10 @@
 
         return {
           accountID,
-          targetWeight: readNumber(record, 'targetWeight', 'TargetWeight'),
-          targetWeightMax: readNumber(record, 'targetWeightMax', 'TargetWeightMax'),
-          targetWeightMin: readNumber(record, 'targetWeightMin', 'TargetWeightMin'),
-          targetYield: readNumber(record, 'targetYield', 'TargetYield')
+          targetWeight: readNullableNumber(record, 'targetWeight', 'TargetWeight'),
+          targetWeightMax: readNullableNumber(record, 'targetWeightMax', 'TargetWeightMax'),
+          targetWeightMin: readNullableNumber(record, 'targetWeightMin', 'TargetWeightMin'),
+          targetYield: readNullableNumber(record, 'targetYield', 'TargetYield')
         };
       })
       .filter((setting): setting is AssetAllocationNodeAccountSetting => setting !== null);
@@ -779,23 +877,26 @@
     return false;
   }
 
-  function readNumber(source: Record<string, unknown>, ...keys: string[]) {
+  function readNullableNumber(source: Record<string, unknown>, ...keys: string[]) {
     for (const key of keys) {
       const value = source[key];
 
+      if (value === null)
+        return null;
+
       if (typeof value === 'number')
-        return Number.isFinite(value) ? value : 0;
+        return Number.isFinite(value) ? value : null;
 
       if (typeof value === 'string')
-        return readFiniteNumber(value);
+        return value.trim() ? readFiniteNumber(value) : null;
     }
 
-    return 0;
+    return null;
   }
 
   function readFiniteNumber(value: string) {
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   function readColour(source: Record<string, unknown>) {
@@ -812,6 +913,25 @@
 
   function displayColour(colour: string | null | undefined) {
     return isHexColour(colour) ? colour : DEFAULT_NODE_COLOUR;
+  }
+
+  function displayRowColour(row: NodeRow) {
+    if (isSpecialNodeID(row.node.nodeID) && !nodeHasChildHoldings(row.node.nodeID))
+      return EMPTY_SPECIAL_NODE_COLOUR;
+
+    return row.displayedColour;
+  }
+
+  function nodeHasChildHoldings(nodeID: string) {
+    return (nodeHoldingCounts[nodeID] ?? 0) > 0;
+  }
+
+  function percentInputValue(value: number | null) {
+    return value === null ? '' : Number((value * 100).toFixed(4));
+  }
+
+  function formatPercent(value: number | null) {
+    return value === null ? '' : `${Number((value * 100).toFixed(2))}%`;
   }
 
   function hasExplicitColour(node: EditableNode) {
@@ -867,7 +987,7 @@
 
   <div class="valuation-node-grid" role="tree">
     {#each rows as row (row.node.nodeID)}
-      <section class="valuation-node-row" style={`--node-colour: ${displayColour(row.displayedColour)}`}>
+      <section class="valuation-node-row" style={`--node-colour: ${displayColour(displayRowColour(row))}`}>
         <div class="valuation-node-tree-cell" style={`margin-left: ${row.depth * 1.25}rem`}>
           {#if !isSpecialNodeID(row.node.nodeID)}
             <div
@@ -889,6 +1009,19 @@
             role="treeitem"
             tabindex="0"
           >
+            {#if row.hasChildren}
+              <button
+                aria-expanded={!collapsedNodeIDs.includes(row.node.nodeID)}
+                aria-label={`${collapsedNodeIDs.includes(row.node.nodeID) ? 'Expand' : 'Collapse'} ${isSpecialNodeID(row.node.nodeID) ? SPECIAL_NODE_NAME : row.node.name}`}
+                class="valuation-node-icon-button valuation-node-expand-button"
+                onclick={() => toggleNodeCollapsed(row.node.nodeID)}
+                title={collapsedNodeIDs.includes(row.node.nodeID) ? 'Expand' : 'Collapse'}
+                type="button"
+              >
+                <svg aria-hidden="true" class:valuation-node-expand-open={!collapsedNodeIDs.includes(row.node.nodeID)} viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" /></svg>
+              </button>
+            {/if}
+
             {#if isSpecialNodeID(row.node.nodeID)}
               <span class="valuation-node-name valuation-node-name-static valuation-node-special-name" title={SPECIAL_NODE_NAME}>{SPECIAL_NODE_NAME}</span>
             {:else}
@@ -941,6 +1074,92 @@
               <button aria-label={`Delete ${row.node.name}`} class="valuation-node-icon-button valuation-node-action-button valuation-node-delete-button" onclick={() => deleteNode(row.node.nodeID)} title="Delete" type="button">x</button>
             {/if}
           </div>
+
+          {#if !isSpecialNodeID(row.node.nodeID) && allocationAccounts.length}
+            {@const metricsCollapsed = collapsedAccountNodeIDs.includes(row.node.nodeID)}
+            {@const metricsEditing = editingAccountNodeIDs.includes(row.node.nodeID)}
+            <section class="valuation-node-account-panel">
+              <div class="valuation-node-account-toolbar">
+                <button
+                  aria-expanded={!metricsCollapsed}
+                  class="valuation-node-account-toggle"
+                  onclick={() => toggleAccountNodeCollapsed(row.node.nodeID)}
+                  type="button"
+                >
+                  <svg aria-hidden="true" class:valuation-node-account-open={!metricsCollapsed} viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" /></svg>
+                  <span>Metrics</span>
+                </button>
+
+                {#if !metricsCollapsed}
+                  <button
+                    aria-label={`${metricsEditing ? 'Finish editing' : 'Edit'} Metrics for ${row.node.name}`}
+                    class={`valuation-node-icon-button valuation-node-account-edit-button ${metricsEditing ? 'valuation-node-account-edit-button-active' : ''}`}
+                    onclick={() => toggleAccountNodeEditing(row.node.nodeID)}
+                    title={metricsEditing ? 'Done' : 'Edit metrics'}
+                    type="button"
+                  >
+                    {#if metricsEditing}
+                      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7" /></svg>
+                    {:else}
+                      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                    {/if}
+                  </button>
+                {/if}
+              </div>
+
+              {#if !metricsCollapsed}
+                <div class={`valuation-node-account-grid ${metricsEditing ? 'valuation-node-account-grid-editing' : 'valuation-node-account-grid-readonly'}`}>
+                  <div class="valuation-node-account-header">Target %</div>
+                  <div class="valuation-node-account-header">Min %</div>
+                  <div class="valuation-node-account-header">Max %</div>
+                  <div class="valuation-node-account-header">Yield %</div>
+                  {#each allocationAccounts as account (account.accountID)}
+                    {@const accountSetting = accountSettingForNode(row.node, account.accountID)}
+                    <div class="valuation-node-account-name" title={account.formalName}>{account.name}</div>
+                    {#if metricsEditing}
+                      <input
+                        aria-label={`${account.name} target percentage`}
+                        class="house-control house-control-compact valuation-node-account-input"
+                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeight', event.currentTarget.value)}
+                        step="0.01"
+                        type="number"
+                        value={percentInputValue(accountSetting.targetWeight)}
+                      />
+                      <input
+                        aria-label={`${account.name} minimum percentage`}
+                        class="house-control house-control-compact valuation-node-account-input"
+                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeightMin', event.currentTarget.value)}
+                        step="0.01"
+                        type="number"
+                        value={percentInputValue(accountSetting.targetWeightMin)}
+                      />
+                      <input
+                        aria-label={`${account.name} maximum percentage`}
+                        class="house-control house-control-compact valuation-node-account-input"
+                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeightMax', event.currentTarget.value)}
+                        step="0.01"
+                        type="number"
+                        value={percentInputValue(accountSetting.targetWeightMax)}
+                      />
+                      <input
+                        aria-label={`${account.name} yield percentage`}
+                        class="house-control house-control-compact valuation-node-account-input"
+                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetYield', event.currentTarget.value)}
+                        step="0.01"
+                        type="number"
+                        value={percentInputValue(accountSetting.targetYield)}
+                      />
+                    {:else}
+                      <div class="valuation-node-account-value">{formatPercent(accountSetting.targetWeight)}</div>
+                      <div class="valuation-node-account-value">{formatPercent(accountSetting.targetWeightMin)}</div>
+                      <div class="valuation-node-account-value">{formatPercent(accountSetting.targetWeightMax)}</div>
+                      <div class="valuation-node-account-value">{formatPercent(accountSetting.targetYield)}</div>
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
+            </section>
+          {/if}
 
           {#if !isSpecialNodeID(row.node.nodeID)}
             <div
@@ -1055,6 +1274,151 @@
 
   .valuation-node-drag-button:active {
     cursor: grabbing;
+  }
+
+  .valuation-node-expand-button {
+    flex: 0 0 auto;
+    border: 1px solid color-mix(in srgb, var(--node-colour) 42%, var(--line));
+    background: color-mix(in srgb, var(--node-colour) 10%, var(--panel));
+    cursor: pointer;
+  }
+
+  .valuation-node-expand-button svg {
+    width: 0.9rem;
+    height: 0.9rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 140ms ease;
+  }
+
+  .valuation-node-expand-open {
+    transform: rotate(90deg);
+  }
+
+  .valuation-node-account-panel {
+    display: grid;
+    gap: 0.28rem;
+    width: 34rem;
+    max-width: 34rem;
+    min-width: 34rem;
+    border: 1px solid color-mix(in srgb, var(--node-colour) 28%, var(--line));
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--node-colour) 5%, var(--panel));
+    padding: 0.4rem;
+  }
+
+  .valuation-node-account-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .valuation-node-account-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    justify-self: start;
+    border: 0;
+    background: transparent;
+    color: color-mix(in srgb, var(--node-colour) 78%, var(--ink));
+    cursor: pointer;
+    font-size: 0.76rem;
+    font-weight: 780;
+    padding: 0;
+  }
+
+  .valuation-node-account-toggle svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 140ms ease;
+  }
+
+  .valuation-node-account-open {
+    transform: rotate(90deg);
+  }
+
+  .valuation-node-account-edit-button {
+    width: 1.32rem;
+    height: 1.32rem;
+    flex: 0 0 auto;
+    border: 1px solid color-mix(in srgb, var(--node-colour) 34%, var(--line));
+    background: color-mix(in srgb, var(--node-colour) 8%, var(--panel));
+    cursor: pointer;
+  }
+
+  .valuation-node-account-edit-button svg {
+    width: 0.8rem;
+    height: 0.8rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .valuation-node-account-edit-button-active {
+    background: color-mix(in srgb, var(--success) 12%, var(--panel));
+    color: color-mix(in srgb, var(--success) 80%, var(--ink));
+  }
+
+  .valuation-node-account-grid {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) repeat(4, minmax(4.4rem, 1fr));
+    gap: 0.25rem 0.35rem;
+    align-items: center;
+  }
+
+  .valuation-node-account-grid-readonly {
+    grid-template-columns: minmax(8rem, 1fr) repeat(4, minmax(3.7rem, 0.62fr));
+    gap: 0.16rem 0.42rem;
+  }
+
+  .valuation-node-account-grid > .valuation-node-account-header:first-child {
+    grid-column: 2;
+  }
+
+  .valuation-node-account-header {
+    color: var(--ink);
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .valuation-node-account-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 0.76rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .valuation-node-account-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .valuation-node-account-value {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 560;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .valuation-node-action-button {
@@ -1235,10 +1599,15 @@
   }
 
   @media (max-width: 640px) {
-    .valuation-node-pill {
+    .valuation-node-pill,
+    .valuation-node-account-panel {
       width: 28rem;
       max-width: 28rem;
       min-width: 28rem;
+    }
+
+    .valuation-node-account-grid {
+      grid-template-columns: minmax(7rem, 1fr) repeat(4, minmax(3.8rem, 1fr));
     }
   }
 </style>

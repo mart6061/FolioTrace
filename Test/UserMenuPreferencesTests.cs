@@ -32,7 +32,7 @@ public sealed class UserMenuPreferencesTests
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Report);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Administration);
-        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Todo);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Viewer);
     }
 
     [Fact]

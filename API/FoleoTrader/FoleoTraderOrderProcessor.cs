@@ -108,7 +108,21 @@ public sealed class FoleoTraderOrderProcessor(
                 .ThenBy(@event => @event.AuditDateTime.Value)
                 .ThenBy(@event => @event.EventID.Value)
                 .LastOrDefault();
-            if (submittedOrder is null)
+
+            TicketNumber ticketNumber;
+            EventDateTime eventDateTime;
+            if (submittedOrder is not null)
+            {
+                ticketNumber = submittedOrder.TicketNumber;
+                eventDateTime = submittedOrder.EventDateTime;
+            }
+            else if (TryReadTicketNumberFromClOrdID(report.ClOrdID, out var recoveredTicketNumber))
+            {
+                ticketNumber = recoveredTicketNumber;
+                eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow);
+                logger.LogInformation("Recovered FoleoTrader execution {ExecID} for ticket {TicketNumber} from ClOrdID {ClOrdID}.", report.ExecID, ticketNumber.Value, report.ClOrdID);
+            }
+            else
             {
                 logger.LogWarning("Received FoleoTrader execution for unknown ClOrdID {ClOrdID}.", report.ClOrdID);
                 return;
@@ -122,15 +136,14 @@ public sealed class FoleoTraderOrderProcessor(
                 return;
             }
 
-            var eventDateTime = submittedOrder.EventDateTime;
             var asAt = AuditDateTimeBuilder.Create();
             var tickets = await ticketService.Get(eventDateTime, asAt);
             var holdings = await holdingService.Get(eventDateTime, asAt);
             var instruments = await instrumentService.Get(eventDateTime, asAt);
-            var ticket = tickets.Find(submittedOrder.TicketNumber);
+            var ticket = tickets.Find(ticketNumber);
             if (ticket is null)
             {
-                logger.LogWarning("Rejected FoleoTrader fill {ExecID}: no matching ticket {TicketNumber}.", report.ExecID, submittedOrder.TicketNumber.Value);
+                logger.LogWarning("Rejected FoleoTrader fill {ExecID}: no matching ticket {TicketNumber}.", report.ExecID, ticketNumber.Value);
                 return;
             }
 
@@ -141,8 +154,8 @@ public sealed class FoleoTraderOrderProcessor(
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 AuditDateTimeBuilder.Create(),
-                $"Receive FoleoTrader execution {report.ExecID} for ticket {submittedOrder.TicketNumber.Value}",
-                submittedOrder.TicketNumber,
+                $"Receive FoleoTrader execution {report.ExecID} for ticket {ticketNumber.Value}",
+                ticketNumber,
                 report.ClOrdID,
                 report.ExecID,
                 fillID,
@@ -153,12 +166,12 @@ public sealed class FoleoTraderOrderProcessor(
                 report.LeavesQty,
                 report.OrdStatus);
 
-            var tradeResult = CreateProratedTradeEvent(report, submittedOrder.TicketNumber, eventDateTime, ticket, tickets, holdings, instruments, bookCost);
+            var tradeResult = CreateProratedTradeEvent(report, ticketNumber, eventDateTime, ticket, tickets, holdings, instruments, bookCost);
             var fillResult = TicketEventBuilder.AddFill(new TicketTradeFillRequest(
                 Constants.Initialisation.UserID,
                 eventDateTime,
                 $"FoleoTrader FIX fill {report.ExecID}",
-                submittedOrder.TicketNumber,
+                ticketNumber,
                 fillID,
                 new LegalEntityIdentifier(options.BrokerLEI),
                 new Price(report.LastPx),
@@ -186,6 +199,31 @@ public sealed class FoleoTraderOrderProcessor(
         catch (Exception exception)
         {
             logger.LogError(exception, "Failed to process FoleoTrader execution {ExecID}.", report.ExecID);
+        }
+    }
+
+    private static bool TryReadTicketNumberFromClOrdID(string clOrdID, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out TicketNumber? ticketNumber)
+    {
+        ticketNumber = null;
+
+        if (string.IsNullOrWhiteSpace(clOrdID) || !clOrdID.StartsWith("FT-", StringComparison.Ordinal))
+            return false;
+
+        var secondSeparator = clOrdID.IndexOf('-', 3);
+        if (secondSeparator <= 3)
+            return false;
+
+        if (!int.TryParse(clOrdID[3..secondSeparator], out var value))
+            return false;
+
+        try
+        {
+            ticketNumber = new TicketNumber(value);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
         }
     }
 

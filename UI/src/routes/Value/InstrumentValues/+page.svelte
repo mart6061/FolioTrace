@@ -396,17 +396,17 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
 
-        <button class="btn btn-primary" type="submit">Apply</button>
+        <button class="house-button house-button-primary house-button-md" type="submit">Apply</button>
       </form>
     </div>
   </section>
@@ -497,25 +497,25 @@
                               {#if currentFixedIncomePrice}
                                 <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                   <span>Clean price</span>
-                                  <input class="h-8 w-32 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="cleanPrice" required step="0.00000001" type="number" value={currentFixedIncomePrice.cleanPrice.amount ?? ''} />
+                                  <input class="house-control house-control-sm w-32 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="cleanPrice" required step="0.00000001" type="number" value={currentFixedIncomePrice.cleanPrice.amount ?? ''} />
                                 </label>
                               {:else}
                                 <div class="grid gap-2 sm:grid-cols-2">
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>Bid</span>
-                                    <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="bid" required step="0.00000001" type="number" value={currentPrice?.bid.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="bid" required step="0.00000001" type="number" value={currentPrice?.bid.amount ?? ''} />
                                   </label>
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>Mid</span>
-                                    <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="mid" required step="0.00000001" type="number" value={currentPrice?.mid.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="mid" required step="0.00000001" type="number" value={currentPrice?.mid.amount ?? ''} />
                                   </label>
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>Ask</span>
-                                    <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="ask" required step="0.00000001" type="number" value={currentPrice?.ask.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="ask" required step="0.00000001" type="number" value={currentPrice?.ask.amount ?? ''} />
                                   </label>
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>NAV</span>
-                                    <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="nav" required step="0.00000001" type="number" value={currentPrice?.nav.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="nav" required step="0.00000001" type="number" value={currentPrice?.nav.amount ?? ''} />
                                   </label>
                                 </div>
                               {/if}
@@ -523,14 +523,14 @@
                             <td class="px-3 py-2">
                               <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                 <span>Event date</span>
-                                <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`instrument-price-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={eventDateDefault} />
+                                <DateTimeInput size="sm" form={`instrument-price-edit-${instrument.instrumentID}`} name="eventDateTime" required step="1" value={eventDateDefault} />
                               </label>
                             </td>
                             <td class="px-3 py-2 text-slate-600">{formatTableDateTime(instrument.lastAuditDateTime)}</td>
                             <td class="px-3 py-2 text-right">
                               <div class="flex justify-end gap-2">
-                                <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={() => editingInstrumentID = ''} type="button">Cancel</button>
-                                <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingInstrumentID === instrument.instrumentID} form={`instrument-price-edit-${instrument.instrumentID}`} type="submit">{submittingInstrumentID === instrument.instrumentID ? 'Saving' : 'Save'}</button>
+                                <button class="house-button house-button-secondary house-button-sm" onclick={() => editingInstrumentID = ''} type="button">Cancel</button>
+                                <button class="house-button house-button-primary house-button-sm" disabled={submittingInstrumentID === instrument.instrumentID} form={`instrument-price-edit-${instrument.instrumentID}`} type="submit">{submittingInstrumentID === instrument.instrumentID ? 'Saving' : 'Save'}</button>
                               </div>
                             </td>
                           </tr>
@@ -549,11 +549,11 @@
                             <td class="px-3 py-2 text-slate-600">{formatTableDateTime(instrument.lastAuditDateTime)}</td>
                             <td class="px-3 py-2 text-right">
                               <div class="flex justify-end gap-2">
-                                <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(instrument)} type="button">
+                                <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(instrument)} type="button">
                                   {openHistoryInstrumentID === instrument.instrumentID ? 'Hide' : 'History'}
                                 </button>
                                 {#if equityPrice(instrument.price) || fixedIncomePrice(instrument.price)}
-                                  <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => editingInstrumentID = instrument.instrumentID} type="button">Edit</button>
+                                  <button class="house-button house-button-secondary house-button-sm" onclick={() => editingInstrumentID = instrument.instrumentID} type="button">Edit</button>
                                 {/if}
                               </div>
                             </td>

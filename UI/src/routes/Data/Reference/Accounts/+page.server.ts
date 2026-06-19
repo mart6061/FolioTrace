@@ -229,7 +229,7 @@ export const actions = {
       const inflowHolding = holdings.items.find((holding) =>
         holding.accountID === investableHolding.accountID &&
         holding.instrumentID === investableHolding.instrumentID &&
-        holding.holdingKind === 'Inflow' &&
+        holding.holdingKind === 'NominalInflow' &&
         holding.active
       );
 
@@ -308,7 +308,7 @@ export const actions = {
       const outflowHolding = holdings.items.find((holding) =>
         holding.accountID === investableHolding.accountID &&
         holding.instrumentID === investableHolding.instrumentID &&
-        holding.holdingKind === 'Outflow' &&
+        holding.holdingKind === 'NominalOutflow' &&
         holding.active
       );
 
@@ -546,7 +546,7 @@ export const actions = {
         return fail(400, inSpecieInFailure('Select a valid instrument.', values));
 
       const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionAsset', instrument.name || 'Asset', currentUser.userID);
-      const inSpecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InSpecieIn', 'InSpecie In', currentUser.userID);
+      const inSpecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'NominalInSpecieIn', 'InSpecie In', currentUser.userID);
       const quantity = quantityResult.amount;
       const bookCost = bookCostResult.amount;
       const transactionSetRequest: TransactionSetRequest = {
@@ -619,7 +619,7 @@ export const actions = {
         return fail(400, inSpecieOutFailure('Select a valid instrument.', values));
 
       const positionHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'PositionAsset', instrument.name || 'Asset', currentUser.userID);
-      const inSpecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'InSpecieOut', 'InSpecie Out', currentUser.userID);
+      const inSpecieHolding = await ensureMovementHolding(fetch, holdings.items, eventDateTime, values.accountID, instrument, 'NominalInSpecieOut', 'InSpecie Out', currentUser.userID);
       const quantity = quantityResult.amount;
       const bookCost = bookCostResult.amount;
       const transactionSetRequest: TransactionSetRequest = {
@@ -797,7 +797,7 @@ function isFeeCashHoldingKind(holdingKind: HoldingKind) {
 }
 
 function isFeeHoldingKind(holdingKind: HoldingKind) {
-  return holdingKind === 'FeesCustodian' || holdingKind === 'FeesAdministrator' || holdingKind === 'FeesBank';
+  return holdingKind === 'NominalFeesCustodian' || holdingKind === 'NominalFeesAdministrator' || holdingKind === 'NominalFeesBank';
 }
 
 function parsePositiveDecimal(value: string, label: string) {

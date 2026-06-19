@@ -2,7 +2,20 @@ namespace FolioTrace.Aggregates;
 
 public static class HoldingKindRuntime
 {
-    extension(Holding holding)
+    private static readonly HashSet<string> NominalKindNames = new(StringComparer.Ordinal)
+    {
+        nameof(HoldingNominalInflow)["Holding".Length..],
+        nameof(HoldingNominalOutflow)["Holding".Length..],
+        nameof(HoldingNominalInSpecieIn)["Holding".Length..],
+        nameof(HoldingNominalInSpecieOut)["Holding".Length..],
+        nameof(HoldingNominalFeesCustodian)["Holding".Length..],
+        nameof(HoldingNominalFeesAdministrator)["Holding".Length..],
+        nameof(HoldingNominalFeesBank)["Holding".Length..],
+        nameof(HoldingNominalIncome)["Holding".Length..],
+        nameof(HoldingNominalInterest)["Holding".Length..]
+    };
+
+    extension(HoldingBase holding)
     {
         public string GetHoldingKindName() =>
         GetKindName(holding?.GetType() ?? throw new ArgumentNullException(nameof(holding)));
@@ -38,6 +51,10 @@ public static class HoldingKindRuntime
     public static bool IsPositionMemo<T>() => typeof(T) == typeof(HoldingPositionMemo);
 
     public static bool IsPositionAsset<T>() => typeof(T) == typeof(HoldingPositionAsset);
+
+    public static bool IsNominal<T>() => typeof(IHoldingNominal).IsAssignableFrom(typeof(T));
+
+    public static bool IsNominalKindName(string kindName) => NominalKindNames.Contains(kindName);
 
     private static string GetEventKindName(Type type, string suffix)
     {

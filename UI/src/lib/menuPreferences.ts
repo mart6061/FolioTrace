@@ -15,6 +15,7 @@ export type MenuPreferenceDefinition = {
 export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'blotter', label: 'Blotter' },
+  { id: 'viewer', label: 'Viewer' },
   { id: 'asset', label: 'Asset' },
   { id: 'report', label: 'Report' },
   { id: 'account', label: 'Account' },
@@ -24,13 +25,14 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'reference', label: 'Reference', parentID: 'data' },
   { id: 'configuration', label: 'Configuration', parentID: 'data' },
   { id: 'configuration-asset-allocation', label: 'Asset Allocation', parentID: 'configuration' },
-  { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', parentID: 'configuration' },
-  { id: 'configuration-report-tools', label: 'Report Tools', parentID: 'configuration' },
+  { id: 'tools', label: 'Tools', parentID: 'system' },
+  { id: 'configuration-account-tools', label: 'Account Tools', parentID: 'tools' },
+  { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', parentID: 'tools' },
+  { id: 'configuration-report-tools', label: 'Report Tools', parentID: 'tools' },
   { id: 'internals', label: 'Internals', parentID: 'system' },
   { id: 'system-logs', label: 'Request Trace', parentID: 'internals' },
   { id: 'system-fix-trace', label: 'FIX Trace', parentID: 'internals' },
-  { id: 'system-stats', label: 'Stats for Nerds', parentID: 'internals' },
-  { id: 'todo', label: 'To Do' }
+  { id: 'system-stats', label: 'Stats for Nerds', parentID: 'internals' }
 ];
 
 export const controlledMenuItemIDs = menuPreferenceDefinitions.map((item) => item.id);

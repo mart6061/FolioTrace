@@ -3,6 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
   import type { ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
@@ -221,14 +222,6 @@
     return allocation.nodes.filter((node) => !node.hidden).length;
   }
 
-  function nodeSummary(allocation: ValuationSetting) {
-    const visibleNodes = allocation.nodes.filter((node) => !node.hidden);
-    if (!visibleNodes.length)
-      return 'No visible nodes';
-
-    return visibleNodes.map((node) => node.name).join(', ');
-  }
-
   function nodesJson(allocation: ValuationSetting) {
     return JSON.stringify(allocation.nodes, null, 2);
   }
@@ -318,11 +311,11 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput
-            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            fullWidth
             name="valuationDate"
             step="1"
             value={data.valuationDate}
@@ -334,7 +327,7 @@
         {/if}
 
         <button
-          class="btn btn-primary"
+          class="house-button house-button-primary house-button-md"
           type="submit"
         >
           Apply
@@ -377,13 +370,7 @@
             <input bind:value={filterText} placeholder="Filter allocations..." type="search" />
           </label>
 
-          <label class="valuation-show-all-toggle">
-            <span>Show All</span>
-            <span class="trace-toggle">
-              <input bind:checked={showAllConfigs} type="checkbox" />
-              <span aria-hidden="true"></span>
-            </span>
-          </label>
+          <Toggle bind:checked={showAllConfigs} class="valuation-show-all-toggle" label="Show All" />
 
           <div class="table-actions" aria-label="Table actions">
             <button aria-label="Add asset allocation" onclick={startAdd} title="Add asset allocation" type="button">
@@ -396,7 +383,7 @@
           <form action="?/createAllocation" class="valuation-allocation-create-form mb-4 grid gap-4 rounded-md border border-teal-200 bg-teal-50/40 p-4" method="POST" use:enhance={enhanceCreate}>
             <label class="valuation-allocation-name-field grid gap-1 text-sm font-medium text-slate-700">
               Name
-              <input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={formStringValue('createAllocation', 'name')} />
+              <input class="house-control house-control-md" name="name" required type="text" value={formStringValue('createAllocation', 'name')} />
             </label>
 
             <div class="valuation-allocation-create-layout">
@@ -415,19 +402,13 @@
               </fieldset>
 
               <div class="valuation-allocation-create-side">
-                <label class="valuation-active-field">
-                  <span>Active</span>
-                  <span class="trace-toggle">
-                    <input checked name="active" type="checkbox" value="true" />
-                    <span aria-hidden="true"></span>
-                  </span>
-                </label>
+                <Toggle checked class="valuation-active-field" label="Active" name="active" value="true" />
               </div>
             </div>
 
             <div class="valuation-form-actions">
-              <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAdd} type="button">Cancel</button>
-              <button class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingCreate} type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
+              <button class="house-button house-button-secondary house-button-md" onclick={cancelAdd} type="button">Cancel</button>
+              <button class="house-button house-button-primary house-button-md" disabled={submittingCreate} type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
             </div>
           </form>
         {/if}
@@ -445,7 +426,7 @@
                 <th class="px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('accounts')} type="button">Accounts{sortLabel('accounts')}</button>
                 </th>
-                <th class="px-3 py-2">
+                <th class="w-36 px-3 py-2 whitespace-nowrap">
                   <button class="table-sort-button" onclick={() => setSort('nodes')} type="button">Nodes{sortLabel('nodes')}</button>
                 </th>
                 <th class="px-3 py-2">
@@ -472,13 +453,12 @@
                       <span class="text-slate-500">No accounts</span>
                     {/if}
                   </td>
-                  <td class="px-3 py-3 text-slate-700">
+                  <td class="w-36 px-3 py-3 text-slate-700 whitespace-nowrap">
                     <div>{visibleNodeCount(allocation)} visible / {allocation.nodes.length} total</div>
-                    <div class="text-xs text-slate-500">{nodeSummary(allocation)}</div>
                   </td>
                   <td class="px-3 py-3 text-slate-600">{formatTableDateTime(allocation.lastAuditDateTime)}</td>
-                  <td class="px-3 py-3">
-                    <div class="flex flex-nowrap justify-end gap-2 whitespace-nowrap">
+                  <td class="px-3 py-3 align-top">
+                    <div class="flex flex-nowrap items-start justify-end gap-2 whitespace-nowrap">
                       <span class="table-actions">
                         <button aria-label={`Export ${allocation.name} nodes to JSON`} onclick={() => exportNodesJson(allocation)} title="Export JSON" type="button">
                           <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -486,20 +466,20 @@
                           </svg>
                         </button>
                       </span>
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(allocation.assetAllocationID)} type="button">
+                      <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(allocation.assetAllocationID)} type="button">
                         {openHistoryID === allocation.assetAllocationID ? 'Hide' : 'History'}
                       </button>
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startAccountEdit(allocation.assetAllocationID)} type="button">
+                      <button class="house-button house-button-secondary house-button-sm" onclick={() => startAccountEdit(allocation.assetAllocationID)} type="button">
                         Accounts
                       </button>
-                      <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleEdit(allocation)} type="button">
+                      <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleEdit(allocation)} type="button">
                         {editingAllocationID === allocation.assetAllocationID ? 'Close' : 'Edit'}
                       </button>
                       <form action="?/setActive" class="shrink-0" method="POST" use:enhance={enhanceAllocation}>
                         <input name="assetAllocationID" type="hidden" value={allocation.assetAllocationID} />
                         <input name="name" type="hidden" value={allocation.name} />
                         <input name="active" type="hidden" value={String(!allocation.active)} />
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">
+                        <button class="house-button house-button-secondary house-button-sm" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">
                           {allocation.active ? 'Disable' : 'Enable'}
                         </button>
                       </form>
@@ -527,8 +507,8 @@
                           </div>
                         </fieldset>
                         <div class="flex justify-end gap-2">
-                          <button class="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAccountEdit} type="button">Cancel</button>
-                          <button class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>
+                          <button class="house-button house-button-secondary house-button-md" onclick={cancelAccountEdit} type="button">Cancel</button>
+                          <button class="house-button house-button-primary house-button-md" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>
                         </div>
                       </form>
                     </td>
@@ -544,15 +524,15 @@
 												<div class="valuation-allocation-edit-fields">
 													<label class="valuation-allocation-name-field grid gap-1 text-sm font-medium text-slate-700">
 														Name
-														<input class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={allocation.name} />
+														<input class="house-control house-control-md" name="name" required type="text" value={allocation.name} />
 													</label>
 													<button class="valuation-add-node-button" onclick={() => addTopLevelNode(allocation.assetAllocationID)} title="Add node" type="button">Add</button>
 												</div>
 												{#key allocation.assetAllocationID}
-													<ValuationNodeEditor accounts={accounts} addRequest={addNodeRequestByID[allocation.assetAllocationID] ?? 0} allocationAccountIDs={allocation.accountIDs} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} />
+													<ValuationNodeEditor accounts={accounts} addRequest={addNodeRequestByID[allocation.assetAllocationID] ?? 0} allocationAccountIDs={allocation.accountIDs} nodeHoldingCounts={data.nodeHoldingCountsByAllocationID[allocation.assetAllocationID] ?? {}} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} />
 												{/key}
 												<div class="flex justify-end gap-2">
-                          <button class="h-9 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>
+                          <button class="house-button house-button-primary house-button-md" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>
                         </div>
                       </form>
                     </td>

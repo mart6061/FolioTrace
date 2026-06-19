@@ -246,17 +246,17 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
-          <DateTimeInput class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
         </label>
 
         {#if data.auditDateTime}
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
 
-        <button class="btn btn-primary" type="submit">Apply</button>
+        <button class="house-button house-button-primary house-button-md" type="submit">Apply</button>
       </form>
     </div>
   </section>
@@ -318,7 +318,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              {#each rows as fx}
+              {#each rows as fx (fx.pair)}
                 {@const rate = ratesByPair.get(fx.pair)}
                 {#if addingPair === fx.pair || editingPair === fx.pair}
                   <tr class="bg-teal-50/30 align-top">
@@ -335,33 +335,33 @@
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Bid</span>
-                        <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-slate-950" form={`fx-rate-edit-${fx.pair}`} min="0" name="bid" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.bid ?? priceValue(rate, 'bid')) : priceValue(rate, 'bid')} />
+                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`fx-rate-edit-${fx.pair}`} min="0" name="bid" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.bid ?? priceValue(rate, 'bid')) : priceValue(rate, 'bid')} />
                       </label>
                     </td>
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Mid</span>
-                        <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-slate-950" form={`fx-rate-edit-${fx.pair}`} min="0" name="mid" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.mid ?? priceValue(rate, 'mid')) : priceValue(rate, 'mid')} />
+                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`fx-rate-edit-${fx.pair}`} min="0" name="mid" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.mid ?? priceValue(rate, 'mid')) : priceValue(rate, 'mid')} />
                       </label>
                     </td>
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Ask</span>
-                        <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-slate-950" form={`fx-rate-edit-${fx.pair}`} min="0" name="ask" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.ask ?? priceValue(rate, 'ask')) : priceValue(rate, 'ask')} />
+                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`fx-rate-edit-${fx.pair}`} min="0" name="ask" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.ask ?? priceValue(rate, 'ask')) : priceValue(rate, 'ask')} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-slate-950" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
+                        <DateTimeInput size="sm" form={`fx-rate-edit-${fx.pair}`} name="eventDateTime" required step="1" value={form?.pair === fx.pair ? (form.values?.eventDateTime ?? eventDateDefault) : eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                         <span>Actions</span>
                         <div class="flex justify-end gap-2">
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700" onclick={closeEditor} type="button">Cancel</button>
-                          <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white disabled:opacity-70" disabled={submittingPair === fx.pair} form={`fx-rate-edit-${fx.pair}`} type="submit">{submittingPair === fx.pair ? 'Saving' : 'Save'}</button>
+                          <button class="house-button house-button-secondary house-button-sm" onclick={closeEditor} type="button">Cancel</button>
+                          <button class="house-button house-button-primary house-button-sm" disabled={submittingPair === fx.pair} form={`fx-rate-edit-${fx.pair}`} type="submit">{submittingPair === fx.pair ? 'Saving' : 'Save'}</button>
                         </div>
                       </div>
                     </td>
@@ -384,10 +384,10 @@
                     <td class="px-3 py-2 text-slate-600">{rate ? formatTableDateTime(rate.lastAuditDateTime) : '-'}</td>
                     <td class="px-3 py-2 text-right">
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(fx.pair, rate)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(fx.pair, rate)} type="button">
                           {openHistoryPair === fx.pair ? 'Hide' : 'History'}
                         </button>
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => rate ? editingPair = fx.pair : addingPair = fx.pair} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => rate ? editingPair = fx.pair : addingPair = fx.pair} type="button">
                           {rate ? 'Edit' : 'Add'}
                         </button>
                       </div>

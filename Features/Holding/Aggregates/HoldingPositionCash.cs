@@ -4,7 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
-public sealed record HoldingPositionCash : Holding, IHoldingPosition
+public sealed record HoldingPositionCash : HoldingBase, IHoldingPosition
 {
     [JsonConstructor]
     [SetsRequiredMembers]

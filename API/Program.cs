@@ -61,7 +61,6 @@ app.UseApiRequestLogging();
 app.UseApiExchangeCapture();
 app.UseApiUnhandledExceptionLogging();
 
-app.MapHealthChecks("/health");
 app.MapFolioTraceApi();
 
 app.Run();

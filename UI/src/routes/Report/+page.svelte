@@ -1,5 +1,7 @@
 <script lang="ts">
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
   import type { PageData } from './$types';
 
@@ -131,13 +133,17 @@
   }
 
   function handleValuationStartChange() {
+    valuationStartDate = startOfDayForInput(valuationStartDate);
+
     if (new Date(valuationStartDate).getTime() > new Date(valuationEndDate).getTime())
-      valuationEndDate = valuationStartDate;
+      valuationEndDate = endOfDayForInput(valuationStartDate);
   }
 
   function handleValuationEndChange() {
+    valuationEndDate = endOfDayForInput(valuationEndDate);
+
     if (new Date(valuationEndDate).getTime() < new Date(valuationStartDate).getTime())
-      valuationStartDate = valuationEndDate;
+      valuationStartDate = startOfDayForInput(valuationEndDate);
   }
 
   function isValidValuationRange(startDateTime: string, endDateTime: string) {
@@ -200,6 +206,18 @@
     return '';
   }
 
+  function reportWordDocumentSettings() {
+    return `<!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+          <w:DoNotOptimizeForBrowser />
+        </w:WordDocument>
+      </xml>
+    <![endif]-->`;
+  }
+
   function reportHtml() {
     const documentElement = reportDocumentElement;
 
@@ -207,18 +225,22 @@
       return '';
 
     return `<!doctype html>
-      <html>
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
         <head>
           <meta charset="utf-8" />
           <title>${htmlValue(data.reportDocument?.name ?? 'Report')}</title>
+          ${reportWordDocumentSettings()}
             <style>
             ${reportDefaultPageRule()}
+            @page ReportPortrait { size: A4 portrait; margin: 0; mso-page-orientation: portrait; }
+            @page ReportLandscape { size: A4 landscape; margin: 0; mso-page-orientation: landscape; }
             html, body { margin: 0; padding: 0; }
             body { font-family: Arial, sans-serif; color: #0f172a; }
             .report-document-shell { display: block; margin: 0; padding: 0; }
-            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: report-portrait; break-before: page; break-after: page; page-break-before: always; page-break-after: always; mso-page-orientation: portrait; }
+            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: ReportPortrait; break-before: page; break-after: page; page-break-before: always; page-break-after: always; mso-page-orientation: portrait; }
             .report-document-page:first-child { break-before: auto; page-break-before: auto; }
-            .report-document-page.landscape-page { width: 297mm; min-height: 210mm; page: report-landscape; mso-page-orientation: landscape; }
+            .report-document-page.portrait-page { page: ReportPortrait; mso-page-orientation: portrait; }
+            .report-document-page.landscape-page { width: 297mm; min-height: 210mm; page: ReportLandscape; mso-page-orientation: landscape; }
             .report-document-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 14px; }
             .report-document-header h2 { margin: 0; font-size: 30px; line-height: 1.2; }
             .report-document-header p { margin: 6px 0 0; color: #475569; font-size: 16px; }
@@ -245,13 +267,16 @@
             .report-valuation-table td.numeric { font-family: Consolas, monospace; }
             .report-valuation-subtotal td { border-bottom: 1px solid #94a3b8; color: #334155; font-weight: 700; padding: 7px 6px 10px; }
             .report-valuation-subtotal.top-level td { color: #0f172a; }
+            .report-valuation-total td { border-bottom: 2px solid #0f172a; border-top: 2px solid #0f172a; color: #0f172a; font-weight: 800; padding: 8px 6px; }
             .report-transaction-table { border-collapse: collapse; font-size: 11px; width: 100%; }
-            .report-transaction-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
-            .report-transaction-table th.numeric, .report-transaction-table td.numeric { text-align: right; }
-            .report-transaction-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; padding: 6px; }
-            .report-transaction-table td.numeric { font-family: Consolas, monospace; }
-            @page report-portrait { size: A4 portrait; margin: 0; mso-page-orientation: portrait; }
-            @page report-landscape { size: A4 landscape; margin: 0; mso-page-orientation: landscape; }
+            .report-cash-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-cash-groups { display: grid; gap: 18px; }
+            .report-cash-group-title { align-items: baseline; border-bottom: 1px solid #cbd5e1; color: #0f172a; display: flex; font-size: 13px; font-weight: 700; gap: 12px; justify-content: space-between; margin: 0 0 6px; padding-bottom: 6px; }
+            .report-cash-group-total { color: #475569; font-family: Consolas, monospace; font-size: 12px; font-weight: 700; }
+            .report-transaction-table th, .report-cash-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
+            .report-transaction-table th.numeric, .report-transaction-table td.numeric, .report-cash-table th.numeric, .report-cash-table td.numeric { text-align: right; }
+            .report-transaction-table td, .report-cash-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; padding: 6px; }
+            .report-transaction-table td.numeric, .report-cash-table td.numeric { font-family: Consolas, monospace; }
           </style>
         </head>
         <body>${documentElement.outerHTML}</body>
@@ -265,11 +290,15 @@
 
     const frame = document.createElement('iframe');
     frame.title = data.reportDocument?.name ?? 'Report';
+    frame.setAttribute('aria-hidden', 'true');
     frame.style.position = 'fixed';
-    frame.style.width = '0';
-    frame.style.height = '0';
+    frame.style.left = '-10000px';
+    frame.style.top = '0';
+    frame.style.width = '297mm';
+    frame.style.height = '210mm';
     frame.style.border = '0';
     frame.style.opacity = '0';
+    frame.style.pointerEvents = 'none';
 
     document.body.appendChild(frame);
 
@@ -333,6 +362,7 @@
           <p class="page-kicker">Report</p>
           <div class="page-title-row">
             <h1 class="page-title">Report</h1>
+            <BookmarkButton />
           </div>
         </div>
       </div>
@@ -340,27 +370,27 @@
   </section>
 
   <section class="page-container page-section grid gap-5">
-    <form class="house-form grid gap-4" method="GET">
+    <form class="house-form report-filter-form" method="GET">
       {#if data.auditDateTime}
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
 
-      <div class="report-valuation-date-grid">
-        <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+      <div class="report-filter-section report-filter-section-first report-valuation-date-grid">
+        <label class="report-filter-title grid min-w-0 gap-1">
           Valuation period
-          <DateTimeInput bind:value={valuationStartDate} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationStartDate" onchange={handleValuationStartChange} step="1" />
+          <DateTimeInput bind:value={valuationStartDate} fullWidth name="valuationStartDate" onchange={handleValuationStartChange} step="1" />
         </label>
         <span class="report-valuation-date-separator">to</span>
-        <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+        <label class="report-filter-title grid min-w-0 gap-1">
           <span class="sr-only">End date</span>
-          <DateTimeInput bind:value={valuationEndDate} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="valuationDate" onchange={handleValuationEndChange} step="1" />
+          <DateTimeInput bind:value={valuationEndDate} fullWidth name="valuationDate" onchange={handleValuationEndChange} step="1" />
         </label>
       </div>
 
-      <div class="grid gap-3 border-t border-slate-200 pt-4 md:grid-cols-3">
-        <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+      <div class="report-filter-section report-filter-basis-grid">
+        <label class="report-filter-title grid min-w-0 gap-1">
           Account
-          <select bind:value={selectedAccountID} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.accounts.length} name="accountID" onchange={submitFilterChange}>
+          <select bind:value={selectedAccountID} class="house-control house-control-md house-control-full" disabled={!data.accounts.length} name="accountID" onchange={submitFilterChange}>
             <option disabled value="">{data.accounts.length ? 'Select account' : 'No active accounts'}</option>
             {#each data.accounts as account (account.accountID)}
               <option value={account.accountID}>{account.name}</option>
@@ -369,7 +399,7 @@
         </label>
 
         <fieldset class="report-filter-field">
-          <legend>Price basis</legend>
+          <legend class="report-filter-title">Price basis</legend>
           <div class="report-filter-toggle-group price-basis-toggle">
             {#each data.instrumentPriceBasisOptions as option (option)}
               <label class="report-filter-toggle">
@@ -381,7 +411,7 @@
         </fieldset>
 
         <fieldset class="report-filter-field">
-          <legend>Holding basis</legend>
+          <legend class="report-filter-title">Holding basis</legend>
           <div class="report-filter-toggle-group">
             {#each holdingDateBasisOptions as option (option.value)}
               <label class="report-filter-toggle">
@@ -393,11 +423,11 @@
         </fieldset>
       </div>
 
-      <div class="grid gap-3 border-t border-slate-200 pt-4 lg:grid-cols-[1fr_auto] lg:items-end">
+      <div class="report-filter-section report-filter-report-grid">
         <div class="grid gap-2">
-          <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+          <label class="report-filter-title grid min-w-0 gap-1">
             Report
-            <select bind:value={selectedReportID} class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" disabled={!data.reportConfigs.length} name="reportID">
+            <select bind:value={selectedReportID} class="house-control house-control-md house-control-full" disabled={!data.reportConfigs.length} name="reportID">
               <option disabled value="">{data.accountID ? 'Select report' : 'Select account first'}</option>
               {#each data.reportConfigs as reportConfig (reportConfig.reportID)}
                 <option value={reportConfig.reportID}>{reportConfig.name}</option>
@@ -412,7 +442,7 @@
           {/if}
         </div>
 
-        <button class="btn btn-primary" disabled={!filtersValid} name="create" type="submit" value="true">Create</button>
+        <button class="house-button house-button-primary house-button-md" disabled={!filtersValid} name="create" type="submit" value="true">Create</button>
       </div>
     </form>
 
@@ -422,9 +452,9 @@
 
     {#if data.reportDocument}
       <div class="report-action-bar" aria-label="Report actions">
-        <button class="btn btn-secondary" onclick={exportPdf} title="Export PDF" type="button">Export to PDF</button>
-        <button class="btn btn-secondary" onclick={exportWord} title="Export Word" type="button">Export to Word</button>
-        <button class="btn btn-secondary" onclick={shareReport} title="Share" type="button">Share</button>
+        <button class="house-button house-button-secondary house-button-md" onclick={exportPdf} title="Export PDF" type="button">Export to PDF</button>
+        <button class="house-button house-button-secondary house-button-md" onclick={exportWord} title="Export Word" type="button">Export to Word</button>
+        <button class="house-button house-button-secondary house-button-md" onclick={shareReport} title="Share" type="button">Share</button>
         {#if shareStatus}
           <span role="status">{shareStatus}</span>
         {/if}
@@ -432,7 +462,7 @@
 
       <section {@attach captureReportDocument} aria-label={data.reportDocument.name} class="report-document-shell">
         {#each data.reportDocument.sections as section (section.reportNodeID)}
-          <article class:landscape-page={section.pageOrientation === 'Landscape'} class="report-document-page">
+          <article class:landscape-page={section.pageOrientation === 'Landscape'} class:portrait-page={section.pageOrientation !== 'Landscape'} class="report-document-page">
             <header class="report-document-header">
               <h2>{section.name}</h2>
               <p>{data.reportDocument.valuationHeading}</p>
@@ -478,21 +508,33 @@
                       {#each section.valuationRows as row (row.rowID)}
                         {#if row.rowType === 'Group'}
                           <tr class={['report-valuation-node-row', row.level === 1 ? 'top-level' : 'child-level']}>
-                            <td colspan={section.valuationColumns.length + 1} style:color={section.valuationColourText ? row.colour : undefined} style:padding-left={valuationIndent(row.level)}>
+                            <td colspan={section.valuationDisplayHoldings ? section.valuationColumns.length + 1 : undefined} style:color={section.valuationColourText ? row.colour : undefined} style:padding-left={valuationIndent(row.level)}>
                               {#if section.valuationColourBullet}
                                 <span class="report-valuation-group-marker" style:background-color={row.colour}></span>
                               {/if}
                               {row.name}
                             </td>
+                            {#if !section.valuationDisplayHoldings}
+                              {#each section.valuationColumns as column (column.columnKey)}
+                                <td class:numeric={column.numeric}>{valuationColumnValue(row, column, section.currency)}</td>
+                              {/each}
+                            {/if}
                           </tr>
-                        {:else if row.rowType === 'Asset'}
+                        {:else if row.rowType === 'Asset' && section.valuationDisplayHoldings}
                           <tr class="asset-row">
                             <td style:padding-left={valuationIndent(row.level)}>{row.name}</td>
                             {#each section.valuationColumns as column (column.columnKey)}
                               <td class:numeric={column.numeric}>{valuationColumnValue(row, column, section.currency)}</td>
                             {/each}
                           </tr>
-                        {:else}
+                        {:else if row.rowType === 'Total'}
+                          <tr class="report-valuation-total">
+                            <td>{row.name}</td>
+                            {#each section.valuationColumns as column (column.columnKey)}
+                              <td class:numeric={column.numeric}>{valuationColumnValue(row, column, section.currency)}</td>
+                            {/each}
+                          </tr>
+                        {:else if section.valuationDisplayHoldings}
                           <tr class={['report-valuation-subtotal', row.level === 1 ? 'top-level' : 'child-level']}>
                             <td style:color={section.valuationColourText ? row.colour : undefined} style:padding-left={valuationIndent(row.level)}>{row.name}</td>
                             {#each section.valuationColumns as column (column.columnKey)}
@@ -505,6 +547,39 @@
                   </table>
                 {:else}
                   <div class="report-empty-state">No mapped assets are available for this valuation.</div>
+                {/if}
+              {:else if section.sectionType === 'Cash'}
+                {#if section.cashGroups.length}
+                  <div class="report-cash-groups">
+                    {#each section.cashGroups as group (group.holdingID)}
+                      <section class="report-cash-group" aria-label={group.name}>
+                        <h3 class="report-cash-group-title">
+                          <span>{group.name}</span>
+                          <span class="report-cash-group-total">{formatQuantity(group.totalQuantity)}</span>
+                        </h3>
+                        <table class="report-cash-table">
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Name</th>
+                              <th class="numeric">Quantity</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {#each group.rows as cash (cash.rowID)}
+                              <tr>
+                                <td>{formatDateTime(cash.displayDateTime)}</td>
+                                <td>{cash.name}</td>
+                                <td class="numeric">{formatQuantity(cash.quantity)}</td>
+                              </tr>
+                            {/each}
+                          </tbody>
+                        </table>
+                      </section>
+                    {/each}
+                  </div>
+                {:else}
+                  <div class="report-empty-state">No cash movements are available for this period.</div>
                 {/if}
               {:else if section.sectionType === 'Transactions'}
                 {#if section.transactionRows.length}
@@ -591,20 +666,58 @@
     font-weight: 700;
   }
 
+  .report-filter-form {
+    display: grid;
+    gap: 0;
+  }
+
+  .report-filter-section {
+    border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .report-filter-section-first {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
   .report-valuation-date-grid {
     align-items: end;
     display: grid;
-    gap: 0.5rem;
-    grid-template-columns: minmax(15rem, 18rem) auto minmax(15rem, 18rem);
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
+    grid-template-columns: minmax(0, var(--house-datetime-width)) auto minmax(0, var(--house-datetime-width));
     justify-content: start;
   }
 
   .report-valuation-date-separator {
     align-self: end;
-    color: rgb(71 85 105);
+    color: var(--muted);
     font-size: 0.8125rem;
     font-weight: 700;
-    padding-bottom: 0.625rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .report-filter-basis-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .report-filter-report-grid {
+    align-items: end;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .report-filter-title {
+    color: var(--muted);
+    font-size: var(--house-label-size);
+    font-weight: 700;
+    line-height: 1.25rem;
   }
 
   .report-filter-field {
@@ -617,21 +730,20 @@
   }
 
   .report-filter-field legend {
-    color: rgb(51 65 85);
-    font-size: 0.875rem;
-    font-weight: 700;
-    line-height: 1.25rem;
     padding: 0;
   }
 
   .report-filter-toggle-group {
-    background: rgb(241 245 249);
-    border: 1px solid rgb(203 213 225);
-    border-radius: 0.375rem;
+    align-items: stretch;
+    background: color-mix(in srgb, var(--panel-muted) 90%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--house-radius-sm);
+    box-sizing: border-box;
     display: grid;
     gap: 0.125rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    min-height: 2.5rem;
+    height: var(--house-control-height);
+    min-height: 0;
     padding: 0.125rem;
   }
 
@@ -655,13 +767,14 @@
 
   .report-filter-toggle span {
     align-items: center;
-    border-radius: 0.25rem;
-    color: rgb(71 85 105);
+    border-radius: calc(var(--house-radius-sm) - 2px);
+    color: var(--muted);
     display: flex;
     font-size: 0.8125rem;
     font-weight: 700;
+    height: 100%;
     justify-content: center;
-    min-height: 2.125rem;
+    min-height: 0;
     min-width: 0;
     padding: 0 0.5rem;
     text-align: center;
@@ -669,14 +782,14 @@
   }
 
   .report-filter-toggle input:checked + span {
-    background: white;
-    box-shadow: 0 1px 3px rgb(15 23 42 / 0.12);
-    color: rgb(15 118 110);
+    background: var(--panel);
+    box-shadow: 0 1px 3px var(--surface-shadow);
+    color: var(--accent);
   }
 
   .report-filter-toggle input:focus-visible + span {
-    outline: 2px solid rgb(13 148 136 / 0.45);
-    outline-offset: 2px;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    outline: none;
   }
 
   .report-document-page {
@@ -846,13 +959,48 @@
     color: rgb(15 23 42);
   }
 
-  .report-transaction-table {
+  .report-valuation-total td {
+    border-bottom: 2px solid rgb(15 23 42);
+    border-top: 2px solid rgb(15 23 42);
+    color: rgb(15 23 42);
+    font-weight: 800;
+    padding: 0.5rem 0.375rem;
+  }
+
+  .report-transaction-table,
+  .report-cash-table {
     border-collapse: collapse;
     font-size: 0.6875rem;
     width: 100%;
   }
 
-  .report-transaction-table th {
+  .report-cash-groups {
+    display: grid;
+    gap: 1.125rem;
+  }
+
+  .report-cash-group-title {
+    align-items: baseline;
+    border-bottom: 1px solid rgb(203 213 225);
+    color: rgb(15 23 42);
+    display: flex;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin: 0 0 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+
+  .report-cash-group-total {
+    color: rgb(71 85 105);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .report-transaction-table th,
+  .report-cash-table th {
     border-bottom: 1px solid rgb(203 213 225);
     color: rgb(71 85 105);
     font-size: 0.625rem;
@@ -864,17 +1012,21 @@
   }
 
   .report-transaction-table th.numeric,
-  .report-transaction-table td.numeric {
+  .report-transaction-table td.numeric,
+  .report-cash-table th.numeric,
+  .report-cash-table td.numeric {
     text-align: right;
   }
 
-  .report-transaction-table td {
+  .report-transaction-table td,
+  .report-cash-table td {
     border-bottom: 1px solid rgb(226 232 240);
     color: rgb(15 23 42);
     padding: 0.375rem;
   }
 
-  .report-transaction-table td.numeric {
+  .report-transaction-table td.numeric,
+  .report-cash-table td.numeric {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
@@ -886,6 +1038,11 @@
     .report-valuation-date-separator {
       padding-bottom: 0;
       justify-self: start;
+    }
+
+    .report-filter-basis-grid,
+    .report-filter-report-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .report-pie-layout {
@@ -914,7 +1071,7 @@
       border-radius: 0;
       box-shadow: none;
       min-height: 297mm;
-      page: report-portrait;
+      page: ReportPortrait;
       break-before: page;
       break-after: page;
       page-break-before: always;
@@ -929,18 +1086,18 @@
 
     .report-document-page.landscape-page {
       min-height: 210mm;
-      page: report-landscape;
+      page: ReportLandscape;
       width: 297mm;
     }
   }
 
-  @page report-portrait {
+  @page ReportPortrait {
     size: A4 portrait;
     margin: 0;
     mso-page-orientation: portrait;
   }
 
-  @page report-landscape {
+  @page ReportLandscape {
     size: A4 landscape;
     margin: 0;
     mso-page-orientation: landscape;

@@ -363,11 +363,11 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(220px,280px)_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput
-            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            fullWidth
             name="valuationDate"
             step="1"
             value={data.valuationDate}
@@ -379,7 +379,7 @@
         {/if}
 
         <button
-          class="btn btn-primary"
+          class="house-button house-button-primary house-button-md"
           type="submit"
         >
           Apply
@@ -480,26 +480,26 @@
                     <form id="broker-create" action="?/createBroker" method="POST" use:enhance={enhanceBrokerCreate}>
                       <label class="grid gap-1 text-xs font-medium text-slate-600">
                         <span>Broker</span>
-                        <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={form?.intent === 'createBroker' ? formText('name') : ''} />
+                        <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={form?.intent === 'createBroker' ? formText('name') : ''} />
                       </label>
                     </form>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>LEI</span>
-                      <input class="h-8 w-48 rounded-md border border-slate-300 bg-white px-2 font-mono text-sm uppercase text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" maxlength="20" minlength="20" name="lei" required type="text" value={form?.intent === 'createBroker' ? formText('lei') : ''} />
+                      <input class="house-control house-control-sm w-48 font-mono uppercase" form="broker-create" maxlength="20" minlength="20" name="lei" required type="text" value={form?.intent === 'createBroker' ? formText('lei') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2 text-right">
                     <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Commission</span>
-                      <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" min="0" name="commission" required step="0.00000001" type="number" value={form?.intent === 'createBroker' ? formText('commission') : ''} />
+                      <input class="house-control house-control-sm w-28 text-right font-mono" form="broker-create" min="0" name="commission" required step="0.00000001" type="number" value={form?.intent === 'createBroker' ? formText('commission') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Status</span>
-                      <select class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" name="active" value={form?.intent === 'createBroker' && !formBoolean('active', true) ? 'false' : 'true'}>
+                      <select class="house-control house-control-sm w-28" form="broker-create" name="active" value={form?.intent === 'createBroker' && !formBoolean('active', true) ? 'false' : 'true'}>
                         <option value="true">Active</option>
                         <option value="false">Inactive</option>
                       </select>
@@ -508,33 +508,33 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Approved</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" name="approvedDateTime" required step="1" value={form?.intent === 'createBroker' ? formText('approvedDateTime', eventDateDefault) : eventDateDefault} />
+                      <DateTimeInput size="sm" form="broker-create" name="approvedDateTime" required step="1" value={form?.intent === 'createBroker' ? formText('approvedDateTime', eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Next review</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" name="nextReview" required step="1" value={form?.intent === 'createBroker' ? formText('nextReview', eventDateDefault) : eventDateDefault} />
+                      <DateTimeInput size="sm" form="broker-create" name="nextReview" required step="1" value={form?.intent === 'createBroker' ? formText('nextReview', eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Notes</span>
-                      <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" name="notes" type="text" value={form?.intent === 'createBroker' ? formText('notes') : ''} />
+                      <input class="house-control house-control-sm house-control-full" form="broker-create" name="notes" type="text" value={form?.intent === 'createBroker' ? formText('notes') : ''} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Event date</span>
-                      <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form="broker-create" name="eventDateTime" required step="1" value={form?.intent === 'createBroker' ? formText('eventDateTime', eventDateDefault) : eventDateDefault} />
+                      <DateTimeInput size="sm" form="broker-create" name="eventDateTime" required step="1" value={form?.intent === 'createBroker' ? formText('eventDateTime', eventDateDefault) : eventDateDefault} />
                     </label>
                   </td>
                   <td class="px-3 py-2">
                     <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                       <span>Actions</span>
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelAdd} type="button">Cancel</button>
-                        <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={submittingCreate} form="broker-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
+                        <button class="house-button house-button-secondary house-button-sm" onclick={cancelAdd} type="button">Cancel</button>
+                        <button class="house-button house-button-primary house-button-sm" disabled={submittingCreate} form="broker-create" type="submit">{submittingCreate ? 'Adding' : 'Add'}</button>
                       </div>
                     </div>
                   </td>
@@ -549,7 +549,7 @@
                         <input name="lei" type="hidden" value={broker.lei} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Broker</span>
-                          <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="name" required type="text" value={form?.lei === broker.lei ? formText('name', broker.name) : broker.name} />
+                          <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={form?.lei === broker.lei ? formText('name', broker.name) : broker.name} />
                         </label>
                       </form>
                     </td>
@@ -562,7 +562,7 @@
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`broker-edit-${broker.lei}`}>
                         <span>Commission</span>
-                        <input class="h-8 w-28 rounded-md border border-slate-300 bg-white px-2 text-right font-mono text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`broker-edit-${broker.lei}`} min="0" name="commission" required step="0.00000001" type="number" value={form?.lei === broker.lei ? formText('commission', broker.commission.toString()) : broker.commission} />
+                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`broker-edit-${broker.lei}`} min="0" name="commission" required step="0.00000001" type="number" value={form?.lei === broker.lei ? formText('commission', broker.commission.toString()) : broker.commission} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
@@ -584,7 +584,7 @@
                         <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Approved</span>
-                          <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="approvedDateTime" required step="1" value={form?.lei === broker.lei ? formText('approvedDateTime', inputDateTime(broker.approvedDateTime)) : inputDateTime(broker.approvedDateTime)} />
+                          <DateTimeInput size="sm" name="approvedDateTime" required step="1" value={form?.lei === broker.lei ? formText('approvedDateTime', inputDateTime(broker.approvedDateTime)) : inputDateTime(broker.approvedDateTime)} />
                         </label>
                       </form>
                     </td>
@@ -594,7 +594,7 @@
                         <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Next review</span>
-                          <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="nextReview" required step="1" value={form?.lei === broker.lei ? formText('nextReview', inputDateTime(broker.nextReview)) : inputDateTime(broker.nextReview)} />
+                          <DateTimeInput size="sm" name="nextReview" required step="1" value={form?.lei === broker.lei ? formText('nextReview', inputDateTime(broker.nextReview)) : inputDateTime(broker.nextReview)} />
                         </label>
                       </form>
                     </td>
@@ -604,25 +604,25 @@
                         <input name="eventDateTime" type="hidden" value={eventDateDefault} />
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Notes</span>
-                          <input class="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" name="notes" type="text" value={form?.lei === broker.lei ? formText('notes', broker.notes) : broker.notes} />
+                          <input class="house-control house-control-sm house-control-full" name="notes" type="text" value={form?.lei === broker.lei ? formText('notes', broker.notes) : broker.notes} />
                         </label>
                       </form>
                     </td>
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`broker-edit-${broker.lei}`}>
                         <span>Event date</span>
-                        <DateTimeInput class="h-8 w-44 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-950 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20" form={`broker-edit-${broker.lei}`} name="eventDateTime" required step="1" value={form?.lei === broker.lei ? formText('eventDateTime', eventDateDefault) : eventDateDefault} />
+                        <DateTimeInput size="sm" form={`broker-edit-${broker.lei}`} name="eventDateTime" required step="1" value={form?.lei === broker.lei ? formText('eventDateTime', eventDateDefault) : eventDateDefault} />
                       </label>
                     </td>
                     <td class="px-3 py-2">
                       <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
                         <span>Actions</span>
                         <div class="flex flex-wrap justify-end gap-2">
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-slate-400" onclick={cancelEdit} type="button">Cancel</button>
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={isSubmitting('setBrokerApprovedDateTime', broker.lei)} form={`broker-approved-${broker.lei}`} type="submit">Approved</button>
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={isSubmitting('setBrokerNextReview', broker.lei)} form={`broker-review-${broker.lei}`} type="submit">Review</button>
-                          <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700 disabled:cursor-wait disabled:opacity-70" disabled={isSubmitting('setBrokerNotes', broker.lei)} form={`broker-notes-${broker.lei}`} type="submit">Notes</button>
-                          <button class="h-8 rounded-md bg-teal-700 px-3 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70" disabled={isSubmitting('modifyBroker', broker.lei)} form={`broker-edit-${broker.lei}`} type="submit">{isSubmitting('modifyBroker', broker.lei) ? 'Saving' : 'Save'}</button>
+                          <button class="house-button house-button-secondary house-button-sm" onclick={cancelEdit} type="button">Cancel</button>
+                          <button class="house-button house-button-secondary house-button-sm" disabled={isSubmitting('setBrokerApprovedDateTime', broker.lei)} form={`broker-approved-${broker.lei}`} type="submit">Approved</button>
+                          <button class="house-button house-button-secondary house-button-sm" disabled={isSubmitting('setBrokerNextReview', broker.lei)} form={`broker-review-${broker.lei}`} type="submit">Review</button>
+                          <button class="house-button house-button-secondary house-button-sm" disabled={isSubmitting('setBrokerNotes', broker.lei)} form={`broker-notes-${broker.lei}`} type="submit">Notes</button>
+                          <button class="house-button house-button-primary house-button-sm" disabled={isSubmitting('modifyBroker', broker.lei)} form={`broker-edit-${broker.lei}`} type="submit">{isSubmitting('modifyBroker', broker.lei) ? 'Saving' : 'Save'}</button>
                         </div>
                       </div>
                     </td>
@@ -643,10 +643,10 @@
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(broker.lastAuditDateTime)}</td>
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => toggleHistory(broker.lei)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(broker.lei)} type="button">
                           {openHistoryLei === broker.lei ? 'Hide' : 'History'}
                         </button>
-                        <button class="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:border-teal-600 hover:text-teal-700" onclick={() => startEdit(broker.lei)} type="button">
+                        <button class="house-button house-button-secondary house-button-sm" onclick={() => startEdit(broker.lei)} type="button">
                           Edit
                         </button>
                       </div>

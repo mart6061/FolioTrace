@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { formatBookmarkType, formatBookmarkUrl } from '$lib/bookmarks';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import { Toggle } from '$lib/components/forms';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
@@ -212,7 +213,7 @@
             <span class="text-sm font-semibold text-slate-800">Formatted token</span>
             <textarea
               aria-label="Formatted user JWT"
-              class="min-h-32 w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-xs text-slate-800"
+              class="house-control house-control-md house-control-full min-h-32 font-mono"
               readonly
               spellcheck="false"
               value={data.decodedUserJWT.formattedToken}
@@ -226,7 +227,7 @@
                 <span class="text-sm font-semibold text-slate-800">Header JSON</span>
                 <textarea
                   aria-label="Decoded JWT header JSON"
-                  class="min-h-56 w-full resize-y rounded-md border border-slate-300 bg-white p-3 font-mono text-xs text-slate-800"
+                  class="house-control house-control-md house-control-full min-h-56 font-mono"
                   readonly
                   spellcheck="false"
                   value={data.decodedUserJWT.headerJSON}
@@ -236,7 +237,7 @@
                 <span class="text-sm font-semibold text-slate-800">Payload JSON</span>
                 <textarea
                   aria-label="Decoded JWT payload JSON"
-                  class="min-h-56 w-full resize-y rounded-md border border-slate-300 bg-white p-3 font-mono text-xs text-slate-800"
+                  class="house-control house-control-md house-control-full min-h-56 font-mono"
                   readonly
                   spellcheck="false"
                   value={data.decodedUserJWT.payloadJSON}
@@ -283,18 +284,15 @@
               <span class="menu-preference-toggle">
                 <input type="hidden" name={`menu:${item.id}`} value={String(visibleByID[item.id] ?? true)} />
                 <input type="hidden" name={`originalMenu:${item.id}`} value={String(originalVisibleByID[item.id] ?? true)} />
-                <span class="trace-toggle">
-                  <input
-                    aria-label={`${item.label} menu visibility`}
-                    checked={visibleByID[item.id] ?? true}
-                    disabled={disabled}
-                    name={`menu:${item.id}`}
-                    onchange={(event) => setMenuVisibility(item.id, event.currentTarget.checked)}
-                    type="checkbox"
-                    value="true"
-                  />
-                  <span></span>
-                </span>
+                <Toggle
+                  checked={visibleByID[item.id] ?? true}
+                  {disabled}
+                  label={`${item.label} menu visibility`}
+                  labelVisible={false}
+                  name={`menu:${item.id}`}
+                  onchange={(event) => setMenuVisibility(item.id, event.currentTarget.checked)}
+                  value="true"
+                />
               </span>
             </label>
           {/each}
@@ -357,16 +355,13 @@
             <span>Display Nil Balances</span>
             <span class="menu-preference-toggle">
               <input type="hidden" name="showZeroBalances" value={String(showZeroBalances)} />
-              <span class="trace-toggle">
-                <input
-                  aria-label="Display nil balances"
-                  checked={showZeroBalances}
-                  onchange={(event) => showZeroBalances = event.currentTarget.checked}
-                  type="checkbox"
-                  value="true"
-                />
-                <span></span>
-              </span>
+              <Toggle
+                checked={showZeroBalances}
+                label="Display nil balances"
+                labelVisible={false}
+                onchange={(event) => showZeroBalances = event.currentTarget.checked}
+                value="true"
+              />
             </span>
           </label>
         </div>
@@ -422,8 +417,8 @@
     </form>
 
     <div class="data-panel menu-preference-save-card">
-      <a class="btn btn-secondary" href="/sign-out">Sign out</a>
-      <button class="btn btn-primary" disabled={submitting} form="preferences-form" type="submit">
+      <a class="house-button house-button-secondary house-button-md" href="/sign-out">Sign out</a>
+      <button class="house-button house-button-primary house-button-md" disabled={submitting} form="preferences-form" type="submit">
         {submitting ? 'Saving...' : 'Save'}
       </button>
     </div>

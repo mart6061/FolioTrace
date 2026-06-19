@@ -13,25 +13,8 @@ function inputDateOrNow(valueOrNow: string | Date = new Date()) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-function stepToMilliseconds(step: string | number = '1') {
-  if (step === 'any')
-    return 1;
-
-  const seconds = typeof step === 'number' ? step : Number(step);
-
-  if (!Number.isFinite(seconds) || seconds <= 0)
-    return 1000;
-
-  return Math.max(1, Math.round(seconds * 1000));
-}
-
-function inputDateTime(date: Date, includeMilliseconds = false) {
-  const base = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-
-  if (!includeMilliseconds)
-    return base;
-
-  return `${base}.${date.getMilliseconds().toString().padStart(3, '0')}`;
+function inputDateTime(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
 function inputDate(date: Date) {
@@ -79,14 +62,13 @@ export function startOfDayForInput(valueOrNow: string | Date = new Date()) {
   return inputDateTime(new Date(date.getFullYear(), date.getMonth(), date.getDate()));
 }
 
-export function endOfDayForInput(valueOrNow: string | Date = new Date(), step: string | number = '1') {
+export function endOfDayForInput(valueOrNow: string | Date = new Date()) {
   const date = inputDateOrNow(valueOrNow);
-  const smallestUnitMilliseconds = stepToMilliseconds(step);
   const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
 
-  end.setMilliseconds(end.getMilliseconds() - smallestUnitMilliseconds);
+  end.setSeconds(end.getSeconds() - 1);
 
-  return inputDateTime(end, smallestUnitMilliseconds < 1000);
+  return inputDateTime(end);
 }
 
 export function clampFutureInputDateTime(value: string, now = new Date()) {
@@ -102,7 +84,16 @@ export function clampFutureInputDateTime(value: string, now = new Date()) {
 }
 
 export function toApiDateTime(value: string) {
-  return new Date(value).toISOString();
+  const date = new Date(value);
+
+  if (isEndOfDayInput(date)) {
+    const nextLocalMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    const previousSecond = new Date(nextLocalMidnight.getTime() - 1000);
+
+    return previousSecond.toISOString().replace('.000Z', '.9999999Z');
+  }
+
+  return date.toISOString();
 }
 
 export function dateInputToApiStartOfDay(value: string) {
@@ -163,4 +154,12 @@ export function isSameInputDateTime(left: string, right: string) {
     leftDate.getFullYear() === rightDate.getFullYear() &&
     leftDate.getMonth() === rightDate.getMonth() &&
     leftDate.getDate() === rightDate.getDate();
+}
+
+function isEndOfDayInput(date: Date) {
+  return !Number.isNaN(date.getTime()) &&
+    date.getHours() === 23 &&
+    date.getMinutes() === 59 &&
+    date.getSeconds() === 59 &&
+    date.getMilliseconds() === 0;
 }

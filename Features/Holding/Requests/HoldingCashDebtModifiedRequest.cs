@@ -14,4 +14,4 @@ public sealed record HoldingCashDebtModifiedRequest(
     SortCode SortCode,
     BankAccountNumber AccountNumber,
     BIC BIC,
-    IBAN IBAN) : IHoldingBankModifiedRequest;
+    IBAN IBAN) : IHoldingCashBaseModifiedRequest;

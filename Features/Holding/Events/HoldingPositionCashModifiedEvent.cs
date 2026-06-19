@@ -14,7 +14,7 @@ public sealed record HoldingPositionCashModifiedEvent : HoldingModifiedEvent
         : base(eventId, userId, eventDateTime, auditDateTime, reason, holdingID, name, isDefault) { }
 
     public override string Type => nameof(HoldingPositionCashModifiedEvent);
-    internal override Holding Apply(Holding holding) =>
+    internal override HoldingBase Apply(HoldingBase holding) =>
         holding is HoldingPositionCash existing
             ? existing with { Name = Name, Default = Default, ValuationDateTime = EventDateTime, AsOfDateTime = AuditDateTime, LastEventID = EventID, LastAuditDateTime = AuditDateTime }
             : throw new InvalidOperationException($"HoldingID '{HoldingID}' is not a {this.GetHoldingKindName()} holding.");
