@@ -32,7 +32,16 @@ ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__FolioTrace=<Railway Postgres Npgsql connection string>
 ```
 
-If `ConnectionStrings__FolioTrace` is not set, the API can fall back to Railway-style `DATABASE_URL` values that use a `postgres://` or `postgresql://` URI.
+Keep `API/appsettings.json` secret-free. Production database credentials should be configured as Railway service variables or GitHub environment secrets, not committed to source control.
+
+Use one of these database settings:
+
+```text
+ConnectionStrings__FolioTrace=Host=<host>;Port=<port>;Database=<database>;Username=<user>;Password=<password>
+DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<database>?sslmode=require
+```
+
+`ConnectionStrings__FolioTrace` takes precedence. If it is not set, the API can fall back to Railway-style `DATABASE_URL` values that use a `postgres://` or `postgresql://` URI. When `DATABASE_URL` includes `sslmode=require`, the API enables required SSL and trusts the server certificate for the generated Npgsql connection string.
 
 Optional aggregate maintenance variables:
 
