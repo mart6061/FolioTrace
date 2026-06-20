@@ -8,11 +8,12 @@ import { getAuthKitConfig } from '$lib/server/workos';
 
 const authKitConfig = getAuthKitConfig();
 const authKitConfigured = authKitConfig !== null;
+const devAuthConfigured = hasDevAuthConfigured();
 
 if (authKitConfig)
   configureAuthKit(authKitConfig);
 
-const workosHandle: Handle = authKitConfigured
+const workosHandle: Handle = authKitConfigured && !devAuthConfigured
   ? authKitHandle()
   : async ({ event, resolve }) => {
       event.locals.auth = null;
@@ -63,11 +64,15 @@ function isPublicPath(pathname: string) {
     || pathname === '/robots.txt';
 }
 
+function hasDevAuthConfigured() {
+  return dev && Boolean(env.FOLIOTRACE_DEV_AUTH_EMAIL?.trim());
+}
+
 function getDevCurrentUser() {
-  if (!dev)
+  if (!hasDevAuthConfigured())
     return null;
 
-  const email = env.FOLIOTRACE_DEV_AUTH_EMAIL?.trim();
+  const email = env.FOLIOTRACE_DEV_AUTH_EMAIL?.trim() ?? '';
   if (!email)
     return null;
 

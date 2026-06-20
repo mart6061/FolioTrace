@@ -45,7 +45,7 @@ export const load = async ({ fetch, url }) => {
 
   try {
     const [tickets, accounts, brokers, holdings, instruments, instrumentValues, ticketStageOptions, foleoTraderOrders] = await Promise.all([
-      getTickets(fetch, eventDateTime, asOfDateTime),
+      getTickets(fetch, eventDateTime, asOfDateTime, true),
       getAccounts(fetch, eventDateTime, asOfDateTime),
       getBrokers(fetch, eventDateTime, asOfDateTime),
       getHoldings(fetch, eventDateTime, asOfDateTime, { holdingKind: 'CashInvestable', includeInactive: false }),

@@ -466,6 +466,7 @@
           <div class="page-title-row">
             <h1 class="page-title">Report Tools</h1>
           </div>
+          <p class="page-subtitle">Build report configurations, nodes, and valuation column layouts.</p>
         </div>
         <div class="page-header-aside">
           <BookmarkButton />

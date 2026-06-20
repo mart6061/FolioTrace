@@ -96,7 +96,7 @@
         <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
       {/if}
 
-      <div class="grid gap-3 lg:grid-cols-[minmax(0,var(--house-datetime-width))_minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
+      <div class="grid gap-3 lg:grid-cols-[var(--house-datetime-width)_minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
         <label class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />
