@@ -43,12 +43,12 @@
   --house-panel-shadow: 0 14px 32px var(--surface-shadow);
   --house-control-height: 2.25rem;
   --house-label-size: 0.75rem;
-  --house-datetime-width: 18.5rem;
-  --house-datetime-input-column: 13.25rem;
-  --house-datetime-sm-width: 17rem;
-  --house-datetime-sm-input-column: 11.75rem;
-  --house-datetime-compact-width: 16.5rem;
-  --house-datetime-compact-input-column: 11.25rem;
+  --house-datetime-width: 22rem;
+  --house-datetime-input-column: 14.25rem;
+  --house-datetime-sm-width: 19.25rem;
+  --house-datetime-sm-input-column: 12.25rem;
+  --house-datetime-compact-width: 18.25rem;
+  --house-datetime-compact-input-column: 12rem;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -583,7 +583,7 @@ main {
 
 .system-menu-bookmark-dropdown {
   position: absolute;
-  top: calc(100% + 9px);
+  top: calc(100% + 8px);
   left: 0;
   z-index: 79;
   display: flex;
@@ -593,19 +593,19 @@ main {
   align-items: flex-start;
   gap: 7px;
   border: 1px solid rgb(255 255 255 / 0.18);
-  border-radius: 22px;
-  background: rgb(15 23 42 / 0.32);
-  box-shadow: 0 18px 36px rgb(0 0 0 / 0.28);
-  padding: 8px;
-  backdrop-filter: blur(14px);
+  border-radius: 0 0 22px 22px;
+  background:
+    linear-gradient(90deg, var(--chrome), var(--chrome-strong) 58%, color-mix(in srgb, var(--accent-strong) 30%, var(--chrome)));
+  box-shadow: 0 18px 36px rgb(0 0 0 / 0.36);
+  padding: 9px;
 }
 
 .system-menu-pill-bookmark-subitem {
   max-width: min(68vw, 420px);
   justify-content: flex-start;
-  border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 56%, transparent);
-  background: rgb(255 255 255 / 0.78);
-  color: var(--menu-tint-text, var(--accent-strong));
+  border-color: rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.11);
+  color: #edf7f1;
   overflow: hidden;
   padding-right: 15px;
   padding-left: 15px;
@@ -615,9 +615,9 @@ main {
 
 .system-menu-pill-bookmark-subitem:hover,
 .system-menu-pill-bookmark-subitem:focus-visible {
-  border-color: color-mix(in srgb, var(--menu-border, var(--accent)) 78%, transparent);
-  background: rgb(255 255 255 / 0.92);
-  color: var(--menu-tint-text, var(--accent-strong));
+  border-color: rgb(255 255 255 / 0.34);
+  background: rgb(255 255 255 / 0.2);
+  color: #fff;
 }
 
 .system-menu-pill-secondary.system-menu-pill-open {
@@ -638,15 +638,11 @@ main {
   box-shadow: none;
 }
 
-.system-menu-home-icon {
-  display: inline-flex;
-  width: 15px;
-  height: 15px;
-  align-items: center;
-  justify-content: center;
-}
-
-.system-menu-bookmark-icon {
+.system-menu-home-icon,
+.system-menu-bookmark-icon,
+.system-menu-data-list-icon,
+.system-menu-tools-icon,
+.system-menu-diagnostics-icon {
   display: inline-flex;
   width: 15px;
   height: 15px;
@@ -655,7 +651,10 @@ main {
 }
 
 .system-menu-home-icon svg,
-.system-menu-bookmark-icon svg {
+.system-menu-bookmark-icon svg,
+.system-menu-data-list-icon svg,
+.system-menu-tools-icon svg,
+.system-menu-diagnostics-icon svg {
   display: block;
   width: 15px;
   height: 15px;
@@ -700,13 +699,13 @@ main {
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--accent-soft) 68%, var(--panel)), var(--panel) 56%, color-mix(in srgb, var(--brand-gold) 9%, var(--panel)));
   box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.5);
-  padding: 24px 0;
+  padding: 20px 0;
 }
 
 .page-header > .page-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .page-header::before {
@@ -746,7 +745,7 @@ main {
 .page-header-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .page-header-main {
@@ -758,7 +757,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14px;
+  gap: 10px;
   text-align: right;
 }
 
@@ -804,7 +803,7 @@ main {
 }
 
 .page-subtitle {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--muted);
   font-size: 15px;
   font-weight: 460;
@@ -1690,6 +1689,7 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
   grid-template-columns: minmax(0, auto) auto;
   align-items: center;
   gap: 4px;
+  min-width: var(--house-datetime-width);
   max-width: 100%;
   vertical-align: middle;
 }
@@ -1699,70 +1699,84 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 }
 
 .datetime-input-control:has(input.w-full) {
-  width: min(100%, var(--house-datetime-width));
-  grid-template-columns: minmax(0, 1fr) auto;
+  width: var(--house-datetime-width);
+  grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
 }
 
 .datetime-input-control-full {
-  width: min(100%, var(--house-datetime-width));
-  grid-template-columns: minmax(0, 1fr) auto;
+  width: var(--house-datetime-width);
+  grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded {
+  --datetime-shortcut-button-size: 1.375rem;
   box-sizing: border-box;
   display: inline-flex;
-  width: min(100%, var(--house-datetime-width));
+  width: var(--house-datetime-width);
+  min-width: var(--house-datetime-width);
   min-height: 36px;
   align-items: center;
   border: 1px solid var(--line);
   border-radius: var(--house-radius-sm);
   background: var(--panel);
   gap: 0.35rem;
-  grid-template-columns: minmax(min(100%, var(--house-datetime-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
   overflow: hidden;
   padding-right: 0.35rem;
 }
 
 .datetime-input-control-embedded.datetime-input-control-compact {
+  --datetime-shortcut-button-size: 1.25rem;
   height: 1.75rem;
-  width: min(100%, var(--house-datetime-compact-width));
+  width: var(--house-datetime-compact-width);
+  min-width: var(--house-datetime-compact-width);
   min-height: 1.75rem;
-  grid-template-columns: minmax(min(100%, var(--house-datetime-compact-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-compact-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded:has(input.h-8) {
+  --datetime-shortcut-button-size: 1.25rem;
   height: 2rem;
-  width: min(100%, var(--house-datetime-sm-width));
+  width: var(--house-datetime-sm-width);
+  min-width: var(--house-datetime-sm-width);
   min-height: 2rem;
-  grid-template-columns: minmax(min(100%, var(--house-datetime-sm-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-sm-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded.datetime-input-control-sm {
+  --datetime-shortcut-button-size: 1.25rem;
   height: 2rem;
-  width: min(100%, var(--house-datetime-sm-width));
+  width: var(--house-datetime-sm-width);
+  min-width: var(--house-datetime-sm-width);
   min-height: 2rem;
-  grid-template-columns: minmax(min(100%, var(--house-datetime-sm-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-sm-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded:has(input.h-9) {
+  --datetime-shortcut-button-size: 1.375rem;
   height: 2.25rem;
-  width: min(100%, var(--house-datetime-width));
+  width: var(--house-datetime-width);
+  min-width: var(--house-datetime-width);
   min-height: 2.25rem;
-  grid-template-columns: minmax(min(100%, var(--house-datetime-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded.datetime-input-control-md {
+  --datetime-shortcut-button-size: 1.375rem;
   height: var(--house-control-height);
-  width: min(100%, var(--house-datetime-width));
+  width: var(--house-datetime-width);
+  min-width: var(--house-datetime-width);
   min-height: var(--house-control-height);
-  grid-template-columns: minmax(min(100%, var(--house-datetime-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded:has(input.h-10) {
+  --datetime-shortcut-button-size: 1.375rem;
   height: var(--house-control-height);
-  width: min(100%, var(--house-datetime-width));
+  width: var(--house-datetime-width);
+  min-width: var(--house-datetime-width);
   min-height: var(--house-control-height);
-  grid-template-columns: minmax(min(100%, var(--house-datetime-input-column)), 1fr) auto;
+  grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded input {
@@ -1772,7 +1786,7 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
   border-radius: calc(var(--house-radius-sm) - 1px) 0 0 calc(var(--house-radius-sm) - 1px) !important;
   background: transparent !important;
   box-shadow: none !important;
-  min-width: min(100%, var(--house-datetime-input-column));
+  min-width: var(--house-datetime-input-column) !important;
   width: 100%;
   outline: none;
   padding-left: 0.625rem !important;
@@ -1780,18 +1794,18 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 }
 
 .datetime-input-control-embedded.datetime-input-control-compact input {
-  min-width: min(100%, var(--house-datetime-compact-input-column));
+  min-width: var(--house-datetime-compact-input-column) !important;
 }
 
 .datetime-input-control-embedded:has(input.h-8) input,
 .datetime-input-control-embedded.datetime-input-control-sm input {
-  min-width: min(100%, var(--house-datetime-sm-input-column));
+  min-width: var(--house-datetime-sm-input-column) !important;
 }
 
 .datetime-input-control-embedded:has(input.h-9) input,
 .datetime-input-control-embedded.datetime-input-control-md input,
 .datetime-input-control-embedded:has(input.h-10) input {
-  min-width: min(100%, var(--house-datetime-input-column));
+  min-width: var(--house-datetime-input-column) !important;
 }
 
 .datetime-input-control-embedded input:focus {
@@ -1842,16 +1856,26 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 }
 
 .datetime-input-control-embedded .datetime-input-shortcuts button {
-  width: 16px;
-  height: 22px;
-  min-width: 16px;
-  min-height: 22px;
+  box-sizing: border-box;
+  width: var(--datetime-shortcut-button-size);
+  height: var(--datetime-shortcut-button-size);
+  min-width: var(--datetime-shortcut-button-size);
+  min-height: var(--datetime-shortcut-button-size);
   border-color: var(--accent);
   border-radius: 5px;
   background: var(--accent);
   color: #fff;
   font-size: 9px;
+  padding: 0;
   box-shadow: none;
+}
+
+.page-header form .datetime-input-control-embedded .datetime-input-shortcuts button {
+  width: var(--datetime-shortcut-button-size);
+  height: var(--datetime-shortcut-button-size);
+  min-width: var(--datetime-shortcut-button-size);
+  min-height: var(--datetime-shortcut-button-size);
+  padding: 0;
 }
 
 .datetime-input-shortcuts button:hover,
@@ -1887,7 +1911,7 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 @media (max-width: 640px) {
   .datetime-input-control-full,
   .datetime-input-control-full.datetime-input-control-embedded {
-    width: 100%;
+    width: var(--house-datetime-width);
   }
 }
 

@@ -6,7 +6,7 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { EventPropertyDetail, Holding, HoldingHistoryEvent, HoldingKind, TransactionReferenceEvent } from '$lib/types';
-  import type { SubmitFunction } from './$types';
+  import type { SubmitFunction } from '@sveltejs/kit';
 
   let { data, form } = $props();
 
@@ -441,7 +441,7 @@
         </div>
       </div>
 
-      <form class="house-form grid gap-4 md:grid-cols-[minmax(0,var(--house-datetime-width))_auto] md:items-end">
+      <form class="house-form grid gap-4 md:grid-cols-[var(--house-datetime-width)_auto] md:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
           Valuation date
           <DateTimeInput fullWidth name="valuationDate" step="1" value={data.valuationDate} />

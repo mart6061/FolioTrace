@@ -1,5 +1,9 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import AssetExperience from '../Asset/AssetExperience.svelte';
+  import ReportExperience from '../Report/ReportExperience.svelte';
+  import type { PageData } from './$types';
 
   type ViewerKey = 'Asset' | 'Report' | 'Metric';
 
@@ -26,9 +30,23 @@
       description: 'View account/holding metric and summaries'
     }
   ];
+  const metricCards = ['Trades', 'Fees', 'Events'];
 
-  let selectedViewer = $state<ViewerKey | ''>('');
-  const selectedOption = $derived(viewerOptions.find((option) => option.key === selectedViewer));
+  let { data }: { data: PageData } = $props();
+
+  const selectedViewer = $derived(data.viewer);
+
+  function viewerHref(key: ViewerKey) {
+    const params = new URLSearchParams(page.url.searchParams);
+
+    params.set('viewer', key);
+
+    if (key !== selectedViewer)
+      params.delete('create');
+
+    const query = params.toString();
+    return query ? `/Viewer?${query}` : '/Viewer';
+  }
 </script>
 
 <svelte:head>
@@ -48,85 +66,98 @@
         </div>
       </div>
 
-      <section class="section-band viewer-filter-card" aria-labelledby="viewer-filter-title">
-        <div class="viewer-filter-header">
-          <div>
-            <h2 id="viewer-filter-title" class="viewer-filter-title">Filter</h2>
-          </div>
-        </div>
-
+      <section class="section-band viewer-filter-card" aria-label="Viewer filters">
         <div class="viewer-option-grid">
           {#each viewerOptions as option (option.key)}
-            <button
-              aria-pressed={selectedViewer === option.key}
+            <a
+              aria-current={selectedViewer === option.key ? 'page' : undefined}
               class={[
                 'viewer-option-card',
                 selectedViewer === option.key && 'viewer-option-card-selected'
               ]}
-              onclick={() => (selectedViewer = option.key)}
-              type="button"
+              href={viewerHref(option.key)}
             >
               <span class="viewer-option-title">{option.title}</span>
               <span class="viewer-option-description">{option.description}</span>
-            </button>
+            </a>
           {/each}
         </div>
 
-        {#if selectedOption}
-          <div class="viewer-filter-panel">
-            <div>
-              <p class="viewer-filter-label">{selectedOption.title}</p>
-              <p class="house-muted text-sm">Filters required to be confirmed.</p>
-            </div>
+        {#if selectedViewer === 'Asset' && data.asset}
+          <div class="viewer-selected-filter">
+            <AssetExperience
+              data={data.asset}
+              formAction="/Viewer"
+              formID="viewer-asset-filter-form"
+              renderMode="filter"
+              showPageHeader={false}
+              viewer="Asset"
+            />
           </div>
+        {:else if selectedViewer === 'Report' && data.report}
+          <div class="viewer-selected-filter">
+            <ReportExperience
+              data={data.report}
+              formAction="/Viewer"
+              renderMode="filter"
+              showPageHeader={false}
+              viewer="Report"
+            />
+          </div>
+        {:else}
+          <section class="house-form viewer-metric-filter" aria-label="Metric filters"></section>
         {/if}
       </section>
     </div>
   </section>
+
+  {#if selectedViewer === 'Asset' && data.asset}
+    <AssetExperience data={data.asset} renderMode="body" showPageHeader={false} />
+  {:else if selectedViewer === 'Report' && data.report}
+    <ReportExperience data={data.report} renderMode="body" showPageHeader={false} />
+  {:else}
+    <section class="page-container page-section viewer-metric-shell">
+      <div class="viewer-metric-grid">
+        {#each metricCards as card (card)}
+          <article class="viewer-metric-card">
+            <h2>{card}</h2>
+          </article>
+        {/each}
+      </div>
+    </section>
+  {/if}
 </main>
 
 <style>
   .viewer-filter-card {
     display: grid;
-    gap: 0.85rem;
-    border-top-color: color-mix(in srgb, var(--brand-gold) 72%, var(--accent));
-  }
-
-  .viewer-filter-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem 0.75rem;
-  }
-
-  .viewer-filter-title {
-    margin: 0;
-    color: var(--accent-strong);
-    font-size: 0.95rem;
-    font-weight: 800;
-    line-height: 1.25;
+    gap: 0.75rem;
+    border: 1px solid var(--line);
+    overflow: visible;
+    position: relative;
+    z-index: 20;
   }
 
   .viewer-option-grid {
     display: grid;
-    gap: 0.85rem;
+    gap: 0.65rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .viewer-option-card {
     display: grid;
-    min-height: 8rem;
+    min-height: 5.25rem;
     align-content: start;
-    gap: 0.55rem;
+    gap: 0.35rem;
     border: 1px solid var(--line);
     border-radius: var(--house-radius);
     background: var(--panel);
     box-shadow: var(--house-panel-shadow);
     color: var(--ink);
     cursor: pointer;
-    padding: 1rem;
+    padding: 0.75rem 0.85rem;
     text-align: left;
+    text-decoration: none;
     transition:
       border-color 0.16s ease,
       box-shadow 0.16s ease,
@@ -148,7 +179,7 @@
 
   .viewer-option-title {
     color: var(--accent-strong);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1.25;
@@ -156,29 +187,59 @@
 
   .viewer-option-description {
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: 0.8rem;
     font-weight: 560;
-    line-height: 1.45;
+    line-height: 1.35;
   }
 
-  .viewer-filter-panel {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .viewer-selected-filter {
+    padding-top: 0.25rem;
+  }
+
+  .viewer-metric-shell {
+    display: grid;
     gap: 1rem;
-    border-top: 1px solid var(--line);
-    padding-top: 1rem;
   }
 
-  .viewer-filter-label {
-    color: var(--ink);
-    font-size: 0.9rem;
-    font-weight: 720;
-    line-height: 1.2;
+  .viewer-metric-filter {
+    min-height: 3.5rem;
+  }
+
+  .viewer-metric-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .viewer-metric-card {
+    min-height: 8rem;
+    border: 1px solid var(--line);
+    border-radius: var(--house-radius);
+    background: var(--panel);
+    box-shadow: var(--house-panel-shadow);
+    padding: 1rem;
+  }
+
+  .viewer-metric-card h2 {
+    margin: 0;
+    color: var(--accent-strong);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  :global(.viewer-embedded-page) {
+    min-height: 0;
+  }
+
+  :global(.viewer-embedded-page .page-header) {
+    background: transparent;
+    padding: 0;
   }
 
   @media (max-width: 980px) {
-    .viewer-option-grid {
+    .viewer-option-grid,
+    .viewer-metric-grid {
       grid-template-columns: 1fr;
     }
   }

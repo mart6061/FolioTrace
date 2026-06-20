@@ -40,6 +40,7 @@
   const tickets = $derived(data.tickets?.items ?? []);
   const foleoTraderOrders = $derived(data.foleoTraderOrders?.items ?? []);
   const filteredTickets = $derived(tickets.filter(ticketMatchesFilters));
+  const hasOpenTickets = $derived(tickets.some(isOpenTicket));
   const accounts = $derived(data.accounts?.items ?? []);
   const brokers = $derived(data.brokers?.items ?? []);
   const holdings = $derived(data.holdings?.items ?? []);
@@ -56,6 +57,7 @@
     [...activeInstruments].sort((left, right) => instrumentLabel(left).localeCompare(instrumentLabel(right)))
   );
   const asOfSummary = $derived(data.auditDateTime && data.tickets ? formatDisplayDateTime(data.tickets.asOfDateTime) : 'now');
+  const ticketSummaryQualifier = $derived(selectedStages.length === 0 ? 'active ' : '');
   const liveUpdateLastEventIDs = $derived([
     data.tickets?.lastEventID ?? null,
     data.foleoTraderOrders?.lastEventID ?? null
@@ -823,9 +825,13 @@
       : [...selectedStages, stage];
   }
 
+  function isOpenTicket(ticket: Ticket) {
+    return ticket.isActive !== false && ticket.stage !== 'Completed' && ticket.stage !== 'Cancelled';
+  }
+
   function ticketMatchesFilters(ticket: Ticket) {
     const sideMatches = selectedSides.length === 0 || selectedSides.includes(ticket.side);
-    const stageMatches = selectedStages.length === 0 || selectedStages.includes(ticket.stage);
+    const stageMatches = selectedStages.length === 0 ? isOpenTicket(ticket) : selectedStages.includes(ticket.stage);
     const text = freeTextFilter.trim().toLowerCase();
 
     return sideMatches && stageMatches && (!text || ticketSearchText(ticket).includes(text));
@@ -979,7 +985,7 @@
         <div class="page-header-aside">
           <BookmarkButton />
           <div class="page-header-summary">
-            {filteredTickets.length} active ticket{filteredTickets.length === 1 ? '' : 's'} · as of {asOfSummary}
+            {filteredTickets.length} {ticketSummaryQualifier}ticket{filteredTickets.length === 1 ? '' : 's'} · as of {asOfSummary}
           </div>
         </div>
       </div>
@@ -1106,7 +1112,7 @@
     </section>
 
     {#if filteredTickets.length === 0}
-      <section class="empty-state">{tickets.length === 0 ? 'No active tickets.' : 'No tickets match the selected filters.'}</section>
+      <section class="empty-state">{tickets.length === 0 || (selectedStages.length === 0 && !hasOpenTickets) ? 'No active tickets.' : 'No tickets match the selected filters.'}</section>
     {:else}
       <section class="ticket-list">
         {#each filteredTickets as ticket (ticket.ticketNumber)}

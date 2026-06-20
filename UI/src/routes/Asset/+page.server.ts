@@ -1,11 +1,14 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { getAccounts, getCurrencies, getValuations } from '$lib/server/api';
 import { normalizeHoldingDateBasis } from '$lib/valuationPreferences';
+import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 import type { Account, Currency, InstrumentPriceBasis, Valuations } from '$lib/types';
 
 const instrumentPriceBasisOptions: InstrumentPriceBasis[] = ['Mid', 'Bid', 'Ask', 'NAV'];
+type AssetLoadEvent = Pick<ServerLoadEvent, 'fetch' | 'url'>;
 
-export const load = async ({ fetch, url }) => {
+export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const holdingDateBasis = normalizeHoldingDateBasis(url.searchParams.get('holdingDateBasis'));
@@ -66,6 +69,13 @@ export const load = async ({ fetch, url }) => {
       valuations: null
     };
   }
+};
+
+export const load: PageServerLoad = ({ url }) => {
+  const target = new URL('/Viewer', url);
+  target.search = url.search;
+  target.searchParams.set('viewer', 'Asset');
+  throw redirect(307, `${target.pathname}${target.search}`);
 };
 
 function normalizeInstrumentPriceBasis(value: string | null): InstrumentPriceBasis {

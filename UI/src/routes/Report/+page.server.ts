@@ -2,6 +2,8 @@ import { clampFutureInputDateTime, endOfDayForInput, nowForInput, startOfDayForI
 import { getAccounts, getAssetAllocationMappings, getHoldingPositions, getHoldings, getInstruments, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
 import { requireCurrentUser } from '$lib/server/auth';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, valuationEndDateFromOption, valuationStartDateFromOption } from '$lib/valuationPreferences';
+import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 import type {
   Account,
   AssetAllocationMapping,
@@ -24,6 +26,7 @@ import type {
 
 const instrumentPriceBasisOptions: InstrumentPriceBasis[] = ['Mid', 'Bid', 'Ask', 'NAV'];
 const reportPalette = ['#0f766e', '#2563eb', '#db2777', '#ca8a04', '#7c3aed', '#16a34a', '#f97316', '#64748b'];
+type ReportLoadEvent = Pick<ServerLoadEvent, 'fetch' | 'locals' | 'url'>;
 const valuationColumnDefinitions: ReportValuationColumnDefinition[] = [
   { columnKey: 'InstrumentName', label: 'Instrument Name', numeric: false, valueType: 'Text' },
   { columnKey: 'ISIN', label: 'ISIN', numeric: false, valueType: 'Text' },
@@ -164,7 +167,7 @@ type ReportDocument = {
   sections: ReportDocumentSection[];
 };
 
-export const load = async ({ fetch, locals, url }) => {
+export const _loadReportPageData = async ({ fetch, locals, url }: ReportLoadEvent) => {
   const currentUser = requireCurrentUser(locals);
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
@@ -180,7 +183,6 @@ export const load = async ({ fetch, locals, url }) => {
   const apiValuationDate = toApiDateTime(valuationDate);
   const holdingDateBasis = normalizeHoldingDateBasis(url.searchParams.get('holdingDateBasis') || valuationPreferences.holdingDateBasis);
   const instrumentPriceBasis = normalizeInstrumentPriceBasis(url.searchParams.get('instrumentPriceBasis'));
-  const shouldCreateDocument = url.searchParams.get('create') === 'true';
 
   try {
     const [accounts, valuationSettings, reportConfigs] = await Promise.all([
@@ -196,7 +198,7 @@ export const load = async ({ fetch, locals, url }) => {
     const reportID = selectedOptionalID(url.searchParams.get('reportID'), matchingReportConfigs, 'reportID');
     const selectedReportConfig = matchingReportConfigs.find((reportConfig) => reportConfig.reportID === reportID) ?? null;
     const filtersValid = Boolean(selectedAccount && selectedReportConfig);
-    const reportDocument = shouldCreateDocument && selectedReportConfig && selectedAccount
+    const reportDocument = selectedReportConfig && selectedAccount
       ? await createReportDocument(fetch, selectedReportConfig, {
         accountID,
         auditDateTime: apiAuditDateTime,
@@ -244,6 +246,13 @@ export const load = async ({ fetch, locals, url }) => {
       valuationPreferences
     };
   }
+};
+
+export const load: PageServerLoad = ({ url }) => {
+  const target = new URL('/Viewer', url);
+  target.search = url.search;
+  target.searchParams.set('viewer', 'Report');
+  throw redirect(307, `${target.pathname}${target.search}`);
 };
 
 async function loadValuationPreferences(fetchApi: typeof fetch, userID: string, auditDateTime: string | null) {
