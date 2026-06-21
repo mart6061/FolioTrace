@@ -27,3 +27,360 @@
 20260608-20:31:00.976 : Session reset: ResetSeqNumFlag
 20260608-20:31:00.987 : Initiated logon request
 20260608-20:31:01.018 : Received logon
+20260609-00:56:09.536 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260609-00:56:09.554 : Session reset: New session
+20260609-00:56:09.558 : Created session
+20260609-00:56:09.565 : Connecting to 127.0.0.1 on port 9878
+20260609-00:56:11.611 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260609-00:56:39.812 : Connecting to 127.0.0.1 on port 9878
+20260609-00:56:41.838 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260609-00:57:09.940 : Connecting to 127.0.0.1 on port 9878
+20260609-00:57:09.942 : Connection succeeded
+20260609-00:57:09.950 : Session reset: ResetOnLogon
+20260609-00:57:09.959 : Session reset: ResetSeqNumFlag
+20260609-00:57:09.971 : Initiated logon request
+20260609-00:57:10.078 : Received logon
+20260609-23:59:59.805 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Resetting...
+20260609-23:59:59.846 : Session reset: Out of SessionTime (Session.Next())
+20260609-23:59:59.866 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260610-00:00:11.129 : Connecting to 127.0.0.1 on port 9878
+20260610-00:00:11.141 : Connection succeeded
+20260610-00:00:11.149 : Session reset: ResetOnLogon
+20260610-00:00:11.158 : Session reset: ResetSeqNumFlag
+20260610-00:00:11.160 : Initiated logon request
+20260610-00:00:11.177 : Received logon
+20260611-01:18:24.031 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260611-01:18:24.041 : Session reset: New session
+20260611-01:18:24.041 : Created session
+20260611-01:18:24.049 : Connecting to 127.0.0.1 on port 9878
+20260611-01:18:24.074 : Connection succeeded
+20260611-01:18:24.084 : Session reset: ResetOnLogon
+20260611-01:18:24.095 : Session reset: ResetSeqNumFlag
+20260611-01:18:24.110 : Initiated logon request
+20260611-01:18:24.238 : Received logon
+20260611-01:34:20.078 : Initiated logout request
+20260611-01:34:20.097 : Received logout response
+20260611-01:34:20.097 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260611-01:34:20.901 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-01:38:12.703 : Created session
+20260611-01:38:12.710 : Connecting to 127.0.0.1 on port 9878
+20260611-01:38:12.733 : Connection succeeded
+20260611-01:38:12.746 : Session reset: ResetOnLogon
+20260611-01:38:12.764 : Session reset: ResetSeqNumFlag
+20260611-01:38:12.778 : Initiated logon request
+20260611-01:38:12.816 : Received logon
+20260611-01:43:26.211 : Initiated logout request
+20260611-01:43:26.216 : Received logout response
+20260611-01:43:26.217 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260611-01:43:26.852 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-01:46:42.304 : Created session
+20260611-01:46:42.311 : Connecting to 127.0.0.1 on port 9878
+20260611-01:46:42.336 : Connection succeeded
+20260611-01:46:42.346 : Session reset: ResetOnLogon
+20260611-01:46:42.358 : Session reset: ResetSeqNumFlag
+20260611-01:46:42.372 : Initiated logon request
+20260611-01:46:42.408 : Received logon
+20260611-01:53:05.333 : Initiated logout request
+20260611-01:53:05.583 : Received logout response
+20260611-01:53:05.584 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260611-01:53:06.303 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-01:54:29.625 : Created session
+20260611-01:54:29.633 : Connecting to 127.0.0.1 on port 9878
+20260611-01:54:29.663 : Connection succeeded
+20260611-01:54:29.674 : Session reset: ResetOnLogon
+20260611-01:54:29.690 : Session reset: ResetSeqNumFlag
+20260611-01:54:29.702 : Initiated logon request
+20260611-01:54:29.735 : Received logon
+20260611-01:55:52.511 : Initiated logout request
+20260611-01:55:52.517 : Received logout response
+20260611-01:55:52.518 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260611-01:55:53.482 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-01:57:36.356 : Created session
+20260611-01:57:36.364 : Connecting to 127.0.0.1 on port 9878
+20260611-01:57:36.396 : Connection succeeded
+20260611-01:57:36.416 : Session reset: ResetOnLogon
+20260611-01:57:36.428 : Session reset: ResetSeqNumFlag
+20260611-01:57:36.448 : Initiated logon request
+20260611-01:57:36.647 : Received logon
+20260611-09:55:48.761 : Created session
+20260611-09:55:48.773 : Connecting to 127.0.0.1 on port 9878
+20260611-09:55:48.813 : Connection succeeded
+20260611-09:55:48.822 : Session reset: ResetOnLogon
+20260611-09:55:48.874 : Session reset: ResetSeqNumFlag
+20260611-09:55:48.928 : Initiated logon request
+20260611-09:55:49.316 : Received logon
+20260611-11:17:37.263 : Initiated logout request
+20260611-11:17:37.268 : Received logout response
+20260611-11:17:37.268 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260611-11:17:38.791 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-11:20:32.247 : Created session
+20260611-11:20:32.252 : Connecting to 127.0.0.1 on port 9878
+20260611-11:20:32.283 : Connection succeeded
+20260611-11:20:32.294 : Session reset: ResetOnLogon
+20260611-11:20:32.317 : Session reset: ResetSeqNumFlag
+20260611-11:20:32.326 : Initiated logon request
+20260611-11:20:32.460 : Received logon
+20260611-14:01:48.574 : Sent test request TEST
+20260611-14:14:15.458 : Initiated logout request
+20260611-14:14:15.482 : Received logout response
+20260611-14:14:15.482 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260611-14:14:16.284 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-15:01:35.429 : Created session
+20260611-15:01:35.435 : Connecting to 127.0.0.1 on port 9878
+20260611-15:01:35.456 : Connection succeeded
+20260611-15:01:35.467 : Session reset: ResetOnLogon
+20260611-15:01:35.483 : Session reset: ResetSeqNumFlag
+20260611-15:01:35.491 : Initiated logon request
+20260611-15:01:35.588 : Received logon
+20260611-15:13:03.043 : Received logout request
+20260611-15:13:03.044 : Sending logout response
+20260611-15:13:03.045 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout request
+20260611-15:13:03.063 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260611-15:13:10.403 : Connecting to 127.0.0.1 on port 9878
+20260611-15:13:12.426 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260611-18:35:02.252 : Created session
+20260611-18:35:02.258 : Connecting to 127.0.0.1 on port 9878
+20260611-18:35:02.274 : Connection succeeded
+20260611-18:35:02.284 : Session reset: ResetOnLogon
+20260611-18:35:02.303 : Session reset: ResetSeqNumFlag
+20260611-18:35:02.308 : Initiated logon request
+20260611-18:35:02.406 : Received logon
+20260611-23:59:59.299 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Resetting...
+20260611-23:59:59.328 : Session reset: Out of SessionTime (Session.Next())
+20260611-23:59:59.404 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260612-00:00:20.976 : Connecting to 127.0.0.1 on port 9878
+20260612-00:00:20.984 : Connection succeeded
+20260612-00:00:20.996 : Session reset: ResetOnLogon
+20260612-00:00:21.016 : Session reset: ResetSeqNumFlag
+20260612-00:00:21.017 : Initiated logon request
+20260612-00:00:21.060 : Received logon
+20260612-01:13:46.513 : Sent test request TEST
+20260612-01:24:22.093 : Initiated logout request
+20260612-01:24:22.103 : Received logout response
+20260612-01:24:22.104 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260612-01:24:23.465 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260613-17:22:54.452 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260613-17:22:54.460 : Session reset: New session
+20260613-17:22:54.461 : Created session
+20260613-17:22:54.516 : Connecting to 127.0.0.1 on port 9878
+20260613-17:22:54.568 : Connection succeeded
+20260613-17:22:54.578 : Session reset: ResetOnLogon
+20260613-17:22:54.596 : Session reset: ResetSeqNumFlag
+20260613-17:22:54.614 : Initiated logon request
+20260613-17:22:54.790 : Received logon
+20260613-20:13:51.889 : Initiated logout request
+20260613-20:13:51.899 : Received logout response
+20260613-20:13:51.901 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260613-20:13:53.088 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260615-15:07:59.077 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260615-15:07:59.091 : Session reset: New session
+20260615-15:07:59.091 : Created session
+20260615-15:07:59.097 : Connecting to 127.0.0.1 on port 9878
+20260615-15:07:59.120 : Connection succeeded
+20260615-15:07:59.129 : Session reset: ResetOnLogon
+20260615-15:07:59.148 : Session reset: ResetSeqNumFlag
+20260615-15:07:59.156 : Initiated logon request
+20260615-15:07:59.277 : Received logon
+20260615-22:37:10.929 : Sent test request TEST
+20260615-22:37:52.316 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: System.IO.IOException: Unable to write data to the transport connection: An existing connection was forcibly closed by the remote host..
+ ---> System.Net.Sockets.SocketException (10054): An existing connection was forcibly closed by the remote host.
+   at QuickFix.Session.Send(String message)
+   --- End of inner exception stack trace ---
+   at QuickFix.Session.Send(String message)
+   at QuickFix.Session.SendRaw(Message message, UInt64 seqNum)
+   at QuickFix.Session.GenerateTestRequest(String id)
+   at QuickFix.Session.Next()
+   at QuickFix.SocketInitiatorThread.Read()
+20260615-22:39:18.365 : Connecting to 127.0.0.1 on port 9878
+20260615-22:39:24.872 : Connection succeeded
+20260615-22:39:28.423 : Session reset: ResetOnLogon
+20260615-22:39:30.595 : Session reset: ResetSeqNumFlag
+20260615-22:39:31.199 : Initiated logon request
+20260615-22:39:39.395 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Timed out waiting for logon response
+20260615-22:39:43.239 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: System.InvalidOperationException: A task may only be disposed if it is in a completion state (RanToCompletion, Faulted or Canceled).
+   at System.Threading.Tasks.Task.Dispose(Boolean disposing)
+   at System.Threading.Tasks.Task.Dispose()
+   at QuickFix.SocketInitiatorThread.Disconnect()
+   at QuickFix.Session.Disconnect(String reason)
+   at QuickFix.Session.Next()
+   at QuickFix.SocketInitiatorThread.Read()
+20260615-22:39:43.735 : Connection failed: The CancellationTokenSource has been disposed.
+20260615-22:39:46.795 : Connecting to 127.0.0.1 on port 9878
+20260615-22:39:48.277 : Connection succeeded
+20260615-22:39:48.278 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Timed out waiting for logon response
+20260615-22:40:30.792 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260615-22:40:47.795 : Connecting to 127.0.0.1 on port 9878
+20260615-22:40:47.808 : Connection succeeded
+20260615-22:40:47.836 : Session reset: ResetOnLogon
+20260615-22:40:47.871 : Session reset: ResetSeqNumFlag
+20260615-22:40:47.879 : Initiated logon request
+20260615-22:40:58.037 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Timed out waiting for logon response
+20260615-22:40:58.152 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260615-22:41:18.265 : Connecting to 127.0.0.1 on port 9878
+20260615-22:41:20.316 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:41:48.614 : Connecting to 127.0.0.1 on port 9878
+20260615-22:41:50.658 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:42:18.899 : Connecting to 127.0.0.1 on port 9878
+20260615-22:42:20.932 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:42:49.200 : Connecting to 127.0.0.1 on port 9878
+20260615-22:42:51.232 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:43:19.553 : Connecting to 127.0.0.1 on port 9878
+20260615-22:43:21.574 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:43:50.002 : Connecting to 127.0.0.1 on port 9878
+20260615-22:43:52.045 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:44:20.372 : Connecting to 127.0.0.1 on port 9878
+20260615-22:44:22.425 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:44:50.672 : Connecting to 127.0.0.1 on port 9878
+20260615-22:44:52.698 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:45:20.975 : Connecting to 127.0.0.1 on port 9878
+20260615-22:45:23.024 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260615-22:45:51.338 : Connecting to 127.0.0.1 on port 9878
+20260615-22:45:53.389 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260616-10:30:41.293 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260616-10:30:41.304 : Session reset: New session
+20260616-10:30:41.305 : Created session
+20260616-10:30:41.313 : Connecting to 127.0.0.1 on port 9878
+20260616-10:30:41.342 : Connection succeeded
+20260616-10:30:41.352 : Session reset: ResetOnLogon
+20260616-10:30:41.370 : Session reset: ResetSeqNumFlag
+20260616-10:30:41.381 : Initiated logon request
+20260616-10:30:41.539 : Received logon
+20260616-23:32:56.902 : Initiated logout request
+20260616-23:32:57.506 : Received logout response
+20260616-23:32:57.506 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260616-23:32:58.328 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260617-00:58:22.378 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260617-00:58:22.397 : Session reset: New session
+20260617-00:58:22.397 : Created session
+20260617-00:58:22.418 : Connecting to 127.0.0.1 on port 9878
+20260617-00:58:22.684 : Connection succeeded
+20260617-00:58:22.714 : Session reset: ResetOnLogon
+20260617-00:58:22.761 : Session reset: ResetSeqNumFlag
+20260617-00:58:22.776 : Initiated logon request
+20260617-00:58:23.181 : Received logon
+20260617-01:04:41.831 : Sent test request TEST
+20260617-01:05:05.587 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Timed out waiting for heartbeat
+20260617-01:05:06.605 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: System.InvalidOperationException: A task may only be disposed if it is in a completion state (RanToCompletion, Faulted or Canceled).
+   at System.Threading.Tasks.Task.Dispose(Boolean disposing)
+   at System.Threading.Tasks.Task.Dispose()
+   at QuickFix.SocketInitiatorThread.Disconnect()
+   at QuickFix.Session.Disconnect(String reason)
+   at QuickFix.Session.Next()
+   at QuickFix.SocketInitiatorThread.Read()
+20260617-01:05:06.608 : Connection failed: The CancellationTokenSource has been disposed.
+20260617-01:05:26.574 : Connecting to 127.0.0.1 on port 9878
+20260617-01:06:46.836 : Connection succeeded
+20260617-01:06:46.836 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Timed out waiting for heartbeat
+20260617-01:06:50.567 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260617-01:07:18.011 : Connecting to 127.0.0.1 on port 9878
+20260617-01:07:18.013 : Connection succeeded
+20260617-01:07:18.025 : Session reset: ResetOnLogon
+20260617-01:07:18.032 : Session reset: ResetSeqNumFlag
+20260617-01:07:18.032 : Initiated logon request
+20260617-01:07:18.925 : Received logon
+20260617-18:47:59.036 : Created session
+20260617-18:47:59.041 : Connecting to 127.0.0.1 on port 9878
+20260617-18:47:59.059 : Connection succeeded
+20260617-18:47:59.067 : Session reset: ResetOnLogon
+20260617-18:47:59.084 : Session reset: ResetSeqNumFlag
+20260617-18:47:59.090 : Initiated logon request
+20260617-18:47:59.194 : Received logon
+20260617-22:21:02.462 : Received logout request
+20260617-22:21:02.465 : Sending logout response
+20260617-22:21:02.465 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout request
+20260617-22:21:02.490 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260617-22:21:21.552 : Connecting to 127.0.0.1 on port 9878
+20260617-22:21:23.650 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260617-22:21:51.872 : Connecting to 127.0.0.1 on port 9878
+20260617-22:21:51.873 : Connection succeeded
+20260617-22:21:51.881 : Session reset: ResetOnLogon
+20260617-22:21:51.889 : Session reset: ResetSeqNumFlag
+20260617-22:21:51.890 : Initiated logon request
+20260617-22:21:52.019 : Received logon
+20260618-00:00:00.001 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Resetting...
+20260618-00:00:00.130 : Session reset: Out of SessionTime (Session.Next())
+20260618-00:00:00.131 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260618-00:00:17.708 : Connecting to 127.0.0.1 on port 9878
+20260618-00:00:17.722 : Connection succeeded
+20260618-00:00:17.748 : Session reset: ResetOnLogon
+20260618-00:00:17.755 : Session reset: ResetSeqNumFlag
+20260618-00:00:17.756 : Initiated logon request
+20260618-00:00:17.812 : Received logon
+20260618-00:55:03.477 : Received logout request
+20260618-00:55:03.478 : Sending logout response
+20260618-00:55:03.480 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout request
+20260618-00:55:03.541 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260618-00:55:18.905 : Connecting to 127.0.0.1 on port 9878
+20260618-00:55:18.909 : Connection succeeded
+20260618-00:55:18.916 : Session reset: ResetOnLogon
+20260618-00:55:18.923 : Session reset: ResetSeqNumFlag
+20260618-00:55:18.923 : Initiated logon request
+20260618-00:55:19.051 : Received logon
+20260618-00:55:40.201 : Initiated logout request
+20260618-00:55:40.220 : Received logout response
+20260618-00:55:40.220 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Received logout response
+20260618-00:55:41.046 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260618-01:05:18.125 : Created session
+20260618-01:05:18.132 : Connecting to 127.0.0.1 on port 9878
+20260618-01:05:18.164 : Connection succeeded
+20260618-01:05:18.177 : Session reset: ResetOnLogon
+20260618-01:05:18.216 : Session reset: ResetSeqNumFlag
+20260618-01:05:18.242 : Initiated logon request
+20260618-01:05:18.333 : Received logon
+20260618-01:06:48.808 : Sent test request TEST
+20260618-17:57:26.538 : Created session
+20260618-17:57:26.544 : Connecting to 127.0.0.1 on port 9878
+20260618-17:57:26.561 : Connection succeeded
+20260618-17:57:26.570 : Session reset: ResetOnLogon
+20260618-17:57:26.584 : Session reset: ResetSeqNumFlag
+20260618-17:57:26.591 : Initiated logon request
+20260618-17:57:26.693 : Received logon
+20260618-23:59:59.639 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: Resetting...
+20260618-23:59:59.663 : Session reset: Out of SessionTime (Session.Next())
+20260618-23:59:59.667 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20260619-00:00:07.904 : Connecting to 127.0.0.1 on port 9878
+20260619-00:00:07.913 : Connection succeeded
+20260619-00:00:07.920 : Session reset: ResetOnLogon
+20260619-00:00:07.928 : Session reset: ResetSeqNumFlag
+20260619-00:00:07.928 : Initiated logon request
+20260619-00:00:07.948 : Received logon

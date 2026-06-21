@@ -1,0 +1,302 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v25.2.1
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\mart6\source\repos\FolioTrace\UI\.npmrc
+5 silly config load:file:C:\Users\mart6\.npmrc
+6 silly config load:file:C:\Users\mart6\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm exec npm@10 ci --dry-run --ignore-scripts
+8 verbose argv "exec" "--" "npm@10" "ci" "--dry-run" "--ignore-scripts"
+9 verbose logfile logs-max:10 dir:C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_logs\2026-06-21T01_15_41_096Z-
+10 verbose logfile C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_logs\2026-06-21T01_15_41_096Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 verbose shrinkwrap failed to load node_modules/.package-lock.json missing from node_modules: node_modules/@esbuild/aix-ppc64
+14 http fetch GET 200 https://registry.npmjs.org/npm 351ms (cache revalidated)
+15 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+16 verbose Could not read global path C:\Users\mart6\AppData\Roaming\npm, ignoring
+17 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+18 warn exec The following package was not found and will be installed: npm@10.9.8
+19 silly idealTree buildDeps
+20 silly fetch manifest npm@10.9.8
+21 silly packumentCache full:https://registry.npmjs.org/npm cache-miss
+22 http cache https://registry.npmjs.org/npm 74ms (cache hit)
+23 silly packumentCache full:https://registry.npmjs.org/npm set size:24938242 disposed:false
+24 silly placeDep ROOT npm@10.9.8 REPLACE for:  want: 10.9.8
+25 silly reify moves {}
+26 silly audit bulk request {
+26 silly audit   npm: [ '10.9.8' ],
+26 silly audit   'ansi-regex': [ '6.2.2', '5.0.1' ],
+26 silly audit   'emoji-regex': [ '9.2.2', '8.0.0' ],
+26 silly audit   'string-width': [ '5.1.2', '4.2.3' ],
+26 silly audit   'strip-ansi': [ '7.2.0', '6.0.1' ],
+26 silly audit   pacote: [ '20.0.1', '19.0.2' ],
+26 silly audit   'ansi-styles': [ '6.2.3', '4.3.0' ],
+26 silly audit   which: [ '2.0.2', '5.0.0' ],
+26 silly audit   isexe: [ '2.0.0', '3.1.5' ],
+26 silly audit   minipass: [ '7.1.3', '3.3.6' ],
+26 silly audit   yallist: [ '4.0.0', '5.0.0' ],
+26 silly audit   'spdx-expression-parse': [ '3.0.1', '4.0.0' ],
+26 silly audit   'wrap-ansi': [ '8.1.0', '7.0.0' ],
+26 silly audit   '@isaacs/cliui': [ '8.0.2' ],
+26 silly audit   '@isaacs/fs-minipass': [ '4.0.1' ],
+26 silly audit   '@isaacs/string-locale-compare': [ '1.1.0' ],
+26 silly audit   '@npmcli/agent': [ '3.0.0' ],
+26 silly audit   '@npmcli/arborist': [ '8.0.5' ],
+26 silly audit   '@npmcli/config': [ '9.0.0' ],
+26 silly audit   '@npmcli/fs': [ '4.0.0' ],
+26 silly audit   '@npmcli/git': [ '6.0.3' ],
+26 silly audit   '@npmcli/installed-package-contents': [ '3.0.0' ],
+26 silly audit   '@npmcli/map-workspaces': [ '4.0.2' ],
+26 silly audit   '@npmcli/metavuln-calculator': [ '8.0.1' ],
+26 silly audit   '@npmcli/name-from-folder': [ '3.0.0' ],
+26 silly audit   '@npmcli/node-gyp': [ '4.0.0' ],
+26 silly audit   '@npmcli/package-json': [ '6.2.0' ],
+26 silly audit   '@npmcli/promise-spawn': [ '8.0.3' ],
+26 silly audit   '@npmcli/query': [ '4.0.1' ],
+26 silly audit   '@npmcli/redact': [ '3.2.2' ],
+26 silly audit   '@npmcli/run-script': [ '9.1.0' ],
+26 silly audit   '@pkgjs/parseargs': [ '0.11.0' ],
+26 silly audit   '@sigstore/bundle': [ '3.1.0' ],
+26 silly audit   '@sigstore/core': [ '2.0.0' ],
+26 silly audit   '@sigstore/protobuf-specs': [ '0.4.3' ],
+26 silly audit   '@sigstore/sign': [ '3.1.0' ],
+26 silly audit   '@sigstore/tuf': [ '3.1.1' ],
+26 silly audit   '@sigstore/verify': [ '2.1.1' ],
+26 silly audit   '@tufjs/canonical-json': [ '2.0.0' ],
+26 silly audit   abbrev: [ '3.0.1' ],
+26 silly audit   'agent-base': [ '7.1.4' ],
+26 silly audit   aproba: [ '2.1.0' ],
+26 silly audit   archy: [ '1.0.0' ],
+26 silly audit   'balanced-match': [ '1.0.2' ],
+26 silly audit   'bin-links': [ '5.0.0' ],
+26 silly audit   'binary-extensions': [ '2.3.0' ],
+26 silly audit   'brace-expansion': [ '2.0.2' ],
+26 silly audit   cacache: [ '19.0.1' ],
+26 silly audit   chalk: [ '5.6.2' ],
+26 silly audit   chownr: [ '3.0.0' ],
+26 silly audit   'ci-info': [ '4.4.0' ],
+26 silly audit   'cidr-regex': [ '4.1.3' ],
+26 silly audit   'cli-columns': [ '4.0.0' ],
+26 silly audit   'cmd-shim': [ '7.0.0' ],
+26 silly audit   'color-convert': [ '2.0.1' ],
+26 silly audit   'color-name': [ '1.1.4' ],
+26 silly audit   'common-ancestor-path': [ '1.0.1' ],
+26 silly audit   'cross-spawn': [ '7.0.6' ],
+26 silly audit   cssesc: [ '3.0.0' ],
+26 silly audit   debug: [ '4.4.3' ],
+26 silly audit   diff: [ '5.2.2' ],
+26 silly audit   eastasianwidth: [ '0.2.0' ],
+26 silly audit   encoding: [ '0.1.13' ],
+26 silly audit   'env-paths': [ '2.2.1' ],
+26 silly audit   'err-code': [ '2.0.3' ],
+26 silly audit   'exponential-backoff': [ '3.1.3' ],
+26 silly audit   'fastest-levenshtein': [ '1.0.16' ],
+26 silly audit   fdir: [ '6.5.0' ],
+26 silly audit   'foreground-child': [ '3.3.1' ],
+26 silly audit   'fs-minipass': [ '3.0.3' ],
+26 silly audit   glob: [ '10.5.0' ],
+26 silly audit   'graceful-fs': [ '4.2.11' ],
+26 silly audit   'hosted-git-info': [ '8.1.0' ],
+26 silly audit   'http-cache-semantics': [ '4.2.0' ],
+26 silly audit   'http-proxy-agent': [ '7.0.2' ],
+26 silly audit   'https-proxy-agent': [ '7.0.6' ],
+26 silly audit   'iconv-lite': [ '0.6.3' ],
+26 silly audit   'ignore-walk': [ '7.0.0' ],
+26 silly audit   imurmurhash: [ '0.1.4' ],
+26 silly audit   ini: [ '5.0.0' ],
+26 silly audit   'init-package-json': [ '7.0.2' ],
+26 silly audit   'ip-address': [ '10.1.0' ],
+26 silly audit   'ip-regex': [ '5.0.0' ],
+26 silly audit   'is-cidr': [ '5.1.1' ],
+26 silly audit   'is-fullwidth-code-point': [ '3.0.0' ],
+26 silly audit   jackspeak: [ '3.4.3' ],
+26 silly audit   'json-parse-even-better-errors': [ '4.0.0' ],
+26 silly audit   'json-stringify-nice': [ '1.1.4' ],
+26 silly audit   jsonparse: [ '1.3.1' ],
+26 silly audit   'just-diff': [ '6.0.2' ],
+26 silly audit   'just-diff-apply': [ '5.5.0' ],
+26 silly audit   libnpmaccess: [ '9.0.0' ],
+26 silly audit   libnpmdiff: [ '7.0.5' ],
+26 silly audit   libnpmexec: [ '9.0.5' ],
+26 silly audit   libnpmfund: [ '6.0.5' ],
+26 silly audit   libnpmhook: [ '11.0.0' ],
+26 silly audit   libnpmorg: [ '7.0.0' ],
+26 silly audit   libnpmpack: [ '8.0.5' ],
+26 silly audit   libnpmpublish: [ '10.0.2' ],
+26 silly audit   libnpmsearch: [ '8.0.0' ],
+26 silly audit   libnpmteam: [ '7.0.0' ],
+26 silly audit   libnpmversion: [ '7.0.0' ],
+26 silly audit   'lru-cache': [ '10.4.3' ],
+26 silly audit   'make-fetch-happen': [ '14.0.3' ],
+26 silly audit   minimatch: [ '9.0.9' ],
+26 silly audit   'minipass-collect': [ '2.0.1' ],
+26 silly audit   'minipass-fetch': [ '4.0.1' ],
+26 silly audit   'minipass-flush': [ '1.0.5' ],
+26 silly audit   'minipass-pipeline': [ '1.2.4' ],
+26 silly audit   'minipass-sized': [ '1.0.3' ],
+26 silly audit   minizlib: [ '3.1.0' ],
+26 silly audit   ms: [ '2.1.3' ],
+26 silly audit   'mute-stream': [ '2.0.0' ],
+26 silly audit   negotiator: [ '1.0.0' ],
+26 silly audit   'node-gyp': [ '11.5.0' ],
+26 silly audit   nopt: [ '8.1.0' ],
+26 silly audit   'normalize-package-data': [ '7.0.1' ],
+26 silly audit   'npm-audit-report': [ '6.0.0' ],
+26 silly audit   'npm-bundled': [ '4.0.0' ],
+26 silly audit   'npm-install-checks': [ '7.1.2' ],
+26 silly audit   'npm-normalize-package-bin': [ '4.0.0' ],
+26 silly audit   'npm-package-arg': [ '12.0.2' ],
+26 silly audit   'npm-packlist': [ '9.0.0' ],
+26 silly audit   'npm-pick-manifest': [ '10.0.0' ],
+26 silly audit   'npm-profile': [ '11.0.1' ],
+26 silly audit   'npm-registry-fetch': [ '18.0.2' ],
+26 silly audit   'npm-user-validate': [ '3.0.0' ],
+26 silly audit   'p-map': [ '7.0.4' ],
+26 silly audit   'package-json-from-dist': [ '1.0.1' ],
+26 silly audit   'parse-conflict-json': [ '4.0.0' ],
+26 silly audit   'path-key': [ '3.1.1' ],
+26 silly audit   'path-scurry': [ '1.11.1' ],
+26 silly audit   picomatch: [ '4.0.3' ],
+26 silly audit   'postcss-selector-parser': [ '7.1.1' ],
+26 silly audit   'proc-log': [ '5.0.0' ],
+26 silly audit   proggy: [ '3.0.0' ],
+26 silly audit   'promise-all-reject-late': [ '1.0.1' ],
+26 silly audit   'promise-call-limit': [ '3.0.2' ],
+26 silly audit   'promise-retry': [ '2.0.1' ],
+26 silly audit   promzard: [ '2.0.0' ],
+26 silly audit   'qrcode-terminal': [ '0.12.0' ],
+26 silly audit   read: [ '4.1.0' ],
+26 silly audit   'read-cmd-shim': [ '5.0.0' ],
+26 silly audit   'read-package-json-fast': [ '4.0.0' ],
+26 silly audit   retry: [ '0.12.0' ],
+26 silly audit   'safer-buffer': [ '2.1.2' ],
+26 silly audit   semver: [ '7.7.4' ],
+26 silly audit   'shebang-command': [ '2.0.0' ],
+26 silly audit   'shebang-regex': [ '3.0.0' ],
+26 silly audit   'signal-exit': [ '4.1.0' ],
+26 silly audit   sigstore: [ '3.1.0' ],
+26 silly audit   'smart-buffer': [ '4.2.0' ],
+26 silly audit   socks: [ '2.8.7' ],
+26 silly audit   'socks-proxy-agent': [ '8.0.5' ],
+26 silly audit   'spdx-correct': [ '3.2.0' ],
+26 silly audit   'spdx-exceptions': [ '2.5.0' ],
+26 silly audit   'spdx-license-ids': [ '3.0.23' ],
+26 silly audit   ssri: [ '12.0.0' ],
+26 silly audit   'supports-color': [ '9.4.0' ],
+26 silly audit   tar: [ '7.5.11' ],
+26 silly audit   'text-table': [ '0.2.0' ],
+26 silly audit   'tiny-relative-date': [ '1.3.0' ],
+26 silly audit   tinyglobby: [ '0.2.15' ],
+26 silly audit   treeverse: [ '3.0.0' ],
+26 silly audit   'tuf-js': [ '3.1.0' ],
+26 silly audit   '@tufjs/models': [ '3.0.1' ],
+26 silly audit   'unique-filename': [ '4.0.0' ],
+26 silly audit   'unique-slug': [ '5.0.0' ],
+26 silly audit   'util-deprecate': [ '1.0.2' ],
+26 silly audit   'validate-npm-package-license': [ '3.0.4' ],
+26 silly audit   'validate-npm-package-name': [ '6.0.2' ],
+26 silly audit   'walk-up-path': [ '3.0.1' ],
+26 silly audit   'write-file-atomic': [ '6.0.0' ]
+26 silly audit }
+27 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 245ms
+28 silly audit report {
+28 silly audit report   'brace-expansion': [
+28 silly audit report     {
+28 silly audit report       id: 1115541,
+28 silly audit report       url: 'https://github.com/advisories/GHSA-f886-m6hf-6m8v',
+28 silly audit report       title: 'brace-expansion: Zero-step sequence causes process hang and memory exhaustion',
+28 silly audit report       severity: 'moderate',
+28 silly audit report       vulnerable_versions: '>=2.0.0 <2.0.3',
+28 silly audit report       cwe: [Array],
+28 silly audit report       cvss: [Object]
+28 silly audit report     }
+28 silly audit report   ],
+28 silly audit report   'ip-address': [
+28 silly audit report     {
+28 silly audit report       id: 1118827,
+28 silly audit report       url: 'https://github.com/advisories/GHSA-v2v4-37r5-5v8g',
+28 silly audit report       title: 'ip-address has XSS in Address6 HTML-emitting methods',
+28 silly audit report       severity: 'moderate',
+28 silly audit report       vulnerable_versions: '<=10.1.0',
+28 silly audit report       cwe: [Array],
+28 silly audit report       cvss: [Object]
+28 silly audit report     }
+28 silly audit report   ],
+28 silly audit report   picomatch: [
+28 silly audit report     {
+28 silly audit report       id: 1115551,
+28 silly audit report       url: 'https://github.com/advisories/GHSA-3v7f-55p6-f55p',
+28 silly audit report       title: 'Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching',
+28 silly audit report       severity: 'moderate',
+28 silly audit report       vulnerable_versions: '>=4.0.0 <4.0.4',
+28 silly audit report       cwe: [Array],
+28 silly audit report       cvss: [Object]
+28 silly audit report     },
+28 silly audit report     {
+28 silly audit report       id: 1115554,
+28 silly audit report       url: 'https://github.com/advisories/GHSA-c2c7-rcm5-vvqj',
+28 silly audit report       title: 'Picomatch has a ReDoS vulnerability via extglob quantifiers',
+28 silly audit report       severity: 'high',
+28 silly audit report       vulnerable_versions: '>=4.0.0 <4.0.4',
+28 silly audit report       cwe: [Array],
+28 silly audit report       cvss: [Object]
+28 silly audit report     }
+28 silly audit report   ],
+28 silly audit report   tar: [
+28 silly audit report     {
+28 silly audit report       id: 1120782,
+28 silly audit report       url: 'https://github.com/advisories/GHSA-vmf3-w455-68vh',
+28 silly audit report       title: 'node-tar applies PAX size override to intermediary GNU long-name/long-link headers, causing tar parser interpretation differential (file smuggling)',
+28 silly audit report       severity: 'moderate',
+28 silly audit report       vulnerable_versions: '<=7.5.15',
+28 silly audit report       cwe: [Array],
+28 silly audit report       cvss: [Object]
+28 silly audit report     }
+28 silly audit report   ]
+28 silly audit report }
+29 silly packumentCache corgi:https://registry.npmjs.org/brace-expansion cache-miss
+30 silly packumentCache corgi:https://registry.npmjs.org/ip-address cache-miss
+31 silly packumentCache corgi:https://registry.npmjs.org/picomatch cache-miss
+32 silly packumentCache corgi:https://registry.npmjs.org/tar cache-miss
+33 http cache https://registry.npmjs.org/brace-expansion 67ms (cache hit)
+34 silly packumentCache corgi:https://registry.npmjs.org/brace-expansion set size:24623 disposed:false
+35 http cache https://registry.npmjs.org/ip-address 72ms (cache hit)
+36 silly packumentCache corgi:https://registry.npmjs.org/ip-address set size:69861 disposed:false
+37 http cache https://registry.npmjs.org/tar 78ms (cache hit)
+38 silly packumentCache corgi:https://registry.npmjs.org/tar set size:202125 disposed:false
+39 http cache https://registry.npmjs.org/picomatch 86ms (cache hit)
+40 silly packumentCache corgi:https://registry.npmjs.org/picomatch set size:44414 disposed:false
+41 silly packumentCache corgi:https://registry.npmjs.org/minimatch cache-miss
+42 http cache https://registry.npmjs.org/minimatch 77ms (cache hit)
+43 silly packumentCache corgi:https://registry.npmjs.org/minimatch set size:168441 disposed:false
+44 silly packumentCache corgi:https://registry.npmjs.org/socks cache-miss
+45 http cache https://registry.npmjs.org/socks 39ms (cache hit)
+46 silly packumentCache corgi:https://registry.npmjs.org/socks set size:66905 disposed:false
+47 silly packumentCache corgi:https://registry.npmjs.org/fdir cache-miss
+48 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby cache-miss
+49 http cache https://registry.npmjs.org/fdir 48ms (cache hit)
+50 silly packumentCache corgi:https://registry.npmjs.org/fdir set size:76905 disposed:false
+51 http cache https://registry.npmjs.org/tinyglobby 64ms (cache hit)
+52 silly packumentCache corgi:https://registry.npmjs.org/tinyglobby set size:19921 disposed:false
+53 silly packumentCache corgi:https://registry.npmjs.org/npm cache-miss
+54 silly packumentCache corgi:https://registry.npmjs.org/pacote cache-miss
+55 silly packumentCache corgi:https://registry.npmjs.org/cacache cache-miss
+56 silly packumentCache corgi:https://registry.npmjs.org/libnpmdiff cache-miss
+57 silly packumentCache corgi:https://registry.npmjs.org/node-gyp cache-miss
+58 http cache https://registry.npmjs.org/pacote 110ms (cache hit)
+59 silly packumentCache corgi:https://registry.npmjs.org/pacote set size:403023 disposed:false
+60 http cache https://registry.npmjs.org/cacache 124ms (cache hit)
+61 silly packumentCache corgi:https://registry.npmjs.org/cacache set size:158807 disposed:false
+62 http cache https://registry.npmjs.org/npm 146ms (cache hit)
+63 silly packumentCache corgi:https://registry.npmjs.org/npm set size:2412274 disposed:false
+64 http cache https://registry.npmjs.org/libnpmdiff 173ms (cache hit)
+65 silly packumentCache corgi:https://registry.npmjs.org/libnpmdiff set size:116027 disposed:false
+66 http cache https://registry.npmjs.org/node-gyp 176ms (cache hit)
+67 silly packumentCache corgi:https://registry.npmjs.org/node-gyp set size:160825 disposed:false
+68 verbose cwd C:\Users\mart6\source\repos\FolioTrace\UI
+69 verbose os Windows_NT 10.0.26200
+70 verbose node v25.2.1
+71 verbose npm  v11.6.2
+72 verbose exit 0
+73 info ok
