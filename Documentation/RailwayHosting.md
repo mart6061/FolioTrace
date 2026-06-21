@@ -74,12 +74,14 @@ Root Directory: /
 Config File Path: /UI/railway.json
 Dockerfile Path: UI/Dockerfile
 Start Command: node build/index.js
-Healthcheck Path: /
+Healthcheck Path: /health
 ```
 
 The root directory should also stay as `/` for the UI service so the Dockerfile path is resolved from the repository root. The service config file pins Dockerfile builds and overrides any stale dashboard start command such as `start.sh`.
 
 The UI service config includes watch patterns for `UI/**` and `.dockerignore`. Changes outside those paths should not trigger a UI deployment.
+
+The UI healthcheck path is `/health` instead of `/` because the root route is protected by WorkOS and returns an authentication redirect for anonymous requests. Railway healthchecks should receive a plain `200 ok` from `/health`.
 
 Required variables:
 
