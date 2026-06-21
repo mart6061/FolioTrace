@@ -3,6 +3,7 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+import { isPublicPagePath } from '$lib/publicRoutes';
 import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
 import { getAuthKitConfig } from '$lib/server/workos';
 
@@ -24,7 +25,7 @@ const workosHandle: Handle = authKitConfigured && !devAuthConfigured
 const authGateHandle: Handle = async ({ event, resolve }) => {
   event.locals.currentUser = null;
 
-  if (isPublicPath(event.url.pathname))
+  if (isPublicPagePath(event.url.pathname) || isPublicPath(event.url.pathname))
     return resolve(event);
 
   const devCurrentUser = getDevCurrentUser();

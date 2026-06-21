@@ -14,6 +14,7 @@ declare global {
 
     interface PageData {
       currentUser?: CurrentUser | null;
+      publicPage?: boolean;
     }
   }
 }
