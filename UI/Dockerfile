@@ -1,10 +1,10 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-COPY UI/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
-COPY UI/ ./
+COPY . ./
 RUN npm run build
 
 FROM node:22-alpine AS runtime
