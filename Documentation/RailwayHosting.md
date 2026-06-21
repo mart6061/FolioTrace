@@ -97,6 +97,8 @@ The UI container uses the SvelteKit Node adapter and runs `node build/index.js`.
 
 `ORIGIN` and `WORKOS_REDIRECT_URI` must use the same UI host. AuthKit stores the OAuth PKCE verifier in a host-scoped browser cookie before redirecting to WorkOS, and WorkOS later sends the browser back to `WORKOS_REDIRECT_URI`. If sign-in starts on a different Railway/custom host than the callback host, the callback cannot see the PKCE cookie and authentication fails with `PKCECookieMissingError`.
 
+The UI redirects protected pages to `/sign-in` first. That endpoint then generates the WorkOS sign-in URL and returns the external redirect so SvelteKit can attach the PKCE `Set-Cookie` header before the browser leaves the app. If `PKCECookieMissingError` continues after deploying the latest UI image, confirm Railway deployed the current commit and that the WorkOS dashboard callback URL exactly matches `WORKOS_REDIRECT_URI`.
+
 ## FoleoTrader Service
 
 Configure the Railway FoleoTrader service with:
