@@ -1,7 +1,7 @@
 import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
-import { redirect, type Handle } from '@sveltejs/kit';
+import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
@@ -25,7 +25,7 @@ const workosHandle: Handle = authKitConfigured && !devAuthConfigured
 const authGateHandle: Handle = async ({ event, resolve }) => {
   event.locals.currentUser = null;
 
-  const canonicalAuthRedirect = getCanonicalAuthRedirect(event.url);
+  const canonicalAuthRedirect = getCanonicalAuthRedirect(event);
   if (canonicalAuthRedirect)
     throw redirect(302, canonicalAuthRedirect);
 
@@ -70,7 +70,8 @@ function isPublicPath(pathname: string) {
     || pathname === '/robots.txt';
 }
 
-function getCanonicalAuthRedirect(url: URL) {
+function getCanonicalAuthRedirect(event: RequestEvent) {
+  const { url } = event;
   if (!authKitConfig || url.pathname.startsWith('/API/'))
     return null;
 
@@ -78,13 +79,22 @@ function getCanonicalAuthRedirect(url: URL) {
     return null;
 
   const redirectUri = new URL(authKitConfig.redirectUri);
-  if (url.host.toLowerCase() === redirectUri.host.toLowerCase())
+  const requestHost = getRequestHost(event.request.headers) ?? url.host;
+  if (requestHost.toLowerCase() === redirectUri.host.toLowerCase())
     return null;
 
   const canonicalUrl = new URL(url);
   canonicalUrl.protocol = redirectUri.protocol;
   canonicalUrl.host = redirectUri.host;
   return canonicalUrl.toString();
+}
+
+function getRequestHost(headers: Headers) {
+  const forwardedHost = headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  if (forwardedHost)
+    return forwardedHost;
+
+  return headers.get('host')?.trim() || null;
 }
 
 function hasDevAuthConfigured() {
