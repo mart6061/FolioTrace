@@ -1,0 +1,1179 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_npx\7c24e36c048e2b23\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.8
+2 info using node@v25.2.1
+3 silly config load:file:C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_npx\7c24e36c048e2b23\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\mart6\source\repos\FolioTrace\UI\.npmrc
+5 silly config load:file:C:\Users\mart6\.npmrc
+6 silly config load:file:C:\Users\mart6\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install
+8 verbose argv "install" "--ignore-scripts"
+9 verbose logfile logs-max:10 dir:C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_logs\2026-06-21T09_39_56_328Z-
+10 verbose logfile C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_logs\2026-06-21T09_39_56_328Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 silly idealTree buildDeps
+14 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+15 silly reify mark retired [
+15 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\aria-query'
+15 silly reify ]
+16 silly reify mark retired [
+16 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\axobject-query'
+16 silly reify ]
+17 silly reify mark retired [
+17 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\enhanced-resolve'
+17 silly reify ]
+18 silly reify mark retired [
+18 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\esrap'
+18 silly reify ]
+19 silly reify mark retired [
+19 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\estree-walker'
+19 silly reify ]
+20 silly reify mark retired [
+20 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\jose'
+20 silly reify ]
+21 silly reify mark retired [
+21 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-win32-x64-msvc'
+21 silly reify ]
+22 silly reify mark retired [
+22 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\playwright'
+22 silly reify ]
+23 silly reify mark retired [
+23 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\playwright-core'
+23 silly reify ]
+24 silly reify mark retired [
+24 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\resolve'
+24 silly reify ]
+25 silly reify mark retired [
+25 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\svelte'
+25 silly reify ]
+26 silly reify mark retired [
+26 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\rollup'
+26 silly reify ]
+27 silly reify mark retired [
+27 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\svelte-check'
+27 silly reify ]
+28 silly reify mark retired [
+28 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\typescript'
+28 silly reify ]
+29 silly reify mark retired [
+29 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\vite'
+29 silly reify ]
+30 silly reify mark retired [
+30 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\win32-x64'
+30 silly reify ]
+31 silly reify mark retired [
+31 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@jridgewell\\gen-mapping'
+31 silly reify ]
+32 silly reify mark retired [
+32 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@jridgewell\\resolve-uri'
+32 silly reify ]
+33 silly reify mark retired [
+33 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\plugin-commonjs'
+33 silly reify ]
+34 silly reify mark retired [
+34 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\plugin-json'
+34 silly reify ]
+35 silly reify mark retired [
+35 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\plugin-node-resolve'
+35 silly reify ]
+36 silly reify mark retired [
+36 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\pluginutils'
+36 silly reify ]
+37 silly reify mark retired [
+37 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-win32-x64-msvc'
+37 silly reify ]
+38 silly reify mark retired [
+38 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\kit'
+38 silly reify ]
+39 silly reify mark retired [
+39 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\vite-plugin-svelte'
+39 silly reify ]
+40 silly reify mark retired [
+40 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\vite-plugin-svelte-inspector'
+40 silly reify ]
+41 silly reify mark retired [
+41 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-win32-x64-msvc'
+41 silly reify ]
+42 silly reify mark retired [
+42 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@types\\node'
+42 silly reify ]
+43 silly reify mark retired [
+43 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@workos\\authkit-session'
+43 silly reify ]
+44 silly reify mark retired [
+44 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@workos\\authkit-sveltekit'
+44 silly reify ]
+45 silly reify moves {
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\aria-query': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.aria-query-p0uhXTHX',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\axobject-query': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.axobject-query-XYMrOPns',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\enhanced-resolve': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.enhanced-resolve-3e3ZP0P6',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\esrap': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.esrap-iG66FOr7',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\estree-walker': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.estree-walker-ZNGkVsDt',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\jose': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.jose-gRBiLGce',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-win32-x64-msvc': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.lightningcss-win32-x64-msvc-nTCygq4J',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\playwright': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.playwright-FKy60La3',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\playwright-core': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.playwright-core-Ne4ZUonh',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\resolve': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.resolve-1RwdPTNf',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\svelte': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.svelte-SkahdkKo',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\rollup': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.rollup-fY0KO39M',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\svelte-check': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.svelte-check-L9YL8f7n',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\typescript': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.typescript-ZFPFVcCX',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\vite': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.vite-mYyTHvZa',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\win32-x64': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\.win32-x64-x6H3dqRi',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@jridgewell\\gen-mapping': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@jridgewell\\.gen-mapping-P25abC9N',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@jridgewell\\resolve-uri': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@jridgewell\\.resolve-uri-dqTjeEvU',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\plugin-commonjs': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.plugin-commonjs-oc0H8p09',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\plugin-json': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.plugin-json-h3LtJZYu',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\plugin-node-resolve': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.plugin-node-resolve-SFMm2UKV',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\pluginutils': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.pluginutils-PLgLCk7J',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-win32-x64-msvc': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.rollup-win32-x64-msvc-0PDGPNWE',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\kit': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\.kit-huHw4v46',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\vite-plugin-svelte': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\.vite-plugin-svelte-rkjsV0yo',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\vite-plugin-svelte-inspector': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@sveltejs\\.vite-plugin-svelte-inspector-qgpSCNZu',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-win32-x64-msvc': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\.oxide-win32-x64-msvc-MLEFa8sO',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@types\\node': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@types\\.node-Xtp2ym1S',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@workos\\authkit-session': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@workos\\.authkit-session-bpQr7xI4',
+45 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@workos\\authkit-sveltekit': 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@workos\\.authkit-sveltekit-EC9Ec9BI'
+45 silly reify }
+46 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi
+47 silly reify mark deleted [
+47 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi'
+47 silly reify ]
+48 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi\node_modules\@emnapi\core
+49 silly reify mark deleted [
+49 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi\\node_modules\\@emnapi\\core'
+49 silly reify ]
+50 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi\node_modules\@emnapi\runtime
+51 silly reify mark deleted [
+51 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi\\node_modules\\@emnapi\\runtime'
+51 silly reify ]
+52 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi\node_modules\@emnapi\wasi-threads
+53 silly reify mark deleted [
+53 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi\\node_modules\\@emnapi\\wasi-threads'
+53 silly reify ]
+54 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi\node_modules\@napi-rs\wasm-runtime
+55 silly reify mark deleted [
+55 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi\\node_modules\\@napi-rs\\wasm-runtime'
+55 silly reify ]
+56 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi\node_modules\@tybys\wasm-util
+57 silly reify mark deleted [
+57 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi\\node_modules\\@tybys\\wasm-util'
+57 silly reify ]
+58 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-wasm32-wasi\node_modules\tslib
+59 silly reify mark deleted [
+59 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-wasm32-wasi\\node_modules\\tslib'
+59 silly reify ]
+60 silly audit bulk request {
+60 silly audit   '@esbuild/aix-ppc64': [ '0.25.12' ],
+60 silly audit   '@esbuild/android-arm': [ '0.25.12' ],
+60 silly audit   '@esbuild/android-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/android-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/darwin-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/darwin-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/freebsd-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/freebsd-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-arm': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-ia32': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-loong64': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-mips64el': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-ppc64': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-riscv64': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-s390x': [ '0.25.12' ],
+60 silly audit   '@esbuild/linux-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/netbsd-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/netbsd-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/openbsd-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/openbsd-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/openharmony-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/sunos-x64': [ '0.25.12' ],
+60 silly audit   '@esbuild/win32-arm64': [ '0.25.12' ],
+60 silly audit   '@esbuild/win32-ia32': [ '0.25.12' ],
+60 silly audit   '@esbuild/win32-x64': [ '0.25.12' ],
+60 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+60 silly audit   '@jridgewell/remapping': [ '2.3.5' ],
+60 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+60 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+60 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+60 silly audit   '@playwright/test': [ '1.61.0' ],
+60 silly audit   '@polka/url': [ '1.0.0-next.29' ],
+60 silly audit   '@rollup/plugin-commonjs': [ '29.0.2' ],
+60 silly audit   'is-reference': [ '1.2.1', '3.0.3' ],
+60 silly audit   '@rollup/plugin-json': [ '6.1.0' ],
+60 silly audit   '@rollup/plugin-node-resolve': [ '16.0.3' ],
+60 silly audit   '@rollup/pluginutils': [ '5.3.0' ],
+60 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-android-arm64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.4' ],
+60 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.4' ],
+60 silly audit   '@standard-schema/spec': [ '1.1.0' ],
+60 silly audit   '@sveltejs/acorn-typescript': [ '1.0.9' ],
+60 silly audit   '@sveltejs/adapter-node': [ '5.5.4' ],
+60 silly audit   '@sveltejs/kit': [ '2.60.1' ],
+60 silly audit   '@sveltejs/vite-plugin-svelte': [ '5.1.1' ],
+60 silly audit   '@sveltejs/vite-plugin-svelte-inspector': [ '4.0.1' ],
+60 silly audit   '@tailwindcss/node': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-android-arm64': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-darwin-arm64': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-darwin-x64': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-freebsd-x64': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-linux-arm-gnueabihf': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-linux-arm64-gnu': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-linux-arm64-musl': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-linux-x64-gnu': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-linux-x64-musl': [ '4.3.0' ],
+60 silly audit   '@emnapi/core': [ '1.10.0' ],
+60 silly audit   '@emnapi/runtime': [ '1.10.0' ],
+60 silly audit   '@emnapi/wasi-threads': [ '1.2.1' ],
+60 silly audit   '@napi-rs/wasm-runtime': [ '1.1.4' ],
+60 silly audit   '@tybys/wasm-util': [ '0.10.1' ],
+60 silly audit   tslib: [ '2.8.1' ],
+60 silly audit   '@tailwindcss/oxide-win32-arm64-msvc': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/oxide-win32-x64-msvc': [ '4.3.0' ],
+60 silly audit   '@tailwindcss/vite': [ '4.3.0' ],
+60 silly audit   '@types/cookie': [ '0.6.0' ],
+60 silly audit   '@types/estree': [ '1.0.9', '1.0.8' ],
+60 silly audit   '@types/node': [ '25.8.0' ],
+60 silly audit   '@types/resolve': [ '1.20.2' ],
+60 silly audit   '@types/trusted-types': [ '2.0.7' ],
+60 silly audit   '@workos-inc/node': [ '9.3.1' ],
+60 silly audit   '@workos/authkit-session': [ '0.5.2' ],
+60 silly audit   '@workos/authkit-sveltekit': [ '0.3.0' ],
+60 silly audit   cookie: [ '1.1.1', '0.6.0' ],
+60 silly audit   acorn: [ '8.16.0' ],
+60 silly audit   'aria-query': [ '5.3.1' ],
+60 silly audit   'axobject-query': [ '4.1.0' ],
+60 silly audit   chokidar: [ '4.0.3' ],
+60 silly audit   clsx: [ '2.1.1' ],
+60 silly audit   commondir: [ '1.0.1' ],
+60 silly audit   debug: [ '4.4.3' ],
+60 silly audit   deepmerge: [ '4.3.1' ],
+60 silly audit   'detect-libc': [ '2.1.2' ],
+60 silly audit   devalue: [ '5.8.1' ],
+60 silly audit   'enhanced-resolve': [ '5.21.3' ],
+60 silly audit   'es-errors': [ '1.3.0' ],
+60 silly audit   esbuild: [ '0.25.12' ],
+60 silly audit   'esm-env': [ '1.2.2' ],
+60 silly audit   esrap: [ '2.2.9' ],
+60 silly audit   'estree-walker': [ '2.0.2' ],
+60 silly audit   eventemitter3: [ '5.0.4' ],
+60 silly audit   fdir: [ '6.5.0' ],
+60 silly audit   fsevents: [ '2.3.3', '2.3.2' ],
+60 silly audit   'function-bind': [ '1.1.2' ],
+60 silly audit   'graceful-fs': [ '4.2.11' ],
+60 silly audit   hasown: [ '2.0.3' ],
+60 silly audit   'iron-webcrypto': [ '2.0.0' ],
+60 silly audit   'is-core-module': [ '2.16.2' ],
+60 silly audit   'is-module': [ '1.0.0' ],
+60 silly audit   jiti: [ '2.7.0' ],
+60 silly audit   jose: [ '6.2.3' ],
+60 silly audit   kleur: [ '4.1.5' ],
+60 silly audit   lightningcss: [ '1.32.0' ],
+60 silly audit   'lightningcss-android-arm64': [ '1.32.0' ],
+60 silly audit   'lightningcss-darwin-arm64': [ '1.32.0' ],
+60 silly audit   'lightningcss-darwin-x64': [ '1.32.0' ],
+60 silly audit   'lightningcss-freebsd-x64': [ '1.32.0' ],
+60 silly audit   'lightningcss-linux-arm-gnueabihf': [ '1.32.0' ],
+60 silly audit   'lightningcss-linux-arm64-gnu': [ '1.32.0' ],
+60 silly audit   'lightningcss-linux-arm64-musl': [ '1.32.0' ],
+60 silly audit   'lightningcss-linux-x64-gnu': [ '1.32.0' ],
+60 silly audit   'lightningcss-linux-x64-musl': [ '1.32.0' ],
+60 silly audit   'lightningcss-win32-arm64-msvc': [ '1.32.0' ],
+60 silly audit   'lightningcss-win32-x64-msvc': [ '1.32.0' ],
+60 silly audit   'locate-character': [ '3.0.0' ],
+60 silly audit   'magic-string': [ '0.30.21' ],
+60 silly audit   mri: [ '1.2.0' ],
+60 silly audit   mrmime: [ '2.0.1' ],
+60 silly audit   ms: [ '2.1.3' ],
+60 silly audit   nanoid: [ '3.3.12' ],
+60 silly audit   'path-parse': [ '1.0.7' ],
+60 silly audit   picocolors: [ '1.1.1' ],
+60 silly audit   picomatch: [ '4.0.4' ],
+60 silly audit   playwright: [ '1.61.0' ],
+60 silly audit   'playwright-core': [ '1.61.0' ],
+60 silly audit   postcss: [ '8.5.14' ],
+60 silly audit   readdirp: [ '4.1.2' ],
+60 silly audit   resolve: [ '1.22.12' ],
+60 silly audit   rollup: [ '4.60.4' ],
+60 silly audit   sade: [ '1.8.1' ],
+60 silly audit   'set-cookie-parser': [ '3.1.0' ],
+60 silly audit   sirv: [ '3.0.2' ],
+60 silly audit   'source-map-js': [ '1.2.1' ],
+60 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+60 silly audit   svelte: [ '5.55.7' ],
+60 silly audit   'svelte-check': [ '4.4.8' ],
+60 silly audit   tailwindcss: [ '4.3.0' ],
+60 silly audit   tapable: [ '2.3.3' ],
+60 silly audit   tinyglobby: [ '0.2.16' ],
+60 silly audit   totalist: [ '3.0.1' ],
+60 silly audit   typescript: [ '5.9.3' ],
+60 silly audit   'uint8array-extras': [ '1.5.0' ],
+60 silly audit   'undici-types': [ '7.24.6' ],
+60 silly audit   valibot: [ '1.4.1' ],
+60 silly audit   vite: [ '6.4.2' ],
+60 silly audit   vitefu: [ '1.1.3' ],
+60 silly audit   zimmerframe: [ '1.1.4' ],
+60 silly audit   '@tailwindcss/oxide-wasm32-wasi': [ '4.3.0' ]
+60 silly audit }
+61 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-win32-arm64-msvc
+62 silly reify mark deleted [
+62 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-win32-arm64-msvc'
+62 silly reify ]
+63 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-linux-x64-musl
+64 silly reify mark deleted [
+64 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-linux-x64-musl'
+64 silly reify ]
+65 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-linux-x64-gnu
+66 silly reify mark deleted [
+66 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-linux-x64-gnu'
+66 silly reify ]
+67 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-linux-arm64-musl
+68 silly reify mark deleted [
+68 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-linux-arm64-musl'
+68 silly reify ]
+69 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-linux-arm64-gnu
+70 silly reify mark deleted [
+70 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-linux-arm64-gnu'
+70 silly reify ]
+71 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-linux-arm-gnueabihf
+72 silly reify mark deleted [
+72 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-linux-arm-gnueabihf'
+72 silly reify ]
+73 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-freebsd-x64
+74 silly reify mark deleted [
+74 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-freebsd-x64'
+74 silly reify ]
+75 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-darwin-x64
+76 silly reify mark deleted [
+76 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-darwin-x64'
+76 silly reify ]
+77 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-darwin-arm64
+78 silly reify mark deleted [
+78 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-darwin-arm64'
+78 silly reify ]
+79 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\lightningcss-android-arm64
+80 silly reify mark deleted [
+80 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\lightningcss-android-arm64'
+80 silly reify ]
+81 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\fsevents
+82 silly reify mark deleted [
+82 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\fsevents'
+82 silly reify ]
+83 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-win32-arm64-msvc
+84 silly reify mark deleted [
+84 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-win32-arm64-msvc'
+84 silly reify ]
+85 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-linux-x64-musl
+86 silly reify mark deleted [
+86 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-linux-x64-musl'
+86 silly reify ]
+87 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-linux-x64-gnu
+88 silly reify mark deleted [
+88 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-linux-x64-gnu'
+88 silly reify ]
+89 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-linux-arm64-musl
+90 silly reify mark deleted [
+90 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-linux-arm64-musl'
+90 silly reify ]
+91 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-linux-arm64-gnu
+92 silly reify mark deleted [
+92 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-linux-arm64-gnu'
+92 silly reify ]
+93 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-linux-arm-gnueabihf
+94 silly reify mark deleted [
+94 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-linux-arm-gnueabihf'
+94 silly reify ]
+95 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-freebsd-x64
+96 silly reify mark deleted [
+96 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-freebsd-x64'
+96 silly reify ]
+97 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-darwin-x64
+98 silly reify mark deleted [
+98 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-darwin-x64'
+98 silly reify ]
+99 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-darwin-arm64
+100 silly reify mark deleted [
+100 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-darwin-arm64'
+100 silly reify ]
+101 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\oxide-android-arm64
+102 silly reify mark deleted [
+102 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\oxide-android-arm64'
+102 silly reify ]
+103 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-win32-ia32-msvc
+104 silly reify mark deleted [
+104 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-win32-ia32-msvc'
+104 silly reify ]
+105 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-win32-arm64-msvc
+106 silly reify mark deleted [
+106 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-win32-arm64-msvc'
+106 silly reify ]
+107 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-openharmony-arm64
+108 silly reify mark deleted [
+108 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-openharmony-arm64'
+108 silly reify ]
+109 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-openbsd-x64
+110 silly reify mark deleted [
+110 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-openbsd-x64'
+110 silly reify ]
+111 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-x64-musl
+112 silly reify mark deleted [
+112 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-x64-musl'
+112 silly reify ]
+113 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-x64-gnu
+114 silly reify mark deleted [
+114 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-x64-gnu'
+114 silly reify ]
+115 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-s390x-gnu
+116 silly reify mark deleted [
+116 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-s390x-gnu'
+116 silly reify ]
+117 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-riscv64-musl
+118 silly reify mark deleted [
+118 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-riscv64-musl'
+118 silly reify ]
+119 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-riscv64-gnu
+120 silly reify mark deleted [
+120 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-riscv64-gnu'
+120 silly reify ]
+121 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-ppc64-musl
+122 silly reify mark deleted [
+122 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-ppc64-musl'
+122 silly reify ]
+123 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-ppc64-gnu
+124 silly reify mark deleted [
+124 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-ppc64-gnu'
+124 silly reify ]
+125 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-loong64-musl
+126 silly reify mark deleted [
+126 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-loong64-musl'
+126 silly reify ]
+127 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-loong64-gnu
+128 silly reify mark deleted [
+128 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-loong64-gnu'
+128 silly reify ]
+129 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-arm64-musl
+130 silly reify mark deleted [
+130 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-arm64-musl'
+130 silly reify ]
+131 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-arm64-gnu
+132 silly reify mark deleted [
+132 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-arm64-gnu'
+132 silly reify ]
+133 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-arm-musleabihf
+134 silly reify mark deleted [
+134 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-arm-musleabihf'
+134 silly reify ]
+135 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-linux-arm-gnueabihf
+136 silly reify mark deleted [
+136 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf'
+136 silly reify ]
+137 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-freebsd-x64
+138 silly reify mark deleted [
+138 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-freebsd-x64'
+138 silly reify ]
+139 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-freebsd-arm64
+140 silly reify mark deleted [
+140 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-freebsd-arm64'
+140 silly reify ]
+141 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-darwin-x64
+142 silly reify mark deleted [
+142 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-darwin-x64'
+142 silly reify ]
+143 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-darwin-arm64
+144 silly reify mark deleted [
+144 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-darwin-arm64'
+144 silly reify ]
+145 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-android-arm64
+146 silly reify mark deleted [
+146 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-android-arm64'
+146 silly reify ]
+147 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\rollup-android-arm-eabi
+148 silly reify mark deleted [
+148 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\rollup-android-arm-eabi'
+148 silly reify ]
+149 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\win32-ia32
+150 silly reify mark deleted [
+150 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\win32-ia32'
+150 silly reify ]
+151 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\win32-arm64
+152 silly reify mark deleted [
+152 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\win32-arm64'
+152 silly reify ]
+153 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\sunos-x64
+154 silly reify mark deleted [
+154 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\sunos-x64'
+154 silly reify ]
+155 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\openharmony-arm64
+156 silly reify mark deleted [
+156 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\openharmony-arm64'
+156 silly reify ]
+157 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\openbsd-x64
+158 silly reify mark deleted [
+158 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\openbsd-x64'
+158 silly reify ]
+159 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\openbsd-arm64
+160 silly reify mark deleted [
+160 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\openbsd-arm64'
+160 silly reify ]
+161 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\netbsd-x64
+162 silly reify mark deleted [
+162 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\netbsd-x64'
+162 silly reify ]
+163 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\netbsd-arm64
+164 silly reify mark deleted [
+164 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\netbsd-arm64'
+164 silly reify ]
+165 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-x64
+166 silly reify mark deleted [
+166 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-x64'
+166 silly reify ]
+167 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-s390x
+168 silly reify mark deleted [
+168 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-s390x'
+168 silly reify ]
+169 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-riscv64
+170 silly reify mark deleted [
+170 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-riscv64'
+170 silly reify ]
+171 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-ppc64
+172 silly reify mark deleted [
+172 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-ppc64'
+172 silly reify ]
+173 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-mips64el
+174 silly reify mark deleted [
+174 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-mips64el'
+174 silly reify ]
+175 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-loong64
+176 silly reify mark deleted [
+176 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-loong64'
+176 silly reify ]
+177 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-ia32
+178 silly reify mark deleted [
+178 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-ia32'
+178 silly reify ]
+179 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-arm64
+180 silly reify mark deleted [
+180 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-arm64'
+180 silly reify ]
+181 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\linux-arm
+182 silly reify mark deleted [
+182 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\linux-arm'
+182 silly reify ]
+183 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\freebsd-x64
+184 silly reify mark deleted [
+184 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\freebsd-x64'
+184 silly reify ]
+185 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\freebsd-arm64
+186 silly reify mark deleted [
+186 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\freebsd-arm64'
+186 silly reify ]
+187 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\darwin-x64
+188 silly reify mark deleted [
+188 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\darwin-x64'
+188 silly reify ]
+189 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\darwin-arm64
+190 silly reify mark deleted [
+190 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\darwin-arm64'
+190 silly reify ]
+191 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\android-x64
+192 silly reify mark deleted [
+192 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\android-x64'
+192 silly reify ]
+193 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\android-arm64
+194 silly reify mark deleted [
+194 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\android-arm64'
+194 silly reify ]
+195 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\android-arm
+196 silly reify mark deleted [
+196 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\android-arm'
+196 silly reify ]
+197 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\aix-ppc64
+198 silly reify mark deleted [
+198 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\aix-ppc64'
+198 silly reify ]
+199 verbose reify failed optional dependency C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\playwright\node_modules\fsevents
+200 silly reify mark deleted [
+200 silly reify   'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\playwright\\node_modules\\fsevents'
+200 silly reify ]
+201 http cache zimmerframe@https://registry.npmjs.org/zimmerframe/-/zimmerframe-1.1.4.tgz 1ms (cache hit)
+202 http cache valibot@https://registry.npmjs.org/valibot/-/valibot-1.4.1.tgz 0ms (cache hit)
+203 http cache undici-types@https://registry.npmjs.org/undici-types/-/undici-types-7.24.6.tgz 0ms (cache hit)
+204 http cache uint8array-extras@https://registry.npmjs.org/uint8array-extras/-/uint8array-extras-1.5.0.tgz 0ms (cache hit)
+205 http cache totalist@https://registry.npmjs.org/totalist/-/totalist-3.0.1.tgz 0ms (cache hit)
+206 http cache tapable@https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz 0ms (cache hit)
+207 http cache tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.0.tgz 0ms (cache hit)
+208 http cache supports-preserve-symlinks-flag@https://registry.npmjs.org/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz 0ms (cache hit)
+209 http cache vitefu@https://registry.npmjs.org/vitefu/-/vitefu-1.1.3.tgz 0ms (cache hit)
+210 http cache source-map-js@https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz 0ms (cache hit)
+211 http cache tinyglobby@https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.16.tgz 0ms (cache hit)
+212 http cache set-cookie-parser@https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-3.1.0.tgz 0ms (cache hit)
+213 http cache sirv@https://registry.npmjs.org/sirv/-/sirv-3.0.2.tgz 0ms (cache hit)
+214 http cache readdirp@https://registry.npmjs.org/readdirp/-/readdirp-4.1.2.tgz 0ms (cache hit)
+215 http cache sade@https://registry.npmjs.org/sade/-/sade-1.8.1.tgz 0ms (cache hit)
+216 http cache postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.14.tgz 0ms (cache hit)
+217 http cache picomatch@https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz 0ms (cache hit)
+218 http cache path-parse@https://registry.npmjs.org/path-parse/-/path-parse-1.0.7.tgz 0ms (cache hit)
+219 http cache nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.12.tgz 0ms (cache hit)
+220 http cache picocolors@https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz 0ms (cache hit)
+221 http cache mrmime@https://registry.npmjs.org/mrmime/-/mrmime-2.0.1.tgz 0ms (cache hit)
+222 http cache ms@https://registry.npmjs.org/ms/-/ms-2.1.3.tgz 0ms (cache hit)
+223 http cache mri@https://registry.npmjs.org/mri/-/mri-1.2.0.tgz 0ms (cache hit)
+224 http cache magic-string@https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz 0ms (cache hit)
+225 http cache lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz 0ms (cache hit)
+226 http cache locate-character@https://registry.npmjs.org/locate-character/-/locate-character-3.0.0.tgz 0ms (cache hit)
+227 http cache is-reference@https://registry.npmjs.org/is-reference/-/is-reference-3.0.3.tgz 0ms (cache hit)
+228 http cache kleur@https://registry.npmjs.org/kleur/-/kleur-4.1.5.tgz 0ms (cache hit)
+229 http cache jiti@https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz 0ms (cache hit)
+230 http cache hasown@https://registry.npmjs.org/hasown/-/hasown-2.0.3.tgz 0ms (cache hit)
+231 http cache is-module@https://registry.npmjs.org/is-module/-/is-module-1.0.0.tgz 0ms (cache hit)
+232 http cache is-core-module@https://registry.npmjs.org/is-core-module/-/is-core-module-2.16.2.tgz 0ms (cache hit)
+233 http cache iron-webcrypto@https://registry.npmjs.org/iron-webcrypto/-/iron-webcrypto-2.0.0.tgz 0ms (cache hit)
+234 http cache function-bind@https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz 0ms (cache hit)
+235 http cache graceful-fs@https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz 0ms (cache hit)
+236 http cache fdir@https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz 0ms (cache hit)
+237 http cache eventemitter3@https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.4.tgz 0ms (cache hit)
+238 http cache esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz 0ms (cache hit)
+239 http cache esm-env@https://registry.npmjs.org/esm-env/-/esm-env-1.2.2.tgz 0ms (cache hit)
+240 http cache devalue@https://registry.npmjs.org/devalue/-/devalue-5.8.1.tgz 0ms (cache hit)
+241 http cache detect-libc@https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz 0ms (cache hit)
+242 http cache es-errors@https://registry.npmjs.org/es-errors/-/es-errors-1.3.0.tgz 0ms (cache hit)
+243 http cache deepmerge@https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz 0ms (cache hit)
+244 http cache commondir@https://registry.npmjs.org/commondir/-/commondir-1.0.1.tgz 0ms (cache hit)
+245 http cache debug@https://registry.npmjs.org/debug/-/debug-4.4.3.tgz 0ms (cache hit)
+246 http cache acorn@https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz 0ms (cache hit)
+247 http cache cookie@https://registry.npmjs.org/cookie/-/cookie-0.6.0.tgz 0ms (cache hit)
+248 http cache @workos-inc/node@https://registry.npmjs.org/@workos-inc/node/-/node-9.3.1.tgz 0ms (cache hit)
+249 http cache clsx@https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz 0ms (cache hit)
+250 http cache chokidar@https://registry.npmjs.org/chokidar/-/chokidar-4.0.3.tgz 0ms (cache hit)
+251 http cache @types/resolve@https://registry.npmjs.org/@types/resolve/-/resolve-1.20.2.tgz 0ms (cache hit)
+252 http cache @tailwindcss/vite@https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.0.tgz 0ms (cache hit)
+253 http cache @types/estree@https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz 0ms (cache hit)
+254 http cache @types/cookie@https://registry.npmjs.org/@types/cookie/-/cookie-0.6.0.tgz 0ms (cache hit)
+255 http cache @types/trusted-types@https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz 0ms (cache hit)
+256 http cache @sveltejs/adapter-node@https://registry.npmjs.org/@sveltejs/adapter-node/-/adapter-node-5.5.4.tgz 0ms (cache hit)
+257 http cache @sveltejs/acorn-typescript@https://registry.npmjs.org/@sveltejs/acorn-typescript/-/acorn-typescript-1.0.9.tgz 0ms (cache hit)
+258 http cache @rollup/rollup-win32-x64-gnu@https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.60.4.tgz 0ms (cache hit)
+259 http cache @standard-schema/spec@https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz 0ms (cache hit)
+260 http cache @polka/url@https://registry.npmjs.org/@polka/url/-/url-1.0.0-next.29.tgz 0ms (cache hit)
+261 http cache @playwright/test@https://registry.npmjs.org/@playwright/test/-/test-1.61.0.tgz 0ms (cache hit)
+262 http cache @workos/authkit-sveltekit@https://registry.npmjs.org/@workos/authkit-sveltekit/-/authkit-sveltekit-0.3.0.tgz 0ms (cache hit)
+263 http cache @jridgewell/trace-mapping@https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz 0ms (cache hit)
+264 http cache @jridgewell/remapping@https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz 0ms (cache hit)
+265 http cache @workos/authkit-session@https://registry.npmjs.org/@workos/authkit-session/-/authkit-session-0.5.2.tgz 0ms (cache hit)
+266 http cache @jridgewell/sourcemap-codec@https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz 0ms (cache hit)
+267 http cache @tailwindcss/oxide@https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.0.tgz 0ms (cache hit)
+268 http cache @tailwindcss/oxide-win32-x64-msvc@https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.0.tgz 0ms (cache hit)
+269 http cache @types/node@https://registry.npmjs.org/@types/node/-/node-25.8.0.tgz 0ms (cache hit)
+270 http cache @tailwindcss/node@https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.0.tgz 0ms (cache hit)
+271 http cache @sveltejs/vite-plugin-svelte-inspector@https://registry.npmjs.org/@sveltejs/vite-plugin-svelte-inspector/-/vite-plugin-svelte-inspector-4.0.1.tgz 0ms (cache hit)
+272 http cache @rollup/rollup-win32-x64-msvc@https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.60.4.tgz 0ms (cache hit)
+273 http cache @sveltejs/vite-plugin-svelte@https://registry.npmjs.org/@sveltejs/vite-plugin-svelte/-/vite-plugin-svelte-5.1.1.tgz 0ms (cache hit)
+274 http cache @sveltejs/kit@https://registry.npmjs.org/@sveltejs/kit/-/kit-2.60.1.tgz 0ms (cache hit)
+275 http cache @rollup/plugin-node-resolve@https://registry.npmjs.org/@rollup/plugin-node-resolve/-/plugin-node-resolve-16.0.3.tgz 0ms (cache hit)
+276 http cache @rollup/pluginutils@https://registry.npmjs.org/@rollup/pluginutils/-/pluginutils-5.3.0.tgz 0ms (cache hit)
+277 http cache @jridgewell/resolve-uri@https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz 0ms (cache hit)
+278 http cache @jridgewell/gen-mapping@https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz 0ms (cache hit)
+279 http cache @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz 0ms (cache hit)
+280 http cache @rollup/plugin-commonjs@https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-29.0.2.tgz 0ms (cache hit)
+281 http cache vite@https://registry.npmjs.org/vite/-/vite-6.4.2.tgz 0ms (cache hit)
+282 http cache svelte@https://registry.npmjs.org/svelte/-/svelte-5.55.7.tgz 0ms (cache hit)
+283 http cache @rollup/plugin-json@https://registry.npmjs.org/@rollup/plugin-json/-/plugin-json-6.1.0.tgz 0ms (cache hit)
+284 http cache typescript@https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz 0ms (cache hit)
+285 http cache rollup@https://registry.npmjs.org/rollup/-/rollup-4.60.4.tgz 0ms (cache hit)
+286 http cache resolve@https://registry.npmjs.org/resolve/-/resolve-1.22.12.tgz 0ms (cache hit)
+287 http cache playwright@https://registry.npmjs.org/playwright/-/playwright-1.61.0.tgz 0ms (cache hit)
+288 http cache svelte-check@https://registry.npmjs.org/svelte-check/-/svelte-check-4.4.8.tgz 0ms (cache hit)
+289 http cache playwright-core@https://registry.npmjs.org/playwright-core/-/playwright-core-1.61.0.tgz 0ms (cache hit)
+290 http cache estree-walker@https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz 0ms (cache hit)
+291 http cache enhanced-resolve@https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.21.3.tgz 0ms (cache hit)
+292 http cache esrap@https://registry.npmjs.org/esrap/-/esrap-2.2.9.tgz 0ms (cache hit)
+293 http cache lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz 0ms (cache hit)
+294 silly tarball no local data for zimmerframe@https://registry.npmjs.org/zimmerframe/-/zimmerframe-1.1.4.tgz. Extracting by manifest.
+295 silly tarball no local data for valibot@https://registry.npmjs.org/valibot/-/valibot-1.4.1.tgz. Extracting by manifest.
+296 silly tarball no local data for undici-types@https://registry.npmjs.org/undici-types/-/undici-types-7.24.6.tgz. Extracting by manifest.
+297 silly tarball no local data for uint8array-extras@https://registry.npmjs.org/uint8array-extras/-/uint8array-extras-1.5.0.tgz. Extracting by manifest.
+298 silly tarball no local data for totalist@https://registry.npmjs.org/totalist/-/totalist-3.0.1.tgz. Extracting by manifest.
+299 silly tarball no local data for tapable@https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz. Extracting by manifest.
+300 silly tarball no local data for tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.0.tgz. Extracting by manifest.
+301 silly tarball no local data for supports-preserve-symlinks-flag@https://registry.npmjs.org/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz. Extracting by manifest.
+302 silly tarball no local data for vitefu@https://registry.npmjs.org/vitefu/-/vitefu-1.1.3.tgz. Extracting by manifest.
+303 silly tarball no local data for source-map-js@https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz. Extracting by manifest.
+304 silly tarball no local data for tinyglobby@https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.16.tgz. Extracting by manifest.
+305 silly tarball no local data for set-cookie-parser@https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-3.1.0.tgz. Extracting by manifest.
+306 silly tarball no local data for sirv@https://registry.npmjs.org/sirv/-/sirv-3.0.2.tgz. Extracting by manifest.
+307 http cache jose@https://registry.npmjs.org/jose/-/jose-6.2.3.tgz 0ms (cache hit)
+308 silly tarball no local data for readdirp@https://registry.npmjs.org/readdirp/-/readdirp-4.1.2.tgz. Extracting by manifest.
+309 silly tarball no local data for sade@https://registry.npmjs.org/sade/-/sade-1.8.1.tgz. Extracting by manifest.
+310 silly tarball no local data for postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.14.tgz. Extracting by manifest.
+311 silly tarball no local data for picomatch@https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz. Extracting by manifest.
+312 silly tarball no local data for path-parse@https://registry.npmjs.org/path-parse/-/path-parse-1.0.7.tgz. Extracting by manifest.
+313 silly tarball no local data for nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.12.tgz. Extracting by manifest.
+314 silly tarball no local data for picocolors@https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz. Extracting by manifest.
+315 silly tarball no local data for mrmime@https://registry.npmjs.org/mrmime/-/mrmime-2.0.1.tgz. Extracting by manifest.
+316 silly tarball no local data for ms@https://registry.npmjs.org/ms/-/ms-2.1.3.tgz. Extracting by manifest.
+317 silly tarball no local data for mri@https://registry.npmjs.org/mri/-/mri-1.2.0.tgz. Extracting by manifest.
+318 silly tarball no local data for magic-string@https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz. Extracting by manifest.
+319 silly tarball no local data for lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz. Extracting by manifest.
+320 silly tarball no local data for locate-character@https://registry.npmjs.org/locate-character/-/locate-character-3.0.0.tgz. Extracting by manifest.
+321 silly tarball no local data for is-reference@https://registry.npmjs.org/is-reference/-/is-reference-3.0.3.tgz. Extracting by manifest.
+322 silly tarball no local data for kleur@https://registry.npmjs.org/kleur/-/kleur-4.1.5.tgz. Extracting by manifest.
+323 silly tarball no local data for jiti@https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz. Extracting by manifest.
+324 silly tarball no local data for hasown@https://registry.npmjs.org/hasown/-/hasown-2.0.3.tgz. Extracting by manifest.
+325 silly tarball no local data for is-module@https://registry.npmjs.org/is-module/-/is-module-1.0.0.tgz. Extracting by manifest.
+326 silly tarball no local data for is-core-module@https://registry.npmjs.org/is-core-module/-/is-core-module-2.16.2.tgz. Extracting by manifest.
+327 silly tarball no local data for iron-webcrypto@https://registry.npmjs.org/iron-webcrypto/-/iron-webcrypto-2.0.0.tgz. Extracting by manifest.
+328 silly tarball no local data for function-bind@https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz. Extracting by manifest.
+329 silly tarball no local data for graceful-fs@https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz. Extracting by manifest.
+330 silly tarball no local data for fdir@https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz. Extracting by manifest.
+331 silly tarball no local data for eventemitter3@https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.4.tgz. Extracting by manifest.
+332 http cache axobject-query@https://registry.npmjs.org/axobject-query/-/axobject-query-4.1.0.tgz 0ms (cache hit)
+333 silly tarball no local data for esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz. Extracting by manifest.
+334 silly tarball no local data for esm-env@https://registry.npmjs.org/esm-env/-/esm-env-1.2.2.tgz. Extracting by manifest.
+335 http cache aria-query@https://registry.npmjs.org/aria-query/-/aria-query-5.3.1.tgz 0ms (cache hit)
+336 silly tarball no local data for devalue@https://registry.npmjs.org/devalue/-/devalue-5.8.1.tgz. Extracting by manifest.
+337 silly tarball no local data for detect-libc@https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz. Extracting by manifest.
+338 silly tarball no local data for es-errors@https://registry.npmjs.org/es-errors/-/es-errors-1.3.0.tgz. Extracting by manifest.
+339 silly tarball no local data for deepmerge@https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz. Extracting by manifest.
+340 silly tarball no local data for commondir@https://registry.npmjs.org/commondir/-/commondir-1.0.1.tgz. Extracting by manifest.
+341 silly tarball no local data for debug@https://registry.npmjs.org/debug/-/debug-4.4.3.tgz. Extracting by manifest.
+342 silly tarball no local data for acorn@https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz. Extracting by manifest.
+343 silly tarball no local data for cookie@https://registry.npmjs.org/cookie/-/cookie-0.6.0.tgz. Extracting by manifest.
+344 silly tarball no local data for @workos-inc/node@https://registry.npmjs.org/@workos-inc/node/-/node-9.3.1.tgz. Extracting by manifest.
+345 silly tarball no local data for clsx@https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz. Extracting by manifest.
+346 silly tarball no local data for chokidar@https://registry.npmjs.org/chokidar/-/chokidar-4.0.3.tgz. Extracting by manifest.
+347 silly tarball no local data for @types/resolve@https://registry.npmjs.org/@types/resolve/-/resolve-1.20.2.tgz. Extracting by manifest.
+348 silly tarball no local data for @tailwindcss/vite@https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.0.tgz. Extracting by manifest.
+349 silly tarball no local data for @types/estree@https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz. Extracting by manifest.
+350 silly tarball no local data for @types/cookie@https://registry.npmjs.org/@types/cookie/-/cookie-0.6.0.tgz. Extracting by manifest.
+351 silly tarball no local data for @types/trusted-types@https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz. Extracting by manifest.
+352 silly tarball no local data for @sveltejs/adapter-node@https://registry.npmjs.org/@sveltejs/adapter-node/-/adapter-node-5.5.4.tgz. Extracting by manifest.
+353 silly tarball no local data for @sveltejs/acorn-typescript@https://registry.npmjs.org/@sveltejs/acorn-typescript/-/acorn-typescript-1.0.9.tgz. Extracting by manifest.
+354 silly tarball no local data for @rollup/rollup-win32-x64-gnu@https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.60.4.tgz. Extracting by manifest.
+355 silly tarball no local data for @standard-schema/spec@https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz. Extracting by manifest.
+356 silly tarball no local data for @polka/url@https://registry.npmjs.org/@polka/url/-/url-1.0.0-next.29.tgz. Extracting by manifest.
+357 silly tarball no local data for @playwright/test@https://registry.npmjs.org/@playwright/test/-/test-1.61.0.tgz. Extracting by manifest.
+358 silly tarball no local data for @workos/authkit-sveltekit@https://registry.npmjs.org/@workos/authkit-sveltekit/-/authkit-sveltekit-0.3.0.tgz. Extracting by manifest.
+359 silly tarball no local data for @jridgewell/trace-mapping@https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz. Extracting by manifest.
+360 silly tarball no local data for @jridgewell/remapping@https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz. Extracting by manifest.
+361 silly tarball no local data for @workos/authkit-session@https://registry.npmjs.org/@workos/authkit-session/-/authkit-session-0.5.2.tgz. Extracting by manifest.
+362 silly tarball no local data for @jridgewell/sourcemap-codec@https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz. Extracting by manifest.
+363 silly tarball no local data for @tailwindcss/oxide@https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.0.tgz. Extracting by manifest.
+364 silly tarball no local data for @tailwindcss/oxide-win32-x64-msvc@https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.0.tgz. Extracting by manifest.
+365 silly tarball no local data for @types/node@https://registry.npmjs.org/@types/node/-/node-25.8.0.tgz. Extracting by manifest.
+366 silly tarball no local data for @tailwindcss/node@https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.0.tgz. Extracting by manifest.
+367 silly tarball no local data for @sveltejs/vite-plugin-svelte-inspector@https://registry.npmjs.org/@sveltejs/vite-plugin-svelte-inspector/-/vite-plugin-svelte-inspector-4.0.1.tgz. Extracting by manifest.
+368 silly tarball no local data for @rollup/rollup-win32-x64-msvc@https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.60.4.tgz. Extracting by manifest.
+369 silly tarball no local data for @sveltejs/vite-plugin-svelte@https://registry.npmjs.org/@sveltejs/vite-plugin-svelte/-/vite-plugin-svelte-5.1.1.tgz. Extracting by manifest.
+370 silly tarball no local data for @sveltejs/kit@https://registry.npmjs.org/@sveltejs/kit/-/kit-2.60.1.tgz. Extracting by manifest.
+371 silly tarball no local data for @rollup/plugin-node-resolve@https://registry.npmjs.org/@rollup/plugin-node-resolve/-/plugin-node-resolve-16.0.3.tgz. Extracting by manifest.
+372 silly tarball no local data for @rollup/pluginutils@https://registry.npmjs.org/@rollup/pluginutils/-/pluginutils-5.3.0.tgz. Extracting by manifest.
+373 silly tarball no local data for @jridgewell/resolve-uri@https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz. Extracting by manifest.
+374 silly tarball no local data for @jridgewell/gen-mapping@https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz. Extracting by manifest.
+375 silly tarball no local data for @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz. Extracting by manifest.
+376 silly tarball no local data for @rollup/plugin-commonjs@https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-29.0.2.tgz. Extracting by manifest.
+377 silly tarball no local data for vite@https://registry.npmjs.org/vite/-/vite-6.4.2.tgz. Extracting by manifest.
+378 silly tarball no local data for svelte@https://registry.npmjs.org/svelte/-/svelte-5.55.7.tgz. Extracting by manifest.
+379 silly tarball no local data for @rollup/plugin-json@https://registry.npmjs.org/@rollup/plugin-json/-/plugin-json-6.1.0.tgz. Extracting by manifest.
+380 silly tarball no local data for typescript@https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz. Extracting by manifest.
+381 silly tarball no local data for rollup@https://registry.npmjs.org/rollup/-/rollup-4.60.4.tgz. Extracting by manifest.
+382 silly tarball no local data for resolve@https://registry.npmjs.org/resolve/-/resolve-1.22.12.tgz. Extracting by manifest.
+383 silly tarball no local data for playwright@https://registry.npmjs.org/playwright/-/playwright-1.61.0.tgz. Extracting by manifest.
+384 silly tarball no local data for svelte-check@https://registry.npmjs.org/svelte-check/-/svelte-check-4.4.8.tgz. Extracting by manifest.
+385 silly tarball no local data for playwright-core@https://registry.npmjs.org/playwright-core/-/playwright-core-1.61.0.tgz. Extracting by manifest.
+386 silly tarball no local data for estree-walker@https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz. Extracting by manifest.
+387 silly tarball no local data for enhanced-resolve@https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.21.3.tgz. Extracting by manifest.
+388 silly tarball no local data for esrap@https://registry.npmjs.org/esrap/-/esrap-2.2.9.tgz. Extracting by manifest.
+389 silly tarball no local data for lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz. Extracting by manifest.
+390 silly tarball no local data for jose@https://registry.npmjs.org/jose/-/jose-6.2.3.tgz. Extracting by manifest.
+391 silly tarball no local data for axobject-query@https://registry.npmjs.org/axobject-query/-/axobject-query-4.1.0.tgz. Extracting by manifest.
+392 silly tarball no local data for aria-query@https://registry.npmjs.org/aria-query/-/aria-query-5.3.1.tgz. Extracting by manifest.
+393 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 738ms
+394 silly audit report {
+394 silly audit report   cookie: [
+394 silly audit report     {
+394 silly audit report       id: 1103907,
+394 silly audit report       url: 'https://github.com/advisories/GHSA-pxg6-pf52-xh8x',
+394 silly audit report       title: 'cookie accepts cookie name, path, and domain with out of bounds characters',
+394 silly audit report       severity: 'low',
+394 silly audit report       vulnerable_versions: '<0.7.0',
+394 silly audit report       cwe: [Array],
+394 silly audit report       cvss: [Object]
+394 silly audit report     }
+394 silly audit report   ],
+394 silly audit report   vite: [
+394 silly audit report     {
+394 silly audit report       id: 1120784,
+394 silly audit report       url: 'https://github.com/advisories/GHSA-v6wh-96g9-6wx3',
+394 silly audit report       title: 'launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows',
+394 silly audit report       severity: 'moderate',
+394 silly audit report       vulnerable_versions: '<=6.4.2',
+394 silly audit report       cwe: [Array],
+394 silly audit report       cvss: [Object]
+394 silly audit report     },
+394 silly audit report     {
+394 silly audit report       id: 1120789,
+394 silly audit report       url: 'https://github.com/advisories/GHSA-fx2h-pf6j-xcff',
+394 silly audit report       title: 'vite: `server.fs.deny` bypass on Windows alternate paths',
+394 silly audit report       severity: 'high',
+394 silly audit report       vulnerable_versions: '<=6.4.2',
+394 silly audit report       cwe: [Array],
+394 silly audit report       cvss: [Object]
+394 silly audit report     }
+394 silly audit report   ]
+394 silly audit report }
+395 silly packumentCache corgi:https://registry.npmjs.org/cookie cache-miss
+396 silly packumentCache corgi:https://registry.npmjs.org/vite cache-miss
+397 http fetch GET 200 https://registry.npmjs.org/sirv/-/sirv-3.0.2.tgz 1339ms (cache miss)
+398 http fetch GET 200 https://registry.npmjs.org/path-parse/-/path-parse-1.0.7.tgz 1586ms (cache miss)
+399 http fetch GET 200 https://registry.npmjs.org/ms/-/ms-2.1.3.tgz 2011ms (cache miss)
+400 http fetch GET 200 https://registry.npmjs.org/is-reference/-/is-reference-3.0.3.tgz 2164ms (cache miss)
+401 http fetch GET 200 https://registry.npmjs.org/is-module/-/is-module-1.0.0.tgz 2168ms (cache miss)
+402 http fetch GET 200 https://registry.npmjs.org/uint8array-extras/-/uint8array-extras-1.5.0.tgz 2253ms (cache miss)
+403 http fetch GET 200 https://registry.npmjs.org/@types/resolve/-/resolve-1.20.2.tgz 2305ms (cache miss)
+404 http fetch GET 200 https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz 2363ms (cache miss)
+405 http fetch GET 200 https://registry.npmjs.org/mri/-/mri-1.2.0.tgz 2369ms (cache miss)
+406 http fetch GET 200 https://registry.npmjs.org/@types/cookie/-/cookie-0.6.0.tgz 2451ms (cache miss)
+407 http fetch GET 200 https://registry.npmjs.org/locate-character/-/locate-character-3.0.0.tgz 2561ms (cache miss)
+408 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.0.tgz 2623ms (cache miss)
+409 http fetch GET 200 https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz 2663ms (cache miss)
+410 http fetch GET 200 https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz 2697ms (cache miss)
+411 http fetch GET 200 https://registry.npmjs.org/cookie/-/cookie-0.6.0.tgz 2700ms (cache miss)
+412 http fetch GET 200 https://registry.npmjs.org/@polka/url/-/url-1.0.0-next.29.tgz 2718ms (cache miss)
+413 http fetch GET 200 https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.16.tgz 2877ms (cache miss)
+414 http fetch GET 200 https://registry.npmjs.org/zimmerframe/-/zimmerframe-1.1.4.tgz 3018ms (cache miss)
+415 http fetch GET 200 https://registry.npmjs.org/mrmime/-/mrmime-2.0.1.tgz 3029ms (cache miss)
+416 http fetch GET 200 https://registry.npmjs.org/commondir/-/commondir-1.0.1.tgz 3019ms (cache miss)
+417 http fetch GET 200 https://registry.npmjs.org/cookie 2582ms (cache revalidated)
+418 silly packumentCache corgi:https://registry.npmjs.org/cookie set size:23677 disposed:false
+419 http fetch GET 200 https://registry.npmjs.org/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz 3125ms (cache miss)
+420 http fetch GET 200 https://registry.npmjs.org/sade/-/sade-1.8.1.tgz 3121ms (cache miss)
+421 http fetch GET 200 https://registry.npmjs.org/vitefu/-/vitefu-1.1.3.tgz 3154ms (cache miss)
+422 http fetch GET 200 https://registry.npmjs.org/readdirp/-/readdirp-4.1.2.tgz 3151ms (cache miss)
+423 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.0.tgz 3140ms (cache miss)
+424 http fetch GET 200 https://registry.npmjs.org/vite 2653ms (cache revalidated)
+425 silly packumentCache corgi:https://registry.npmjs.org/vite set size:2264592 disposed:false
+426 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fkit cache-miss
+427 http fetch GET 200 https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-3.1.0.tgz 3236ms (cache miss)
+428 http fetch GET 200 https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz 3203ms (cache miss)
+429 http fetch GET 200 https://registry.npmjs.org/totalist/-/totalist-3.0.1.tgz 3277ms (cache miss)
+430 http fetch GET 200 https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz 3249ms (cache miss)
+431 http fetch GET 200 https://registry.npmjs.org/kleur/-/kleur-4.1.5.tgz 3285ms (cache miss)
+432 http fetch GET 200 https://registry.npmjs.org/@rollup/plugin-json/-/plugin-json-6.1.0.tgz 3274ms (cache miss)
+433 http fetch GET 200 https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz 3269ms (cache miss)
+434 http fetch GET 200 https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz 3327ms (cache miss)
+435 http fetch GET 200 https://registry.npmjs.org/is-core-module/-/is-core-module-2.16.2.tgz 3363ms (cache miss)
+436 http fetch GET 200 https://registry.npmjs.org/debug/-/debug-4.4.3.tgz 3460ms (cache miss)
+437 http fetch GET 200 https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz 3477ms (cache miss)
+438 http fetch GET 200 https://registry.npmjs.org/hasown/-/hasown-2.0.3.tgz 3493ms (cache miss)
+439 http fetch GET 200 https://registry.npmjs.org/esm-env/-/esm-env-1.2.2.tgz 3488ms (cache miss)
+440 http fetch GET 200 https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz 3587ms (cache miss)
+441 http fetch GET 200 https://registry.npmjs.org/iron-webcrypto/-/iron-webcrypto-2.0.0.tgz 3673ms (cache miss)
+442 http fetch GET 200 https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz 3833ms (cache miss)
+443 http fetch GET 200 https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz 3882ms (cache miss)
+444 http fetch GET 200 https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz 3887ms (cache miss)
+445 http fetch GET 200 https://registry.npmjs.org/@sveltejs/acorn-typescript/-/acorn-typescript-1.0.9.tgz 3896ms (cache miss)
+446 http fetch GET 200 https://registry.npmjs.org/@playwright/test/-/test-1.61.0.tgz 3898ms (cache miss)
+447 http fetch GET 200 https://registry.npmjs.org/@sveltejs/adapter-node/-/adapter-node-5.5.4.tgz 3974ms (cache miss)
+448 http fetch GET 200 https://registry.npmjs.org/@rollup/pluginutils/-/pluginutils-5.3.0.tgz 4016ms (cache miss)
+449 http fetch GET 200 https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz 4092ms (cache miss)
+450 http fetch GET 200 https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.4.tgz 4239ms (cache miss)
+451 http fetch GET 200 https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz 4291ms (cache miss)
+452 http fetch GET 200 https://registry.npmjs.org/@rollup/plugin-node-resolve/-/plugin-node-resolve-16.0.3.tgz 4269ms (cache miss)
+453 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.0.tgz 4289ms (cache miss)
+454 http fetch GET 200 https://registry.npmjs.org/@sveltejs/vite-plugin-svelte-inspector/-/vite-plugin-svelte-inspector-4.0.1.tgz 4300ms (cache miss)
+455 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fkit 1128ms (cache revalidated)
+456 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fkit set size:1965147 disposed:false
+457 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte cache-miss
+458 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte-inspector cache-miss
+459 silly packumentCache corgi:https://registry.npmjs.org/@tailwindcss%2fvite cache-miss
+460 silly packumentCache corgi:https://registry.npmjs.org/vitefu cache-miss
+461 http fetch GET 200 https://registry.npmjs.org/devalue/-/devalue-5.8.1.tgz 4525ms (cache miss)
+462 http fetch GET 200 https://registry.npmjs.org/es-errors/-/es-errors-1.3.0.tgz 4550ms (cache miss)
+463 http fetch GET 200 https://registry.npmjs.org/chokidar/-/chokidar-4.0.3.tgz 4560ms (cache miss)
+464 http fetch GET 200 https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-29.0.2.tgz 4566ms (cache miss)
+465 http fetch GET 200 https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz 4847ms (cache miss)
+466 http fetch GET 200 https://registry.npmjs.org/vitefu 456ms (cache revalidated)
+467 silly packumentCache corgi:https://registry.npmjs.org/vitefu set size:22407 disposed:false
+468 http fetch GET 200 https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz 4854ms (cache miss)
+469 http fetch GET 200 https://registry.npmjs.org/@tailwindcss%2fvite 494ms (cache revalidated)
+470 silly packumentCache corgi:https://registry.npmjs.org/@tailwindcss%2fvite set size:869251 disposed:false
+471 http fetch GET 200 https://registry.npmjs.org/esrap/-/esrap-2.2.9.tgz 4916ms (cache miss)
+472 http fetch GET 200 https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz 4960ms (cache miss)
+473 http fetch GET 200 https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz 5004ms (cache miss)
+474 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte 674ms (cache revalidated)
+475 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte set size:216998 disposed:false
+476 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte-inspector 684ms (cache revalidated)
+477 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte-inspector set size:22262 disposed:false
+478 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fadapter-node cache-miss
+479 silly packumentCache corgi:https://registry.npmjs.org/@workos%2fauthkit-sveltekit cache-miss
+480 http fetch GET 200 https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz 5135ms (cache miss)
+481 http fetch GET 200 https://registry.npmjs.org/nanoid/-/nanoid-3.3.12.tgz 5168ms (cache miss)
+482 http fetch GET 200 https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz 5544ms (cache miss)
+483 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fadapter-node 712ms (cache revalidated)
+484 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fadapter-node set size:288632 disposed:false
+485 http fetch GET 200 https://registry.npmjs.org/valibot/-/valibot-1.4.1.tgz 5968ms (cache miss)
+486 http fetch GET 200 https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz 5933ms (cache miss)
+487 http fetch GET 200 https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.60.4.tgz 5941ms (cache miss)
+488 http fetch GET 200 https://registry.npmjs.org/@workos%2fauthkit-sveltekit 903ms (cache revalidated)
+489 silly packumentCache corgi:https://registry.npmjs.org/@workos%2fauthkit-sveltekit set size:6162 disposed:false
+490 http fetch GET 200 https://registry.npmjs.org/undici-types/-/undici-types-7.24.6.tgz 6070ms (cache miss)
+491 http fetch GET 200 https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz 6033ms (cache miss)
+492 http fetch GET 200 https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.60.4.tgz 6142ms (cache miss)
+493 http fetch GET 200 https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz 6498ms (cache miss)
+494 http fetch GET 200 https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.0.tgz 6640ms (cache miss)
+495 http fetch GET 200 https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.0.tgz 6733ms (cache miss)
+496 http fetch GET 200 https://registry.npmjs.org/@sveltejs/vite-plugin-svelte/-/vite-plugin-svelte-5.1.1.tgz 6737ms (cache miss)
+497 http fetch GET 200 https://registry.npmjs.org/@workos/authkit-sveltekit/-/authkit-sveltekit-0.3.0.tgz 7088ms (cache miss)
+498 http fetch GET 200 https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz 7157ms (cache miss)
+499 http fetch GET 200 https://registry.npmjs.org/postcss/-/postcss-8.5.14.tgz 7268ms (cache miss)
+500 http fetch GET 200 https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.21.3.tgz 7507ms (cache miss)
+501 http fetch GET 200 https://registry.npmjs.org/@workos-inc/node/-/node-9.3.1.tgz 7552ms (cache miss)
+502 http fetch GET 200 https://registry.npmjs.org/rollup/-/rollup-4.60.4.tgz 7581ms (cache miss)
+503 http fetch GET 200 https://registry.npmjs.org/vite/-/vite-6.4.2.tgz 7699ms (cache miss)
+504 http fetch GET 200 https://registry.npmjs.org/svelte-check/-/svelte-check-4.4.8.tgz 7731ms (cache miss)
+505 http fetch GET 200 https://registry.npmjs.org/@types/node/-/node-25.8.0.tgz 8696ms (cache miss)
+506 http fetch GET 200 https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz 8937ms (cache miss)
+507 http fetch GET 200 https://registry.npmjs.org/playwright/-/playwright-1.61.0.tgz 9501ms (cache miss)
+508 http fetch GET 200 https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz 9557ms (cache miss)
+509 http fetch GET 200 https://registry.npmjs.org/resolve/-/resolve-1.22.12.tgz 9683ms (cache miss)
+510 http fetch GET 200 https://registry.npmjs.org/jose/-/jose-6.2.3.tgz 9964ms (cache miss)
+511 http fetch GET 200 https://registry.npmjs.org/@workos/authkit-session/-/authkit-session-0.5.2.tgz 10900ms (cache miss)
+512 http fetch GET 200 https://registry.npmjs.org/axobject-query/-/axobject-query-4.1.0.tgz 11162ms (cache miss)
+513 http fetch GET 200 https://registry.npmjs.org/aria-query/-/aria-query-5.3.1.tgz 12102ms (cache miss)
+514 http fetch GET 200 https://registry.npmjs.org/@sveltejs/kit/-/kit-2.60.1.tgz 12211ms (cache miss)
+515 http fetch GET 200 https://registry.npmjs.org/playwright-core/-/playwright-core-1.61.0.tgz 12287ms (cache miss)
+516 http fetch GET 200 https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz 13240ms (cache miss)
+517 http fetch GET 200 https://registry.npmjs.org/svelte/-/svelte-5.55.7.tgz 17289ms (cache miss)
+518 warn cleanup Failed to remove some directories [
+518 warn cleanup   [
+518 warn cleanup     'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.lightningcss-win32-x64-msvc-nTCygq4J',
+518 warn cleanup     [Error: EPERM: operation not permitted, unlink 'C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\.lightningcss-win32-x64-msvc-nTCygq4J\lightningcss.win32-x64-msvc.node'] {
+518 warn cleanup       errno: -4048,
+518 warn cleanup       code: 'EPERM',
+518 warn cleanup       syscall: 'unlink',
+518 warn cleanup       path: 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\.lightningcss-win32-x64-msvc-nTCygq4J\\lightningcss.win32-x64-msvc.node'
+518 warn cleanup     }
+518 warn cleanup   ],
+518 warn cleanup   [
+518 warn cleanup     'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\.win32-x64-x6H3dqRi',
+518 warn cleanup     [Error: EPERM: operation not permitted, unlink 'C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@esbuild\.win32-x64-x6H3dqRi\esbuild.exe'] {
+518 warn cleanup       errno: -4048,
+518 warn cleanup       code: 'EPERM',
+518 warn cleanup       syscall: 'unlink',
+518 warn cleanup       path: 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@esbuild\\.win32-x64-x6H3dqRi\\esbuild.exe'
+518 warn cleanup     }
+518 warn cleanup   ],
+518 warn cleanup   [
+518 warn cleanup     'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.rollup-win32-x64-msvc-0PDGPNWE',
+518 warn cleanup     [Error: EPERM: operation not permitted, unlink 'C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@rollup\.rollup-win32-x64-msvc-0PDGPNWE\rollup.win32-x64-msvc.node'] {
+518 warn cleanup       errno: -4048,
+518 warn cleanup       code: 'EPERM',
+518 warn cleanup       syscall: 'unlink',
+518 warn cleanup       path: 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@rollup\\.rollup-win32-x64-msvc-0PDGPNWE\\rollup.win32-x64-msvc.node'
+518 warn cleanup     }
+518 warn cleanup   ],
+518 warn cleanup   [
+518 warn cleanup     'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\.oxide-win32-x64-msvc-MLEFa8sO',
+518 warn cleanup     [Error: EPERM: operation not permitted, unlink 'C:\Users\mart6\source\repos\FolioTrace\UI\node_modules\@tailwindcss\.oxide-win32-x64-msvc-MLEFa8sO\tailwindcss-oxide.win32-x64-msvc.node'] {
+518 warn cleanup       errno: -4048,
+518 warn cleanup       code: 'EPERM',
+518 warn cleanup       syscall: 'unlink',
+518 warn cleanup       path: 'C:\\Users\\mart6\\source\\repos\\FolioTrace\\UI\\node_modules\\@tailwindcss\\.oxide-win32-x64-msvc-MLEFa8sO\\tailwindcss-oxide.win32-x64-msvc.node'
+518 warn cleanup     }
+518 warn cleanup   ]
+518 warn cleanup ]
+519 silly ADD node_modules/zimmerframe
+520 silly ADD node_modules/vitefu
+521 silly ADD node_modules/valibot
+522 silly ADD node_modules/undici-types
+523 silly ADD node_modules/uint8array-extras
+524 silly ADD node_modules/totalist
+525 silly ADD node_modules/tinyglobby
+526 silly ADD node_modules/tapable
+527 silly ADD node_modules/tailwindcss
+528 silly ADD node_modules/supports-preserve-symlinks-flag
+529 silly ADD node_modules/source-map-js
+530 silly ADD node_modules/sirv
+531 silly ADD node_modules/set-cookie-parser
+532 silly ADD node_modules/sade
+533 silly ADD node_modules/readdirp
+534 silly ADD node_modules/postcss
+535 silly ADD node_modules/picomatch
+536 silly ADD node_modules/picocolors
+537 silly ADD node_modules/path-parse
+538 silly ADD node_modules/nanoid
+539 silly ADD node_modules/ms
+540 silly ADD node_modules/mrmime
+541 silly ADD node_modules/mri
+542 silly ADD node_modules/magic-string
+543 silly ADD node_modules/locate-character
+544 silly ADD
+545 silly ADD
+546 silly ADD
+547 silly ADD
+548 silly ADD
+549 silly ADD
+550 silly ADD
+551 silly ADD
+552 silly ADD
+553 silly ADD
+554 silly ADD node_modules/lightningcss
+555 silly ADD node_modules/kleur
+556 silly ADD node_modules/jiti
+557 silly ADD node_modules/is-reference
+558 silly ADD node_modules/is-module
+559 silly ADD node_modules/is-core-module
+560 silly ADD node_modules/iron-webcrypto
+561 silly ADD node_modules/hasown
+562 silly ADD node_modules/graceful-fs
+563 silly ADD node_modules/function-bind
+564 silly ADD
+565 silly ADD node_modules/fdir
+566 silly ADD node_modules/eventemitter3
+567 silly ADD node_modules/esm-env
+568 silly ADD node_modules/esbuild
+569 silly ADD node_modules/es-errors
+570 silly ADD node_modules/devalue
+571 silly ADD node_modules/detect-libc
+572 silly ADD node_modules/deepmerge
+573 silly ADD node_modules/debug
+574 silly ADD node_modules/cookie
+575 silly ADD node_modules/commondir
+576 silly ADD node_modules/clsx
+577 silly ADD node_modules/chokidar
+578 silly ADD node_modules/acorn
+579 silly ADD node_modules/@workos-inc/node
+580 silly ADD node_modules/@types/trusted-types
+581 silly ADD node_modules/@types/resolve
+582 silly ADD node_modules/@types/estree
+583 silly ADD node_modules/@types/cookie
+584 silly ADD node_modules/@tailwindcss/vite
+585 silly ADD
+586 silly ADD
+587 silly ADD
+588 silly ADD
+589 silly ADD
+590 silly ADD
+591 silly ADD
+592 silly ADD
+593 silly ADD
+594 silly ADD
+595 silly ADD
+596 silly ADD node_modules/@tailwindcss/oxide
+597 silly ADD node_modules/@tailwindcss/node
+598 silly ADD node_modules/@sveltejs/adapter-node
+599 silly ADD node_modules/@sveltejs/acorn-typescript
+600 silly ADD node_modules/@standard-schema/spec
+601 silly ADD node_modules/@rollup/rollup-win32-x64-gnu
+602 silly ADD
+603 silly ADD
+604 silly ADD
+605 silly ADD
+606 silly ADD
+607 silly ADD
+608 silly ADD
+609 silly ADD
+610 silly ADD
+611 silly ADD
+612 silly ADD
+613 silly ADD
+614 silly ADD
+615 silly ADD
+616 silly ADD
+617 silly ADD
+618 silly ADD
+619 silly ADD
+620 silly ADD
+621 silly ADD
+622 silly ADD
+623 silly ADD
+624 silly ADD
+625 silly ADD node_modules/@polka/url
+626 silly ADD node_modules/@playwright/test
+627 silly ADD node_modules/@jridgewell/trace-mapping
+628 silly ADD node_modules/@jridgewell/sourcemap-codec
+629 silly ADD node_modules/@jridgewell/remapping
+630 silly ADD
+631 silly ADD
+632 silly ADD
+633 silly ADD
+634 silly ADD
+635 silly ADD
+636 silly ADD
+637 silly ADD
+638 silly ADD
+639 silly ADD
+640 silly ADD
+641 silly ADD
+642 silly ADD
+643 silly ADD
+644 silly ADD
+645 silly ADD
+646 silly ADD
+647 silly ADD
+648 silly ADD
+649 silly ADD
+650 silly ADD
+651 silly ADD
+652 silly ADD
+653 silly ADD
+654 silly ADD
+655 silly CHANGE node_modules/@workos/authkit-sveltekit
+656 silly CHANGE node_modules/@workos/authkit-session
+657 silly CHANGE node_modules/@types/node
+658 silly CHANGE node_modules/@tailwindcss/oxide-win32-x64-msvc
+659 silly CHANGE node_modules/@sveltejs/vite-plugin-svelte-inspector
+660 silly CHANGE node_modules/@sveltejs/vite-plugin-svelte
+661 silly CHANGE node_modules/@sveltejs/kit
+662 silly CHANGE node_modules/@rollup/rollup-win32-x64-msvc
+663 silly CHANGE node_modules/@rollup/pluginutils
+664 silly CHANGE node_modules/@rollup/plugin-node-resolve
+665 silly CHANGE node_modules/@rollup/plugin-json
+666 silly CHANGE node_modules/@rollup/plugin-commonjs
+667 silly CHANGE node_modules/@jridgewell/resolve-uri
+668 silly CHANGE node_modules/@jridgewell/gen-mapping
+669 silly CHANGE node_modules/@esbuild/win32-x64
+670 silly CHANGE node_modules/vite
+671 silly CHANGE node_modules/typescript
+672 silly CHANGE node_modules/svelte-check
+673 silly CHANGE node_modules/rollup
+674 silly CHANGE node_modules/svelte
+675 silly CHANGE node_modules/resolve
+676 silly CHANGE node_modules/playwright-core
+677 silly CHANGE node_modules/playwright
+678 silly ADD
+679 silly CHANGE node_modules/lightningcss-win32-x64-msvc
+680 silly CHANGE node_modules/jose
+681 silly CHANGE node_modules/estree-walker
+682 silly CHANGE node_modules/esrap
+683 silly CHANGE node_modules/enhanced-resolve
+684 silly CHANGE node_modules/axobject-query
+685 silly CHANGE node_modules/aria-query
+686 verbose cwd C:\Users\mart6\source\repos\FolioTrace\UI
+687 verbose os Windows_NT 10.0.26200
+688 verbose node v25.2.1
+689 verbose npm  v10.9.8
+690 verbose exit 0
+691 info ok

@@ -10,3 +10,5 @@
 20260608-19:36:12.933 : SocketReader Error: Socket (127.0.0.1:49326): A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call.
 20260608-19:36:12.949 : SocketReader Error: Socket (127.0.0.1:56070): A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call.
 20260608-19:36:13.179 : SocketReader Error: Socket (127.0.0.1:64481): A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call.
+20260615-22:39:48.681 : SocketReader Error: Socket (127.0.0.1:59123): A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call.
+20260617-01:06:47.098 : SocketReader Error: Socket (127.0.0.1:49911): A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call.

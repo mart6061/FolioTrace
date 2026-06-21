@@ -28,3 +28,268 @@
 20260608-20:31:01.001 : Session reset: ResetOnLogon
 20260608-20:31:01.002 : Received logon
 20260608-20:31:01.003 : Responding to logon request; heartbeat is 20 seconds
+20260609-00:56:44.487 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260609-00:56:44.493 : Session reset: New session
+20260609-00:56:44.494 : Created session
+20260609-00:57:09.993 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 13809259 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:52019
+20260609-00:57:10.001 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260609-00:57:10.005 : Session reset: Reset requested by counterparty
+20260609-00:57:10.011 : Session reset: ResetOnLogon
+20260609-00:57:10.059 : Received logon
+20260609-00:57:10.070 : Responding to logon request; heartbeat is 20 seconds
+20260609-23:59:59.814 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Resetting...
+20260609-23:59:59.842 : Session reset: Out of SessionTime (Session.Next())
+20260610-00:00:11.161 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 37659076 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:53325
+20260610-00:00:11.161 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260610-00:00:11.168 : Session reset: Reset requested by counterparty
+20260610-00:00:11.174 : Session reset: ResetOnLogon
+20260610-00:00:11.175 : Received logon
+20260610-00:00:11.176 : Responding to logon request; heartbeat is 20 seconds
+20260610-23:18:54.860 : Created session
+20260611-00:44:16.189 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260611-00:44:16.199 : Session reset: New session
+20260611-00:44:16.200 : Created session
+20260611-01:14:45.285 : Created session
+20260611-01:18:24.134 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 23923298 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:54920
+20260611-01:18:24.143 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-01:18:24.149 : Session reset: Reset requested by counterparty
+20260611-01:18:24.156 : Session reset: ResetOnLogon
+20260611-01:18:24.205 : Received logon
+20260611-01:18:24.219 : Responding to logon request; heartbeat is 20 seconds
+20260611-01:34:20.082 : Received logout request
+20260611-01:34:20.084 : Sending logout response
+20260611-01:34:20.084 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260611-01:38:12.778 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 1130093 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:59429
+20260611-01:38:12.778 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-01:38:12.788 : Session reset: Reset requested by counterparty
+20260611-01:38:12.796 : Session reset: ResetOnLogon
+20260611-01:38:12.796 : Received logon
+20260611-01:38:12.799 : Responding to logon request; heartbeat is 20 seconds
+20260611-01:43:26.214 : Received logout request
+20260611-01:43:26.216 : Sending logout response
+20260611-01:43:26.216 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260611-01:46:42.372 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 31062833 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:57896
+20260611-01:46:42.372 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-01:46:42.382 : Session reset: Reset requested by counterparty
+20260611-01:46:42.393 : Session reset: ResetOnLogon
+20260611-01:46:42.394 : Received logon
+20260611-01:46:42.394 : Responding to logon request; heartbeat is 20 seconds
+20260611-01:53:05.388 : Received logout request
+20260611-01:53:05.393 : Sending logout response
+20260611-01:53:05.394 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260611-01:54:29.702 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 39317581 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:65074
+20260611-01:54:29.702 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-01:54:29.714 : Session reset: Reset requested by counterparty
+20260611-01:54:29.722 : Session reset: ResetOnLogon
+20260611-01:54:29.722 : Received logon
+20260611-01:54:29.723 : Responding to logon request; heartbeat is 20 seconds
+20260611-01:55:52.514 : Received logout request
+20260611-01:55:52.516 : Sending logout response
+20260611-01:55:52.516 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260611-01:56:27.090 : Created session
+20260611-01:57:36.485 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 20950175 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:51589
+20260611-01:57:36.501 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-01:57:36.524 : Session reset: Reset requested by counterparty
+20260611-01:57:36.537 : Session reset: ResetOnLogon
+20260611-01:57:36.625 : Received logon
+20260611-01:57:36.636 : Responding to logon request; heartbeat is 20 seconds
+20260611-09:52:51.822 : Created session
+20260611-09:55:49.097 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 15626391 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:51544
+20260611-09:55:49.128 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-09:55:49.157 : Session reset: Reset requested by counterparty
+20260611-09:55:49.174 : Session reset: ResetOnLogon
+20260611-09:55:49.289 : Received logon
+20260611-09:55:49.303 : Responding to logon request; heartbeat is 20 seconds
+20260611-11:17:37.266 : Received logout request
+20260611-11:17:37.267 : Sending logout response
+20260611-11:17:37.268 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260611-11:18:13.659 : Created session
+20260611-11:20:32.351 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 34732923 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:56928
+20260611-11:20:32.360 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-11:20:32.369 : Session reset: Reset requested by counterparty
+20260611-11:20:32.381 : Session reset: ResetOnLogon
+20260611-11:20:32.436 : Received logon
+20260611-11:20:32.449 : Responding to logon request; heartbeat is 20 seconds
+20260611-14:14:15.476 : Received logout request
+20260611-14:14:15.481 : Sending logout response
+20260611-14:14:15.486 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260611-14:14:49.910 : Created session
+20260611-15:01:06.016 : Created session
+20260611-15:01:35.511 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 39053774 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:54269
+20260611-15:01:35.517 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-15:01:35.524 : Session reset: Reset requested by counterparty
+20260611-15:01:35.531 : Session reset: ResetOnLogon
+20260611-15:01:35.571 : Received logon
+20260611-15:01:35.580 : Responding to logon request; heartbeat is 20 seconds
+20260611-15:13:03.039 : Initiated logout request
+20260611-15:13:03.046 : Received logout response
+20260611-15:13:03.046 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout response
+20260611-15:13:12.610 : Created session
+20260611-18:33:03.644 : Created session
+20260611-18:35:02.328 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 39053774 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:65304
+20260611-18:35:02.335 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260611-18:35:02.341 : Session reset: Reset requested by counterparty
+20260611-18:35:02.349 : Session reset: ResetOnLogon
+20260611-18:35:02.389 : Received logon
+20260611-18:35:02.398 : Responding to logon request; heartbeat is 20 seconds
+20260611-23:59:59.302 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Resetting...
+20260611-23:59:59.343 : Session reset: Out of SessionTime (Session.Next())
+20260612-00:00:21.018 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 28196151 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:60971
+20260612-00:00:21.018 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260612-00:00:21.032 : Session reset: Reset requested by counterparty
+20260612-00:00:21.049 : Session reset: ResetOnLogon
+20260612-00:00:21.050 : Received logon
+20260612-00:00:21.059 : Responding to logon request; heartbeat is 20 seconds
+20260612-01:24:22.097 : Received logout request
+20260612-01:24:22.098 : Sending logout response
+20260612-01:24:22.098 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260612-15:30:29.805 : Created session
+20260613-00:30:03.265 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260613-00:30:03.281 : Session reset: New session
+20260613-00:30:03.281 : Created session
+20260613-10:20:28.725 : Created session
+20260613-17:22:54.668 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 21974288 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:60833
+20260613-17:22:54.687 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260613-17:22:54.702 : Session reset: Reset requested by counterparty
+20260613-17:22:54.709 : Session reset: ResetOnLogon
+20260613-17:22:54.769 : Received logon
+20260613-17:22:54.781 : Responding to logon request; heartbeat is 20 seconds
+20260613-20:13:51.895 : Received logout request
+20260613-20:13:51.897 : Sending logout response
+20260613-20:13:51.900 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260613-20:43:33.572 : Created session
+20260613-22:25:05.316 : Created session
+20260615-01:36:54.525 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260615-01:36:54.543 : Session reset: New session
+20260615-01:36:54.543 : Created session
+20260615-01:52:54.619 : Created session
+20260615-02:01:47.546 : Created session
+20260615-09:33:58.363 : Created session
+20260615-13:46:09.407 : Created session
+20260615-14:31:33.984 : Created session
+20260615-15:07:59.183 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 44780778 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:54683
+20260615-15:07:59.192 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260615-15:07:59.200 : Session reset: Reset requested by counterparty
+20260615-15:07:59.210 : Session reset: ResetOnLogon
+20260615-15:07:59.257 : Received logon
+20260615-15:07:59.268 : Responding to logon request; heartbeat is 20 seconds
+20260615-22:35:40.704 : Sent test request TEST
+20260615-22:36:44.599 : Sent test request TEST
+20260615-22:37:18.700 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Timed out waiting for heartbeat
+20260615-22:39:31.395 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 22718970 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:63422
+20260615-22:39:31.395 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260615-22:39:31.479 : Session reset: Reset requested by counterparty
+20260615-22:39:31.509 : Session reset: ResetOnLogon
+20260615-22:39:31.514 : Received logon
+20260615-22:39:31.621 : Responding to logon request; heartbeat is 20 seconds
+20260615-22:39:55.860 : Sent test request TEST
+20260615-22:40:20.089 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Timed out waiting for heartbeat
+20260615-22:40:59.017 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 65045258 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:61428
+20260615-22:40:59.017 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260615-22:40:59.046 : Session reset: Reset requested by counterparty
+20260615-22:40:59.082 : Session reset: ResetOnLogon
+20260615-22:40:59.103 : Received logon
+20260615-22:40:59.120 : Responding to logon request; heartbeat is 20 seconds
+20260616-00:03:26.515 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260616-00:03:26.527 : Session reset: New session
+20260616-00:03:26.528 : Created session
+20260616-00:26:22.035 : Created session
+20260616-10:24:10.354 : Created session
+20260616-10:30:41.444 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 8613909 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:59937
+20260616-10:30:41.454 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260616-10:30:41.463 : Session reset: Reset requested by counterparty
+20260616-10:30:41.470 : Session reset: ResetOnLogon
+20260616-10:30:41.516 : Received logon
+20260616-10:30:41.527 : Responding to logon request; heartbeat is 20 seconds
+20260616-22:56:44.179 : Sent test request TEST
+20260616-23:00:48.235 : Sent test request TEST
+20260616-23:32:57.378 : Received logout request
+20260616-23:32:57.464 : Sending logout response
+20260616-23:32:57.509 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260617-00:08:21.606 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260617-00:08:21.621 : Session reset: New session
+20260617-00:08:21.625 : Created session
+20260617-00:58:22.934 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 52399045 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:51602
+20260617-00:58:22.954 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260617-00:58:22.967 : Session reset: Reset requested by counterparty
+20260617-00:58:22.983 : Session reset: ResetOnLogon
+20260617-00:58:23.139 : Received logon
+20260617-00:58:23.165 : Responding to logon request; heartbeat is 20 seconds
+20260617-01:05:06.810 : Sent test request TEST
+20260617-01:05:30.091 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Timed out waiting for heartbeat
+20260617-01:07:18.033 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 59011410 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:49451
+20260617-01:07:18.033 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260617-01:07:18.042 : Session reset: Reset requested by counterparty
+20260617-01:07:18.048 : Session reset: ResetOnLogon
+20260617-01:07:18.048 : Received logon
+20260617-01:07:18.049 : Responding to logon request; heartbeat is 20 seconds
+20260617-01:08:03.332 : Sent test request TEST
+20260617-15:32:17.364 : Created session
+20260617-18:47:59.112 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 44210091 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:53158
+20260617-18:47:59.120 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260617-18:47:59.128 : Session reset: Reset requested by counterparty
+20260617-18:47:59.133 : Session reset: ResetOnLogon
+20260617-18:47:59.175 : Received logon
+20260617-18:47:59.184 : Responding to logon request; heartbeat is 20 seconds
+20260617-22:21:02.429 : Initiated logout request
+20260617-22:21:02.474 : Received logout response
+20260617-22:21:02.476 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout response
+20260617-22:21:32.085 : Created session
+20260617-22:21:51.928 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 56251872 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:53539
+20260617-22:21:51.937 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260617-22:21:51.946 : Session reset: Reset requested by counterparty
+20260617-22:21:51.954 : Session reset: ResetOnLogon
+20260617-22:21:52.008 : Received logon
+20260617-22:21:52.019 : Responding to logon request; heartbeat is 20 seconds
+20260618-00:00:00.015 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Resetting...
+20260618-00:00:00.045 : Session reset: Out of SessionTime (Session.Next())
+20260618-00:00:17.785 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 18057638 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:55957
+20260618-00:00:17.785 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260618-00:00:17.794 : Session reset: Reset requested by counterparty
+20260618-00:00:17.802 : Session reset: ResetOnLogon
+20260618-00:00:17.803 : Received logon
+20260618-00:00:17.804 : Responding to logon request; heartbeat is 20 seconds
+20260618-00:55:03.475 : Initiated logout request
+20260618-00:55:03.481 : Received logout response
+20260618-00:55:03.481 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout response
+20260618-00:55:13.729 : Created session
+20260618-00:55:18.961 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 37916227 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:56351
+20260618-00:55:18.969 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260618-00:55:18.979 : Session reset: Reset requested by counterparty
+20260618-00:55:18.986 : Session reset: ResetOnLogon
+20260618-00:55:19.042 : Received logon
+20260618-00:55:19.051 : Responding to logon request; heartbeat is 20 seconds
+20260618-00:55:40.204 : Received logout request
+20260618-00:55:40.205 : Sending logout response
+20260618-00:55:40.206 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
+20260618-01:05:18.253 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 56080076 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:61394
+20260618-01:05:18.253 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260618-01:05:18.266 : Session reset: Reset requested by counterparty
+20260618-01:05:18.284 : Session reset: ResetOnLogon
+20260618-01:05:18.286 : Received logon
+20260618-01:05:18.288 : Responding to logon request; heartbeat is 20 seconds
+20260618-01:06:23.347 : Sent test request TEST
+20260618-01:07:13.402 : Sent test request TEST
+20260618-17:40:17.339 : Created session
+20260618-17:57:26.613 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 23938416 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:63903
+20260618-17:57:26.620 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260618-17:57:26.628 : Session reset: Reset requested by counterparty
+20260618-17:57:26.633 : Session reset: ResetOnLogon
+20260618-17:57:26.676 : Received logon
+20260618-17:57:26.685 : Responding to logon request; heartbeat is 20 seconds
+20260618-20:04:48.562 : Sent test request TEST
+20260618-23:59:59.643 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Resetting...
+20260618-23:59:59.656 : Session reset: Out of SessionTime (Session.Next())
+20260619-00:00:07.930 : FIXT.1.1:FOLEOTRADER->FOLEOAPI Socket Reader 46595033 accepting session FIXT.1.1:FOLEOTRADER->FOLEOAPI from 127.0.0.1:54662
+20260619-00:00:07.930 : Sequence numbers reset due to ResetSeqNumFlag=Y
+20260619-00:00:07.938 : Session reset: Reset requested by counterparty
+20260619-00:00:07.945 : Session reset: ResetOnLogon
+20260619-00:00:07.945 : Received logon
+20260619-00:00:07.947 : Responding to logon request; heartbeat is 20 seconds
+20260619-14:50:04.341 : Sent test request TEST
+20260619-14:51:08.028 : SocketReader Error: Socket exception (127.0.0.1:54662): An existing connection was forcibly closed by the remote host.
+20260619-14:51:08.028 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Socket exception (127.0.0.1:54662): An existing connection was forcibly closed by the remote host.
+20260621-09:35:19.166 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260621-09:35:19.234 : Session reset: New session
+20260621-09:35:19.235 : Created session
+20260621-09:58:47.310 : Created session

@@ -1,0 +1,461 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v25.2.1
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\mart6\source\repos\FolioTrace\.worktrees\fix-authkit-pkce-railway-auth\UI\.npmrc
+5 silly config load:file:C:\Users\mart6\.npmrc
+6 silly config load:file:C:\Users\mart6\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm ci
+8 verbose argv "ci" "--ignore-scripts"
+9 verbose logfile logs-max:10 dir:C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_logs\2026-06-21T17_34_11_253Z-
+10 verbose logfile C:\Users\mart6\source\repos\FolioTrace\UI\.npm-cache\_logs\2026-06-21T17_34_11_253Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 silly logfile done cleaning log files
+14 silly idealTree buildDeps
+15 silly reify moves {}
+16 silly audit bulk request {
+16 silly audit   '@esbuild/aix-ppc64': [ '0.25.12' ],
+16 silly audit   '@esbuild/android-arm': [ '0.25.12' ],
+16 silly audit   '@esbuild/android-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/android-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/darwin-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/darwin-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/freebsd-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/freebsd-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-arm': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-ia32': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-loong64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-mips64el': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-ppc64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-riscv64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-s390x': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/netbsd-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/netbsd-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/openbsd-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/openbsd-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/openharmony-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/sunos-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/win32-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/win32-ia32': [ '0.25.12' ],
+16 silly audit   '@esbuild/win32-x64': [ '0.25.12' ],
+16 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+16 silly audit   '@jridgewell/remapping': [ '2.3.5' ],
+16 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+16 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+16 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+16 silly audit   '@playwright/test': [ '1.61.0' ],
+16 silly audit   '@polka/url': [ '1.0.0-next.29' ],
+16 silly audit   '@rollup/plugin-commonjs': [ '29.0.2' ],
+16 silly audit   'is-reference': [ '1.2.1', '3.0.3' ],
+16 silly audit   '@rollup/plugin-json': [ '6.1.0' ],
+16 silly audit   '@rollup/plugin-node-resolve': [ '16.0.3' ],
+16 silly audit   '@rollup/pluginutils': [ '5.3.0' ],
+16 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-android-arm64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.4' ],
+16 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.4' ],
+16 silly audit   '@standard-schema/spec': [ '1.1.0' ],
+16 silly audit   '@sveltejs/acorn-typescript': [ '1.0.9' ],
+16 silly audit   '@sveltejs/adapter-node': [ '5.5.4' ],
+16 silly audit   '@sveltejs/kit': [ '2.60.1' ],
+16 silly audit   '@sveltejs/vite-plugin-svelte': [ '5.1.1' ],
+16 silly audit   '@sveltejs/vite-plugin-svelte-inspector': [ '4.0.1' ],
+16 silly audit   '@tailwindcss/node': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-android-arm64': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-darwin-arm64': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-darwin-x64': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-freebsd-x64': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-linux-arm-gnueabihf': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-linux-arm64-gnu': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-linux-arm64-musl': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-linux-x64-gnu': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-linux-x64-musl': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-wasm32-wasi': [ '4.3.0' ],
+16 silly audit   '@emnapi/core': [ '1.10.0' ],
+16 silly audit   '@emnapi/runtime': [ '1.10.0' ],
+16 silly audit   '@emnapi/wasi-threads': [ '1.2.1' ],
+16 silly audit   '@napi-rs/wasm-runtime': [ '1.1.4' ],
+16 silly audit   '@tybys/wasm-util': [ '0.10.1' ],
+16 silly audit   tslib: [ '2.8.1' ],
+16 silly audit   '@tailwindcss/oxide-win32-arm64-msvc': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/oxide-win32-x64-msvc': [ '4.3.0' ],
+16 silly audit   '@tailwindcss/vite': [ '4.3.0' ],
+16 silly audit   '@types/cookie': [ '0.6.0' ],
+16 silly audit   '@types/estree': [ '1.0.9', '1.0.8' ],
+16 silly audit   '@types/node': [ '25.8.0' ],
+16 silly audit   '@types/resolve': [ '1.20.2' ],
+16 silly audit   '@types/trusted-types': [ '2.0.7' ],
+16 silly audit   '@workos-inc/node': [ '9.3.1' ],
+16 silly audit   '@workos/authkit-session': [ '0.5.2' ],
+16 silly audit   '@workos/authkit-sveltekit': [ '0.3.0' ],
+16 silly audit   cookie: [ '1.1.1', '0.6.0' ],
+16 silly audit   acorn: [ '8.16.0' ],
+16 silly audit   'aria-query': [ '5.3.1' ],
+16 silly audit   'axobject-query': [ '4.1.0' ],
+16 silly audit   chokidar: [ '4.0.3' ],
+16 silly audit   clsx: [ '2.1.1' ],
+16 silly audit   commondir: [ '1.0.1' ],
+16 silly audit   debug: [ '4.4.3' ],
+16 silly audit   deepmerge: [ '4.3.1' ],
+16 silly audit   'detect-libc': [ '2.1.2' ],
+16 silly audit   devalue: [ '5.8.1' ],
+16 silly audit   'enhanced-resolve': [ '5.21.3' ],
+16 silly audit   'es-errors': [ '1.3.0' ],
+16 silly audit   esbuild: [ '0.25.12' ],
+16 silly audit   'esm-env': [ '1.2.2' ],
+16 silly audit   esrap: [ '2.2.9' ],
+16 silly audit   'estree-walker': [ '2.0.2' ],
+16 silly audit   eventemitter3: [ '5.0.4' ],
+16 silly audit   fdir: [ '6.5.0' ],
+16 silly audit   fsevents: [ '2.3.3', '2.3.2' ],
+16 silly audit   'function-bind': [ '1.1.2' ],
+16 silly audit   'graceful-fs': [ '4.2.11' ],
+16 silly audit   hasown: [ '2.0.3' ],
+16 silly audit   'iron-webcrypto': [ '2.0.0' ],
+16 silly audit   'is-core-module': [ '2.16.2' ],
+16 silly audit   'is-module': [ '1.0.0' ],
+16 silly audit   jiti: [ '2.7.0' ],
+16 silly audit   jose: [ '6.2.3' ],
+16 silly audit   kleur: [ '4.1.5' ],
+16 silly audit   lightningcss: [ '1.32.0' ],
+16 silly audit   'lightningcss-android-arm64': [ '1.32.0' ],
+16 silly audit   'lightningcss-darwin-arm64': [ '1.32.0' ],
+16 silly audit   'lightningcss-darwin-x64': [ '1.32.0' ],
+16 silly audit   'lightningcss-freebsd-x64': [ '1.32.0' ],
+16 silly audit   'lightningcss-linux-arm-gnueabihf': [ '1.32.0' ],
+16 silly audit   'lightningcss-linux-arm64-gnu': [ '1.32.0' ],
+16 silly audit   'lightningcss-linux-arm64-musl': [ '1.32.0' ],
+16 silly audit   'lightningcss-linux-x64-gnu': [ '1.32.0' ],
+16 silly audit   'lightningcss-linux-x64-musl': [ '1.32.0' ],
+16 silly audit   'lightningcss-win32-arm64-msvc': [ '1.32.0' ],
+16 silly audit   'lightningcss-win32-x64-msvc': [ '1.32.0' ],
+16 silly audit   'locate-character': [ '3.0.0' ],
+16 silly audit   'magic-string': [ '0.30.21' ],
+16 silly audit   mri: [ '1.2.0' ],
+16 silly audit   mrmime: [ '2.0.1' ],
+16 silly audit   ms: [ '2.1.3' ],
+16 silly audit   nanoid: [ '3.3.12' ],
+16 silly audit   'path-parse': [ '1.0.7' ],
+16 silly audit   picocolors: [ '1.1.1' ],
+16 silly audit   picomatch: [ '4.0.4' ],
+16 silly audit   playwright: [ '1.61.0' ],
+16 silly audit   'playwright-core': [ '1.61.0' ],
+16 silly audit   postcss: [ '8.5.14' ],
+16 silly audit   readdirp: [ '4.1.2' ],
+16 silly audit   resolve: [ '1.22.12' ],
+16 silly audit   rollup: [ '4.60.4' ],
+16 silly audit   sade: [ '1.8.1' ],
+16 silly audit   'set-cookie-parser': [ '3.1.0' ],
+16 silly audit   sirv: [ '3.0.2' ],
+16 silly audit   'source-map-js': [ '1.2.1' ],
+16 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+16 silly audit   svelte: [ '5.55.7' ],
+16 silly audit   'svelte-check': [ '4.4.8' ],
+16 silly audit   tailwindcss: [ '4.3.0' ],
+16 silly audit   tapable: [ '2.3.3' ],
+16 silly audit   tinyglobby: [ '0.2.16' ],
+16 silly audit   totalist: [ '3.0.1' ],
+16 silly audit   typescript: [ '5.9.3' ],
+16 silly audit   'uint8array-extras': [ '1.5.0' ],
+16 silly audit   'undici-types': [ '7.24.6' ],
+16 silly audit   valibot: [ '1.4.1' ],
+16 silly audit   vite: [ '6.4.2' ],
+16 silly audit   vitefu: [ '1.1.3' ],
+16 silly audit   zimmerframe: [ '1.1.4' ]
+16 silly audit }
+17 http cache vitefu@https://registry.npmjs.org/vitefu/-/vitefu-1.1.3.tgz 1ms (cache hit)
+18 http cache zimmerframe@https://registry.npmjs.org/zimmerframe/-/zimmerframe-1.1.4.tgz 0ms (cache hit)
+19 http cache valibot@https://registry.npmjs.org/valibot/-/valibot-1.4.1.tgz 0ms (cache hit)
+20 http cache vite@https://registry.npmjs.org/vite/-/vite-6.4.2.tgz 0ms (cache hit)
+21 http cache undici-types@https://registry.npmjs.org/undici-types/-/undici-types-7.24.6.tgz 0ms (cache hit)
+22 http cache typescript@https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz 0ms (cache hit)
+23 http cache uint8array-extras@https://registry.npmjs.org/uint8array-extras/-/uint8array-extras-1.5.0.tgz 0ms (cache hit)
+24 http cache totalist@https://registry.npmjs.org/totalist/-/totalist-3.0.1.tgz 1ms (cache hit)
+25 http cache tinyglobby@https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.16.tgz 0ms (cache hit)
+26 http cache tapable@https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz 0ms (cache hit)
+27 http cache tailwindcss@https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.0.tgz 0ms (cache hit)
+28 http cache svelte-check@https://registry.npmjs.org/svelte-check/-/svelte-check-4.4.8.tgz 0ms (cache hit)
+29 http cache svelte@https://registry.npmjs.org/svelte/-/svelte-5.55.7.tgz 0ms (cache hit)
+30 http cache supports-preserve-symlinks-flag@https://registry.npmjs.org/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz 0ms (cache hit)
+31 http cache sirv@https://registry.npmjs.org/sirv/-/sirv-3.0.2.tgz 0ms (cache hit)
+32 http cache sade@https://registry.npmjs.org/sade/-/sade-1.8.1.tgz 0ms (cache hit)
+33 http cache source-map-js@https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz 0ms (cache hit)
+34 http cache rollup@https://registry.npmjs.org/rollup/-/rollup-4.60.4.tgz 0ms (cache hit)
+35 http cache set-cookie-parser@https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-3.1.0.tgz 0ms (cache hit)
+36 http cache readdirp@https://registry.npmjs.org/readdirp/-/readdirp-4.1.2.tgz 0ms (cache hit)
+37 http cache resolve@https://registry.npmjs.org/resolve/-/resolve-1.22.12.tgz 1ms (cache hit)
+38 http cache playwright@https://registry.npmjs.org/playwright/-/playwright-1.61.0.tgz 0ms (cache hit)
+39 http cache postcss@https://registry.npmjs.org/postcss/-/postcss-8.5.14.tgz 0ms (cache hit)
+40 http cache picomatch@https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz 0ms (cache hit)
+41 http cache playwright-core@https://registry.npmjs.org/playwright-core/-/playwright-core-1.61.0.tgz 0ms (cache hit)
+42 http cache picocolors@https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz 0ms (cache hit)
+43 http cache path-parse@https://registry.npmjs.org/path-parse/-/path-parse-1.0.7.tgz 0ms (cache hit)
+44 http cache ms@https://registry.npmjs.org/ms/-/ms-2.1.3.tgz 0ms (cache hit)
+45 http cache nanoid@https://registry.npmjs.org/nanoid/-/nanoid-3.3.12.tgz 0ms (cache hit)
+46 http cache mrmime@https://registry.npmjs.org/mrmime/-/mrmime-2.0.1.tgz 0ms (cache hit)
+47 http cache mri@https://registry.npmjs.org/mri/-/mri-1.2.0.tgz 0ms (cache hit)
+48 http cache locate-character@https://registry.npmjs.org/locate-character/-/locate-character-3.0.0.tgz 0ms (cache hit)
+49 http cache lightningcss-win32-x64-msvc@https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz 0ms (cache hit)
+50 http cache lightningcss@https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz 0ms (cache hit)
+51 http cache kleur@https://registry.npmjs.org/kleur/-/kleur-4.1.5.tgz 0ms (cache hit)
+52 http cache jose@https://registry.npmjs.org/jose/-/jose-6.2.3.tgz 0ms (cache hit)
+53 http cache is-reference@https://registry.npmjs.org/is-reference/-/is-reference-3.0.3.tgz 0ms (cache hit)
+54 http cache jiti@https://registry.npmjs.org/jiti/-/jiti-2.7.0.tgz 0ms (cache hit)
+55 http cache is-module@https://registry.npmjs.org/is-module/-/is-module-1.0.0.tgz 0ms (cache hit)
+56 http cache is-core-module@https://registry.npmjs.org/is-core-module/-/is-core-module-2.16.2.tgz 0ms (cache hit)
+57 http cache iron-webcrypto@https://registry.npmjs.org/iron-webcrypto/-/iron-webcrypto-2.0.0.tgz 0ms (cache hit)
+58 http cache hasown@https://registry.npmjs.org/hasown/-/hasown-2.0.3.tgz 0ms (cache hit)
+59 http cache magic-string@https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz 0ms (cache hit)
+60 http cache graceful-fs@https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz 0ms (cache hit)
+61 http cache function-bind@https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz 0ms (cache hit)
+62 http cache fdir@https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz 0ms (cache hit)
+63 http cache eventemitter3@https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.4.tgz 0ms (cache hit)
+64 http cache estree-walker@https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz 0ms (cache hit)
+65 http cache esrap@https://registry.npmjs.org/esrap/-/esrap-2.2.9.tgz 0ms (cache hit)
+66 http cache esm-env@https://registry.npmjs.org/esm-env/-/esm-env-1.2.2.tgz 0ms (cache hit)
+67 http cache esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz 0ms (cache hit)
+68 http cache es-errors@https://registry.npmjs.org/es-errors/-/es-errors-1.3.0.tgz 0ms (cache hit)
+69 http cache enhanced-resolve@https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.21.3.tgz 0ms (cache hit)
+70 http cache devalue@https://registry.npmjs.org/devalue/-/devalue-5.8.1.tgz 0ms (cache hit)
+71 http cache debug@https://registry.npmjs.org/debug/-/debug-4.4.3.tgz 0ms (cache hit)
+72 http cache detect-libc@https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz 0ms (cache hit)
+73 http cache deepmerge@https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz 0ms (cache hit)
+74 http cache commondir@https://registry.npmjs.org/commondir/-/commondir-1.0.1.tgz 0ms (cache hit)
+75 http cache cookie@https://registry.npmjs.org/cookie/-/cookie-0.6.0.tgz 0ms (cache hit)
+76 http cache clsx@https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz 0ms (cache hit)
+77 http cache axobject-query@https://registry.npmjs.org/axobject-query/-/axobject-query-4.1.0.tgz 0ms (cache hit)
+78 http cache chokidar@https://registry.npmjs.org/chokidar/-/chokidar-4.0.3.tgz 1ms (cache hit)
+79 http cache aria-query@https://registry.npmjs.org/aria-query/-/aria-query-5.3.1.tgz 0ms (cache hit)
+80 http cache @workos/authkit-session@https://registry.npmjs.org/@workos/authkit-session/-/authkit-session-0.5.2.tgz 0ms (cache hit)
+81 http cache acorn@https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz 0ms (cache hit)
+82 http cache @workos/authkit-sveltekit@https://registry.npmjs.org/@workos/authkit-sveltekit/-/authkit-sveltekit-0.3.0.tgz 0ms (cache hit)
+83 http cache @workos-inc/node@https://registry.npmjs.org/@workos-inc/node/-/node-9.3.1.tgz 0ms (cache hit)
+84 http cache @types/trusted-types@https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz 0ms (cache hit)
+85 http cache @types/resolve@https://registry.npmjs.org/@types/resolve/-/resolve-1.20.2.tgz 0ms (cache hit)
+86 http cache @types/node@https://registry.npmjs.org/@types/node/-/node-25.8.0.tgz 0ms (cache hit)
+87 http cache @types/estree@https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz 0ms (cache hit)
+88 http cache @tailwindcss/vite@https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.0.tgz 0ms (cache hit)
+89 http cache @types/cookie@https://registry.npmjs.org/@types/cookie/-/cookie-0.6.0.tgz 0ms (cache hit)
+90 http cache @tailwindcss/oxide-win32-x64-msvc@https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.3.0.tgz 0ms (cache hit)
+91 http cache @tailwindcss/node@https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.0.tgz 0ms (cache hit)
+92 http cache @tailwindcss/oxide@https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.0.tgz 0ms (cache hit)
+93 http cache @sveltejs/vite-plugin-svelte-inspector@https://registry.npmjs.org/@sveltejs/vite-plugin-svelte-inspector/-/vite-plugin-svelte-inspector-4.0.1.tgz 0ms (cache hit)
+94 http cache @sveltejs/kit@https://registry.npmjs.org/@sveltejs/kit/-/kit-2.60.1.tgz 0ms (cache hit)
+95 http cache @sveltejs/vite-plugin-svelte@https://registry.npmjs.org/@sveltejs/vite-plugin-svelte/-/vite-plugin-svelte-5.1.1.tgz 0ms (cache hit)
+96 http cache @sveltejs/adapter-node@https://registry.npmjs.org/@sveltejs/adapter-node/-/adapter-node-5.5.4.tgz 0ms (cache hit)
+97 http cache @standard-schema/spec@https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz 0ms (cache hit)
+98 http cache @sveltejs/acorn-typescript@https://registry.npmjs.org/@sveltejs/acorn-typescript/-/acorn-typescript-1.0.9.tgz 0ms (cache hit)
+99 http cache @rollup/rollup-win32-x64-msvc@https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.60.4.tgz 0ms (cache hit)
+100 http cache @rollup/rollup-win32-x64-gnu@https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.60.4.tgz 0ms (cache hit)
+101 http cache @rollup/pluginutils@https://registry.npmjs.org/@rollup/pluginutils/-/pluginutils-5.3.0.tgz 0ms (cache hit)
+102 http cache @rollup/plugin-node-resolve@https://registry.npmjs.org/@rollup/plugin-node-resolve/-/plugin-node-resolve-16.0.3.tgz 0ms (cache hit)
+103 http cache @rollup/plugin-json@https://registry.npmjs.org/@rollup/plugin-json/-/plugin-json-6.1.0.tgz 0ms (cache hit)
+104 http cache @rollup/plugin-commonjs@https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-29.0.2.tgz 0ms (cache hit)
+105 http cache @jridgewell/trace-mapping@https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz 0ms (cache hit)
+106 http cache @jridgewell/sourcemap-codec@https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz 0ms (cache hit)
+107 http cache @playwright/test@https://registry.npmjs.org/@playwright/test/-/test-1.61.0.tgz 0ms (cache hit)
+108 http cache @jridgewell/resolve-uri@https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz 0ms (cache hit)
+109 http cache @jridgewell/remapping@https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz 0ms (cache hit)
+110 http cache @polka/url@https://registry.npmjs.org/@polka/url/-/url-1.0.0-next.29.tgz 0ms (cache hit)
+111 http cache @jridgewell/gen-mapping@https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz 0ms (cache hit)
+112 http cache @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz 0ms (cache hit)
+113 http cache @types/estree@https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz 0ms (cache hit)
+114 http cache cookie@https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz 0ms (cache hit)
+115 http cache is-reference@https://registry.npmjs.org/is-reference/-/is-reference-1.2.1.tgz 0ms (cache hit)
+116 silly tarball no local data for @types/estree@https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz. Extracting by manifest.
+117 silly tarball no local data for cookie@https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz. Extracting by manifest.
+118 silly tarball no local data for is-reference@https://registry.npmjs.org/is-reference/-/is-reference-1.2.1.tgz. Extracting by manifest.
+119 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 1275ms
+120 silly audit report {
+120 silly audit report   cookie: [
+120 silly audit report     {
+120 silly audit report       id: 1103907,
+120 silly audit report       url: 'https://github.com/advisories/GHSA-pxg6-pf52-xh8x',
+120 silly audit report       title: 'cookie accepts cookie name, path, and domain with out of bounds characters',
+120 silly audit report       severity: 'low',
+120 silly audit report       vulnerable_versions: '<0.7.0',
+120 silly audit report       cwe: [Array],
+120 silly audit report       cvss: [Object]
+120 silly audit report     }
+120 silly audit report   ],
+120 silly audit report   vite: [
+120 silly audit report     {
+120 silly audit report       id: 1120784,
+120 silly audit report       url: 'https://github.com/advisories/GHSA-v6wh-96g9-6wx3',
+120 silly audit report       title: 'launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows',
+120 silly audit report       severity: 'moderate',
+120 silly audit report       vulnerable_versions: '<=6.4.2',
+120 silly audit report       cwe: [Array],
+120 silly audit report       cvss: [Object]
+120 silly audit report     },
+120 silly audit report     {
+120 silly audit report       id: 1120789,
+120 silly audit report       url: 'https://github.com/advisories/GHSA-fx2h-pf6j-xcff',
+120 silly audit report       title: 'vite: `server.fs.deny` bypass on Windows alternate paths',
+120 silly audit report       severity: 'high',
+120 silly audit report       vulnerable_versions: '<=6.4.2',
+120 silly audit report       cwe: [Array],
+120 silly audit report       cvss: [Object]
+120 silly audit report     }
+120 silly audit report   ]
+120 silly audit report }
+121 silly packumentCache corgi:https://registry.npmjs.org/cookie cache-miss
+122 silly packumentCache corgi:https://registry.npmjs.org/vite cache-miss
+123 http fetch GET 200 https://registry.npmjs.org/is-reference/-/is-reference-1.2.1.tgz 1580ms (cache miss)
+124 http fetch GET 200 https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz 1718ms (cache miss)
+125 http fetch GET 200 https://registry.npmjs.org/cookie 736ms (cache revalidated)
+126 silly packumentCache corgi:https://registry.npmjs.org/cookie set size:23677 disposed:false
+127 http fetch GET 200 https://registry.npmjs.org/vite 741ms (cache revalidated)
+128 silly packumentCache corgi:https://registry.npmjs.org/vite set size:2264592 disposed:false
+129 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fkit cache-miss
+130 http fetch GET 200 https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz 1970ms (cache miss)
+131 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fkit 1092ms (cache revalidated)
+132 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fkit set size:1965147 disposed:false
+133 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte cache-miss
+134 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte-inspector cache-miss
+135 silly packumentCache corgi:https://registry.npmjs.org/@tailwindcss%2fvite cache-miss
+136 silly packumentCache corgi:https://registry.npmjs.org/vitefu cache-miss
+137 http fetch GET 200 https://registry.npmjs.org/@tailwindcss%2fvite 1399ms (cache revalidated)
+138 silly packumentCache corgi:https://registry.npmjs.org/@tailwindcss%2fvite set size:869251 disposed:false
+139 http fetch GET 200 https://registry.npmjs.org/vitefu 1427ms (cache revalidated)
+140 silly packumentCache corgi:https://registry.npmjs.org/vitefu set size:22407 disposed:false
+141 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte 1746ms (cache revalidated)
+142 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte set size:216998 disposed:false
+143 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte-inspector 1796ms (cache revalidated)
+144 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fvite-plugin-svelte-inspector set size:22262 disposed:false
+145 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fadapter-node cache-miss
+146 silly packumentCache corgi:https://registry.npmjs.org/@workos%2fauthkit-sveltekit cache-miss
+147 http fetch GET 200 https://registry.npmjs.org/@sveltejs%2fadapter-node 948ms (cache revalidated)
+148 silly packumentCache corgi:https://registry.npmjs.org/@sveltejs%2fadapter-node set size:288632 disposed:false
+149 http fetch GET 200 https://registry.npmjs.org/@workos%2fauthkit-sveltekit 1002ms (cache revalidated)
+150 silly packumentCache corgi:https://registry.npmjs.org/@workos%2fauthkit-sveltekit set size:6162 disposed:false
+151 silly ADD node_modules/zimmerframe
+152 silly ADD node_modules/vitefu
+153 silly ADD node_modules/vite
+154 silly ADD node_modules/valibot
+155 silly ADD node_modules/undici-types
+156 silly ADD node_modules/uint8array-extras
+157 silly ADD node_modules/typescript
+158 silly ADD node_modules/totalist
+159 silly ADD node_modules/tinyglobby
+160 silly ADD node_modules/tapable
+161 silly ADD node_modules/tailwindcss
+162 silly ADD node_modules/svelte-check
+163 silly ADD node_modules/svelte
+164 silly ADD node_modules/supports-preserve-symlinks-flag
+165 silly ADD node_modules/source-map-js
+166 silly ADD node_modules/sirv
+167 silly ADD node_modules/set-cookie-parser
+168 silly ADD node_modules/sade
+169 silly ADD node_modules/rollup
+170 silly ADD node_modules/rollup/node_modules/@types/estree
+171 silly ADD node_modules/resolve
+172 silly ADD node_modules/readdirp
+173 silly ADD node_modules/postcss
+174 silly ADD node_modules/playwright-core
+175 silly ADD node_modules/playwright
+176 silly ADD node_modules/picomatch
+177 silly ADD node_modules/picocolors
+178 silly ADD node_modules/path-parse
+179 silly ADD node_modules/nanoid
+180 silly ADD node_modules/ms
+181 silly ADD node_modules/mrmime
+182 silly ADD node_modules/mri
+183 silly ADD node_modules/magic-string
+184 silly ADD node_modules/locate-character
+185 silly ADD node_modules/lightningcss-win32-x64-msvc
+186 silly ADD node_modules/lightningcss
+187 silly ADD node_modules/kleur
+188 silly ADD node_modules/jose
+189 silly ADD node_modules/jiti
+190 silly ADD node_modules/is-reference
+191 silly ADD node_modules/is-module
+192 silly ADD node_modules/is-core-module
+193 silly ADD node_modules/iron-webcrypto
+194 silly ADD node_modules/hasown
+195 silly ADD node_modules/graceful-fs
+196 silly ADD node_modules/function-bind
+197 silly ADD node_modules/fdir
+198 silly ADD node_modules/eventemitter3
+199 silly ADD node_modules/estree-walker
+200 silly ADD node_modules/esrap
+201 silly ADD node_modules/esm-env
+202 silly ADD node_modules/esbuild
+203 silly ADD node_modules/es-errors
+204 silly ADD node_modules/enhanced-resolve
+205 silly ADD node_modules/devalue
+206 silly ADD node_modules/detect-libc
+207 silly ADD node_modules/deepmerge
+208 silly ADD node_modules/debug
+209 silly ADD node_modules/cookie
+210 silly ADD node_modules/commondir
+211 silly ADD node_modules/clsx
+212 silly ADD node_modules/chokidar
+213 silly ADD node_modules/axobject-query
+214 silly ADD node_modules/aria-query
+215 silly ADD node_modules/acorn
+216 silly ADD node_modules/@workos/authkit-sveltekit
+217 silly ADD node_modules/@workos/authkit-sveltekit/node_modules/cookie
+218 silly ADD node_modules/@workos/authkit-session
+219 silly ADD node_modules/@workos-inc/node
+220 silly ADD node_modules/@types/trusted-types
+221 silly ADD node_modules/@types/resolve
+222 silly ADD node_modules/@types/node
+223 silly ADD node_modules/@types/estree
+224 silly ADD node_modules/@types/cookie
+225 silly ADD node_modules/@tailwindcss/vite
+226 silly ADD node_modules/@tailwindcss/oxide-win32-x64-msvc
+227 silly ADD node_modules/@tailwindcss/oxide
+228 silly ADD node_modules/@tailwindcss/node
+229 silly ADD node_modules/@sveltejs/vite-plugin-svelte-inspector
+230 silly ADD node_modules/@sveltejs/vite-plugin-svelte
+231 silly ADD node_modules/@sveltejs/kit
+232 silly ADD node_modules/@sveltejs/adapter-node
+233 silly ADD node_modules/@sveltejs/acorn-typescript
+234 silly ADD node_modules/@standard-schema/spec
+235 silly ADD node_modules/@rollup/rollup-win32-x64-msvc
+236 silly ADD node_modules/@rollup/rollup-win32-x64-gnu
+237 silly ADD node_modules/@rollup/pluginutils
+238 silly ADD node_modules/@rollup/plugin-node-resolve
+239 silly ADD node_modules/@rollup/plugin-json
+240 silly ADD node_modules/@rollup/plugin-commonjs
+241 silly ADD node_modules/@rollup/plugin-commonjs/node_modules/is-reference
+242 silly ADD node_modules/@polka/url
+243 silly ADD node_modules/@playwright/test
+244 silly ADD node_modules/@jridgewell/trace-mapping
+245 silly ADD node_modules/@jridgewell/sourcemap-codec
+246 silly ADD node_modules/@jridgewell/resolve-uri
+247 silly ADD node_modules/@jridgewell/remapping
+248 silly ADD node_modules/@jridgewell/gen-mapping
+249 silly ADD node_modules/@esbuild/win32-x64
+250 verbose cwd C:\Users\mart6\source\repos\FolioTrace\.worktrees\fix-authkit-pkce-railway-auth\UI
+251 verbose os Windows_NT 10.0.26200
+252 verbose node v25.2.1
+253 verbose npm  v11.6.2
+254 verbose exit 0
+255 info ok

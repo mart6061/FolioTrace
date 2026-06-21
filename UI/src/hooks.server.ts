@@ -64,6 +64,7 @@ function isPublicPath(pathname: string) {
   return pathname === '/callback'
     || pathname === '/sign-in'
     || pathname === '/sign-out'
+    || pathname === '/auth/error'
     || pathname === '/health'
     || pathname.startsWith('/_app/')
     || pathname.startsWith('/brand/')
