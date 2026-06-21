@@ -12,6 +12,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=x-forwarded-host
 
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/build ./build
