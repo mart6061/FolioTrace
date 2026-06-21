@@ -1,4 +1,4 @@
-import { authKit, authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
+import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { redirect, type Handle } from '@sveltejs/kit';
@@ -46,8 +46,9 @@ const authGateHandle: Handle = async ({ event, resolve }) => {
     if (event.url.pathname.startsWith('/API/'))
       return new Response('Authentication required.', { status: 401 });
 
-    const returnTo = `${event.url.pathname}${event.url.search}`;
-    throw redirect(302, await authKit.getSignInUrl({ returnTo }));
+    const signInUrl = new URL('/sign-in', event.url);
+    signInUrl.searchParams.set('returnTo', `${event.url.pathname}${event.url.search}`);
+    throw redirect(302, `${signInUrl.pathname}${signInUrl.search}`);
   }
 
   const currentUser = currentUserFromWorkOSUser(event.locals.auth.user);
