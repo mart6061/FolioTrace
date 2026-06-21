@@ -81,9 +81,16 @@ Required variables:
 ```text
 NODE_ENV=production
 API_BASE_URL=https://<api-railway-domain>/API
+ORIGIN=https://<ui-railway-or-custom-domain>
+WORKOS_CLIENT_ID=<workos-client-id>
+WORKOS_API_KEY=<workos-api-key>
+WORKOS_COOKIE_PASSWORD=<at-least-32-characters>
+WORKOS_REDIRECT_URI=https://<ui-railway-or-custom-domain>/callback
 ```
 
 The UI container uses the SvelteKit Node adapter and runs `node build/index.js`. Browser SSE requests continue to go through the existing UI route `/API/Notifications/Aggregates`, which proxies to the configured API base URL.
+
+`ORIGIN` and `WORKOS_REDIRECT_URI` must use the same UI host. AuthKit stores the OAuth PKCE verifier in a host-scoped browser cookie before redirecting to WorkOS, and WorkOS later sends the browser back to `WORKOS_REDIRECT_URI`. If sign-in starts on a different Railway/custom host than the callback host, the callback cannot see the PKCE cookie and authentication fails with `PKCECookieMissingError`.
 
 ## Smoke Checks
 

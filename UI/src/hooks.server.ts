@@ -25,6 +25,10 @@ const workosHandle: Handle = authKitConfigured && !devAuthConfigured
 const authGateHandle: Handle = async ({ event, resolve }) => {
   event.locals.currentUser = null;
 
+  const canonicalAuthRedirect = getCanonicalAuthRedirect(event.url);
+  if (canonicalAuthRedirect)
+    throw redirect(302, canonicalAuthRedirect);
+
   if (isPublicPagePath(event.url.pathname) || isPublicPath(event.url.pathname))
     return resolve(event);
 
@@ -63,6 +67,23 @@ function isPublicPath(pathname: string) {
     || pathname.startsWith('/brand/')
     || pathname === '/favicon.ico'
     || pathname === '/robots.txt';
+}
+
+function getCanonicalAuthRedirect(url: URL) {
+  if (!authKitConfig || url.pathname.startsWith('/API/'))
+    return null;
+
+  if (url.pathname !== '/sign-in' && url.pathname !== '/callback' && (isPublicPagePath(url.pathname) || isPublicPath(url.pathname)))
+    return null;
+
+  const redirectUri = new URL(authKitConfig.redirectUri);
+  if (url.host.toLowerCase() === redirectUri.host.toLowerCase())
+    return null;
+
+  const canonicalUrl = new URL(url);
+  canonicalUrl.protocol = redirectUri.protocol;
+  canonicalUrl.host = redirectUri.host;
+  return canonicalUrl.toString();
 }
 
 function hasDevAuthConfigured() {
