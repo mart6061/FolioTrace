@@ -1,7 +1,7 @@
-import { authKit, authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
+import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
-import { redirect, type Handle } from '@sveltejs/kit';
+import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
@@ -25,7 +25,7 @@ const workosHandle: Handle = authKitConfigured && !devAuthConfigured
 const authGateHandle: Handle = async ({ event, resolve }) => {
   event.locals.currentUser = null;
 
-  const canonicalAuthRedirect = getCanonicalAuthRedirect(event.url);
+  const canonicalAuthRedirect = getCanonicalAuthRedirect(event);
   if (canonicalAuthRedirect)
     throw redirect(302, canonicalAuthRedirect);
 
@@ -46,8 +46,9 @@ const authGateHandle: Handle = async ({ event, resolve }) => {
     if (event.url.pathname.startsWith('/API/'))
       return new Response('Authentication required.', { status: 401 });
 
-    const returnTo = `${event.url.pathname}${event.url.search}`;
-    throw redirect(302, await authKit.getSignInUrl({ returnTo }));
+    const signInUrl = new URL('/sign-in', event.url);
+    signInUrl.searchParams.set('returnTo', `${event.url.pathname}${event.url.search}`);
+    throw redirect(302, `${signInUrl.pathname}${signInUrl.search}`);
   }
 
   const currentUser = currentUserFromWorkOSUser(event.locals.auth.user);
@@ -63,13 +64,16 @@ function isPublicPath(pathname: string) {
   return pathname === '/callback'
     || pathname === '/sign-in'
     || pathname === '/sign-out'
+    || pathname === '/auth/error'
+    || pathname === '/health'
     || pathname.startsWith('/_app/')
     || pathname.startsWith('/brand/')
     || pathname === '/favicon.ico'
     || pathname === '/robots.txt';
 }
 
-function getCanonicalAuthRedirect(url: URL) {
+function getCanonicalAuthRedirect(event: RequestEvent) {
+  const { url } = event;
   if (!authKitConfig || url.pathname.startsWith('/API/'))
     return null;
 
@@ -77,13 +81,22 @@ function getCanonicalAuthRedirect(url: URL) {
     return null;
 
   const redirectUri = new URL(authKitConfig.redirectUri);
-  if (url.host.toLowerCase() === redirectUri.host.toLowerCase())
+  const requestHost = getRequestHost(event.request.headers) ?? url.host;
+  if (requestHost.toLowerCase() === redirectUri.host.toLowerCase())
     return null;
 
   const canonicalUrl = new URL(url);
   canonicalUrl.protocol = redirectUri.protocol;
   canonicalUrl.host = redirectUri.host;
   return canonicalUrl.toString();
+}
+
+function getRequestHost(headers: Headers) {
+  const forwardedHost = headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  if (forwardedHost)
+    return forwardedHost;
+
+  return headers.get('host')?.trim() || null;
 }
 
 function hasDevAuthConfigured() {

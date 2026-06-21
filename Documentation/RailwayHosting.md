@@ -1,11 +1,12 @@
 # Railway Hosting
 
-FolioTrace is prepared for Railway as three services:
+FolioTrace is prepared for Railway as four services:
 
 - Railway Postgres.
 - FolioTrace API, using `API/Dockerfile`.
 - FolioTrace UI, using `UI/Dockerfile`.
-- GitHub Actions CI, using `.github/workflows/ci.yml`, to validate the .NET solution, Svelte UI, and both Railway Docker images before changes are merged.
+- FoleoTrader, using `FoleoTrader/Dockerfile`.
+- GitHub Actions CI, using `.github/workflows/ci.yml`, to validate the .NET solution, Svelte UI, and API/UI Railway Docker images before changes are merged.
 
 Local development remains unchanged. The API launch profile still uses `https://localhost:7058`, the UI dev server still uses the local HTTPS certificate scripts, and the UI still falls back to `https://localhost:7058/API` when `API_BASE_URL` is not set.
 
@@ -30,6 +31,8 @@ Required variables:
 ```text
 ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__FolioTrace=<Railway Postgres Npgsql connection string>
+FoleoTrader__Host=<foleotrader-railway-private-host>
+FoleoTrader__Port=9878
 ```
 
 Keep `API/appsettings.json` secret-free. Production database credentials should be configured as Railway service variables or GitHub environment secrets, not committed to source control.
@@ -54,6 +57,8 @@ AggregateMaintenance__EventTriggerDelay=00:00:30
 
 The API container binds to Railway's `PORT` on `0.0.0.0`. Railway terminates HTTPS at the edge, so production runs HTTP inside the container. Development still uses HTTPS redirection.
 
+The API sends trading orders to FoleoTrader over FIX. `FoleoTrader__Host` must point at the FoleoTrader Railway service host, not `127.0.0.1`, because the API and FoleoTrader run in separate containers. `FoleoTrader__Port` should match the FoleoTrader FIX acceptor port, which defaults to `9878`.
+
 Health check:
 
 ```text
@@ -69,12 +74,14 @@ Root Directory: /
 Config File Path: /UI/railway.json
 Dockerfile Path: UI/Dockerfile
 Start Command: node build/index.js
-Healthcheck Path: /
+Healthcheck Path: /health
 ```
 
 The root directory should also stay as `/` for the UI service so the Dockerfile path is resolved from the repository root. The service config file pins Dockerfile builds and overrides any stale dashboard start command such as `start.sh`.
 
 The UI service config includes watch patterns for `UI/**` and `.dockerignore`. Changes outside those paths should not trigger a UI deployment.
+
+The UI healthcheck path is `/health` instead of `/` because the root route is protected by WorkOS and returns an authentication redirect for anonymous requests. Railway healthchecks should receive a plain `200 ok` from `/health`.
 
 Required variables:
 
@@ -90,13 +97,50 @@ WORKOS_REDIRECT_URI=https://<ui-railway-or-custom-domain>/callback
 
 The UI container uses the SvelteKit Node adapter and runs `node build/index.js`. Browser SSE requests continue to go through the existing UI route `/API/Notifications/Aggregates`, which proxies to the configured API base URL.
 
+The UI Docker image sets `PROTOCOL_HEADER=x-forwarded-proto` and `HOST_HEADER=x-forwarded-host` so adapter-node can reconstruct the public Railway/custom-domain URL when `ORIGIN` is not present. Keep `ORIGIN` configured anyway for the clearest production origin.
+
 `ORIGIN` and `WORKOS_REDIRECT_URI` must use the same UI host. AuthKit stores the OAuth PKCE verifier in a host-scoped browser cookie before redirecting to WorkOS, and WorkOS later sends the browser back to `WORKOS_REDIRECT_URI`. If sign-in starts on a different Railway/custom host than the callback host, the callback cannot see the PKCE cookie and authentication fails with `PKCECookieMissingError`.
+
+The UI redirects protected pages to `/sign-in` first. That endpoint then generates the WorkOS sign-in URL and returns the external redirect so SvelteKit can attach the PKCE `Set-Cookie` header before the browser leaves the app. If `PKCECookieMissingError` continues after deploying the latest UI image, confirm Railway deployed the current commit and that the WorkOS dashboard callback URL exactly matches `WORKOS_REDIRECT_URI`.
+
+Because `ORIGIN` pins SvelteKit's generated request URL to the canonical host, the UI auth guard also checks Railway's forwarded host headers before generating a WorkOS sign-in URL. Requests that arrive on a Railway-provided domain or other alternate UI host are redirected to the `WORKOS_REDIRECT_URI` host first, which keeps the PKCE verifier cookie on the same host as `/callback`.
+
+## FoleoTrader Service
+
+Configure the Railway FoleoTrader service with:
+
+```text
+Root Directory: /
+Config File Path: /FoleoTrader/railway.json
+Dockerfile Path: FoleoTrader/Dockerfile
+Start Command: dotnet FoleoTrader.dll --urls http://0.0.0.0:${PORT:-8080}
+Healthcheck Path: /
+```
+
+The FoleoTrader container exposes two ports:
+
+```text
+PORT=${Railway assigned HTTP port}
+FoleoTrader__Port=9878
+```
+
+The HTTP port serves the FoleoTrader monitor page. The FIX acceptor listens on `FoleoTrader__Port`, and the API connects to it with a QuickFIX/n initiator using these default session IDs:
+
+```text
+API SenderCompID=FOLEOAPI
+API TargetCompID=FOLEOTRADER
+FoleoTrader SenderCompID=FOLEOTRADER
+FoleoTrader TargetCompID=FOLEOAPI
+```
+
+If the FIX port is changed, update both the FoleoTrader service variable `FoleoTrader__Port` and the API service variable `FoleoTrader__Port`.
 
 ## Smoke Checks
 
 After deployment:
 
 - Open `https://<api-railway-domain>/API/System/Health`.
+- Open the FoleoTrader public domain.
 - Open the UI public domain.
 - Confirm dashboard stats load.
 - Confirm Build and Clear typed confirmation actions submit.
@@ -106,9 +150,9 @@ After deployment:
 
 Recommended flow:
 
-- Open PRs against `main`. GitHub Actions runs .NET restore/build/test, `npm run check`, `npm run build`, and Docker builds for both Railway services.
-- Connect the API and UI Railway services to this GitHub repo and deploy from `main`.
-- Keep both Railway services on root directory `/`, with config file paths `/API/railway.json` and `/UI/railway.json`.
+- Open PRs against `main`. GitHub Actions runs .NET restore/build/test, `npm run check`, `npm run build`, and Docker builds for the API and UI Railway services.
+- Connect the API, UI, and FoleoTrader Railway services to this GitHub repo and deploy from `main`.
+- Keep the Railway services on root directory `/`, with config file paths `/API/railway.json`, `/UI/railway.json`, and `/FoleoTrader/railway.json`.
 - Enable Railway auto-deploys from `main`. Railway will use the per-service config files and watch patterns to decide which service deploys.
 
 If you prefer GitHub Actions to trigger deployments directly, create a Railway project token and store it as a GitHub secret named `RAILWAY_TOKEN`, then run `railway up --ci --service <service-name> --environment <environment-name>` from a workflow after the CI job succeeds.
