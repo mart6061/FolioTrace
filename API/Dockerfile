@@ -12,7 +12,10 @@ RUN dotnet publish API/API.csproj --configuration Release --output /app/publish 
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/publish .
 
 ENV ASPNETCORE_ENVIRONMENT=Production
+EXPOSE 8080
+
+COPY --from=build /app/publish .
+
 ENTRYPOINT ["sh", "-c", "dotnet API.dll --urls http://0.0.0.0:${PORT:-8080}"]

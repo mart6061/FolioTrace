@@ -14,6 +14,7 @@
 
   let { children, data } = $props();
 
+  const publicPage = $derived(Boolean(data.publicPage));
   const traceModeStorageKey = 'foliotrace.traceMode';
   const auditDateTimeStorageKey = 'foliotrace.auditDateTime';
   const menuTones = {
@@ -159,6 +160,11 @@
   let selectedMenuItemID = $state(routeActiveItem()?.id ?? '');
 
   onMount(() => {
+    applyDarkModePreference(readInitialDarkMode());
+
+    if (publicPage)
+      return;
+
     const urlAuditDateTime = clampFutureInputDateTime(page.url.searchParams.get('auditDateTime') ?? '');
     const storedTraceMode = sessionStorage.getItem(traceModeStorageKey) === 'true';
     const storedAuditDateTime = clampFutureInputDateTime(sessionStorage.getItem(auditDateTimeStorageKey) ?? '');
@@ -171,11 +177,13 @@
     openDataBranch = routeDataBranch();
     selectedMenuItemID = routeActiveItem()?.id ?? '';
 
-    applyDarkModePreference(readInitialDarkMode());
     syncTraceStateToUrl(true);
   });
 
   $effect(() => {
+    if (publicPage)
+      return;
+
     const nextRouteKey = routeKey();
     if (!hydrated || nextRouteKey === activeRouteKey)
       return;
@@ -239,6 +247,9 @@
   }
 
   function pathWithTrace(path: string) {
+    if (publicPage)
+      return path;
+
     const url = new URL(path, page.url);
 
     if (traceMode && auditDateTime)
@@ -449,29 +460,32 @@
   />
 </svelte:head>
 
-<div class="app-shell">
-  {#if traceMode && auditDateTime}
-    <div class="trace-warning" role="alert">
-      <div class="page-container trace-warning-inner">
-        <strong>Trace Mode is on</strong>
-        <span>This view only includes events recorded on or before {formatRecordedBy(auditDateTime)}.</span>
+{#if publicPage}
+  {@render children()}
+{:else}
+  <div class="app-shell">
+    {#if traceMode && auditDateTime}
+      <div class="trace-warning" role="alert">
+        <div class="page-container trace-warning-inner">
+          <strong>Trace Mode is on</strong>
+          <span>This view only includes events recorded on or before {formatRecordedBy(auditDateTime)}.</span>
+        </div>
       </div>
-    </div>
-  {/if}
+    {/if}
 
-  <header class="app-header">
-    <div class="app-header-inner">
-      <a class="app-brand" href={pathWithTrace('/')}>
-        <span class="app-brand-mark">F<span class="app-brand-accent">e</span></span>
-        <span class="app-brand-name brand-wordmark">Fol<span class="brand-wordmark-accent">e</span>o</span>
-      </a>
+    <header class="app-header">
+      <div class="app-header-inner">
+        <a class="app-brand" href={pathWithTrace('/')}>
+          <span class="app-brand-mark">F<span class="app-brand-accent">e</span></span>
+          <span class="app-brand-name brand-wordmark">Fol<span class="brand-wordmark-accent">e</span>o</span>
+        </a>
 
-      <div class="system-search">
-        <nav
-          aria-label="Primary menu"
-          class="system-menu"
-          use:closeOnOutside={{ close: closeMenus, enabled: Boolean(openTopMenu || openDataBranch || selectedMenuItemID) }}
-        >
+        <div class="system-search">
+          <nav
+            aria-label="Primary menu"
+            class="system-menu"
+            use:closeOnOutside={{ close: closeMenus, enabled: Boolean(openTopMenu || openDataBranch || selectedMenuItemID) }}
+          >
           {#each visibleTopMenuItems as item, topIndex (item.id)}
             {#if item.id === 'bookmarks'}
               <div class="system-menu-bookmark-cluster">
@@ -660,52 +674,53 @@
               {/if}
           {/if}
           {/each}
-        </nav>
+          </nav>
 
-        <a aria-label="User preferences" class="system-user-link" href={pathWithTrace('/User/Preferences')} title="User preferences">
-          me
-        </a>
+          <a aria-label="User preferences" class="system-user-link" href={pathWithTrace('/User/Preferences')} title="User preferences">
+            me
+          </a>
+        </div>
       </div>
+    </header>
+
+    <div class="app-content">
+      {@render children()}
     </div>
-  </header>
 
-  <div class="app-content">
-    {@render children()}
-  </div>
-
-  <footer class={`trace-footer ${traceMode && auditDateTime ? 'trace-footer-active' : ''}`}>
-    <div class="trace-footer-inner">
-      <div class="trace-footer-controls">
-        <div class="trace-mode-control">
-          <span class="trace-info-control">
-            <button aria-describedby="trace-mode-help" aria-label="Trace Mode information" class="trace-info-button" type="button">i</button>
-            <span class="trace-info-message" id="trace-mode-help" role="tooltip">
-              Trace Mode shows each page as it looked using data entered on or before the selected date.
+    <footer class={`trace-footer ${traceMode && auditDateTime ? 'trace-footer-active' : ''}`}>
+      <div class="trace-footer-inner">
+        <div class="trace-footer-controls">
+          <div class="trace-mode-control">
+            <span class="trace-info-control">
+              <button aria-describedby="trace-mode-help" aria-label="Trace Mode information" class="trace-info-button" type="button">i</button>
+              <span class="trace-info-message" id="trace-mode-help" role="tooltip">
+                Trace Mode shows each page as it looked using data entered on or before the selected date.
+              </span>
             </span>
-          </span>
-          <span>Trace Mode</span>
-          <Toggle bind:checked={traceMode} label="Trace Mode" labelVisible={false} onchange={handleTraceModeChange} />
+            <span>Trace Mode</span>
+            <Toggle bind:checked={traceMode} label="Trace Mode" labelVisible={false} onchange={handleTraceModeChange} />
+          </div>
+
+          {#if traceMode}
+            <label class="trace-date-control">
+              <span>Date</span>
+              <DateTimeInput
+                bind:value={auditDateTime}
+                futureLimited
+                max={nowForInput()}
+                name="traceAuditDateTime"
+                onchange={handleAuditDateTimeChange}
+                step="1"
+              />
+            </label>
+          {/if}
         </div>
 
-        {#if traceMode}
-          <label class="trace-date-control">
-            <span>Date</span>
-            <DateTimeInput
-              bind:value={auditDateTime}
-              futureLimited
-              max={nowForInput()}
-              name="traceAuditDateTime"
-              onchange={handleAuditDateTimeChange}
-              step="1"
-            />
-          </label>
-        {/if}
+        <div class="app-version-strip" aria-label="Application versions">
+          <span>UI {data.uiVersion}</span>
+          <span>API {data.apiVersion}</span>
+        </div>
       </div>
-
-      <div class="app-version-strip" aria-label="Application versions">
-        <span>UI {data.uiVersion}</span>
-        <span>API {data.apiVersion}</span>
-      </div>
-    </div>
-  </footer>
-</div>
+    </footer>
+  </div>
+{/if}

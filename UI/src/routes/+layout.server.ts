@@ -1,6 +1,7 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences } from '$lib/menuPreferences';
+import { isPublicPagePath } from '$lib/publicRoutes';
 import { requireCurrentUser } from '$lib/server/auth';
 import { getSystemVersion, getUserBookmarks, getUserMenuPreferences } from '$lib/server/api';
 import { getUiVersion } from '$lib/server/version';
@@ -9,8 +10,19 @@ let cachedApiVersion: string | null = null;
 let apiVersionRequest: Promise<string> | null = null;
 
 export const load = async ({ fetch, locals, url }) => {
-  const currentUser = requireCurrentUser(locals);
   const uiVersion = getUiVersion();
+
+  if (isPublicPagePath(url.pathname))
+    return {
+      apiVersion: 'unavailable',
+      currentUser: null,
+      menuPreferences: null,
+      publicPage: true,
+      userBookmarks: null,
+      uiVersion
+    };
+
+  const currentUser = requireCurrentUser(locals);
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   let apiVersion = 'unavailable';
   let menuPreferences = defaultUserMenuPreferences(currentUser.userID);
@@ -38,6 +50,7 @@ export const load = async ({ fetch, locals, url }) => {
     apiVersion,
     currentUser,
     menuPreferences,
+    publicPage: false,
     userBookmarks,
     uiVersion
   };
