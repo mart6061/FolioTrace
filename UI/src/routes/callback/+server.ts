@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 
 const pkceCookiePrefix = 'wos-auth-verifier';
 
-export const GET: RequestHandler = (event) => {
+export const GET: RequestHandler = async (event) => {
   const state = event.url.searchParams.get('state');
   const code = event.url.searchParams.get('code');
   const expectedCookieName = state ? getPKCECookieNameForState(state) : null;
@@ -29,7 +29,26 @@ export const GET: RequestHandler = (event) => {
     });
   }
 
-  return authKit.handleCallback()(event);
+  const response = await authKit.handleCallback()(event);
+  const location = response.headers.get('Location');
+
+  if (response.status !== 302 || !location || location.startsWith('/auth/error'))
+    return response;
+
+  const redirectLocation = getSafeRedirectLocation(location);
+  const handoff = new Response(renderSessionHandoffPage(redirectLocation), {
+    status: 200,
+    headers: {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'text/html; charset=utf-8',
+      Refresh: `0; url=${redirectLocation}`
+    }
+  });
+
+  for (const cookie of getSetCookies(response))
+    handoff.headers.append('Set-Cookie', cookie);
+
+  return handoff;
 };
 
 function hasCookie(cookieHeader: string | null, name: string) {
@@ -63,6 +82,51 @@ function getHeaderHost(value: string | null) {
   } catch {
     return null;
   }
+}
+
+function getSafeRedirectLocation(location: string) {
+  if (!location.startsWith('/') || location.startsWith('//'))
+    return '/';
+
+  return location;
+}
+
+function getSetCookies(response: Response) {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  const cookies = headers.getSetCookie?.();
+
+  if (cookies?.length)
+    return cookies;
+
+  const cookie = response.headers.get('Set-Cookie');
+  return cookie ? [cookie] : [];
+}
+
+function renderSessionHandoffPage(location: string) {
+  const escapedLocation = escapeHtml(location);
+  const jsLocation = JSON.stringify(location);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="0; url=${escapedLocation}">
+    <title>Opening FolioTrace</title>
+    <script>window.location.replace(${jsLocation})</script>
+  </head>
+  <body>
+    <a href="${escapedLocation}">Continue to FolioTrace</a>
+  </body>
+</html>`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 function getPKCECookieNameForState(state: string) {

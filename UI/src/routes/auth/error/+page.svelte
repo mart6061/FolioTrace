@@ -6,6 +6,7 @@
     STATE_MISMATCH: 'The sign-in state did not match the browser session.',
     ACCESS_DENIED: 'Access was not granted for this sign-in attempt.',
     SESSION_ENCRYPTION_FAILED: 'The authenticated session could not be created.',
+    SESSION_NOT_ACCEPTED: 'The sign-in session cookie was set, but FolioTrace could not accept it on the next request.',
     AUTH_ERROR: 'WorkOS returned an authentication error.',
     AUTH_FAILED: 'The sign-in attempt could not be completed.'
   };
