@@ -5,6 +5,9 @@ export type WorkOSAuthKitConfig = {
   apiKey: string;
   redirectUri: string;
   cookiePassword: string;
+  apiHostname: string;
+  apiHttps: boolean;
+  apiPort?: number;
 };
 
 export function getAuthKitConfig(): WorkOSAuthKitConfig | null {
@@ -20,7 +23,9 @@ export function getAuthKitConfig(): WorkOSAuthKitConfig | null {
     clientId,
     apiKey,
     redirectUri,
-    cookiePassword
+    cookiePassword,
+    apiHostname: 'api.workos.com',
+    apiHttps: true
   };
 }
 
@@ -33,9 +38,13 @@ export function prepareAuthKitEnvironment(config: WorkOSAuthKitConfig) {
   processEnv.WORKOS_API_KEY = config.apiKey;
   processEnv.WORKOS_REDIRECT_URI = config.redirectUri;
   processEnv.WORKOS_COOKIE_PASSWORD = config.cookiePassword;
-  processEnv.WORKOS_API_HOSTNAME = 'api.workos.com';
-  processEnv.WORKOS_API_HTTPS = 'true';
-  delete processEnv.WORKOS_API_PORT;
+  processEnv.WORKOS_API_HOSTNAME = config.apiHostname;
+  processEnv.WORKOS_API_HTTPS = String(config.apiHttps);
+
+  if (config.apiPort)
+    processEnv.WORKOS_API_PORT = String(config.apiPort);
+  else
+    delete processEnv.WORKOS_API_PORT;
 }
 
 export function getAuthKitDiagnostics(config: WorkOSAuthKitConfig | null) {
@@ -43,8 +52,11 @@ export function getAuthKitDiagnostics(config: WorkOSAuthKitConfig | null) {
     configured: Boolean(config),
     clientIdLength: config?.clientId.length ?? 0,
     redirectUriHost: getUrlHost(config?.redirectUri),
-    apiHostname: globalThis.process?.env.WORKOS_API_HOSTNAME,
-    apiHttps: globalThis.process?.env.WORKOS_API_HTTPS
+    configuredApiBaseUrl: getApiBaseUrl(config),
+    configuredApiPort: config?.apiPort ?? null,
+    processApiHostname: globalThis.process?.env.WORKOS_API_HOSTNAME,
+    processApiHttps: globalThis.process?.env.WORKOS_API_HTTPS,
+    processApiPort: globalThis.process?.env.WORKOS_API_PORT ?? null
   };
 }
 
@@ -61,4 +73,13 @@ function getUrlHost(value: string | undefined) {
   } catch {
     return null;
   }
+}
+
+function getApiBaseUrl(config: WorkOSAuthKitConfig | null) {
+  if (!config)
+    return null;
+
+  const protocol = config.apiHttps ? 'https' : 'http';
+  const port = config.apiPort ? `:${config.apiPort}` : '';
+  return `${protocol}://${config.apiHostname}${port}`;
 }

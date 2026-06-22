@@ -7,6 +7,8 @@ import { isPublicPagePath } from '$lib/publicRoutes';
 import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
 import { getAuthKitConfig, getAuthKitDiagnostics, prepareAuthKitEnvironment } from '$lib/server/workos';
 
+const sessionCookieName = 'wos-session';
+
 const authKitConfig = getAuthKitConfig();
 const authKitConfigured = authKitConfig !== null;
 const devAuthConfigured = hasDevAuthConfigured();
@@ -52,17 +54,33 @@ const authGateHandle: Handle = async ({ event, resolve }) => {
     return new Response('WorkOS AuthKit is not configured.', { status: 503 });
 
   if (!event.locals.auth?.user) {
-    if (hasCookie(event.request.headers.get('cookie'), 'wos-session')) {
+    const staleAuthCookieNames = getStaleAuthCookieNames(event.request.headers.get('cookie'));
+    if (staleAuthCookieNames.includes(sessionCookieName)) {
       console.warn('WorkOS session cookie was present but no authenticated user was available.', {
         host: getRequestHost(event.request.headers) ?? event.url.host,
         pathname: event.url.pathname,
-        hasSessionCookie: true
+        staleAuthCookieNames
       });
 
       if (event.url.pathname.startsWith('/API/'))
-        return new Response('Authentication session was not accepted.', { status: 401 });
+        return withExpiredAuthCookies(
+          new Response('Authentication session was not accepted.', {
+            status: 401,
+            headers: { 'Cache-Control': 'no-store' }
+          }),
+          staleAuthCookieNames
+        );
 
-      throw redirect(302, '/auth/error?code=SESSION_NOT_ACCEPTED');
+      return withExpiredAuthCookies(
+        new Response(null, {
+          status: 302,
+          headers: {
+            Location: '/auth/error?code=SESSION_NOT_ACCEPTED',
+            'Cache-Control': 'no-store'
+          }
+        }),
+        staleAuthCookieNames
+      );
     }
 
     if (event.url.pathname.startsWith('/API/'))
@@ -121,13 +139,25 @@ function getRequestHost(headers: Headers) {
   return headers.get('host')?.trim() || null;
 }
 
-function hasCookie(cookieHeader: string | null, name: string) {
+function getStaleAuthCookieNames(cookieHeader: string | null) {
+  return getCookieNames(cookieHeader).filter((name) => name === sessionCookieName || name.startsWith('wos-auth-verifier-'));
+}
+
+function getCookieNames(cookieHeader: string | null) {
   if (!cookieHeader)
-    return false;
+    return [];
 
   return cookieHeader
     .split(';')
-    .some((part) => part.trim().split('=')[0] === name);
+    .map((part) => part.trim().split('=')[0])
+    .filter(Boolean);
+}
+
+function withExpiredAuthCookies(response: Response, cookieNames: string[]) {
+  for (const cookieName of new Set(cookieNames))
+    response.headers.append('Set-Cookie', `${cookieName}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`);
+
+  return response;
 }
 
 function getErrorDetails(error: unknown) {
@@ -137,8 +167,10 @@ function getErrorDetails(error: unknown) {
   return {
     name: error.name,
     message: error.message,
+    stack: error.stack,
     causeName: error.cause instanceof Error ? error.cause.name : undefined,
-    causeMessage: error.cause instanceof Error ? error.cause.message : undefined
+    causeMessage: error.cause instanceof Error ? error.cause.message : undefined,
+    causeStack: error.cause instanceof Error ? error.cause.stack : undefined
   };
 }
 
