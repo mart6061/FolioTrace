@@ -15,7 +15,11 @@ if (authKitConfig)
   configureAuthKit(authKitConfig);
 
 const workosHandle: Handle = authKitConfigured && !devAuthConfigured
-  ? authKitHandle()
+  ? authKitHandle({
+      onError: (error) => {
+        console.error('WorkOS AuthKit request authentication failed.', getErrorDetails(error));
+      }
+    })
   : async ({ event, resolve }) => {
       event.locals.auth = null;
       event.locals.currentUser = null;
@@ -43,6 +47,19 @@ const authGateHandle: Handle = async ({ event, resolve }) => {
     return new Response('WorkOS AuthKit is not configured.', { status: 503 });
 
   if (!event.locals.auth?.user) {
+    if (hasCookie(event.request.headers.get('cookie'), 'wos-session')) {
+      console.warn('WorkOS session cookie was present but no authenticated user was available.', {
+        host: getRequestHost(event.request.headers) ?? event.url.host,
+        pathname: event.url.pathname,
+        hasSessionCookie: true
+      });
+
+      if (event.url.pathname.startsWith('/API/'))
+        return new Response('Authentication session was not accepted.', { status: 401 });
+
+      throw redirect(302, '/auth/error?code=SESSION_NOT_ACCEPTED');
+    }
+
     if (event.url.pathname.startsWith('/API/'))
       return new Response('Authentication required.', { status: 401 });
 
@@ -97,6 +114,27 @@ function getRequestHost(headers: Headers) {
     return forwardedHost;
 
   return headers.get('host')?.trim() || null;
+}
+
+function hasCookie(cookieHeader: string | null, name: string) {
+  if (!cookieHeader)
+    return false;
+
+  return cookieHeader
+    .split(';')
+    .some((part) => part.trim().split('=')[0] === name);
+}
+
+function getErrorDetails(error: unknown) {
+  if (!(error instanceof Error))
+    return { message: String(error) };
+
+  return {
+    name: error.name,
+    message: error.message,
+    causeName: error.cause instanceof Error ? error.cause.name : undefined,
+    causeMessage: error.cause instanceof Error ? error.cause.message : undefined
+  };
 }
 
 function hasDevAuthConfigured() {
