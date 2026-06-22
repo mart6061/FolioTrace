@@ -2,12 +2,13 @@ import { authKit } from '@workos/authkit-sveltekit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ setHeaders, url }) => {
-  setHeaders({
-    'Cache-Control': 'no-store'
-  });
-
   const returnTo = getSafeReturnTo(url.searchParams.get('returnTo'));
   const signInUrl = await authKit.getSignInUrl({ returnTo });
+
+  setHeaders({
+    'Cache-Control': 'no-store',
+    Refresh: `0; url=${signInUrl}`
+  });
 
   return {
     signInUrl
