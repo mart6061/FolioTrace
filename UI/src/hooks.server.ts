@@ -5,19 +5,24 @@ import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
-import { getAuthKitConfig } from '$lib/server/workos';
+import { getAuthKitConfig, getAuthKitDiagnostics, prepareAuthKitEnvironment } from '$lib/server/workos';
 
 const authKitConfig = getAuthKitConfig();
 const authKitConfigured = authKitConfig !== null;
 const devAuthConfigured = hasDevAuthConfigured();
 
-if (authKitConfig)
+if (authKitConfig) {
+  prepareAuthKitEnvironment(authKitConfig);
   configureAuthKit(authKitConfig);
+}
 
 const workosHandle: Handle = authKitConfigured && !devAuthConfigured
   ? authKitHandle({
       onError: (error) => {
-        console.error('WorkOS AuthKit request authentication failed.', getErrorDetails(error));
+        console.error('WorkOS AuthKit request authentication failed.', {
+          ...getErrorDetails(error),
+          authKit: getAuthKitDiagnostics(authKitConfig)
+        });
       }
     })
   : async ({ event, resolve }) => {
