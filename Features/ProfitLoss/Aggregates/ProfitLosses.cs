@@ -201,8 +201,7 @@ public sealed record ProfitLosses : IAggregate
             var proceedsRemaining = movement.BookCost.Value;
             while (remainingDisposeQuantity > 0m)
             {
-                var lotIndex = method == ProfitLossMethod.FIFO ? 0 : lots.Count - 1;
-                if (lotIndex < 0)
+                if (lots.Count == 0)
                 {
                     complete = false;
                     reasons.Add("Short position or over-disposal handling is incomplete in v1.");
@@ -210,6 +209,7 @@ public sealed record ProfitLosses : IAggregate
                     break;
                 }
 
+                var lotIndex = method == ProfitLossMethod.FIFO ? 0 : lots.Count - 1;
                 var lot = lots[lotIndex];
                 var consumedQuantity = Math.Min(remainingDisposeQuantity, lot.Quantity);
                 var quantityRatio = consumedQuantity / remainingDisposeQuantity;

@@ -76,6 +76,39 @@ public sealed class ProfitLossBuilderTests
         AssertMethod(item, ProfitLossMethod.RunningAverage, realized: 210m, bookValue: 80m, unrealized: 70m, total: 280m);
     }
 
+    [Fact]
+    public void ProfitLosses_MarksOverDisposalsIncompleteWithoutThrowing()
+    {
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments();
+        var holdings = CreateHoldings();
+        var instrumentValues = CreateInstrumentValues();
+        var transactions = CreateTransaction(
+            EventDateTimeBuilder.Create(new DateTime(2026, 6, 3, 10, 0, 0, DateTimeKind.Utc)),
+            "Sell before opening lot",
+            credits: [CreateLeg(InflowHoldingID, 450m, 450m)],
+            debits: [CreateLeg(AssetHoldingID, 15m, 450m)],
+            holdings).Cast<ITransactionEvent>().ToList();
+        var asOfDate = AuditDateTimeBuilder.Create();
+        var fxRates = new FXRates(ValuationDate, asOfDate, [], []);
+
+        var profitLosses = new ProfitLosses(
+            ValuationDate,
+            asOfDate,
+            HoldingDateBasis.EventDateTime,
+            accounts,
+            holdings,
+            instruments,
+            instrumentValues,
+            fxRates,
+            transactions);
+
+        var item = Assert.Single(Assert.Single(profitLosses.Accounts).Items);
+        AssertIncompleteMethod(item, ProfitLossMethod.FIFO, realized: 450m, bookValue: 0m, unrealized: -450m, total: 0m);
+        AssertIncompleteMethod(item, ProfitLossMethod.LIFO, realized: 450m, bookValue: 0m, unrealized: -450m, total: 0m);
+        AssertIncompleteMethod(item, ProfitLossMethod.RunningAverage, realized: 450m, bookValue: 0m, unrealized: -450m, total: 0m);
+    }
+
     private static IReadOnlyList<ITransactionEvent> CreateTransactions(Holdings holdings)
     {
         var firstPurchase = CreateTransaction(
@@ -277,6 +310,17 @@ public sealed class ProfitLossBuilderTests
     private static void AssertMethodValue(ProfitLossMethodValue value, decimal realized, decimal bookValue, decimal unrealized, decimal total)
     {
         Assert.True(value.Complete, value.IncompleteReason);
+        Assert.Equal(realized, value.RealizedPnL);
+        Assert.Equal(bookValue, value.BookValue);
+        Assert.Equal(unrealized, value.UnrealizedPnL);
+        Assert.Equal(total, value.TotalPnL);
+    }
+
+    private static void AssertIncompleteMethod(ProfitLossItem item, ProfitLossMethod method, decimal realized, decimal bookValue, decimal unrealized, decimal total)
+    {
+        var value = item.Methods.Single(value => value.Method == method);
+        Assert.False(value.Complete);
+        Assert.Equal("Short position or over-disposal handling is incomplete in v1.", value.IncompleteReason);
         Assert.Equal(realized, value.RealizedPnL);
         Assert.Equal(bookValue, value.BookValue);
         Assert.Equal(unrealized, value.UnrealizedPnL);
