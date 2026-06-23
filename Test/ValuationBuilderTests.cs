@@ -37,10 +37,10 @@ public sealed class ValuationBuilderTests
                 SettlementDateTimeBuilder.Create(ValuationDate.Value.AddDays(1)),
                 "Book holdings",
                 [
-                    new TransactionRequest(firstHoldingID, firstInstrumentID, accountID, new TransactionQuantity(10m), new TransactionBookCost(250m)),
-                    new TransactionRequest(secondHoldingID, secondInstrumentID, accountID, new TransactionQuantity(30m), new TransactionBookCost(750m))
+                    CreateTransactionLeg(firstHoldingID, firstInstrumentID, accountID, 10m, 250m),
+                    CreateTransactionLeg(secondHoldingID, secondInstrumentID, accountID, 30m, 750m)
                 ],
-                [new TransactionRequest(outflowHoldingID, firstInstrumentID, accountID, new TransactionQuantity(40m), new TransactionBookCost(1000m))]),
+                [CreateTransactionLeg(outflowHoldingID, firstInstrumentID, accountID, 40m, 1000m)]),
             holdings).Value!.Cast<ITransactionEvent>().ToList();
         var asOfDate = AuditDateTimeBuilder.Create();
         var positions = new HoldingPositions(ValuationDate, asOfDate, holdings, accounts, instruments, transactions);
@@ -177,6 +177,18 @@ public sealed class ValuationBuilderTests
                 InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)),
                 InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)),
                 InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31)))).Value!;
+
+    private static TransactionRequest CreateTransactionLeg(HoldingID holdingID, InstrumentID instrumentID, AccountID accountID, decimal quantity, decimal bookCost) =>
+        new(
+            holdingID,
+            instrumentID,
+            accountID,
+            new TransactionQuantity(quantity),
+            new TransactionLocalCost(bookCost),
+            Alpha3Builder.Create("GBP"),
+            new TransactionBookCost(bookCost),
+            BookCostSource.SameCurrency,
+            false);
 
     private static readonly UserID UserID = new(Guid.CreateGuid7());
     private static readonly EventDateTime ValuationDate = EventDateTimeBuilder.Create(new DateTime(2026, 6, 17, 12, 0, 0, DateTimeKind.Utc));

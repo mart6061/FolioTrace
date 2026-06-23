@@ -124,7 +124,7 @@ public sealed record Tickets : IAggregate
                 {
                     Stage = TicketStage.Trade,
                     TradeDecision = TicketDecision.InProgress,
-                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.BookCost, @event.Note)]
+                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.SettlementAmount, @event.Note, @event.BookCostOverride)]
                 });
                 break;
             case TicketTradeFillModifiedEvent @event:
@@ -132,7 +132,7 @@ public sealed record Tickets : IAggregate
                 {
                     Stage = TicketStage.Trade,
                     TradeDecision = TicketDecision.InProgress,
-                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.BookCost, @event.Note)]
+                    Fills = [.. ticket.Fills.Where(fill => fill.FillID != @event.FillID), new TicketFill(@event.FillID, @event.BrokerLEI, @event.Price, @event.Quantity, @event.SettlementAmount, @event.Note, @event.BookCostOverride)]
                 });
                 break;
             case TicketTradeFillRemovedEvent @event:

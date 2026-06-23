@@ -220,8 +220,8 @@ public sealed class HoldingBuilderTests
             EventDate,
             SettlementDate,
             "Book transaction",
-            [new TransactionRequest(inactiveHoldingID, EquityInstrumentID, AccountID, new TransactionQuantity(1m), new TransactionBookCost(10m))],
-            [new TransactionRequest(inactiveHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(1m), new TransactionBookCost(10m))]);
+            [CreateTransactionLeg(inactiveHoldingID, EquityInstrumentID, 1m, 10m)],
+            [CreateTransactionLeg(inactiveHoldingID, CashInstrumentID, 1m, 10m)]);
 
         var result = TransactionBuilder.Create(request, holdings);
 
@@ -249,16 +249,16 @@ public sealed class HoldingBuilderTests
             EventDate,
             SettlementDate,
             "Cash deposit",
-            [new TransactionRequest(cashHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(50m))],
-            [new TransactionRequest(inflowHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(50m))]), holdings).Value!;
+            [CreateTransactionLeg(cashHoldingID, CashInstrumentID, 100m, 50m)],
+            [CreateTransactionLeg(inflowHoldingID, CashInstrumentID, 100m, 50m)]), holdings).Value!;
         var purchaseDate = EventDateTimeBuilder.Create(EventDate.Value.AddTicks(1));
         var purchase = TransactionBuilder.Create(new TransactionSetRequest(
             UserID,
             purchaseDate,
             SettlementDateTimeBuilder.Create(purchaseDate.Value.AddDays(1)),
             "Buy equity",
-            [new TransactionRequest(equityHoldingID, EquityInstrumentID, AccountID, new TransactionQuantity(25m), new TransactionBookCost(50m))],
-            [new TransactionRequest(cashHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(50m), new TransactionBookCost(50m))]), holdings).Value!;
+            [CreateTransactionLeg(equityHoldingID, EquityInstrumentID, 25m, 50m)],
+            [CreateTransactionLeg(cashHoldingID, CashInstrumentID, 50m, 50m)]), holdings).Value!;
         var transactionEvents = deposit.Cast<ITransactionEvent>().Concat(purchase).ToList();
 
         var positions = new HoldingPositions(
@@ -302,12 +302,12 @@ public sealed class HoldingBuilderTests
             SettlementDate,
             "Marker test",
             [
-                new TransactionRequest(cashDebtID, CashInstrumentID, AccountID, new TransactionQuantity(1m), new TransactionBookCost(1m)),
-                new TransactionRequest(cashInvestableID, CashInstrumentID, AccountID, new TransactionQuantity(2m), new TransactionBookCost(2m)),
-                new TransactionRequest(cashNonInvestableID, CashInstrumentID, AccountID, new TransactionQuantity(3m), new TransactionBookCost(3m)),
-                new TransactionRequest(inflowID, CashInstrumentID, AccountID, new TransactionQuantity(4m), new TransactionBookCost(4m))
+                CreateTransactionLeg(cashDebtID, CashInstrumentID, 1m, 1m),
+                CreateTransactionLeg(cashInvestableID, CashInstrumentID, 2m, 2m),
+                CreateTransactionLeg(cashNonInvestableID, CashInstrumentID, 3m, 3m),
+                CreateTransactionLeg(inflowID, CashInstrumentID, 4m, 4m)
             ],
-            [new TransactionRequest(outflowID, CashInstrumentID, AccountID, new TransactionQuantity(10m), new TransactionBookCost(10m))]), holdings).Value!.Cast<ITransactionEvent>().ToList();
+            [CreateTransactionLeg(outflowID, CashInstrumentID, 10m, 10m)]), holdings).Value!.Cast<ITransactionEvent>().ToList();
 
         var defaultPositions = new HoldingPositions(EventDateTimeBuilder.Create(EventDate.Value.AddDays(1)), AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents);
         var includedPositions = new HoldingPositions(EventDateTimeBuilder.Create(EventDate.Value.AddDays(1)), AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, new HoldingPositionFilter(null, null, null, true, false));
@@ -331,8 +331,8 @@ public sealed class HoldingBuilderTests
             EventDate,
             SettlementDate,
             "Cash deposit",
-            [new TransactionRequest(cashHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(100m))],
-            [new TransactionRequest(inflowHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(100m))]), holdings).Value!.Cast<ITransactionEvent>().ToList();
+            [CreateTransactionLeg(cashHoldingID, CashInstrumentID, 100m, 100m)],
+            [CreateTransactionLeg(inflowHoldingID, CashInstrumentID, 100m, 100m)]), holdings).Value!.Cast<ITransactionEvent>().ToList();
         var betweenExecutionAndSettlement = EventDateTimeBuilder.Create(EventDate.Value.AddHours(1));
 
         var executionPositions = new HoldingPositions(betweenExecutionAndSettlement, AuditDateTimeBuilder.Create(DateTime.UtcNow), holdings, accounts, instruments, transactionEvents, holdingDateBasis: HoldingDateBasis.EventDateTime);
@@ -359,8 +359,8 @@ public sealed class HoldingBuilderTests
             EventDate,
             SettlementDate,
             "Cash deposit",
-            [new TransactionRequest(cashHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(100m))],
-            [new TransactionRequest(inflowHoldingID, CashInstrumentID, AccountID, new TransactionQuantity(100m), new TransactionBookCost(100m))]), holdings).Value!;
+            [CreateTransactionLeg(cashHoldingID, CashInstrumentID, 100m, 100m)],
+            [CreateTransactionLeg(inflowHoldingID, CashInstrumentID, 100m, 100m)]), holdings).Value!;
         var cancellationEvents = TransactionCancellationEventBuilder.Create(new TransactionCancellationRequest(UserID, "Cancel", originalEvents[0].EventSetID), originalEvents.Cast<ITransactionEvent>().ToList()).Value!;
         var allEvents = originalEvents.Cast<ITransactionEvent>().Concat(cancellationEvents).ToList();
 
@@ -436,6 +436,18 @@ public sealed class HoldingBuilderTests
 
     private static Holdings CreateHoldings(Accounts accounts, Instruments instruments, params HoldingCreatedEvent[] holdingEvents) =>
         new(EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(holdingEvents.Length + 10)), holdingEvents.Cast<IHoldingEvent>().ToList());
+
+    private static TransactionRequest CreateTransactionLeg(HoldingID holdingID, InstrumentID instrumentID, decimal quantity, decimal bookCost) =>
+        new(
+            holdingID,
+            instrumentID,
+            AccountID,
+            new TransactionQuantity(quantity),
+            new TransactionLocalCost(bookCost),
+            Alpha3Builder.Create("GBP"),
+            new TransactionBookCost(bookCost),
+            BookCostSource.SameCurrency,
+            false);
 
     private static HoldingCreatedEvent CreateCashHolding(HoldingID holdingID, bool isDefault, bool active = true) =>
         isDefault

@@ -10,9 +10,10 @@ public static partial class TicketEventBuilder
         Tickets tickets,
         Accounts? accounts,
         Instruments? instruments,
-        IReadOnlyList<IHoldingEvent> holdingEvents)
+        IReadOnlyList<IHoldingEvent> holdingEvents,
+        FXRates? fxRates = null)
     {
-        var messages = ValidateTradeApprovalTransactionRequest(request, tickets, accounts, instruments, holdingEvents, out var ticket, out var holdingEventsToCreate, out var effectiveHoldings, out var legsByAllocation);
+        var messages = ValidateTradeApprovalTransactionRequest(request, tickets, accounts, instruments, holdingEvents, fxRates, out var ticket, out var holdingEventsToCreate, out var effectiveHoldings, out var legsByAllocation);
         if (messages.Count > 0 || ticket is null || effectiveHoldings is null)
             return Result<TicketTradeApprovalTransactionResult>.Invalid(messages);
 
@@ -47,6 +48,7 @@ public static partial class TicketEventBuilder
         Accounts? accounts,
         Instruments? instruments,
         IReadOnlyList<IHoldingEvent>? holdingEvents,
+        FXRates? fxRates,
         out Ticket? ticket,
         out IReadOnlyList<HoldingPositionAssetCreatedEvent> holdingEventsToCreate,
         out Holdings? effectiveHoldings,
@@ -113,19 +115,36 @@ public static partial class TicketEventBuilder
             if (assetHolding is null || cashHolding is null)
                 continue;
 
+            var account = accounts.Items.SingleOrDefault(item => item.AccountID == allocation.AccountID);
+            var cashInstrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == cashHolding.InstrumentID);
+            if (account is null || cashInstrument is null)
+                continue;
+
+            var bookCost = ResolveBookCost(allocation, account, cashInstrument.PriceCurrency, fxRates, messages);
+            if (bookCost is null)
+                continue;
+
             legs.Add(new TicketTradeApprovalTransactionLegs(
                 new TransactionRequest(
                     assetHolding.HoldingID,
                     ticket.InstrumentID,
                     allocation.AccountID,
                     new TransactionQuantity(allocation.Quantity),
-                    new TransactionBookCost(allocation.BookCost)),
+                    new TransactionLocalCost(allocation.SettlementAmount),
+                    cashInstrument.PriceCurrency,
+                    bookCost.BookCost,
+                    bookCost.Source,
+                    bookCost.Estimated),
                 new TransactionRequest(
                     cashHolding.HoldingID,
                     cashHolding.InstrumentID,
                     allocation.AccountID,
-                    new TransactionQuantity(allocation.BookCost),
-                    new TransactionBookCost(allocation.BookCost))));
+                    new TransactionQuantity(allocation.SettlementAmount),
+                    new TransactionLocalCost(allocation.SettlementAmount),
+                    cashInstrument.PriceCurrency,
+                    bookCost.BookCost,
+                    bookCost.Source,
+                    bookCost.Estimated)));
         }
 
         holdingEventsToCreate = createdHoldingEvents;
@@ -163,10 +182,10 @@ public static partial class TicketEventBuilder
         if (fillQuantity != allocationQuantity)
             messages.Add($"Fills must sum to trade allocation quantity {FormatValidationNumber(allocationQuantity)}. Current total is {FormatValidationNumber(fillQuantity)}.");
 
-        var fillBookCost = ticket.Fills.Sum(fill => fill.BookCost.Value);
-        var allocationBookCost = ticket.TradeAllocations.Sum(allocation => allocation.BookCost);
-        if (fillBookCost != allocationBookCost)
-            messages.Add($"Fills book cost must sum to trade allocation book cost {FormatValidationNumber(allocationBookCost)}. Current total is {FormatValidationNumber(fillBookCost)}.");
+        var fillSettlementAmount = ticket.Fills.Sum(fill => fill.SettlementAmount.Value);
+        var allocationSettlementAmount = ticket.TradeAllocations.Sum(allocation => allocation.SettlementAmount);
+        if (fillSettlementAmount != allocationSettlementAmount)
+            messages.Add($"Fills settlement amount must sum to trade allocation settlement amount {FormatValidationNumber(allocationSettlementAmount)}. Current total is {FormatValidationNumber(fillSettlementAmount)}.");
     }
 
     private static HoldingPositionAsset? ResolveAssetHolding(TicketTradeAllocation allocation, Ticket ticket, Holdings holdings, List<string> messages)
@@ -245,8 +264,41 @@ public static partial class TicketEventBuilder
             [credit],
             [debit]);
 
+    private static ResolvedBookCost? ResolveBookCost(TicketTradeAllocation allocation, Account account, Alpha3 settlementCurrency, FXRates? fxRates, List<string> messages)
+    {
+        if (allocation.BookCostOverride is decimal overrideValue)
+            return new ResolvedBookCost(new TransactionBookCost(overrideValue), BookCostSource.ManualOverride, false);
+
+        if (settlementCurrency == account.BookCurrency)
+            return new ResolvedBookCost(new TransactionBookCost(allocation.SettlementAmount), BookCostSource.SameCurrency, false);
+
+        if (fxRates is null)
+        {
+            messages.Add($"FX rates are required to estimate book cost from {settlementCurrency} to {account.BookCurrency}.");
+            return null;
+        }
+
+        var rate = fxRates.Items.FirstOrDefault(item =>
+            item.Active &&
+            item.BaseCurrency == settlementCurrency &&
+            item.QuoteCurrency == account.BookCurrency);
+
+        if (rate is null)
+        {
+            messages.Add($"Missing FX {settlementCurrency}/{account.BookCurrency} for AccountID '{allocation.AccountID}'. Enter a book cost override or add the FX rate.");
+            return null;
+        }
+
+        return new ResolvedBookCost(
+            new TransactionBookCost(decimal.Round(allocation.SettlementAmount * rate.Price.Mid, 8)),
+            BookCostSource.FxEstimate,
+            true);
+    }
+
     private static string FormatValidationNumber(decimal value) =>
         value.ToString("0.########");
 
     private sealed record TicketTradeApprovalTransactionLegs(TransactionRequest AssetLeg, TransactionRequest CashLeg);
+
+    private sealed record ResolvedBookCost(TransactionBookCost BookCost, BookCostSource Source, bool Estimated);
 }

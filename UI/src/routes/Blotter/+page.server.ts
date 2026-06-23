@@ -454,11 +454,11 @@ export const actions = {
     const brokerLEI = getFormString(formData, 'brokerLEI');
     const price = getFormNumber(formData, 'fillPrice');
     const quantity = getFormNumber(formData, 'fillQuantity');
-    const bookCost = getFormNumber(formData, 'fillBookCost');
+    const settlementAmount = getFormNumber(formData, 'fillSettlementAmount');
     const note = getFormString(formData, 'fillNote');
 
-    if (!ticketNumber || !eventDateTime || !brokerLEI || !price || !quantity || !bookCost)
-      return fail(400, responseFailure('addFill', 'Fill broker, price, quantity, and book cost are required.', ticketNumber));
+    if (!ticketNumber || !eventDateTime || !brokerLEI || !price || !quantity || !settlementAmount)
+      return fail(400, responseFailure('addFill', 'Fill broker, price, quantity, and settlement amount are required.', ticketNumber));
 
     try {
       const apiEventDateTime = toApiDateTime(eventDateTime);
@@ -477,18 +477,18 @@ export const actions = {
       const remainingQuantity = allocationTotal(ticket.tradeAllocations) - allocationTotal(ticket.fills);
       if (quantity > remainingQuantity + 0.00000001)
         return fail(400, responseFailure('addFill', `Fill quantity exceeds the remaining trade quantity of ${formatValidationNumber(remainingQuantity)}.`, ticketNumber));
-      const remainingBookCost = bookCostTotal(ticket.tradeAllocations) - bookCostTotal(ticket.fills);
-      if (bookCost > remainingBookCost + 0.00000001)
-        return fail(400, responseFailure('addFill', `Fill book cost exceeds the remaining trade book cost of ${formatValidationNumber(remainingBookCost)}.`, ticketNumber));
+      const remainingSettlementAmount = settlementAmountTotal(ticket.tradeAllocations) - settlementAmountTotal(ticket.fills);
+      if (settlementAmount > remainingSettlementAmount + 0.00000001)
+        return fail(400, responseFailure('addFill', `Fill settlement amount exceeds the remaining trade settlement amount of ${formatValidationNumber(remainingSettlementAmount)}.`, ticketNumber));
 
       const result = await postTicketTradeFillAddedEvent(fetch, {
-        bookCost,
         brokerLEI,
         eventDateTime: apiEventDateTime,
         note,
         price,
         quantity,
         reason: `Add fill to ticket ${ticketNumber}`,
+        settlementAmount,
         ticketNumber,
         userID: currentUser.userID
       });
@@ -759,9 +759,9 @@ async function approveTrade(fetchApi: typeof fetch, request: Request, approved: 
       const fillTotalError = validateAllocationTotal(ticket.fills, allocationTotal(ticket.tradeAllocations), 'Fills');
       if (fillTotalError)
         return fail(400, responseFailure('tradeApprove', fillTotalError));
-      const fillBookCostError = validateBookCostTotal(ticket.fills, bookCostTotal(ticket.tradeAllocations), 'Fills');
-      if (fillBookCostError)
-        return fail(400, responseFailure('tradeApprove', fillBookCostError));
+      const fillSettlementAmountError = validateSettlementAmountTotal(ticket.fills, settlementAmountTotal(ticket.tradeAllocations), 'Fills');
+      if (fillSettlementAmountError)
+        return fail(400, responseFailure('tradeApprove', fillSettlementAmountError));
     }
 
     const result = approved
@@ -865,7 +865,8 @@ function tradeAllocationsEqual(left: TicketTradeAllocation[], right: TicketTrade
       allocation.accountID === rightSorted[index].accountID &&
       (allocation.cashHoldingID ?? '') === (rightSorted[index].cashHoldingID ?? '') &&
       numbersEqual(allocation.quantity, rightSorted[index].quantity) &&
-      numbersEqual(allocation.bookCost, rightSorted[index].bookCost)
+      numbersEqual(allocation.settlementAmount, rightSorted[index].settlementAmount) &&
+      numbersEqual(allocation.bookCostOverride ?? 0, rightSorted[index].bookCostOverride ?? 0)
     );
 }
 
@@ -890,11 +891,11 @@ function getTradeAllocations(formData: FormData, accountIDField = 'allocationAcc
   return getFormStrings(formData, accountIDField)
     .map((accountID) => ({
       accountID,
-      bookCost: parseFormNumber(getFormStrings(formData, `tradeBookCost-${accountID}`)[0] || ''),
       cashHoldingID: getFormStrings(formData, `tradeCashHoldingID-${accountID}`)[0] || '',
-      quantity: parseFormNumber(getFormStrings(formData, `tradeQuantity-${accountID}`)[0] || '')
+      quantity: parseFormNumber(getFormStrings(formData, `tradeQuantity-${accountID}`)[0] || ''),
+      settlementAmount: parseFormNumber(getFormStrings(formData, `tradeSettlementAmount-${accountID}`)[0] || '')
     }))
-    .filter((allocation) => allocation.accountID && allocation.quantity > 0 && allocation.bookCost > 0);
+    .filter((allocation) => allocation.accountID && allocation.quantity > 0 && allocation.settlementAmount > 0);
 }
 
 function validateTradeCashHoldings(allocations: TicketTradeAllocation[], accounts: Account[] = []) {
@@ -956,9 +957,10 @@ function friendlyTradeCashHoldingError(message: string, accounts: Account[]) {
 function toTradeRequestAllocations(allocations: TicketTradeAllocation[]): TicketTradeRequest['allocations'] {
   return allocations.map((allocation) => ({
     accountID: allocation.accountID,
-    bookCost: allocation.bookCost,
+    bookCostOverride: allocation.bookCostOverride,
     cashHoldingID: allocation.cashHoldingID ?? '',
-    quantity: allocation.quantity
+    quantity: allocation.quantity,
+    settlementAmount: allocation.settlementAmount
   }));
 }
 
@@ -966,8 +968,8 @@ function allocationTotal(allocations: { quantity: number }[]) {
   return allocations.reduce((total, allocation) => total + allocation.quantity, 0);
 }
 
-function bookCostTotal(items: { bookCost: number }[]) {
-  return items.reduce((total, item) => total + item.bookCost, 0);
+function settlementAmountTotal(items: { settlementAmount: number }[]) {
+  return items.reduce((total, item) => total + item.settlementAmount, 0);
 }
 
 function validateAllocationTotal(allocations: { quantity: number }[], expectedTotal: number, label: string) {
@@ -985,15 +987,15 @@ function isWholeQuantity(value: number) {
   return Number.isInteger(value) && value > 0;
 }
 
-function validateBookCostTotal(items: { bookCost: number }[], expectedTotal: number, label: string) {
+function validateSettlementAmountTotal(items: { settlementAmount: number }[], expectedTotal: number, label: string) {
   if (!expectedTotal || expectedTotal <= 0)
-    return `${label} need a positive total book cost.`;
+    return `${label} need a positive total settlement amount.`;
 
-  const total = bookCostTotal(items);
+  const total = settlementAmountTotal(items);
 
   return numbersEqual(total, expectedTotal)
     ? ''
-    : `${label} book cost must sum to ${formatValidationNumber(expectedTotal)}. Current total is ${formatValidationNumber(total)}.`;
+    : `${label} settlement amount must sum to ${formatValidationNumber(expectedTotal)}. Current total is ${formatValidationNumber(total)}.`;
 }
 
 function formatValidationNumber(value: number) {

@@ -885,13 +885,14 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private static IReadOnlyList<ITransactionEvent> CreateSeedTransactionSet(Holdings holdings, HoldingBase creditHolding, HoldingBase debitHolding, InstrumentID instrumentID, decimal quantity, decimal bookCost, DateTime eventDateTime, string reason)
     {
+        var localCostCurrency = Alpha3Builder.Create("GBP");
         var request = new TransactionSetRequest(
             Constants.Initialisation.UserID,
             EventDateTimeBuilder.Create(eventDateTime),
             SettlementDateTimeBuilder.Create(eventDateTime.AddDays(2)),
             reason,
-            [new TransactionRequest(creditHolding.HoldingID, instrumentID, creditHolding.AccountID, new TransactionQuantity(quantity), new TransactionBookCost(bookCost))],
-            [new TransactionRequest(debitHolding.HoldingID, instrumentID, debitHolding.AccountID, new TransactionQuantity(quantity), new TransactionBookCost(bookCost))]);
+            [CreateSeedTransactionLeg(creditHolding, instrumentID, quantity, bookCost, localCostCurrency)],
+            [CreateSeedTransactionLeg(debitHolding, instrumentID, quantity, bookCost, localCostCurrency)]);
         var result = TransactionBuilder.Create(request, holdings);
 
         if (result.IsValid && result.Value is not null)
@@ -899,6 +900,18 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
         throw new InvalidOperationException($"Unable to create seed transaction '{reason}': {string.Join("; ", result.ValidationErrors)}");
     }
+
+    private static TransactionRequest CreateSeedTransactionLeg(HoldingBase holding, InstrumentID instrumentID, decimal quantity, decimal bookCost, Alpha3 localCostCurrency) =>
+        new(
+            holding.HoldingID,
+            instrumentID,
+            holding.AccountID,
+            new TransactionQuantity(quantity),
+            new TransactionLocalCost(bookCost),
+            localCostCurrency,
+            new TransactionBookCost(bookCost),
+            BookCostSource.SameCurrency,
+            false);
 
     private static HoldingBase FindSeedHolding(Holdings holdings, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name)
     {

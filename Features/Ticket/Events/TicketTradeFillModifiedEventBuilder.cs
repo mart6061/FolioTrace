@@ -15,7 +15,12 @@ public static partial class TicketEventBuilder
                 messages.Add("BrokerLEI is required.");
             ValidatePrice(request.Price, "Price", messages);
             ValidatePositiveDecimal(request.Quantity, "Quantity", messages);
-            ValidateTransactionBookCost(request.BookCost, "BookCost", messages);
+            if (request.SettlementAmount is null)
+                messages.Add("SettlementAmount is required.");
+            if (request.SettlementAmount is not null && request.SettlementAmount.Value <= 0m)
+                messages.Add("SettlementAmount must be greater than zero.");
+            if (request.BookCostOverride is not null && request.BookCostOverride.Value <= 0m)
+                messages.Add("BookCostOverride must be greater than zero.");
             if (request.FillID is null || request.FillID == Guid.Empty)
                 messages.Add("FillID is required.");
             if (ticket is not null && ticket.Fills.All(fill => fill.FillID != request.FillID))
@@ -23,6 +28,6 @@ public static partial class TicketEventBuilder
 
             return messages.Count > 0
                 ? Result<TicketTradeFillModifiedEvent>.Invalid(messages)
-                : Result<TicketTradeFillModifiedEvent>.Success(new TicketTradeFillModifiedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.FillID!.Value, request.BrokerLEI!, request.Price, request.Quantity, request.BookCost, request.Note ?? string.Empty));
+                : Result<TicketTradeFillModifiedEvent>.Success(new TicketTradeFillModifiedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, request.FillID!.Value, request.BrokerLEI!, request.Price, request.Quantity, request.SettlementAmount, request.Note ?? string.Empty, request.BookCostOverride));
         });
 }

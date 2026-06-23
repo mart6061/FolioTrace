@@ -68,6 +68,7 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(InstrumentIncomeSetEvent), nameof(InstrumentIncomeSetEvent))]
 [JsonDerivedType(typeof(TransactionCreditEvent), nameof(TransactionCreditEvent))]
 [JsonDerivedType(typeof(TransactionDebitEvent), nameof(TransactionDebitEvent))]
+[JsonDerivedType(typeof(TransactionBookCostAdjustedEvent), nameof(TransactionBookCostAdjustedEvent))]
 [JsonDerivedType(typeof(TransactionCancellationEvent), nameof(TransactionCancellationEvent))]
 [JsonDerivedType(typeof(TicketCreatedEvent), nameof(TicketCreatedEvent))]
 [JsonDerivedType(typeof(TicketAccountAddedEvent), nameof(TicketAccountAddedEvent))]

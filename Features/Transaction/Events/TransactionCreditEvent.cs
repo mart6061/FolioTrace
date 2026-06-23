@@ -19,8 +19,16 @@ public sealed record TransactionCreditEvent : EventBase, ITransactionMovementEve
     public AccountID AccountID { get; init; } = null!;
     [EventProperty(Description = "Quantity")]
     public TransactionQuantity Quantity { get; init; } = null!;
+    [EventProperty(Description = "Local Cost")]
+    public TransactionLocalCost LocalCost { get; init; } = null!;
+    [EventProperty(Description = "Local Cost Currency")]
+    public Alpha3 LocalCostCurrency { get; init; } = null!;
     [EventProperty(Description = "Book Cost")]
     public TransactionBookCost BookCost { get; init; } = null!;
+    [EventProperty(Description = "Book Cost Source")]
+    public BookCostSource BookCostSource { get; init; } = BookCostSource.SameCurrency;
+    [EventProperty(Description = "Book Cost Estimated")]
+    public bool BookCostEstimated { get; init; }
     [EventProperty(Description = "Settlement Date Time")]
     public SettlementDateTime SettlementDateTime { get; init; } = null!;
 
@@ -40,7 +48,11 @@ public sealed record TransactionCreditEvent : EventBase, ITransactionMovementEve
         InstrumentID instrumentID,
         AccountID accountID,
         TransactionQuantity quantity,
-        TransactionBookCost bookCost)
+        TransactionLocalCost localCost,
+        Alpha3 localCostCurrency,
+        TransactionBookCost bookCost,
+        BookCostSource bookCostSource,
+        bool bookCostEstimated)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         SettlementDateTime = settlementDateTime;
@@ -50,7 +62,11 @@ public sealed record TransactionCreditEvent : EventBase, ITransactionMovementEve
         InstrumentID = instrumentID;
         AccountID = accountID;
         Quantity = quantity;
+        LocalCost = localCost;
+        LocalCostCurrency = localCostCurrency;
         BookCost = bookCost;
+        BookCostSource = bookCostSource;
+        BookCostEstimated = bookCostEstimated;
     }
 
     public override string Type => nameof(TransactionCreditEvent);

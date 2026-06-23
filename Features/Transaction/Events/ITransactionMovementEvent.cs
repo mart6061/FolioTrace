@@ -18,5 +18,13 @@ public interface ITransactionMovementEvent : ITransactionEvent
 
     TransactionQuantity Quantity { get; }
 
+    TransactionLocalCost LocalCost { get; }
+
+    Alpha3 LocalCostCurrency { get; }
+
     TransactionBookCost BookCost { get; }
+
+    BookCostSource BookCostSource { get; }
+
+    bool BookCostEstimated { get; }
 }

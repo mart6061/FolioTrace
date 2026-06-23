@@ -148,7 +148,7 @@ public sealed class FoleoTraderOrderProcessor(
             }
 
             var fillID = Guid.CreateGuid7();
-            var bookCost = report.GrossTradeAmt > 0m ? Round(report.GrossTradeAmt) : Round(report.LastQty * report.LastPx);
+            var settlementAmount = report.GrossTradeAmt > 0m ? Round(report.GrossTradeAmt) : Round(report.LastQty * report.LastPx);
             var execution = new FoleoTraderExecutionReceivedEvent(
                 Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
@@ -161,12 +161,12 @@ public sealed class FoleoTraderOrderProcessor(
                 fillID,
                 new Price(report.LastPx),
                 report.LastQty,
-                new TransactionBookCost(bookCost),
+                new TransactionBookCost(settlementAmount),
                 report.CumQty,
                 report.LeavesQty,
                 report.OrdStatus);
 
-            var tradeResult = CreateProratedTradeEvent(report, ticketNumber, eventDateTime, ticket, tickets, holdings, instruments, bookCost);
+            var tradeResult = CreateProratedTradeEvent(report, ticketNumber, eventDateTime, ticket, tickets, holdings, instruments, settlementAmount);
             var fillResult = TicketEventBuilder.AddFill(new TicketTradeFillRequest(
                 Constants.Initialisation.UserID,
                 eventDateTime,
@@ -176,7 +176,7 @@ public sealed class FoleoTraderOrderProcessor(
                 new LegalEntityIdentifier(options.BrokerLEI),
                 new Price(report.LastPx),
                 report.LastQty,
-                new TransactionBookCost(bookCost),
+                new TransactionLocalCost(settlementAmount),
                 $"FoleoTrader FIX ExecID {report.ExecID}"),
                 tickets);
 
@@ -294,27 +294,27 @@ public sealed class FoleoTraderOrderProcessor(
         Tickets tickets,
         Holdings holdings,
         Instruments instruments,
-        decimal fillBookCost)
+        decimal fillSettlementAmount)
     {
         var proposalTotal = ProposalQuantity(ticket);
         if (proposalTotal <= 0m)
             return (null, ["Proposal allocations are required before FoleoTrader fills can update trade allocations."]);
 
         var totalQuantity = Round(ticket.Fills.Sum(fill => fill.Quantity) + report.LastQty);
-        var totalBookCost = Round(ticket.Fills.Sum(fill => fill.BookCost.Value) + fillBookCost);
-        if (totalQuantity <= 0m || totalBookCost <= 0m)
+        var totalSettlementAmount = Round(ticket.Fills.Sum(fill => fill.SettlementAmount.Value) + fillSettlementAmount);
+        if (totalQuantity <= 0m || totalSettlementAmount <= 0m)
             return (null, ["FoleoTrader fill totals must be greater than zero."]);
 
         if (!FoleoTraderFillAllocator.IsWholeQuantity(totalQuantity))
             return (null, ["FoleoTrader fill total quantity must be a positive whole number."]);
 
         var quantities = FoleoTraderFillAllocator.ProrateWholeQuantity(totalQuantity, ticket.ProposalAllocations);
-        var bookCosts = FoleoTraderFillAllocator.ProrateAmountByQuantities(totalBookCost, quantities, DecimalScale);
+        var settlementAmounts = FoleoTraderFillAllocator.ProrateAmountByQuantities(totalSettlementAmount, quantities, DecimalScale);
         var allocations = ticket.ProposalAllocations
             .Select((allocation, index) => new TicketTradeAllocation(
                 allocation.AccountID,
                 quantities[index],
-                bookCosts[index],
+                settlementAmounts[index],
                 ResolveCashHoldingID(allocation.AccountID, ticket, holdings, instruments)))
             .Where(allocation => allocation.Quantity > 0m)
             .ToList();
@@ -324,7 +324,7 @@ public sealed class FoleoTraderOrderProcessor(
             eventDateTime,
             $"FoleoTrader FIX trade allocation {report.ExecID}",
             ticketNumber,
-            new Price(Round(totalBookCost / totalQuantity)),
+            new Price(Round(totalSettlementAmount / totalQuantity)),
             eventDateTime,
             NextWorkingDaySettlement(eventDateTime),
             allocations);

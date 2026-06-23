@@ -163,10 +163,10 @@ public sealed class TicketBuilderTests
             new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionLocalCost(108m), "Done"),
             new Tickets(EventDate, [.. events, approved, trade])).Value!;
         var modified = TicketEventBuilder.ModifyFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Modify fill", TicketOne, FillID, BrokerLEI, new Price(12.5m), 8m, new TransactionBookCost(100m), "Partial"),
+            new TicketTradeFillRequest(UserID, EventDate, "Modify fill", TicketOne, FillID, BrokerLEI, new Price(12.5m), 8m, new TransactionLocalCost(100m), "Partial"),
             new Tickets(EventDate, [.. events, approved, trade, fill])).Value!;
         var removed = TicketEventBuilder.RemoveFill(
             new TicketTradeFillRemovedRequest(UserID, EventDate, "Remove fill", TicketOne, FillID),
@@ -181,7 +181,7 @@ public sealed class TicketBuilderTests
         Assert.Equal(BrokerLEI, rebuiltFill.BrokerLEI);
         Assert.Equal(12.5m, rebuiltFill.Price.Amount);
         Assert.Equal(8m, rebuiltFill.Quantity);
-        Assert.Equal(100m, rebuiltFill.BookCost.Value);
+        Assert.Equal(100m, rebuiltFill.SettlementAmount.Value);
         Assert.Empty(withoutFill.Fills);
         Assert.Equal(TicketDecision.InProgress, withoutFill.TradeDecision);
     }
@@ -242,7 +242,7 @@ public sealed class TicketBuilderTests
             new TicketTradeRequest(UserID, EventDate, "Create trade", TicketOne, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, approved])).Value!;
         var fill = TicketEventBuilder.AddFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketOne, FillID, BrokerLEI, new Price(12m), 9m, new TransactionLocalCost(108m), "Done"),
             new Tickets(EventDate, [.. events, approved, trade])).Value!;
 
         var requested = TicketEventBuilder.RequestTradeDecision(
@@ -374,7 +374,7 @@ public sealed class TicketBuilderTests
             new TicketTradeRequest(UserID, EventDate, "Create trade", number, new Price(12m), EventDate, SettlementDate, [new TicketTradeAllocation(AccountID, 9m, 108m, CashHoldingID)]),
             new Tickets(EventDate, [.. events, proposalApproved])).Value!;
         var fill = TicketEventBuilder.AddFill(
-            new TicketTradeFillRequest(UserID, EventDate, "Add fill", number, Guid.CreateGuid7(), BrokerLEI, new Price(12m), 9m, new TransactionBookCost(108m), "Done"),
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", number, Guid.CreateGuid7(), BrokerLEI, new Price(12m), 9m, new TransactionLocalCost(108m), "Done"),
             new Tickets(EventDate, [.. events, proposalApproved, trade])).Value!;
         var requestTradeDecision = TicketEventBuilder.RequestTradeDecision(
             new TicketApprovalRequest(UserID, EventDate, "Request trade decision", number),

@@ -72,7 +72,7 @@ public sealed class TransactionBuilderTests
     public void Create_RejectsMissingLegData()
     {
         var result = TransactionBuilder.Create(CreateRequest(
-            credits: [new TransactionRequest(HoldingID, InstrumentID, AccountID, null!, new TransactionBookCost(10m))],
+            credits: [CreateLeg(10m) with { Quantity = null! }],
             debits: [CreateLeg(10m)]), CreateHoldings());
 
         Assert.False(result.IsValid);
@@ -307,6 +307,64 @@ public sealed class TransactionBuilderTests
         Assert.Empty(TransactionEventSelector.GetActiveMovements(allEvents, atCancellation));
     }
 
+    [Fact]
+    public void CreateBookCostAdjustment_EmitsAdjustmentForOriginalSet()
+    {
+        var originalEvents = CreateBalancedSet();
+        var request = new TransactionBookCostAdjustmentRequest(
+            UserID,
+            "Correct book cost",
+            originalEvents[0].EventSetID,
+            new TransactionBookCost(12m));
+
+        var result = TransactionBookCostAdjustedEventBuilder.Create(request, originalEvents.Cast<ITransactionEvent>().ToList());
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
+        var adjustment = result.Value!;
+        Assert.Equal(originalEvents[0].EventSetID, adjustment.EventSetID);
+        Assert.Equal(originalEvents[0].AccountID, adjustment.AccountID);
+        Assert.Equal(originalEvents[0].EventDateTime, adjustment.EventDateTime);
+        Assert.Equal(originalEvents[0].SettlementDateTime, adjustment.SettlementDateTime);
+        Assert.Equal(12m, adjustment.BookCost.Value);
+        Assert.Equal(BookCostSource.Correction, adjustment.BookCostSource);
+        Assert.Equal(EventIds(originalEvents).OrderBy(value => value), adjustment.AdjustedIDGroup.Select(eventID => eventID.Value).OrderBy(value => value));
+    }
+
+    [Fact]
+    public void GetActiveMovements_AppliesLatestBookCostAdjustmentByAuditTime()
+    {
+        var originalEvents = CreateBalancedSet();
+        var firstAdjustment = TransactionBookCostAdjustedEventBuilder.Create(
+            new TransactionBookCostAdjustmentRequest(UserID, "Estimate", originalEvents[0].EventSetID, new TransactionBookCost(11m), BookCostSource.FxEstimate, true),
+            originalEvents.Cast<ITransactionEvent>().ToList()).Value!;
+        var secondAdjustment = TransactionBookCostAdjustedEventBuilder.Create(
+            new TransactionBookCostAdjustmentRequest(UserID, "Correct", originalEvents[0].EventSetID, new TransactionBookCost(12m)),
+            originalEvents.Cast<ITransactionEvent>().Append(firstAdjustment).ToList()).Value!;
+        var allEvents = originalEvents.Cast<ITransactionEvent>().Append(firstAdjustment).Append(secondAdjustment).ToList();
+        var beforeFirstAdjustment = AuditDateTimeBuilder.Create(firstAdjustment.AuditDateTime.Value.AddTicks(-1));
+        var atFirstAdjustment = AuditDateTimeBuilder.Create(firstAdjustment.AuditDateTime.Value);
+        var atSecondAdjustment = AuditDateTimeBuilder.Create(secondAdjustment.AuditDateTime.Value);
+
+        var originalMovements = TransactionEventSelector.GetActiveMovements(allEvents, beforeFirstAdjustment);
+        var firstAdjustedMovements = TransactionEventSelector.GetActiveMovements(allEvents, atFirstAdjustment);
+        var secondAdjustedMovements = TransactionEventSelector.GetActiveMovements(allEvents, atSecondAdjustment);
+
+        Assert.All(originalMovements, movement => Assert.Equal(10m, movement.BookCost.Value));
+        Assert.All(firstAdjustedMovements, movement =>
+        {
+            Assert.Equal(11m, movement.BookCost.Value);
+            Assert.Equal(BookCostSource.FxEstimate, movement.BookCostSource);
+            Assert.True(movement.BookCostEstimated);
+            Assert.Equal(10m, movement.LocalCost.Value);
+        });
+        Assert.All(secondAdjustedMovements, movement =>
+        {
+            Assert.Equal(12m, movement.BookCost.Value);
+            Assert.Equal(BookCostSource.Correction, movement.BookCostSource);
+            Assert.False(movement.BookCostEstimated);
+        });
+    }
+
     private static readonly UserID UserID = new(Guid.Parse("72afdf42-8088-4820-9d2c-e6037115f32b"));
     private static readonly EventDateTime HoldingEventDate = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-20));
     private static readonly AuditDateTime HoldingAuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-19));
@@ -315,6 +373,7 @@ public sealed class TransactionBuilderTests
     private static readonly InstrumentID InstrumentID = InstrumentIDBuilder.Create();
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
     private static readonly AccountID OtherAccountID = AccountIDBuilder.Create();
+    private static readonly Alpha3 LocalCostCurrency = Alpha3Builder.Create("GBP");
 
     private static TransactionSetRequest CreateRequest(IReadOnlyList<TransactionRequest> credits, IReadOnlyList<TransactionRequest> debits) =>
         CreateRequest(EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10)), credits, debits);
@@ -337,7 +396,11 @@ public sealed class TransactionBuilderTests
             InstrumentID,
             accountID,
             new TransactionQuantity(1m),
-            new TransactionBookCost(bookCost));
+            new TransactionLocalCost(bookCost),
+            LocalCostCurrency,
+            new TransactionBookCost(bookCost),
+            BookCostSource.SameCurrency,
+            false);
 
     private static Holdings CreateHoldings(bool includeOtherAccount = false)
     {
