@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, startOfDayForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getAssetAllocationMappings, getHoldingPositions, getHoldings, getInstruments, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
+import { getAccounts, getAssetAllocationMappings, getHoldingPositions, getHoldings, getInstruments, getProfitLosses, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
 import { requireCurrentUser } from '$lib/server/auth';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, valuationEndDateFromOption, valuationStartDateFromOption } from '$lib/valuationPreferences';
 import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
@@ -14,6 +14,8 @@ import type {
   HoldingPosition,
   Instrument,
   InstrumentPriceBasis,
+  ProfitLossItem,
+  ProfitLossMethod,
   ReportConfig,
   ReportNodeBase,
   ReportNodePageOrientation,
@@ -34,6 +36,10 @@ const valuationColumnDefinitions: ReportValuationColumnDefinition[] = [
   { columnKey: 'QuotePrice', label: 'Quote Price', numeric: true, valueType: 'Money' },
   { columnKey: 'Quantity', label: 'Quantity', numeric: true, valueType: 'Quantity' },
   { columnKey: 'BookValue', label: 'Book Value', numeric: true, valueType: 'Money' },
+  { columnKey: 'BookValueDefault', label: 'Book Value (default)', numeric: true, valueType: 'Money' },
+  { columnKey: 'BookValueFIFO', label: 'Book Value (FIFO)', numeric: true, valueType: 'Money' },
+  { columnKey: 'BookValueLIFO', label: 'Book Value (LIFO)', numeric: true, valueType: 'Money' },
+  { columnKey: 'BookValueRunningAverage', label: 'Book Value (w/avg)', numeric: true, valueType: 'Money' },
   { columnKey: 'BookCost', label: 'Book Cost', numeric: true, valueType: 'Money' },
   { columnKey: 'Weight', label: 'Weight', numeric: true, valueType: 'Percent' },
   { columnKey: 'Target', label: 'Target', numeric: true, valueType: 'Percent' },
@@ -91,6 +97,10 @@ type ReportValuationAsset = {
   targetMaxPercent: number | null;
   variancePercent: number | null;
   bookValue: number;
+  bookValueDefault: number;
+  bookValueFIFO: number;
+  bookValueLIFO: number;
+  bookValueRunningAverage: number;
   bookCost: number;
 };
 
@@ -98,6 +108,10 @@ type ReportValuationSubtotal = {
   quantity: number;
   weightPercent: number;
   bookValue: number;
+  bookValueDefault: number;
+  bookValueFIFO: number;
+  bookValueLIFO: number;
+  bookValueRunningAverage: number;
   bookCost: number;
   targetMinPercent: number | null;
   targetMaxPercent: number | null;
@@ -128,6 +142,10 @@ type ReportValuationRow = {
   targetMaxPercent: number | null;
   variancePercent: number | null;
   bookValue: number;
+  bookValueDefault: number;
+  bookValueFIFO: number;
+  bookValueLIFO: number;
+  bookValueRunningAverage: number;
   bookCost: number;
 };
 
@@ -202,6 +220,7 @@ export const _loadReportPageData = async ({ fetch, locals, url }: ReportLoadEven
       ? await createReportDocument(fetch, selectedReportConfig, {
         accountID,
         auditDateTime: apiAuditDateTime,
+        bookCostBasis: selectedAccount.bookCostBasis,
         holdingDateBasis,
         instrumentPriceBasis,
         valuationCurrency: selectedAccount.bookCurrency,
@@ -336,6 +355,7 @@ async function createReportDocument(
   options: {
     accountID: string;
     auditDateTime: string | null;
+    bookCostBasis: ProfitLossMethod;
     holdingDateBasis: HoldingDateBasis;
     instrumentPriceBasis: InstrumentPriceBasis;
     valuationCurrency: string;
@@ -353,6 +373,7 @@ async function createReportDocument(
     holdingPositions,
     instruments,
     valuations,
+    profitLosses,
     holdings,
     transactionEvents,
     allocationMappingResults
@@ -360,6 +381,7 @@ async function createReportDocument(
     getHoldingPositions(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.accountID),
     getInstruments(fetchApi, options.valuationDateTime, options.auditDateTime),
     getValuations(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.instrumentPriceBasis, options.valuationCurrency, options.accountID),
+    getProfitLosses(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.instrumentPriceBasis, options.accountID),
     getHoldings(fetchApi, options.valuationDateTime, options.auditDateTime, { accountID: options.accountID, includeInactive: true }),
     getTransactionEvents(fetchApi, { accountID: options.accountID, auditDateTime: options.auditDateTime, valuationDateTime: options.valuationDateTime }),
     Promise.all(allocationIDs.map(async (assetAllocationID) => ({
@@ -369,6 +391,8 @@ async function createReportDocument(
   ]);
   const valuationItems = valuations.accounts.find((account) => account.accountID === options.accountID)?.items ?? [];
   const valuationsByHoldingID = new Map(valuationItems.map((item) => [item.holdingID, item]));
+  const profitLossItems = profitLosses.accounts.find((account) => account.accountID === options.accountID)?.items ?? [];
+  const profitLossByHoldingID = new Map(profitLossItems.map((item) => [item.holdingID, item]));
   const holdingsByID = new Map(holdings.items.map((holding) => [holding.holdingID, holding]));
   const instrumentsByID = new Map(instruments.items.map((instrument) => [instrument.instrumentID, instrument]));
   const mappingsByAllocationID = new Map(allocationMappingResults.map((result) => [result.assetAllocationID, result.mappings]));
@@ -386,6 +410,8 @@ async function createReportDocument(
         holdingPositions.items,
         instrumentsByID,
         valuationsByHoldingID,
+        profitLossByHoldingID,
+        options.bookCostBasis,
         cashGroups,
         transactionRows,
         allocationByID.get(node.assetAllocationID ?? ''),
@@ -401,6 +427,8 @@ function createReportSection(
   holdings: HoldingPosition[],
   instrumentsByID: Map<string, Instrument>,
   valuationsByHoldingID: Map<string, ValuationItem>,
+  profitLossByHoldingID: Map<string, ProfitLossItem>,
+  bookCostBasis: ProfitLossMethod,
   cashGroups: ReportCashGroup[],
   transactionRows: ReportTransactionRow[],
   allocation: ValuationSetting | undefined,
@@ -442,7 +470,7 @@ function createReportSection(
     };
   }
 
-  const mappedHoldings = mapHoldingMetrics(holdings, instrumentsByID, valuationsByHoldingID);
+  const mappedHoldings = mapHoldingMetrics(holdings, instrumentsByID, valuationsByHoldingID, profitLossByHoldingID, bookCostBasis);
   const mappingByHoldingID = new Map(mappings.map((mapping) => [mapping.holdingID, mapping.nodeID]));
 
   if (!allocation)
@@ -491,7 +519,9 @@ function reportSectionType(node: ReportNodeBase): ReportDocumentSection['section
 function mapHoldingMetrics(
   holdings: HoldingPosition[],
   instrumentsByID: Map<string, Instrument>,
-  valuationsByHoldingID: Map<string, ValuationItem>
+  valuationsByHoldingID: Map<string, ValuationItem>,
+  profitLossByHoldingID: Map<string, ProfitLossItem>,
+  bookCostBasis: ProfitLossMethod
 ): ReportValuationAsset[] {
   const totalBookValue = holdings.reduce((total, holding) => {
     const valuation = valuationsByHoldingID.get(holding.holdingID);
@@ -501,8 +531,12 @@ function mapHoldingMetrics(
   return holdings
     .map((holding) => {
       const valuation = valuationsByHoldingID.get(holding.holdingID);
+      const profitLoss = profitLossByHoldingID.get(holding.holdingID);
       const instrument = instrumentsByID.get(valuation?.instrumentID ?? holding.instrumentID);
       const bookValue = numberValue(valuation?.bookValue);
+      const bookValueFIFO = profitLossMethodBookValue(profitLoss, 'FIFO', numberValue(valuation?.bookCost, holding.bookCost));
+      const bookValueLIFO = profitLossMethodBookValue(profitLoss, 'LIFO', numberValue(valuation?.bookCost, holding.bookCost));
+      const bookValueRunningAverage = profitLossMethodBookValue(profitLoss, 'RunningAverage', numberValue(valuation?.bookCost, holding.bookCost));
 
       return {
         holdingID: holding.holdingID,
@@ -518,10 +552,30 @@ function mapHoldingMetrics(
         targetMaxPercent: null,
         variancePercent: null,
         bookValue,
+        bookValueDefault: bookValueForBasis(bookCostBasis, bookValueFIFO, bookValueLIFO, bookValueRunningAverage),
+        bookValueFIFO,
+        bookValueLIFO,
+        bookValueRunningAverage,
         bookCost: numberValue(valuation?.bookCost, holding.bookCost)
       };
     })
     .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function profitLossMethodBookValue(profitLoss: ProfitLossItem | undefined, method: ProfitLossMethod, fallback: number) {
+  return numberValue(profitLoss?.methods.find((value) => value.method === method)?.bookValue, fallback);
+}
+
+function bookValueForBasis(bookCostBasis: ProfitLossMethod, fifo: number, lifo: number, runningAverage: number) {
+  switch (bookCostBasis) {
+    case 'LIFO':
+      return lifo;
+    case 'RunningAverage':
+      return runningAverage;
+    case 'FIFO':
+    default:
+      return fifo;
+  }
 }
 
 function createValuationRows(
@@ -557,6 +611,10 @@ function createValuationRows(
       targetMaxPercent: null,
       variancePercent: null,
       bookValue: total.bookValue,
+      bookValueDefault: total.bookValueDefault,
+      bookValueFIFO: total.bookValueFIFO,
+      bookValueLIFO: total.bookValueLIFO,
+      bookValueRunningAverage: total.bookValueRunningAverage,
       bookCost: total.bookCost
     });
   }
@@ -617,6 +675,10 @@ function appendValuationRows(
         targetMaxPercent: null,
         variancePercent: null,
         bookValue: asset.bookValue,
+        bookValueDefault: asset.bookValueDefault,
+        bookValueFIFO: asset.bookValueFIFO,
+        bookValueLIFO: asset.bookValueLIFO,
+        bookValueRunningAverage: asset.bookValueRunningAverage,
         bookCost: asset.bookCost
       });
     }
@@ -698,6 +760,10 @@ function addSubtotals(left: ReportValuationSubtotal, right: ReportValuationSubto
     quantity: left.quantity + right.quantity,
     weightPercent: left.weightPercent + right.weightPercent,
     bookValue: left.bookValue + right.bookValue,
+    bookValueDefault: left.bookValueDefault + right.bookValueDefault,
+    bookValueFIFO: left.bookValueFIFO + right.bookValueFIFO,
+    bookValueLIFO: left.bookValueLIFO + right.bookValueLIFO,
+    bookValueRunningAverage: left.bookValueRunningAverage + right.bookValueRunningAverage,
     bookCost: left.bookCost + right.bookCost,
     targetMinPercent: null,
     targetMaxPercent: null
@@ -722,11 +788,29 @@ function nodeTarget(node: AssetAllocationNode, accountID: string) {
 }
 
 function zeroSubtotal(): ReportValuationSubtotal {
-  return { quantity: 0, weightPercent: 0, bookValue: 0, bookCost: 0, targetMinPercent: null, targetMaxPercent: null };
+  return {
+    quantity: 0,
+    weightPercent: 0,
+    bookValue: 0,
+    bookValueDefault: 0,
+    bookValueFIFO: 0,
+    bookValueLIFO: 0,
+    bookValueRunningAverage: 0,
+    bookCost: 0,
+    targetMinPercent: null,
+    targetMaxPercent: null
+  };
 }
 
 function isZeroSubtotal(subtotal: ReportValuationSubtotal) {
-  return subtotal.quantity === 0 && subtotal.weightPercent === 0 && subtotal.bookValue === 0 && subtotal.bookCost === 0;
+  return subtotal.quantity === 0 &&
+    subtotal.weightPercent === 0 &&
+    subtotal.bookValue === 0 &&
+    subtotal.bookValueDefault === 0 &&
+    subtotal.bookValueFIFO === 0 &&
+    subtotal.bookValueLIFO === 0 &&
+    subtotal.bookValueRunningAverage === 0 &&
+    subtotal.bookCost === 0;
 }
 
 function isUnallocatedNode(node: AssetAllocationNode) {

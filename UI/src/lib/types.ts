@@ -27,6 +27,7 @@ export type Account = {
   name: string;
   formalName: string;
   bookCurrency: string;
+  bookCostBasis: ProfitLossMethod;
   active: boolean;
   displayOrder: number;
   valuationDateTime: string;
@@ -188,6 +189,54 @@ export type HoldingDateBasis = 'EventDateTime' | 'SettlementDateTime';
 
 export type InstrumentPriceBasis = 'Bid' | 'Ask' | 'Mid' | 'NAV';
 
+export type ProfitLossMethod = 'FIFO' | 'LIFO' | 'RunningAverage';
+
+export type ProfitLossMethodValue = {
+  method: ProfitLossMethod;
+  realizedPnL: number;
+  bookValue: number;
+  unrealizedPnL?: number | null;
+  totalPnL?: number | null;
+  complete: boolean;
+  incompleteReason?: string | null;
+};
+
+export type ProfitLossItem = {
+  accountID: string;
+  accountName: string;
+  bookCurrency: string;
+  holdingID: string;
+  holdingName: string;
+  holdingKind: HoldingKind | string;
+  instrumentID: string;
+  instrumentName: string;
+  priceCurrency: string;
+  quantity: number;
+  localPrice?: number | null;
+  bookPrice?: number | null;
+  marketValue?: number | null;
+  bookCost: number;
+  methods: ProfitLossMethodValue[];
+};
+
+export type AccountProfitLoss = {
+  accountID: string;
+  accountName: string;
+  bookCurrency: string;
+  items: ProfitLossItem[];
+  totals: ProfitLossMethodValue[];
+};
+
+export type ProfitLosses = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  holdingDateBasis: HoldingDateBasis;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  accounts: AccountProfitLoss[];
+  totals: ProfitLossMethodValue[];
+};
+
 export type HoldingPositions = {
   valuationDateTime: string;
   holdingDateBasis: HoldingDateBasis;
@@ -334,6 +383,10 @@ export type ReportValuationColumnKey =
   | 'QuotePrice'
   | 'Quantity'
   | 'BookValue'
+  | 'BookValueDefault'
+  | 'BookValueFIFO'
+  | 'BookValueLIFO'
+  | 'BookValueRunningAverage'
   | 'BookCost'
   | 'Weight'
   | 'Target'
@@ -734,6 +787,7 @@ export type AccountReferenceEvent = ReferenceEventBase & {
   name?: string;
   formalName?: string;
   bookCurrency?: string;
+  bookCostBasis?: ProfitLossMethod;
   active?: boolean;
   displayOrder?: number;
 };

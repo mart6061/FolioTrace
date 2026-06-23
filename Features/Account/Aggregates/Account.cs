@@ -10,6 +10,7 @@ public sealed record Account : IModel
     public required string Name { get; init; }
     public required string FormalName { get; init; }
     public required Alpha3 BookCurrency { get; init; }
+    public required ProfitLossMethod BookCostBasis { get; init; }
     public required Active Active { get; init; }
     public required DisplayOrder DisplayOrder { get; init; }
     public required EventDateTime ValuationDateTime { get; init; }
@@ -19,12 +20,13 @@ public sealed record Account : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active, DisplayOrder? displayOrder, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, ProfitLossMethod? bookCostBasis, Active active, DisplayOrder? displayOrder, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         AccountID = accountID;
         Name = name;
         FormalName = formalName;
         BookCurrency = bookCurrency;
+        BookCostBasis = bookCostBasis ?? ProfitLossMethod.FIFO;
         Active = active;
         DisplayOrder = displayOrder ?? new DisplayOrder(0);
         ValuationDateTime = valuationDateTime;
@@ -34,8 +36,8 @@ public sealed record Account : IModel
     }
 
     [SetsRequiredMembers]
-    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active, DisplayOrder displayOrder, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
-        : this(accountID, name, formalName, bookCurrency, active, displayOrder, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
+    public Account(AccountID accountID, string name, string formalName, Alpha3 bookCurrency, ProfitLossMethod bookCostBasis, Active active, DisplayOrder displayOrder, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
+        : this(accountID, name, formalName, bookCurrency, bookCostBasis, active, displayOrder, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
     {
     }
 

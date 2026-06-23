@@ -2548,6 +2548,7 @@ public static class ApiEndpointRegistration
                 createdEvent.Name,
                 createdEvent.FormalName,
                 BookCurrency = createdEvent.BookCurrency.Value,
+                BookCostBasis = createdEvent.BookCostBasis.ToString(),
                 createdEvent.Active
             },
             AccountModifiedEvent modifiedEvent => new
@@ -2560,7 +2561,8 @@ public static class ApiEndpointRegistration
                 modifiedEvent.Reason,
                 AccountID = modifiedEvent.AccountID.Value,
                 modifiedEvent.Name,
-                modifiedEvent.FormalName
+                modifiedEvent.FormalName,
+                BookCostBasis = modifiedEvent.BookCostBasis.ToString()
             },
             AccountActiveSetEvent activeEvent => new
             {

@@ -265,6 +265,7 @@ public sealed record ProfitLosses : IAggregate
         {
             Method = method,
             RealizedPnL = decimal.Round(realized, 8),
+            BookValue = decimal.Round(remainingCost, 8),
             UnrealizedPnL = unrealized.HasValue ? decimal.Round(unrealized.Value, 8) : null,
             TotalPnL = unrealized.HasValue ? decimal.Round(realized + unrealized.Value, 8) : null,
             Complete = complete,
@@ -290,6 +291,7 @@ public sealed record ProfitLosses : IAggregate
                 {
                     Method = method,
                     RealizedPnL = methodValues.Sum(value => value.RealizedPnL),
+                    BookValue = methodValues.Sum(value => value.BookValue),
                     UnrealizedPnL = unrealized,
                     TotalPnL = unrealized.HasValue ? methodValues.Sum(value => value.RealizedPnL) + unrealized.Value : null,
                     Complete = !hasIncomplete,

@@ -72,6 +72,10 @@
     targetMaxPercent: number | null;
     variancePercent: number | null;
     bookValue: number;
+    bookValueDefault: number;
+    bookValueFIFO: number;
+    bookValueLIFO: number;
+    bookValueRunningAverage: number;
     bookCost: number;
   };
 
@@ -79,6 +83,10 @@
     quantity: number;
     weightPercent: number;
     bookValue: number;
+    bookValueDefault: number;
+    bookValueFIFO: number;
+    bookValueLIFO: number;
+    bookValueRunningAverage: number;
     bookCost: number;
     targetMinPercent: number | null;
     targetMaxPercent: number | null;
@@ -109,6 +117,10 @@
     targetMaxPercent: number | null;
     variancePercent: number | null;
     bookValue: number;
+    bookValueDefault: number;
+    bookValueFIFO: number;
+    bookValueLIFO: number;
+    bookValueRunningAverage: number;
     bookCost: number;
   };
 
@@ -423,6 +435,14 @@
         return formatQuantity(row.quantity);
       case 'BookValue':
         return formatMoney(row.bookValue, currency);
+      case 'BookValueDefault':
+        return formatMoney(row.bookValueDefault, currency);
+      case 'BookValueFIFO':
+        return formatMoney(row.bookValueFIFO, currency);
+      case 'BookValueLIFO':
+        return formatMoney(row.bookValueLIFO, currency);
+      case 'BookValueRunningAverage':
+        return formatMoney(row.bookValueRunningAverage, currency);
       case 'BookCost':
         return formatMoney(row.bookCost, currency);
       case 'Weight':
