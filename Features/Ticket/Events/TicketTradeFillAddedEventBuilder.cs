@@ -15,13 +15,18 @@ public static partial class TicketEventBuilder
                 messages.Add("BrokerLEI is required.");
             ValidatePrice(request.Price, "Price", messages);
             ValidatePositiveDecimal(request.Quantity, "Quantity", messages);
-            ValidateTransactionBookCost(request.BookCost, "BookCost", messages);
+            if (request.SettlementAmount is null)
+                messages.Add("SettlementAmount is required.");
+            if (request.SettlementAmount is not null && request.SettlementAmount.Value <= 0m)
+                messages.Add("SettlementAmount must be greater than zero.");
+            if (request.BookCostOverride is not null && request.BookCostOverride.Value <= 0m)
+                messages.Add("BookCostOverride must be greater than zero.");
             var fillID = request.FillID ?? Guid.CreateGuid7();
             if (fillID == Guid.Empty)
                 messages.Add("FillID is required.");
 
             return messages.Count > 0
                 ? Result<TicketTradeFillAddedEvent>.Invalid(messages)
-                : Result<TicketTradeFillAddedEvent>.Success(new TicketTradeFillAddedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, fillID, request.BrokerLEI!, request.Price, request.Quantity, request.BookCost, request.Note ?? string.Empty));
+                : Result<TicketTradeFillAddedEvent>.Success(new TicketTradeFillAddedEvent(NewEventID(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), request.Reason, request.TicketNumber, fillID, request.BrokerLEI!, request.Price, request.Quantity, request.SettlementAmount, request.Note ?? string.Empty, request.BookCostOverride));
         });
 }

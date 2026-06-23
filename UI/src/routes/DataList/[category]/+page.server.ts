@@ -1,6 +1,8 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
+import { load as loadBrokers, actions as brokerActions } from '../../Data/Reference/Brokers/+page.server';
 import { load as loadCountries, actions as countryActions } from '../../Data/Reference/Countries/+page.server';
 import { load as loadCurrencies, actions as currencyActions } from '../../Data/Reference/Currencies/+page.server';
+import { load as loadHoldings, actions as holdingActions } from '../../Data/Reference/Holdings/+page.server';
 import { load as loadInstrumentBase, actions as instrumentBaseActions } from '../../Data/Reference/Instruments/+page.server';
 import { load as loadFXValue, actions as fxValueActions } from '../../Value/FXRates/+page.server';
 import { load as loadFXBase, actions as fxBaseActions } from '../../Value/FXs/+page.server';
@@ -87,12 +89,6 @@ type DataListLoadEvent = Parameters<PageServerLoad>[0];
 type DataListAction = NonNullable<Actions[string]>;
 
 export const load: PageServerLoad = async (event) => {
-  if (event.params.category === 'Holding')
-    redirect(307, `/Data/Reference/Holdings${event.url.search}`);
-
-  if (event.params.category === 'Broker')
-    redirect(307, `/Data/Reference/Brokers${event.url.search}`);
-
   const definition = dataListPages[event.params.category];
 
   if (!definition)
@@ -121,7 +117,16 @@ export const actions: Actions = {
   createCountry: wrapAction(countryActions.createCountry),
   modifyCountry: wrapAction(countryActions.modifyCountry),
   createCurrency: wrapAction(currencyActions.createCurrency),
-  modifyCurrency: wrapAction(currencyActions.modifyCurrency)
+  modifyCurrency: wrapAction(currencyActions.modifyCurrency),
+  createHolding: wrapAction(holdingActions.createHolding),
+  modifyHolding: wrapAction(holdingActions.modifyHolding),
+  modifyHoldingActive: wrapAction(holdingActions.modifyHoldingActive),
+  createBroker: wrapAction(brokerActions.createBroker),
+  modifyBroker: wrapAction(brokerActions.modifyBroker),
+  setBrokerActive: wrapAction(brokerActions.setBrokerActive),
+  setBrokerApprovedDateTime: wrapAction(brokerActions.setBrokerApprovedDateTime),
+  setBrokerNextReview: wrapAction(brokerActions.setBrokerNextReview),
+  setBrokerNotes: wrapAction(brokerActions.setBrokerNotes)
 };
 
 function getSelectedCardKey(requestedCardKey: string | null, cards: DataListCard[]) {
@@ -158,6 +163,12 @@ async function loadSelectedExperience(category: string, selectedCardKey: string,
     if (selectedCardKey === 'cfi')
       return await callLoad(loadInstrumentBase, event);
   }
+
+  if (category === 'Holding')
+    return await callLoad(loadHoldings, event);
+
+  if (category === 'Broker')
+    return await callLoad(loadBrokers, event);
 
   return null;
 }

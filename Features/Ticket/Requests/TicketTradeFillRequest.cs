@@ -11,5 +11,6 @@ public sealed record TicketTradeFillRequest(
     LegalEntityIdentifier BrokerLEI,
     Price Price,
     decimal Quantity,
-    TransactionBookCost BookCost,
-    string? Note);
+    TransactionLocalCost SettlementAmount,
+    string? Note,
+    TransactionBookCost? BookCostOverride = null);

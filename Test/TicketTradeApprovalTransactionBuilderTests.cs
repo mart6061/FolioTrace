@@ -56,6 +56,65 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
     }
 
     [Fact]
+    public void ApproveTradeWithTransactions_EstimatesBookCostInAccountCurrencyForForeignSettlement()
+    {
+        var result = TicketEventBuilder.ApproveTradeWithTransactions(
+            CreateApprovalRequest(),
+            CreateForeignCurrencyPendingTickets(),
+            CreateAccounts(),
+            CreateForeignCurrencyInstruments(),
+            CreateForeignCurrencyHoldingEvents(),
+            CreateUsdGbpRates());
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
+        var credit = Assert.IsType<TransactionCreditEvent>(result.Value!.TransactionEvents[0]);
+        var debit = Assert.IsType<TransactionDebitEvent>(result.Value.TransactionEvents[1]);
+
+        Assert.Equal(20m, credit.Quantity.Value);
+        Assert.Equal(600m, credit.LocalCost.Value);
+        Assert.Equal("USD", credit.LocalCostCurrency.Value);
+        Assert.Equal(456m, credit.BookCost.Value);
+        Assert.Equal(BookCostSource.FxEstimate, credit.BookCostSource);
+        Assert.True(credit.BookCostEstimated);
+
+        Assert.Equal(600m, debit.Quantity.Value);
+        Assert.Equal(600m, debit.LocalCost.Value);
+        Assert.Equal(credit.LocalCostCurrency, debit.LocalCostCurrency);
+        Assert.Equal(credit.BookCost, debit.BookCost);
+        Assert.Equal(credit.BookCostSource, debit.BookCostSource);
+        Assert.Equal(credit.BookCostEstimated, debit.BookCostEstimated);
+    }
+
+    [Fact]
+    public void ApproveTradeWithTransactions_RequiresFxOrManualOverrideForForeignSettlement()
+    {
+        var missingFx = TicketEventBuilder.ApproveTradeWithTransactions(
+            CreateApprovalRequest(),
+            CreateForeignCurrencyPendingTickets(),
+            CreateAccounts(),
+            CreateForeignCurrencyInstruments(),
+            CreateForeignCurrencyHoldingEvents());
+        var manualOverride = TicketEventBuilder.ApproveTradeWithTransactions(
+            CreateApprovalRequest(),
+            CreateForeignCurrencyPendingTickets(bookCostOverride: 455m),
+            CreateAccounts(),
+            CreateForeignCurrencyInstruments(),
+            CreateForeignCurrencyHoldingEvents());
+
+        Assert.False(missingFx.IsValid);
+        Assert.Contains(missingFx.ValidationErrors, error => error.Contains("FX rates are required", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(manualOverride.IsValid, string.Join(Environment.NewLine, manualOverride.ValidationErrors));
+        var credit = Assert.IsType<TransactionCreditEvent>(manualOverride.Value!.TransactionEvents[0]);
+        var debit = Assert.IsType<TransactionDebitEvent>(manualOverride.Value.TransactionEvents[1]);
+        Assert.Equal(455m, credit.BookCost.Value);
+        Assert.Equal(BookCostSource.ManualOverride, credit.BookCostSource);
+        Assert.False(credit.BookCostEstimated);
+        Assert.Equal(credit.BookCost, debit.BookCost);
+        Assert.Equal(credit.BookCostSource, debit.BookCostSource);
+    }
+
+    [Fact]
     public void ApproveTradeWithTransactions_AllowsSettlementDateOnTradeDate()
     {
         var settlementDate = SettlementDateTimeBuilder.Create(EventDate.Value.Date);
@@ -90,7 +149,7 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
         Assert.Contains("Trade fills are required before trade approval.", missing.ValidationErrors);
         Assert.False(mismatched.IsValid);
         Assert.Contains(mismatched.ValidationErrors, error => error.Contains("Fills must sum", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(mismatched.ValidationErrors, error => error.Contains("Fills book cost", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mismatched.ValidationErrors, error => error.Contains("Fills settlement amount", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -208,7 +267,7 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
         if (includeFill)
         {
             var fill = TicketEventBuilder.AddFill(
-                new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketNumber, Guid.CreateGuid7(), BrokerLEI, new Price(12m), fillQuantity, new TransactionBookCost(fillBookCost), "Done"),
+                new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketNumber, Guid.CreateGuid7(), BrokerLEI, new Price(12m), fillQuantity, new TransactionLocalCost(fillBookCost), "Done"),
                 new Tickets(EventDate, events)).Value!;
             events.Add(fill);
         }
@@ -223,6 +282,43 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
         events.Add(decisionRequested);
 
         return new Tickets(EventDate, events);
+    }
+
+    private static Tickets CreateForeignCurrencyPendingTickets(decimal? bookCostOverride = null)
+    {
+        var created = TicketEventBuilder.Create(
+            new TicketCreatedRequest(UserID, EventDate, "Create ticket", TicketSide.Buy, UsdInstrumentID),
+            TicketNumber,
+            CreateForeignCurrencyInstruments()).Value!;
+        var accountAdded = TicketEventBuilder.AddAccount(
+            new TicketAccountRequest(UserID, EventDate, "Add account", TicketNumber, AccountID),
+            new Tickets(EventDate, [created]),
+            CreateAccounts()).Value!;
+        var proposal = TicketEventBuilder.CreateProposal(
+            new TicketProposalRequest(UserID, EventDate, "Create proposal", TicketNumber, new Price(30m), null, [new TicketProposalAllocation(AccountID, 20m)]),
+            new Tickets(EventDate, [created, accountAdded])).Value!;
+        var proposalRequested = TicketEventBuilder.RequestProposalDecision(
+            new TicketApprovalRequest(UserID, EventDate, "Request proposal decision", TicketNumber),
+            new Tickets(EventDate, [created, accountAdded, proposal])).Value!;
+        var proposalApproved = TicketEventBuilder.ApproveProposal(
+            new TicketApprovalRequest(UserID, EventDate, "Approve proposal", TicketNumber),
+            new Tickets(EventDate, [created, accountAdded, proposal, proposalRequested])).Value!;
+        var tradeAllocation = new TicketTradeAllocation(AccountID, 20m, 600m, UsdCashHoldingID, bookCostOverride);
+        var trade = TicketEventBuilder.CreateTrade(
+            new TicketTradeRequest(UserID, EventDate, "Create trade", TicketNumber, new Price(30m), EventDate, SettlementDate, [tradeAllocation]),
+            new Tickets(EventDate, [created, accountAdded, proposal, proposalRequested, proposalApproved]),
+            CreateForeignCurrencyHoldings(),
+            CreateForeignCurrencyInstruments()).Value!;
+        var fill = TicketEventBuilder.AddFill(
+            new TicketTradeFillRequest(UserID, EventDate, "Add fill", TicketNumber, Guid.CreateGuid7(), BrokerLEI, new Price(30m), 20m, new TransactionLocalCost(600m), "Done"),
+            new Tickets(EventDate, [created, accountAdded, proposal, proposalRequested, proposalApproved, trade])).Value!;
+        var requestTradeDecision = TicketEventBuilder.RequestTradeDecision(
+            new TicketApprovalRequest(UserID, EventDate, "Request trade decision", TicketNumber),
+            new Tickets(EventDate, [created, accountAdded, proposal, proposalRequested, proposalApproved, trade, fill]),
+            CreateForeignCurrencyHoldings(),
+            CreateForeignCurrencyInstruments()).Value!;
+
+        return new Tickets(EventDate, [created, accountAdded, proposal, proposalRequested, proposalApproved, trade, fill, requestTradeDecision]);
     }
 
     private static Accounts CreateAccounts()
@@ -280,10 +376,51 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
         return new Instruments(EventDate, AuditDate, [asset, cash]);
     }
 
+    private static Instruments CreateForeignCurrencyInstruments()
+    {
+        var asset = InstrumentCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create USD instrument",
+            UsdInstrumentID,
+            "Apple",
+            "Apple Inc.",
+            ExchangeBuilder.Create("XNAS"),
+            CFIBuilder.Create("ESVUFR"),
+            null,
+            true,
+            Alpha2Builder.Create("US"),
+            Alpha2Builder.Create("US"),
+            Alpha3Builder.Create("USD")).Value!;
+        var cash = InstrumentCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create USD cash instrument",
+            UsdCashInstrumentID,
+            "USD cash",
+            "US Dollar cash",
+            ExchangeBuilder.Create("XOFF"),
+            CFIBuilder.Create("MRCXXX"),
+            null,
+            true,
+            Alpha2Builder.Create("US"),
+            Alpha2Builder.Create("US"),
+            Alpha3Builder.Create("USD")).Value!;
+
+        return new Instruments(EventDate, AuditDate, [asset, cash]);
+    }
+
     private static Holdings CreateHoldings(bool includeAsset = true, bool includeSecondAsset = false)
     {
         return new Holdings(EventDate, AuditDate, CreateHoldingEvents(includeAsset, includeSecondAsset));
     }
+
+    private static Holdings CreateForeignCurrencyHoldings() =>
+        new(EventDate, AuditDate, CreateForeignCurrencyHoldingEvents());
 
     private static List<IHoldingEvent> CreateHoldingEvents(bool includeAsset = true, bool includeSecondAsset = false)
     {
@@ -296,6 +433,40 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
 
         return events;
     }
+
+    private static List<IHoldingEvent> CreateForeignCurrencyHoldingEvents() =>
+        [
+            HoldingPositionAssetCreatedEventBuilder.CreateSeed(
+                new EventID(Guid.CreateGuid7()),
+                UserID,
+                EventDate,
+                AuditDate,
+                "Create USD asset holding",
+                UsdAssetHoldingID,
+                AccountID,
+                UsdInstrumentID,
+                "USD asset",
+                true,
+                true).Value!,
+            HoldingCashInvestableCreatedEventBuilder.CreateSeed(
+                new EventID(Guid.CreateGuid7()),
+                UserID,
+                EventDate,
+                AuditDate,
+                "Create USD cash holding",
+                UsdCashHoldingID,
+                AccountID,
+                UsdCashInstrumentID,
+                "Investable USD",
+                true,
+                true,
+                "HSBC",
+                "Investable USD",
+                SortCodeBuilder.Create("12-34-56"),
+                BankAccountNumberBuilder.Create("12345678"),
+                BICBuilder.Create("HBUKGB4B"),
+                IBANBuilder.Create("GB82WEST12345698765432")).Value!
+        ];
 
     private static HoldingPositionAssetCreatedEvent CreateAssetHolding(HoldingID holdingID, bool isDefault) =>
         HoldingPositionAssetCreatedEventBuilder.CreateSeed(
@@ -347,6 +518,32 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
             ],
             culture: null)!;
 
+    private static FXRates CreateUsdGbpRates()
+    {
+        var usd = Alpha3Builder.Create("USD");
+        var gbp = Alpha3Builder.Create("GBP");
+        var pair = new CurrencyPair(usd, gbp);
+        var fx = FXCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create USD/GBP",
+            usd,
+            gbp,
+            true).Value!;
+        var rate = FXRateSetEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)),
+            "Set USD/GBP",
+            pair,
+            new FXPrice(new Bid(0.75m), new Mid(0.76m), new Ask(0.77m))).Value!;
+
+        return new FXRates(EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), [fx], [rate]);
+    }
+
     private static readonly UserID UserID = new(Guid.Parse("4d77975e-8b18-4dc2-9836-5124235dc4f2"));
     private static readonly EventDateTime EventDate = EventDateTimeBuilder.Create(new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Utc));
     private static readonly SettlementDateTime SettlementDate = SettlementDateTimeBuilder.Create(EventDate.Value.Date.AddDays(1));
@@ -354,9 +551,13 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
     private static readonly InstrumentID InstrumentID = InstrumentIDBuilder.Create();
     private static readonly InstrumentID CashInstrumentID = InstrumentIDBuilder.Create();
+    private static readonly InstrumentID UsdInstrumentID = InstrumentIDBuilder.Create();
+    private static readonly InstrumentID UsdCashInstrumentID = InstrumentIDBuilder.Create();
     private static readonly HoldingID AssetHoldingID = HoldingIDBuilder.Create();
     private static readonly HoldingID SecondAssetHoldingID = HoldingIDBuilder.Create();
     private static readonly HoldingID CashHoldingID = HoldingIDBuilder.Create();
+    private static readonly HoldingID UsdAssetHoldingID = HoldingIDBuilder.Create();
+    private static readonly HoldingID UsdCashHoldingID = HoldingIDBuilder.Create();
     private static readonly TicketNumber TicketNumber = new(27);
     private static readonly LegalEntityIdentifier BrokerLEI = new("5493001KJTIIGC8Y1R12");
 }

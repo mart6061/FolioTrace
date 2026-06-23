@@ -113,20 +113,18 @@ public sealed record HoldingPositions : IAggregate
         };
 
     private static decimal GetSignedQuantity(ITransactionMovementEvent movement) =>
-        movement switch
-        {
-            TransactionCreditEvent => movement.Quantity.Value,
-            TransactionDebitEvent => -movement.Quantity.Value,
-            _ => 0m
-        };
+        TransactionEventSelector.IsCredit(movement)
+            ? movement.Quantity.Value
+            : TransactionEventSelector.IsDebit(movement)
+                ? -movement.Quantity.Value
+                : 0m;
 
     private static decimal GetSignedBookCost(ITransactionMovementEvent movement) =>
-        movement switch
-        {
-            TransactionCreditEvent => movement.BookCost.Value,
-            TransactionDebitEvent => -movement.BookCost.Value,
-            _ => 0m
-        };
+        TransactionEventSelector.IsCredit(movement)
+            ? movement.BookCost.Value
+            : TransactionEventSelector.IsDebit(movement)
+                ? -movement.BookCost.Value
+                : 0m;
 
     private static IEventBase? LatestEvent(IEnumerable<IEventBase> events) =>
         events

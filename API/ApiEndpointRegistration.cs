@@ -51,6 +51,7 @@ public static class ApiEndpointRegistration
         api.MapFoleoTraderEndpoints();
         api.MapHoldingEndpoints();
         api.MapValuationEndpoints();
+        api.MapProfitLossEndpoints();
         api.MapValuationSettingEndpoints();
         api.MapAssetAllocationMappingEndpoints();
         api.MapReportConfigEndpoints();
@@ -571,6 +572,33 @@ public static class ApiEndpointRegistration
                 holdingDateBasis ?? HoldingDateBasis.EventDateTime,
                 instrumentPriceBasis ?? InstrumentPriceBasis.Mid,
                 currency,
+                account));
+        });
+    }
+
+    private static void MapProfitLossEndpoints(this RouteGroupBuilder api)
+    {
+        var profitLoss = api.MapGroup("/ProfitLoss").WithTags("Profit and Loss");
+
+        profitLoss.MapGet("/", async (
+            DateTime eventDateTime,
+            DateTime? auditDateTime,
+            HoldingDateBasis? holdingDateBasis,
+            InstrumentPriceBasis? instrumentPriceBasis,
+            Guid? accountID,
+            ProfitLossService profitLossService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+            var asAt = auditDateTime.HasValue
+                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
+                : AuditDateTimeBuilder.Create();
+            var account = accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null;
+
+            return Results.Ok(await profitLossService.Get(
+                valuationDate,
+                asAt,
+                holdingDateBasis ?? HoldingDateBasis.EventDateTime,
+                instrumentPriceBasis ?? InstrumentPriceBasis.Mid,
                 account));
         });
     }
@@ -1654,6 +1682,7 @@ public static class ApiEndpointRegistration
                     {
                         ITransactionMovementEvent movementEvent => movementEvent.EventSetID.Value == eventSetID.Value,
                         TransactionCancellationEvent cancellationEvent => cancellationEvent.EventSetID.Value == eventSetID.Value,
+                        TransactionBookCostAdjustedEvent adjustmentEvent => adjustmentEvent.EventSetID.Value == eventSetID.Value,
                         _ => false
                     })
                     .ToList();
@@ -1665,6 +1694,11 @@ public static class ApiEndpointRegistration
                     .Where(@event => @event.HoldingID?.Value == holdingID.Value)
                     .Select(@event => @event.EventID.Value)
                     .ToHashSet();
+                var holdingMovementEventSetIds = events
+                    .OfType<ITransactionMovementEvent>()
+                    .Where(@event => @event.HoldingID?.Value == holdingID.Value)
+                    .Select(@event => @event.EventSetID.Value)
+                    .ToHashSet();
 
                 events = events
                     .Where(@event => @event switch
@@ -1672,6 +1706,7 @@ public static class ApiEndpointRegistration
                         ITransactionMovementEvent movementEvent => movementEvent.HoldingID?.Value == holdingID.Value,
                         TransactionCancellationEvent cancellationEvent => holdingMovementEventIds.Contains(cancellationEvent.CancelledEventID.Value) ||
                             cancellationEvent.CancelledIDGroup.Any(cancelled => holdingMovementEventIds.Contains(cancelled.Value)),
+                        TransactionBookCostAdjustedEvent adjustmentEvent => holdingMovementEventSetIds.Contains(adjustmentEvent.EventSetID.Value),
                         _ => false
                     })
                     .ToList();
@@ -1691,17 +1726,29 @@ public static class ApiEndpointRegistration
                         ITransactionMovementEvent movementEvent => movementEvent.AccountID.Value == accountID.Value,
                         TransactionCancellationEvent cancellationEvent => cancellationEvent.AccountID?.Value == accountID.Value ||
                             cancellationEvent.CancelledIDGroup.Any(cancelled => accountMovementEventIds.Contains(cancelled.Value)),
+                        TransactionBookCostAdjustedEvent adjustmentEvent => adjustmentEvent.AccountID.Value == accountID.Value,
                         _ => false
                     })
                     .ToList();
             }
 
             if (instrumentID.HasValue)
-                events = events
+            {
+                var instrumentMovementEventSetIds = events
                     .OfType<ITransactionMovementEvent>()
                     .Where(@event => @event.InstrumentID.Value == instrumentID.Value)
-                    .Cast<ITransactionEvent>()
+                    .Select(@event => @event.EventSetID.Value)
+                    .ToHashSet();
+
+                events = events
+                    .Where(@event => @event switch
+                    {
+                        ITransactionMovementEvent movementEvent => movementEvent.InstrumentID.Value == instrumentID.Value,
+                        TransactionBookCostAdjustedEvent adjustmentEvent => instrumentMovementEventSetIds.Contains(adjustmentEvent.EventSetID.Value),
+                        _ => false
+                    })
                     .ToList();
+            }
 
             return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToTransactionEventResponse));
         });
@@ -1728,6 +1775,19 @@ public static class ApiEndpointRegistration
             cacheInvalidationService.Invalidate(events);
 
             return Results.Accepted(TransactionEventsRoute, CreateAcceptedEventsResponse(TransactionEventsRoute, events));
+        });
+
+        transactionEvents.MapPost("/BookCostAdjustment", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TransactionBookCostAdjustmentRequest request, CancellationToken cancellationToken) =>
+        {
+            var existingEvents = await eventRepository.LoadStreamAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId, cancellationToken);
+            var result = TransactionBookCostAdjustedEventBuilder.Create(request, existingEvents);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            await eventRepository.AppendAsync(Constants.Initialisation.TransactionsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+
+            return Results.Accepted(TransactionEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(TransactionEventsRoute, result.Value));
         });
 
         transactionEvents.MapPost("/Cancel", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TransactionCancellationRequest request, CancellationToken cancellationToken) =>
@@ -1921,14 +1981,18 @@ public static class ApiEndpointRegistration
                 },
                 cancellationToken));
 
-        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, AccountService accountService, InstrumentService instrumentService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeApprovalRequest request, CancellationToken cancellationToken) =>
+        ticketEvents.MapPost($"/{nameof(TicketTradeApprovedEvent)}", async (TicketService ticketService, AccountService accountService, InstrumentService instrumentService, FXRateService fxRateService, IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, TicketTradeApprovalRequest request, CancellationToken cancellationToken) =>
         {
             var asAt = AuditDateTimeBuilder.Create();
             var tickets = await ticketService.Get(request.EventDateTime, asAt);
             var accounts = await accountService.Get(request.EventDateTime, asAt);
             var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+            var ticket = tickets.Find(request.TicketNumber);
+            var fxRates = ticket?.TradeDateTime is null
+                ? null
+                : await fxRateService.Get(ticket.TradeDateTime, asAt);
             var holdingEvents = await eventRepository.LoadStreamAsync<IHoldingEvent>(Constants.Initialisation.HoldingsStreamId, cancellationToken);
-            var result = TicketEventBuilder.ApproveTradeWithTransactions(request, tickets, accounts, instruments, holdingEvents);
+            var result = TicketEventBuilder.ApproveTradeWithTransactions(request, tickets, accounts, instruments, holdingEvents, fxRates);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
@@ -3212,7 +3276,11 @@ public static class ApiEndpointRegistration
                 InstrumentID = creditEvent.InstrumentID.Value,
                 AccountID = creditEvent.AccountID.Value,
                 Quantity = creditEvent.Quantity.Value,
-                BookCost = creditEvent.BookCost.Value
+                LocalCost = creditEvent.LocalCost.Value,
+                LocalCostCurrency = creditEvent.LocalCostCurrency.Value,
+                BookCost = creditEvent.BookCost.Value,
+                BookCostSource = creditEvent.BookCostSource.ToString(),
+                creditEvent.BookCostEstimated
             },
             TransactionDebitEvent debitEvent => new
             {
@@ -3229,7 +3297,27 @@ public static class ApiEndpointRegistration
                 InstrumentID = debitEvent.InstrumentID.Value,
                 AccountID = debitEvent.AccountID.Value,
                 Quantity = debitEvent.Quantity.Value,
-                BookCost = debitEvent.BookCost.Value
+                LocalCost = debitEvent.LocalCost.Value,
+                LocalCostCurrency = debitEvent.LocalCostCurrency.Value,
+                BookCost = debitEvent.BookCost.Value,
+                BookCostSource = debitEvent.BookCostSource.ToString(),
+                debitEvent.BookCostEstimated
+            },
+            TransactionBookCostAdjustedEvent adjustmentEvent => new
+            {
+                Type = adjustmentEvent.Type,
+                EventID = adjustmentEvent.EventID.Value,
+                UserID = adjustmentEvent.UserID.Value,
+                EventDateTime = adjustmentEvent.EventDateTime.Value,
+                SettlementDateTime = adjustmentEvent.SettlementDateTime.Value,
+                AuditDateTime = adjustmentEvent.AuditDateTime.Value,
+                adjustmentEvent.Reason,
+                EventSetID = adjustmentEvent.EventSetID.Value,
+                AdjustedIDGroup = adjustmentEvent.AdjustedIDGroup.Select(eventId => eventId.Value).ToList(),
+                AccountID = adjustmentEvent.AccountID.Value,
+                BookCost = adjustmentEvent.BookCost.Value,
+                BookCostSource = adjustmentEvent.BookCostSource.ToString(),
+                adjustmentEvent.BookCostEstimated
             },
             TransactionCancellationEvent cancellationEvent => new
             {
@@ -3314,7 +3402,8 @@ public static class ApiEndpointRegistration
                 fillAddedEvent.BrokerLEI,
                 fillAddedEvent.Price,
                 fillAddedEvent.Quantity,
-                fillAddedEvent.BookCost,
+                fillAddedEvent.SettlementAmount,
+                fillAddedEvent.BookCostOverride,
                 fillAddedEvent.Note
             }),
             TicketTradeFillModifiedEvent fillModifiedEvent => WithTicketBase(fillModifiedEvent, new
@@ -3323,7 +3412,8 @@ public static class ApiEndpointRegistration
                 fillModifiedEvent.BrokerLEI,
                 fillModifiedEvent.Price,
                 fillModifiedEvent.Quantity,
-                fillModifiedEvent.BookCost,
+                fillModifiedEvent.SettlementAmount,
+                fillModifiedEvent.BookCostOverride,
                 fillModifiedEvent.Note
             }),
             TicketTradeFillRemovedEvent fillRemovedEvent => WithTicketBase(fillRemovedEvent, new
@@ -3372,6 +3462,7 @@ public static class ApiEndpointRegistration
             AccountID = allocation.AccountID.Value,
             CashHoldingID = allocation.CashHoldingID?.Value,
             allocation.Quantity,
-            allocation.BookCost
+            allocation.SettlementAmount,
+            allocation.BookCostOverride
         };
 }

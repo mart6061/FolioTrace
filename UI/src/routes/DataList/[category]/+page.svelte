@@ -1,13 +1,17 @@
 <script lang="ts">
   import { page } from '$app/state';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import BrokerReferencePage from '../../Data/Reference/Brokers/+page.svelte';
   import CountryExperience from '../../Data/Reference/Countries/CountryExperience.svelte';
   import CurrencyExperience from '../../Data/Reference/Currencies/CurrencyExperience.svelte';
+  import HoldingReferencePage from '../../Data/Reference/Holdings/+page.svelte';
   import InstrumentBaseExperience from '../../Data/Reference/Instruments/InstrumentBaseExperience.svelte';
   import FXValueExperience from '../../Value/FXRates/FXValueExperience.svelte';
   import FXBaseExperience from '../../Value/FXs/FXBaseExperience.svelte';
   import InstrumentValueExperience from '../../Value/InstrumentValues/InstrumentValueExperience.svelte';
   import CFIReferenceExperience from './CFIReferenceExperience.svelte';
+  import type { ActionData as BrokerActionData, PageData as BrokerPageData } from '../../Data/Reference/Brokers/$types';
+  import type { ActionData as HoldingActionData, PageData as HoldingPageData } from '../../Data/Reference/Holdings/$types';
   import type { ActionData, PageData } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -19,6 +23,10 @@
       ? requestedCardKey
       : data.selectedCardKey
   );
+  const brokerPageData = $derived(data.experience as BrokerPageData);
+  const brokerForm = $derived(form as BrokerActionData);
+  const holdingPageData = $derived(data.experience as HoldingPageData);
+  const holdingForm = $derived(form as HoldingActionData);
 
   function cardHref(key: string) {
     const params = new URLSearchParams(page.url.searchParams);
@@ -33,82 +41,88 @@
   <title>{data.title} | Data List | FolioTrace</title>
 </svelte:head>
 
-<main class="min-h-screen">
-  <section class="page-header">
-    <div class="page-container">
-      <div class="page-header-content">
-        <div class="page-header-main">
-          <p class="page-kicker">Data List</p>
-          <div class="page-title-row">
-            <h1 class="page-title">{data.title}</h1>
-            <BookmarkButton />
+{#if data.category === 'Broker'}
+  <BrokerReferencePage data={brokerPageData} form={brokerForm} />
+{:else if data.category === 'Holding'}
+  <HoldingReferencePage data={holdingPageData} form={holdingForm} />
+{:else}
+  <main class="min-h-screen">
+    <section class="page-header">
+      <div class="page-container">
+        <div class="page-header-content">
+          <div class="page-header-main">
+            <p class="page-kicker">Data List</p>
+            <div class="page-title-row">
+              <h1 class="page-title">{data.title}</h1>
+              <BookmarkButton />
+            </div>
           </div>
         </div>
+
+        {#if data.cards.length > 0}
+          <section class="data-list-card-menu" aria-label={`${data.title} menu`}>
+            <div class="data-list-option-grid">
+              {#each data.cards as card (card.key)}
+                <a
+                  aria-current={selectedCardKey === card.key ? 'page' : undefined}
+                  class={[
+                    'data-list-option-card',
+                    selectedCardKey === card.key && 'data-list-option-card-selected'
+                  ]}
+                  href={cardHref(card.key)}
+                >
+                  <span class="data-list-option-title">{card.title}</span>
+                  {#if card.standard}
+                    <span class="data-list-option-standard">{card.standard}: {card.title}</span>
+                  {/if}
+                  <span class="data-list-option-description">{card.description}</span>
+                </a>
+              {/each}
+            </div>
+
+            <div class="data-list-filter-region">
+              {#if data.category === 'FX' && selectedCardKey === 'base'}
+                <FXBaseExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
+              {:else if data.category === 'FX' && selectedCardKey === 'value'}
+                <FXValueExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
+              {:else if data.category === 'Instrument' && selectedCardKey === 'base'}
+                <InstrumentBaseExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
+              {:else if data.category === 'Instrument' && selectedCardKey === 'value'}
+                <InstrumentValueExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
+              {:else if data.category === 'ISO' && selectedCardKey === 'country'}
+                <CountryExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
+              {:else if data.category === 'ISO' && selectedCardKey === 'currency'}
+                <CurrencyExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
+              {:else if data.category === 'ISO' && selectedCardKey === 'cfi'}
+                <CFIReferenceExperience data={data.experience} renderMode="filter" />
+              {/if}
+            </div>
+          </section>
+        {/if}
       </div>
+    </section>
 
-      {#if data.cards.length > 0}
-        <section class="data-list-card-menu" aria-label={`${data.title} menu`}>
-          <div class="data-list-option-grid">
-            {#each data.cards as card (card.key)}
-              <a
-                aria-current={selectedCardKey === card.key ? 'page' : undefined}
-                class={[
-                  'data-list-option-card',
-                  selectedCardKey === card.key && 'data-list-option-card-selected'
-                ]}
-                href={cardHref(card.key)}
-              >
-                <span class="data-list-option-title">{card.title}</span>
-                {#if card.standard}
-                  <span class="data-list-option-standard">{card.standard}: {card.title}</span>
-                {/if}
-                <span class="data-list-option-description">{card.description}</span>
-              </a>
-            {/each}
-          </div>
-
-          <div class="data-list-filter-region">
-            {#if data.category === 'FX' && selectedCardKey === 'base'}
-              <FXBaseExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
-            {:else if data.category === 'FX' && selectedCardKey === 'value'}
-              <FXValueExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
-            {:else if data.category === 'Instrument' && selectedCardKey === 'base'}
-              <InstrumentBaseExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
-            {:else if data.category === 'Instrument' && selectedCardKey === 'value'}
-              <InstrumentValueExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
-            {:else if data.category === 'ISO' && selectedCardKey === 'country'}
-              <CountryExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
-            {:else if data.category === 'ISO' && selectedCardKey === 'currency'}
-              <CurrencyExperience data={data.experience} {form} formAction={filterAction} renderMode="filter" selectedSection={selectedCardKey} />
-            {:else if data.category === 'ISO' && selectedCardKey === 'cfi'}
-              <CFIReferenceExperience data={data.experience} renderMode="filter" />
-            {/if}
-          </div>
-        </section>
-      {/if}
-    </div>
-  </section>
-
-  {#if data.cards.length > 0}
-    <div class="data-list-body-region">
-      {#if data.category === 'FX' && selectedCardKey === 'base'}
-        <FXBaseExperience data={data.experience} {form} renderMode="body" />
-      {:else if data.category === 'FX' && selectedCardKey === 'value'}
-        <FXValueExperience data={data.experience} {form} renderMode="body" />
-      {:else if data.category === 'Instrument' && selectedCardKey === 'base'}
-        <InstrumentBaseExperience data={data.experience} {form} renderMode="body" />
-      {:else if data.category === 'Instrument' && selectedCardKey === 'value'}
-        <InstrumentValueExperience data={data.experience} {form} renderMode="body" />
-      {:else if data.category === 'ISO' && selectedCardKey === 'country'}
-        <CountryExperience data={data.experience} {form} renderMode="body" />
-      {:else if data.category === 'ISO' && selectedCardKey === 'currency'}
-        <CurrencyExperience data={data.experience} {form} renderMode="body" />
-      {:else if data.category === 'ISO' && selectedCardKey === 'cfi'}
-        <CFIReferenceExperience data={data.experience} renderMode="body" />
-      {/if}
-    </div>
-  {/if}
-</main>
+    {#if data.cards.length > 0}
+      <div class="page-container data-list-body-region">
+        {#if data.category === 'FX' && selectedCardKey === 'base'}
+          <FXBaseExperience data={data.experience} {form} renderMode="body" />
+        {:else if data.category === 'FX' && selectedCardKey === 'value'}
+          <FXValueExperience data={data.experience} {form} renderMode="body" />
+        {:else if data.category === 'Instrument' && selectedCardKey === 'base'}
+          <InstrumentBaseExperience data={data.experience} {form} renderMode="body" />
+        {:else if data.category === 'Instrument' && selectedCardKey === 'value'}
+          <InstrumentValueExperience data={data.experience} {form} renderMode="body" />
+        {:else if data.category === 'ISO' && selectedCardKey === 'country'}
+          <CountryExperience data={data.experience} {form} renderMode="body" />
+        {:else if data.category === 'ISO' && selectedCardKey === 'currency'}
+          <CurrencyExperience data={data.experience} {form} renderMode="body" />
+        {:else if data.category === 'ISO' && selectedCardKey === 'cfi'}
+          <CFIReferenceExperience data={data.experience} renderMode="body" />
+        {/if}
+      </div>
+    {/if}
+  </main>
+{/if}
 
 <style>
   .data-list-card-menu {

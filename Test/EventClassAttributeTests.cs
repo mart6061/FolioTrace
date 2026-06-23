@@ -40,6 +40,7 @@ public sealed class EventClassAttributeTests
         nameof(TicketTradeDecisionRequestedEvent),
         nameof(TicketTradeFillAddedEvent),
         nameof(TicketTradeFillRemovedEvent),
+        nameof(TransactionBookCostAdjustedEvent),
         nameof(UserBookmarkDeletedEvent)
     ];
 

@@ -39,7 +39,11 @@ public static class TransactionBuilder
                 credit.InstrumentID,
                 credit.AccountID,
                 credit.Quantity,
-                credit.BookCost));
+                credit.LocalCost,
+                credit.LocalCostCurrency,
+                credit.BookCost,
+                credit.BookCostSource,
+                credit.BookCostEstimated));
         }
 
         foreach (var debit in request.Debits)
@@ -57,7 +61,11 @@ public static class TransactionBuilder
                 debit.InstrumentID,
                 debit.AccountID,
                 debit.Quantity,
-                debit.BookCost));
+                debit.LocalCost,
+                debit.LocalCostCurrency,
+                debit.BookCost,
+                debit.BookCostSource,
+                debit.BookCostEstimated));
         }
 
         return Result<IReadOnlyList<ITransactionMovementEvent>>.Success(events);
@@ -101,6 +109,11 @@ public static class TransactionBuilder
         if (creditBookCost != debitBookCost)
             messages.Add("Transaction book cost must balance: credits less debits must equal zero.");
 
+        var creditLocalCost = request.Credits.Where(leg => leg?.LocalCost is not null).Sum(leg => leg.LocalCost.Value);
+        var debitLocalCost = request.Debits.Where(leg => leg?.LocalCost is not null).Sum(leg => leg.LocalCost.Value);
+        if (creditLocalCost != debitLocalCost)
+            messages.Add("Transaction local cost must balance: credits less debits must equal zero.");
+
         return messages;
     }
 
@@ -138,6 +151,9 @@ public static class TransactionBuilder
             if (leg.InstrumentID is null) messages.Add($"{side} {index + 1} InstrumentID is required.");
             if (leg.AccountID is null) messages.Add($"{side} {index + 1} AccountID is required.");
             if (leg.Quantity is null) messages.Add($"{side} {index + 1} Quantity is required.");
+            if (leg.LocalCost is null) messages.Add($"{side} {index + 1} LocalCost is required.");
+            if (leg.LocalCost is not null && leg.LocalCost.Value <= 0m) messages.Add($"{side} {index + 1} LocalCost must be greater than zero.");
+            if (leg.LocalCostCurrency is null) messages.Add($"{side} {index + 1} LocalCostCurrency is required.");
             if (leg.BookCost is null) messages.Add($"{side} {index + 1} BookCost is required.");
 
             if (leg.HoldingID is null || holdings is null)

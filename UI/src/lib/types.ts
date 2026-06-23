@@ -578,7 +578,9 @@ export type TicketTradeAllocation = {
   accountID: string;
   cashHoldingID?: string | null;
   quantity: number;
-  bookCost: number;
+  settlementAmount: number;
+  bookCostOverride?: number | null;
+  bookCostEstimated?: boolean;
 };
 
 export type TicketFill = {
@@ -586,7 +588,8 @@ export type TicketFill = {
   brokerLEI: string;
   price: number;
   quantity: number;
-  bookCost: number;
+  settlementAmount: number;
+  bookCostOverride?: number | null;
   note: string;
 };
 

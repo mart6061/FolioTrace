@@ -425,7 +425,8 @@ export type TicketTradeRequest = {
     accountID: string;
     cashHoldingID: string;
     quantity: number;
-    bookCost: number;
+    settlementAmount: number;
+    bookCostOverride?: number | null;
   }[];
 };
 
@@ -438,7 +439,8 @@ export type TicketTradeFillRequest = {
   brokerLEI: string;
   price: number;
   quantity: number;
-  bookCost: number;
+  settlementAmount: number;
+  bookCostOverride?: number | null;
   note: string;
 };
 
@@ -1961,11 +1963,12 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
   if (typeof request.settlementDateTime === 'string')
     body.SettlementDateTime = request.settlementDateTime;
   if (Array.isArray(request.allocations))
-    body.Allocations = (request.allocations as { accountID: string; cashHoldingID?: string; quantity: number; bookCost?: number }[]).map((allocation) => ({
+    body.Allocations = (request.allocations as { accountID: string; cashHoldingID?: string; quantity: number; settlementAmount?: number; bookCostOverride?: number | null }[]).map((allocation) => ({
       AccountID: allocation.accountID,
       CashHoldingID: allocation.cashHoldingID,
       Quantity: allocation.quantity,
-      BookCost: allocation.bookCost
+      SettlementAmount: allocation.settlementAmount,
+      BookCostOverride: allocation.bookCostOverride
     }));
   if (request.fillID)
     body.FillID = request.fillID;
@@ -1975,8 +1978,10 @@ async function postTicketEvent(fetchApi: typeof fetch, eventType: string, reques
     body.Price = request.price;
   if (typeof request.quantity === 'number')
     body.Quantity = request.quantity;
-  if (typeof request.bookCost === 'number')
-    body.BookCost = request.bookCost;
+  if (typeof request.settlementAmount === 'number')
+    body.SettlementAmount = request.settlementAmount;
+  if (typeof request.bookCostOverride === 'number')
+    body.BookCostOverride = request.bookCostOverride;
   if (typeof request.note === 'string')
     body.Note = request.note;
   if (typeof request.value === 'string')

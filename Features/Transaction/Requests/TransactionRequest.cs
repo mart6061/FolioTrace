@@ -7,4 +7,8 @@ public sealed record TransactionRequest(
     InstrumentID InstrumentID,
     AccountID AccountID,
     TransactionQuantity Quantity,
-    TransactionBookCost BookCost);
+    TransactionLocalCost LocalCost,
+    Alpha3 LocalCostCurrency,
+    TransactionBookCost BookCost,
+    BookCostSource BookCostSource,
+    bool BookCostEstimated);

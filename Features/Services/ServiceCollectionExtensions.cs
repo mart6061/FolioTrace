@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<InstrumentService>();
         services.AddSingleton<InstrumentValueService>();
         services.AddSingleton<ValuationService>();
+        services.AddSingleton<ProfitLossService>();
         services.AddSingleton<TicketService>();
         services.AddSingleton<UserService>();
         services.AddSingleton<UserMenuPreferencesService>();
@@ -69,6 +70,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentIncomeSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentIncomeSetEvent>(provider.GetRequiredService<InstrumentValueService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<TransactionCreditEvent>>(provider => new AggregateCacheInvalidator<TransactionCreditEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<TransactionDebitEvent>>(provider => new AggregateCacheInvalidator<TransactionDebitEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<TransactionBookCostAdjustedEvent>>(provider => new AggregateCacheInvalidator<TransactionBookCostAdjustedEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<TransactionCancellationEvent>>(provider => new AggregateCacheInvalidator<TransactionCancellationEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<ITicket>>(provider => new AggregateCacheInvalidator<ITicket>(provider.GetRequiredService<TicketService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserEvent>>(provider => new AggregateCacheInvalidator<IUserEvent>(provider.GetRequiredService<UserService>().Invalidate));
@@ -104,6 +106,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<InstrumentIncomeSetEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionCreditEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionDebitEvent>>());
+        services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionBookCostAdjustedEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<TransactionCancellationEvent>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<ITicket>>());
         services.AddSingleton<IAggregateCacheInvalidator>(provider => provider.GetRequiredService<IAggregateCacheInvalidator<IUserEvent>>());

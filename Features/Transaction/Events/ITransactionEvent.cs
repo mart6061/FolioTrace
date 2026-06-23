@@ -7,6 +7,7 @@ namespace FolioTrace.Aggregates;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(TransactionCreditEvent), nameof(TransactionCreditEvent))]
 [JsonDerivedType(typeof(TransactionDebitEvent), nameof(TransactionDebitEvent))]
+[JsonDerivedType(typeof(TransactionBookCostAdjustedEvent), nameof(TransactionBookCostAdjustedEvent))]
 [JsonDerivedType(typeof(TransactionCancellationEvent), nameof(TransactionCancellationEvent))]
 public interface ITransactionEvent : IEventBase
 {

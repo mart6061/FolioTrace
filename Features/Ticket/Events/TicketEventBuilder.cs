@@ -218,7 +218,9 @@ public static partial class TicketEventBuilder
         foreach (var allocation in allocations)
         {
             ValidatePositiveDecimal(allocation.Quantity, "Trade allocation quantity", messages);
-            ValidatePositiveDecimal(allocation.BookCost, "Trade allocation book cost", messages);
+            ValidatePositiveDecimal(allocation.SettlementAmount, "Trade allocation settlement amount", messages);
+            if (allocation.BookCostOverride is not null)
+                ValidatePositiveDecimal(allocation.BookCostOverride.Value, "Trade allocation book cost override", messages);
             ValidateTradeCashHolding(allocation, ticket, holdings, instruments, messages);
         }
     }
