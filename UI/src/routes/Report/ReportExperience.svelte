@@ -669,7 +669,7 @@
           Account
           <MultiSelect
             bind:open={accountDropdownOpen}
-            class="report-filter-select"
+            class={['report-filter-select', data.accounts.length && !selectedAccountID && 'report-filter-select-invalid'].filter(Boolean).join(' ')}
             close={closeAccountDropdown}
             disabled={!data.accounts.length}
             ontoggle={handleAccountDropdownToggle}
@@ -708,7 +708,7 @@
           Report
           <MultiSelect
             bind:open={reportDropdownOpen}
-            class="report-filter-select"
+            class={['report-filter-select', selectedAccountID && !selectedReportID && data.reportConfigs.length && 'report-filter-select-invalid'].filter(Boolean).join(' ')}
             close={closeReportDropdown}
             disabled={reportDropdownDisabled}
             ontoggle={handleReportDropdownToggle}
@@ -769,9 +769,7 @@
           </div>
         </fieldset>
 
-        {#if data.accounts.length && !selectedAccountID}
-          <div class="status-panel status-panel-warning report-filter-status">Select an account to choose a report config.</div>
-        {:else if selectedAccountID && !data.reportConfigs.length}
+        {#if selectedAccountID && !data.reportConfigs.length}
           <div class="status-panel status-panel-warning report-filter-status">No active report configs match the selected account and valuation date.</div>
         {/if}
       </div>
@@ -1022,7 +1020,7 @@
 
   .report-filter-form {
     display: grid;
-    gap: 0.85rem;
+    gap: 0.75rem;
     overflow: visible;
     position: relative;
     z-index: 2;
@@ -1048,11 +1046,11 @@
   }
 
   .report-filter-primary-row {
-    grid-template-columns: minmax(45.5rem, 1.5fr) minmax(13rem, 0.72fr) minmax(13rem, 0.72fr);
+    grid-template-columns: minmax(36rem, 1.35fr) minmax(14rem, 0.8fr) minmax(14rem, 0.8fr);
   }
 
   .report-filter-secondary-row {
-    grid-template-columns: minmax(10.5rem, 12rem) minmax(11rem, 13rem) minmax(16rem, 1fr);
+    grid-template-columns: minmax(13rem, 16rem) minmax(14rem, 18rem) minmax(16rem, 1fr);
   }
 
   .report-valuation-date-grid {
@@ -1094,13 +1092,25 @@
 
   :global(.report-filter-select.house-multiselect[open]),
   :global(.report-filter-select.house-multiselect[open] .house-multiselect-options) {
-    z-index: 160;
+    z-index: 320;
   }
 
   :global(.report-filter-select.house-multiselect .house-multiselect-options) {
     width: min(28rem, calc(100vw - 2rem));
     max-height: clamp(18rem, calc(100vh - 8rem), 26rem);
     overflow: hidden;
+  }
+
+  :global(.report-filter-select-invalid.house-multiselect) {
+    border-color: color-mix(in srgb, #dc2626 72%, var(--line));
+    box-shadow: 0 0 0 3px color-mix(in srgb, #dc2626 16%, transparent);
+  }
+
+  :global(.report-filter-select-invalid.house-multiselect[open]) {
+    border-color: color-mix(in srgb, #dc2626 68%, var(--accent));
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, #dc2626 18%, transparent),
+      0 0.75rem 1.5rem color-mix(in srgb, var(--surface-shadow) 82%, transparent);
   }
 
   .report-filter-options {
@@ -1219,6 +1229,15 @@
     .report-filter-primary-row,
     .report-filter-secondary-row {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .report-valuation-date-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .report-valuation-date-separator {
+      align-self: center;
+      padding-bottom: 0;
     }
   }
 
