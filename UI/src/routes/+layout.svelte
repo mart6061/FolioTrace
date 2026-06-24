@@ -108,6 +108,7 @@
   ];
   const toolsItems: MenuItem[] = [
     { id: 'configuration-account-tools', label: 'Account Tools', path: '/Data/Configuration/AccountTools', tone: menuTones.configuration },
+    { id: 'configuration-asset-allocation', label: 'Asset Allocation', path: '/Data/Configuration/AssetAllocation', tone: menuTones.configuration },
     { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', path: '/Data/Configuration/AssetAllocationTools', tone: menuTones.configuration },
     { id: 'configuration-report-tools', label: 'Report Tools', path: '/Data/Configuration/ReportTools', tone: menuTones.configuration }
   ];

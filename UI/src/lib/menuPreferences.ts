@@ -26,6 +26,7 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'data-list-broker', label: 'Broker', parentID: 'data-list' },
   { id: 'tools', label: 'Tools' },
   { id: 'configuration-account-tools', label: 'Account Tools', parentID: 'tools' },
+  { id: 'configuration-asset-allocation', label: 'Asset Allocation', parentID: 'tools' },
   { id: 'configuration-asset-allocation-tools', label: 'Asset Allocation Tools', parentID: 'tools' },
   { id: 'configuration-report-tools', label: 'Report Tools', parentID: 'tools' },
   { id: 'diagnostics', label: 'Diagnostics' },
