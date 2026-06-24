@@ -1153,6 +1153,17 @@
     overflow: hidden;
   }
 
+  :global(.report-filter-select.house-multiselect > summary) {
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  :global(.report-filter-select.house-multiselect > summary > span) {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: left;
+  }
+
   :global(.report-filter-select-invalid.house-multiselect) {
     border-color: color-mix(in srgb, #dc2626 72%, var(--line));
     box-shadow: 0 0 0 3px color-mix(in srgb, #dc2626 16%, transparent);
