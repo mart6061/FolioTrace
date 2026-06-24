@@ -67,6 +67,13 @@ public static class ReportEventValidation
             {
                 ValidateAssetAllocation(messages, transactions.AssetAllocationID, valuationSettings, transactions.ReportNodeID);
             }
+            else if (node is ReportNodeProfitLoss profitLoss)
+            {
+                ValidateAssetAllocation(messages, profitLoss.AssetAllocationID, valuationSettings, profitLoss.ReportNodeID);
+
+                if (!Enum.IsDefined(profitLoss.ProfitLossMethod))
+                    messages.Add($"Report node '{profitLoss.ReportNodeID}' has an unsupported profit/loss method.");
+            }
             else if (node is ReportNodeCash cash)
             {
                 ValidateAssetAllocation(messages, cash.AssetAllocationID, valuationSettings, cash.ReportNodeID);

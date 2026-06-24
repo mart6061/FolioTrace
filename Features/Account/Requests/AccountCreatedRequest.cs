@@ -11,4 +11,5 @@ public sealed record AccountCreatedRequest(
     string Name,
     string FormalName,
     Alpha3 BookCurrency,
-    bool Active) : IEventRequest;
+    bool Active,
+    ProfitLossMethod BookCostBasis = ProfitLossMethod.FIFO) : IEventRequest;

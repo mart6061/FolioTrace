@@ -65,7 +65,7 @@ public sealed class AccountBuilderTests
         var accountID = AccountIDBuilder.Create();
         var created = AccountCreatedEventBuilder.Create(new AccountCreatedRequest(UserID, EventDate, "Create account", accountID, "Original", "Original Formal", Alpha3Builder.Create("GBP"), true), currencies).Value!;
         var accounts = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created]);
-        var modified = AccountModifiedEventBuilder.Create(new AccountModifiedRequest(UserID, EventDate, "Modify account", accountID, "Renamed", "Renamed Formal"), accounts).Value!;
+        var modified = AccountModifiedEventBuilder.Create(new AccountModifiedRequest(UserID, EventDate, "Modify account", accountID, "Renamed", "Renamed Formal", ProfitLossMethod.LIFO), accounts).Value!;
         accounts = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created, modified]);
         var active = AccountActiveSetEventBuilder.Create(new AccountActiveSetRequest(UserID, EventDate, "Deactivate account", accountID, false), accounts).Value!;
 
@@ -75,6 +75,7 @@ public sealed class AccountBuilderTests
         Assert.Equal("Renamed", account.Name);
         Assert.Equal("Renamed Formal", account.FormalName);
         Assert.Equal(Alpha3Builder.Create("GBP"), account.BookCurrency);
+        Assert.Equal(ProfitLossMethod.LIFO, account.BookCostBasis);
         Assert.False(account.Active);
         Assert.Equal(1, account.DisplayOrder.Value);
     }

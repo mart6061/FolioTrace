@@ -15,28 +15,32 @@ public sealed record AccountCreatedEvent : EventBase, IAccountEvent
     public string FormalName { get; init; } = string.Empty;
     [EventProperty(Order = 40, Description = "Book Currency")]
     public Alpha3 BookCurrency { get; init; } = null!;
+    [EventProperty(Order = 50, Description = "Book Cost Basis")]
+    public ProfitLossMethod BookCostBasis { get; init; } = ProfitLossMethod.FIFO;
     [EventProperty(Description = "Active")]
     public Active Active { get; init; } = false;
 
     [JsonConstructor]
     private AccountCreatedEvent() : base(null!, null!, null!, null!, string.Empty) { }
 
-    internal AccountCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, string name, string formalName, Alpha3 bookCurrency, Active active)
+    internal AccountCreatedEvent(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, string name, string formalName, Alpha3 bookCurrency, ProfitLossMethod bookCostBasis, Active active)
         : base(eventId, userId, eventDateTime, auditDateTime, reason)
     {
         AccountID = accountID;
         Name = name;
         FormalName = formalName;
         BookCurrency = bookCurrency;
+        BookCostBasis = bookCostBasis;
         Active = active;
     }
 
     public override string Type => nameof(AccountCreatedEvent);
 
-    public static List<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AccountID? accountID, string? name, string? formalName, Alpha3? bookCurrency)
+    public static List<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AccountID? accountID, string? name, string? formalName, Alpha3? bookCurrency, ProfitLossMethod bookCostBasis)
     {
         var messages = AccountEventValidation.ValidateAccountChange(eventId, userId, eventDateTime, auditDateTime, reason, accountID, name, formalName);
         if (bookCurrency is null) messages.Add("BookCurrency is required.");
+        AccountEventValidation.ValidateBookCostBasis(messages, bookCostBasis);
         return messages;
     }
 }

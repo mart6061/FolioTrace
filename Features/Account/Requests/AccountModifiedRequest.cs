@@ -9,4 +9,5 @@ public sealed record AccountModifiedRequest(
     string Reason,
     AccountID AccountID,
     string Name,
-    string FormalName) : IEventRequest;
+    string FormalName,
+    ProfitLossMethod BookCostBasis = ProfitLossMethod.FIFO) : IEventRequest;

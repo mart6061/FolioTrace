@@ -6,7 +6,7 @@
   import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, TransactionReferenceEvent } from '$lib/types';
+  import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, ProfitLossMethod, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   let { data, form } = $props();
@@ -15,10 +15,11 @@
   const accountCount = $derived(data.accounts?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.accounts ? formatDisplayDateTime(data.accounts.asOfDateTime) : 'now');
 
-  type SortKey = 'name' | 'formalName' | 'bookCurrency' | 'status' | 'lastAudit';
+  type SortKey = 'name' | 'formalName' | 'bookCurrency' | 'bookCostBasis' | 'status' | 'lastAudit';
   type AccountFormValues = {
     accountID: string;
     active: boolean;
+    bookCostBasis: ProfitLossMethod;
     bookCurrency: string;
     eventDateTime: string;
     formalName: string;
@@ -93,6 +94,11 @@
   let historyByAccountID = $state<Record<string, { events: AccountHistoryEvent[]; error: string; loading: boolean }>>({});
   let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
+  const profitLossMethodOptions: { value: ProfitLossMethod; label: string }[] = [
+    { value: 'FIFO', label: 'FIFO' },
+    { value: 'LIFO', label: 'LIFO' },
+    { value: 'RunningAverage', label: 'Weighted average' }
+  ];
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
   const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
   const holdingByID = $derived(new Map((data.holdings?.items ?? []).map((holding) => [holding.holdingID, holding])));
@@ -176,6 +182,7 @@
         account.name,
         account.formalName,
         account.bookCurrency,
+        profitLossMethodLabel(account.bookCostBasis),
         account.active ? 'active' : 'inactive',
         account.lastAuditDateTime
       ].some((value) => value.toLocaleLowerCase().includes(filter));
@@ -191,6 +198,8 @@
           return direction * left.formalName.localeCompare(right.formalName);
         case 'bookCurrency':
           return direction * left.bookCurrency.localeCompare(right.bookCurrency);
+        case 'bookCostBasis':
+          return direction * profitLossMethodLabel(left.bookCostBasis).localeCompare(profitLossMethodLabel(right.bookCostBasis));
         case 'status':
           return direction * Number(left.active === right.active ? 0 : left.active ? -1 : 1);
         case 'lastAudit':
@@ -292,11 +301,16 @@
     return sortDirection === 1 ? ' ↑' : ' ↓';
   }
 
+  function profitLossMethodLabel(value: ProfitLossMethod | undefined) {
+    return profitLossMethodOptions.find((option) => option.value === value)?.label ?? 'FIFO';
+  }
+
   function accountExportRows() {
     return sortedAccounts.map((account) => ({
       name: account.name,
       formalName: account.formalName,
       bookCurrency: account.bookCurrency,
+      bookCostBasis: profitLossMethodLabel(account.bookCostBasis),
       status: account.active ? 'Active' : 'Inactive',
       lastAuditDateTime: account.lastAuditDateTime
     }));
@@ -333,11 +347,11 @@
 
   function exportCsv() {
     const rows = accountExportRows();
-    const header = ['Name', 'Formal name', 'Book currency', 'Status', 'Last audit'];
+    const header = ['Name', 'Formal name', 'Book currency', 'Book cost basis', 'Status', 'Last audit'];
     const lines = [
       header.map(csvValue).join(','),
       ...rows.map((row) =>
-        [row.name, row.formalName, row.bookCurrency, row.status, row.lastAuditDateTime].map(csvValue).join(',')
+        [row.name, row.formalName, row.bookCurrency, row.bookCostBasis, row.status, row.lastAuditDateTime].map(csvValue).join(',')
       )
     ];
 
@@ -353,6 +367,7 @@
             <th>Name</th>
             <th>Formal name</th>
             <th>Book currency</th>
+            <th>Book cost basis</th>
             <th>Status</th>
             <th>Last audit</th>
           </tr>
@@ -363,6 +378,7 @@
               <td>${htmlValue(row.name)}</td>
               <td>${htmlValue(row.formalName)}</td>
               <td>${htmlValue(row.bookCurrency)}</td>
+              <td>${htmlValue(row.bookCostBasis)}</td>
               <td>${htmlValue(row.status)}</td>
               <td>${htmlValue(row.lastAuditDateTime)}</td>
             </tr>
@@ -751,13 +767,14 @@
   function accountEventSummary(event: HistoryEvent) {
     if ((event.$type === 'AccountActiveSetEvent' || event.$type === 'AccountActiveModifiedEvent') && 'active' in event)
       return event.active ? 'Activated' : 'Deactivated';
-    if (!('name' in event) || !('formalName' in event) || !('bookCurrency' in event))
+    if (!('name' in event) || !('formalName' in event))
       return '';
 
     return [
       event.name,
       event.formalName,
       event.bookCurrency,
+      profitLossMethodLabel(event.bookCostBasis),
       typeof event.active === 'boolean' ? event.active ? 'Active' : 'Inactive' : ''
     ].filter(Boolean).join(' · ');
   }
@@ -1278,6 +1295,11 @@
                   </button>
                 </th>
                 <th class="px-3 py-2">
+                  <button class="table-sort-button" onclick={() => setSort('bookCostBasis')} type="button">
+                    Book cost basis{sortLabel('bookCostBasis')}
+                  </button>
+                </th>
+                <th class="px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('status')} type="button">
                     Status{sortLabel('status')}
                   </button>
@@ -1342,6 +1364,21 @@
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
+                      <span>Book cost basis</span>
+                      <select
+                        class="house-control house-control-sm house-control-full"
+                        form="account-create"
+                        name="bookCostBasis"
+                        value={form?.intent === 'createAccount' ? (accountFormValues?.bookCostBasis ?? 'FIFO') : 'FIFO'}
+                      >
+                        {#each profitLossMethodOptions as option (option.value)}
+                          <option value={option.value}>{option.label}</option>
+                        {/each}
+                      </select>
+                    </label>
+                  </td>
+                  <td class="px-3 py-2">
+                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="account-create">
                       <span>Status</span>
                       <span class="flex h-8 items-center gap-2">
                         <input
@@ -1397,7 +1434,7 @@
               {#each sortedAccounts as account, accountIndex (account.accountID)}
                 {#if accountIndex > 0}
                   <tr aria-hidden="true">
-                    <td class="bg-slate-100 px-0 py-4" colspan="6">
+                    <td class="bg-slate-100 px-0 py-4" colspan="7">
                       <div class="h-px border-t border-slate-300 shadow-sm"></div>
                     </td>
                   </tr>
@@ -1444,6 +1481,21 @@
                           {account.bookCurrency}
                         </span>
                       </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <label class="grid gap-1 text-xs font-medium text-slate-600" form={`account-edit-${account.accountID}`}>
+                        <span>Book cost basis</span>
+                        <select
+                          class="house-control house-control-sm house-control-full"
+                          form={`account-edit-${account.accountID}`}
+                          name="bookCostBasis"
+                          value={form?.accountID === account.accountID ? (accountFormValues?.bookCostBasis ?? account.bookCostBasis) : account.bookCostBasis}
+                        >
+                          {#each profitLossMethodOptions as option (option.value)}
+                            <option value={option.value}>{option.label}</option>
+                          {/each}
+                        </select>
+                      </label>
                     </td>
                     <td class="px-3 py-2">
                       <div class="grid gap-1 text-xs font-medium text-slate-600">
@@ -1498,6 +1550,7 @@
                     <td class="px-3 py-2 font-medium text-slate-950">{account.name}</td>
                     <td class="px-3 py-2 text-slate-700">{account.formalName}</td>
                     <td class="px-3 py-2 font-mono text-slate-700">{account.bookCurrency}</td>
+                    <td class="px-3 py-2 text-slate-700">{profitLossMethodLabel(account.bookCostBasis)}</td>
                     <td class="px-3 py-2">
                       <span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
                         account.active

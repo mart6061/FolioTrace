@@ -53,7 +53,7 @@
   <title>Viewer | FolioTrace</title>
 </svelte:head>
 
-<main class="min-h-screen">
+<main class="viewer-page min-h-screen">
   <section class="page-header">
     <div class="page-container">
       <div class="page-header-content">
@@ -136,6 +136,15 @@
     overflow: visible;
     position: relative;
     z-index: 20;
+  }
+
+  .viewer-filter-card:has(:global(.house-multiselect[open])) {
+    z-index: 320;
+  }
+
+  .viewer-page :global(.page-header) {
+    overflow: visible;
+    z-index: 30;
   }
 
   .viewer-option-grid {

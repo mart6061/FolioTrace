@@ -24,7 +24,7 @@ import {
   type TransactionCancellationRequest,
   type TransactionSetRequest
 } from '$lib/server/api';
-import type { Holding, HoldingKind, Instrument } from '$lib/types';
+import type { Holding, HoldingKind, Instrument, ProfitLossMethod } from '$lib/types';
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -78,6 +78,7 @@ export const actions = {
         accountID: values.accountID,
         active: values.active,
         bookCurrency: values.bookCurrency,
+        bookCostBasis: values.bookCostBasis,
         eventDateTime: toApiDateTime(values.eventDateTime),
         formalName: values.formalName,
         name: values.name,
@@ -102,6 +103,7 @@ export const actions = {
     try {
       const accountModifiedRequest: AccountModifiedRequest = {
         accountID: values.accountID,
+        bookCostBasis: values.bookCostBasis,
         eventDateTime: toApiDateTime(values.eventDateTime),
         formalName: values.formalName,
         name: values.name,
@@ -700,11 +702,16 @@ function readAccountForm(formData: FormData) {
   return {
     accountID: getFormString(formData, 'accountID'),
     active: getFormString(formData, 'active') !== 'false',
+    bookCostBasis: normaliseProfitLossMethod(getFormString(formData, 'bookCostBasis')),
     bookCurrency: getFormString(formData, 'bookCurrency').toUpperCase(),
     eventDateTime: getFormString(formData, 'eventDateTime'),
     formalName: getFormString(formData, 'formalName'),
     name: getFormString(formData, 'name')
   };
+}
+
+function normaliseProfitLossMethod(value: string): ProfitLossMethod {
+  return value === 'LIFO' || value === 'RunningAverage' ? value : 'FIFO';
 }
 
 function failure(intent: string, message: string, values: ReturnType<typeof readAccountForm>) {

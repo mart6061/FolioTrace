@@ -27,6 +27,12 @@ internal static class AccountEventValidation
             messages.Add($"BookCurrency '{bookCurrency}' does not exist in Currencies.");
     }
 
+    public static void ValidateBookCostBasis(List<string> messages, ProfitLossMethod bookCostBasis)
+    {
+        if (!Enum.IsDefined(bookCostBasis))
+            messages.Add($"BookCostBasis '{bookCostBasis}' is not supported.");
+    }
+
     public static void ValidateCreatedName(List<string> messages, string? name, Accounts? accounts)
     {
         if (string.IsNullOrWhiteSpace(name) || accounts is null)

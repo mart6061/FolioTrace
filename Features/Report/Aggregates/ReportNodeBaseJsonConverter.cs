@@ -57,6 +57,16 @@ internal sealed class ReportNodeBaseJsonConverter : JsonConverter<ReportNodeBase
             {
                 PageOrientation = pageOrientation
             },
+            nameof(ReportNodeProfitLoss) => new ReportNodeProfitLoss(
+                reportNodeID,
+                displayOrder,
+                name,
+                title,
+                ReadRequired<AssetAllocationID>(root, nameof(ReportNodeProfitLoss.AssetAllocationID), options),
+                ReadOptional(root, nameof(ReportNodeProfitLoss.ProfitLossMethod), options, ReportProfitLossMethod.Default))
+            {
+                PageOrientation = pageOrientation
+            },
             nameof(ReportNodeCash) => new ReportNodeCash(
                 reportNodeID,
                 displayOrder,
@@ -114,6 +124,9 @@ internal sealed class ReportNodeBaseJsonConverter : JsonConverter<ReportNodeBase
             || HasProperty(root, nameof(ReportNodeValuation.DisplayHoldings)))
             return nameof(ReportNodeValuation);
 
+        if (HasProperty(root, nameof(ReportNodeProfitLoss.ProfitLossMethod)))
+            return nameof(ReportNodeProfitLoss);
+
         if (TryGetProperty(root, nameof(ReportNodeBase.Name), out var nameProperty))
         {
             var name = nameProperty.GetString();
@@ -125,6 +138,10 @@ internal sealed class ReportNodeBaseJsonConverter : JsonConverter<ReportNodeBase
 
             if (string.Equals(name, "Transactions", StringComparison.OrdinalIgnoreCase))
                 return nameof(ReportNodeTransactions);
+
+            if (string.Equals(name, "Profit Loss", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "ProfitLoss", StringComparison.OrdinalIgnoreCase))
+                return nameof(ReportNodeProfitLoss);
 
             if (string.Equals(name, "Cash", StringComparison.OrdinalIgnoreCase))
                 return nameof(ReportNodeCash);
