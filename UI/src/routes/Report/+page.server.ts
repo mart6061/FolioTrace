@@ -19,6 +19,7 @@ import type {
   ReportConfig,
   ReportNodeBase,
   ReportNodePageOrientation,
+  ReportProfitLossMethod,
   ReportValuationColumn,
   ReportValuationColumnKey,
   TransactionReferenceEvent,
@@ -52,10 +53,13 @@ type ReportDocumentSection = {
   name: string;
   title: string;
   pageOrientation: ReportNodePageOrientation;
-  sectionType: 'Cash' | 'Default' | 'Pie' | 'Transactions' | 'Valuation';
+  sectionType: 'Cash' | 'Default' | 'Pie' | 'ProfitLoss' | 'Transactions' | 'Valuation';
   cashGroups: ReportCashGroup[];
   currency: string;
   pieSlices: ReportPieSlice[];
+  profitLossMethod: ReportProfitLossMethod;
+  profitLossMethodLabel: string;
+  profitLossRows: ReportProfitLossRow[];
   transactionRows: ReportTransactionRow[];
   valuationColumns: ReportValuationColumnDefinition[];
   valuationColourBullet: boolean;
@@ -147,6 +151,19 @@ type ReportValuationRow = {
   bookValueLIFO: number;
   bookValueRunningAverage: number;
   bookCost: number;
+};
+
+type ReportProfitLossRow = {
+  rowID: string;
+  holdingName: string;
+  instrumentName: string;
+  quantity: number;
+  bookValue: number;
+  realizedPnL: number;
+  unrealizedPnL: number | null;
+  totalPnL: number | null;
+  complete: boolean;
+  incompleteReason: string;
 };
 
 type ReportTransactionRow = {
@@ -447,6 +464,9 @@ function createReportSection(
     cashGroups: [],
     currency,
     pieSlices: [],
+    profitLossMethod: 'Default' as ReportProfitLossMethod,
+    profitLossMethodLabel: '',
+    profitLossRows: [],
     transactionRows: [],
     valuationColumns: [],
     valuationColourBullet: false,
@@ -472,6 +492,18 @@ function createReportSection(
 
   const mappedHoldings = mapHoldingMetrics(holdings, instrumentsByID, valuationsByHoldingID, profitLossByHoldingID, bookCostBasis);
   const mappingByHoldingID = new Map(mappings.map((mapping) => [mapping.holdingID, mapping.nodeID]));
+
+  if (sectionType === 'ProfitLoss') {
+    const selectedMethod = normalizeReportProfitLossMethod(node.profitLossMethod);
+    const resolvedMethod = selectedMethod === 'Default' ? bookCostBasis : selectedMethod;
+
+    return {
+      ...base,
+      profitLossMethod: selectedMethod,
+      profitLossMethodLabel: reportProfitLossMethodLabel(selectedMethod, resolvedMethod),
+      profitLossRows: createProfitLossRows(mappedHoldings, profitLossByHoldingID, resolvedMethod)
+    };
+  }
 
   if (!allocation)
     return base;
@@ -509,6 +541,9 @@ function reportSectionType(node: ReportNodeBase): ReportDocumentSection['section
 
   if (nodeType === 'ReportNodeTransactions')
     return 'Transactions';
+
+  if (nodeType === 'ReportNodeProfitLoss')
+    return 'ProfitLoss';
 
   if (nodeType === 'ReportNodeCash')
     return 'Cash';
@@ -576,6 +611,59 @@ function bookValueForBasis(bookCostBasis: ProfitLossMethod, fifo: number, lifo: 
     default:
       return fifo;
   }
+}
+
+function normalizeReportProfitLossMethod(value: ReportNodeBase['profitLossMethod']): ReportProfitLossMethod {
+  return value === 'FIFO' || value === 'LIFO' || value === 'RunningAverage' ? value : 'Default';
+}
+
+function reportProfitLossMethodLabel(selection: ReportProfitLossMethod, resolved: ProfitLossMethod) {
+  if (selection === 'Default')
+    return `Default (${profitLossMethodLabel(resolved)})`;
+
+  return profitLossMethodLabel(selection);
+}
+
+function profitLossMethodLabel(method: ProfitLossMethod) {
+  switch (method) {
+    case 'LIFO':
+      return 'LIFO';
+    case 'RunningAverage':
+      return 'Weighted average';
+    case 'FIFO':
+    default:
+      return 'FIFO';
+  }
+}
+
+function createProfitLossRows(
+  holdings: ReportValuationAsset[],
+  profitLossByHoldingID: Map<string, ProfitLossItem>,
+  method: ProfitLossMethod
+): ReportProfitLossRow[] {
+  return holdings
+    .map((holding) => {
+      const profitLoss = profitLossByHoldingID.get(holding.holdingID);
+      const methodValue = profitLoss?.methods.find((value) => value.method === method);
+      const fallbackBookValue = bookValueForBasis(method, holding.bookValueFIFO, holding.bookValueLIFO, holding.bookValueRunningAverage);
+
+      return {
+        rowID: `profit-loss:${holding.holdingID}`,
+        holdingName: profitLoss?.holdingName || holding.name,
+        instrumentName: profitLoss?.instrumentName || holding.instrumentName,
+        quantity: numberValue(profitLoss?.quantity, holding.quantity),
+        bookValue: numberValue(methodValue?.bookValue, fallbackBookValue),
+        realizedPnL: numberValue(methodValue?.realizedPnL),
+        unrealizedPnL: nullableNumberValue(methodValue?.unrealizedPnL),
+        totalPnL: nullableNumberValue(methodValue?.totalPnL),
+        complete: methodValue?.complete ?? false,
+        incompleteReason: methodValue?.incompleteReason ?? ''
+      };
+    })
+    .sort((left, right) =>
+      left.holdingName.localeCompare(right.holdingName)
+      || left.instrumentName.localeCompare(right.instrumentName)
+      || left.rowID.localeCompare(right.rowID));
 }
 
 function createValuationRows(

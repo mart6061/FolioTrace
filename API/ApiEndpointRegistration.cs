@@ -2950,6 +2950,17 @@ public static class ApiEndpointRegistration
                 PageOrientation = transactions.PageOrientation.ToString(),
                 AssetAllocationID = transactions.AssetAllocationID.Value
             },
+            ReportNodeProfitLoss profitLoss => new
+            {
+                Type = nameof(ReportNodeProfitLoss),
+                ReportNodeID = profitLoss.ReportNodeID.Value,
+                profitLoss.DisplayOrder,
+                profitLoss.Name,
+                profitLoss.Title,
+                PageOrientation = profitLoss.PageOrientation.ToString(),
+                AssetAllocationID = profitLoss.AssetAllocationID.Value,
+                ProfitLossMethod = profitLoss.ProfitLossMethod.ToString()
+            },
             ReportNodeCash cash => new
             {
                 Type = nameof(ReportNodeCash),

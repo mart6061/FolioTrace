@@ -2610,6 +2610,9 @@ function toReportNodeBody(node: ReportNodeRequest) {
     body.DisplayHoldings = node.displayHoldings ?? true;
   }
 
+  if (type === 'ReportNodeProfitLoss')
+    body.ProfitLossMethod = node.profitLossMethod ?? 'Default';
+
   return body;
 }
 

@@ -12,7 +12,7 @@ import {
   type ReportModifiedRequest,
   type ReportNodeRequest
 } from '$lib/server/api';
-import type { ReportChartPieLevel, ReportChartType, ReportNodePageOrientation, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
+import type { ReportChartPieLevel, ReportChartType, ReportNodePageOrientation, ReportNodeType, ReportProfitLossMethod, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
 
 const valuationColumnKeys: ReportValuationColumnKey[] = [
   'InstrumentName',
@@ -180,6 +180,7 @@ function normalizeReportNode(value: unknown): ReportNodeRequest | null {
   const assetAllocationID = readString(record, 'assetAllocationID', 'AssetAllocationID');
   const chartType = readChartType(record);
   const pieLevel = readPieLevel(record);
+  const profitLossMethod = readProfitLossMethod(record);
   const columnsResult = type === 'ReportNodeValuation' ? readValuationColumns(record) : { valid: true as const, columns: undefined };
 
   if (!type || !reportNodeID || displayOrder < 1 || !name || !title || !columnsResult.valid)
@@ -208,11 +209,14 @@ function normalizeReportNode(value: unknown): ReportNodeRequest | null {
       node.columns = columnsResult.columns;
   }
 
+  if (type === 'ReportNodeProfitLoss')
+    node.profitLossMethod = profitLossMethod;
+
   return node;
 }
 
 function requiresAssetAllocation(type: ReportNodeType) {
-  return type === 'ReportNodeChart' || type === 'ReportNodeValuation' || type === 'ReportNodeTransactions' || type === 'ReportNodeCash';
+  return type === 'ReportNodeChart' || type === 'ReportNodeValuation' || type === 'ReportNodeTransactions' || type === 'ReportNodeProfitLoss' || type === 'ReportNodeCash';
 }
 
 function readReportNodeType(source: Record<string, unknown>): ReportNodeType | '' {
@@ -221,7 +225,7 @@ function readReportNodeType(source: Record<string, unknown>): ReportNodeType | '
 }
 
 function isReportNodeType(value: string): value is ReportNodeType {
-  return ['ReportNodeCoverPage', 'ReportNodeIndex', 'ReportNodeChart', 'ReportNodeValuation', 'ReportNodeTransactions', 'ReportNodeCash'].includes(value);
+  return ['ReportNodeCoverPage', 'ReportNodeIndex', 'ReportNodeChart', 'ReportNodeValuation', 'ReportNodeTransactions', 'ReportNodeProfitLoss', 'ReportNodeCash'].includes(value);
 }
 
 function readChartType(source: Record<string, unknown>): ReportChartType {
@@ -237,6 +241,15 @@ function readPieLevel(source: Record<string, unknown>): ReportChartPieLevel {
 function readPageOrientation(source: Record<string, unknown>): ReportNodePageOrientation {
   const value = readString(source, 'pageOrientation', 'PageOrientation');
   return value === 'Landscape' ? 'Landscape' : 'Portrait';
+}
+
+function readProfitLossMethod(source: Record<string, unknown>): ReportProfitLossMethod {
+  const value = readString(source, 'profitLossMethod', 'ProfitLossMethod');
+  return isReportProfitLossMethod(value) ? value : 'Default';
+}
+
+function isReportProfitLossMethod(value: string): value is ReportProfitLossMethod {
+  return value === 'Default' || value === 'FIFO' || value === 'LIFO' || value === 'RunningAverage';
 }
 
 function readValuationColumns(source: Record<string, unknown>): { valid: true; columns?: ReportValuationColumn[] | null } | { valid: false } {

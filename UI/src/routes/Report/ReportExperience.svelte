@@ -27,10 +27,13 @@
     name: string;
     title: string;
     pageOrientation: ReportNodePageOrientation;
-    sectionType: 'Cash' | 'Default' | 'Pie' | 'Transactions' | 'Valuation';
+    sectionType: 'Cash' | 'Default' | 'Pie' | 'ProfitLoss' | 'Transactions' | 'Valuation';
     cashGroups: ReportCashGroup[];
     currency: string;
     pieSlices: ReportPieSlice[];
+    profitLossMethod: string;
+    profitLossMethodLabel: string;
+    profitLossRows: ReportProfitLossRow[];
     transactionRows: ReportTransactionRow[];
     valuationColumns: ReportValuationColumn[];
     valuationColourBullet: boolean;
@@ -122,6 +125,19 @@
     bookValueLIFO: number;
     bookValueRunningAverage: number;
     bookCost: number;
+  };
+
+  type ReportProfitLossRow = {
+    rowID: string;
+    holdingName: string;
+    instrumentName: string;
+    quantity: number;
+    bookValue: number;
+    realizedPnL: number;
+    unrealizedPnL: number | null;
+    totalPnL: number | null;
+    complete: boolean;
+    incompleteReason: string;
   };
 
   type ReportTransactionRow = {
@@ -534,14 +550,16 @@
             .report-valuation-subtotal.top-level td { color: #0f172a; }
             .report-valuation-total td { border-bottom: 2px solid #0f172a; border-top: 2px solid #0f172a; color: #0f172a; font-weight: 800; padding: 8px 6px; }
             .report-transaction-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-profit-loss-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-profit-loss-method { color: #475569; font-size: 12px; font-weight: 700; margin: 0 0 8px; }
             .report-cash-table { border-collapse: collapse; font-size: 11px; width: 100%; }
             .report-cash-groups { display: grid; gap: 18px; }
             .report-cash-group-title { align-items: baseline; border-bottom: 1px solid #cbd5e1; color: #0f172a; display: flex; font-size: 13px; font-weight: 700; gap: 12px; justify-content: space-between; margin: 0 0 6px; padding-bottom: 6px; }
             .report-cash-group-total { color: #475569; font-family: Consolas, monospace; font-size: 12px; font-weight: 700; }
-            .report-transaction-table th, .report-cash-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
-            .report-transaction-table th.numeric, .report-transaction-table td.numeric, .report-cash-table th.numeric, .report-cash-table td.numeric { text-align: right; }
-            .report-transaction-table td, .report-cash-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; padding: 6px; }
-            .report-transaction-table td.numeric, .report-cash-table td.numeric { font-family: Consolas, monospace; }
+            .report-transaction-table th, .report-profit-loss-table th, .report-cash-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
+            .report-transaction-table th.numeric, .report-transaction-table td.numeric, .report-profit-loss-table th.numeric, .report-profit-loss-table td.numeric, .report-cash-table th.numeric, .report-cash-table td.numeric { text-align: right; }
+            .report-transaction-table td, .report-profit-loss-table td, .report-cash-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; padding: 6px; }
+            .report-transaction-table td.numeric, .report-profit-loss-table td.numeric, .report-cash-table td.numeric { font-family: Consolas, monospace; }
           </style>
         </head>
         <body>${documentElement.outerHTML}</body>
@@ -940,6 +958,40 @@
                   </table>
                 {:else}
                   <div class="report-empty-state">No holding transactions are available for this period.</div>
+                {/if}
+              {:else if section.sectionType === 'ProfitLoss'}
+                {#if section.profitLossRows.length}
+                  <p class="report-profit-loss-method">Method: {section.profitLossMethodLabel}</p>
+                  <table class="report-profit-loss-table">
+                    <thead>
+                      <tr>
+                        <th>Holding</th>
+                        <th>Instrument</th>
+                        <th class="numeric">Quantity</th>
+                        <th class="numeric">Book value</th>
+                        <th class="numeric">Realised P/L</th>
+                        <th class="numeric">Unrealised P/L</th>
+                        <th class="numeric">Total P/L</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each section.profitLossRows as profitLoss (profitLoss.rowID)}
+                        <tr>
+                          <td>{profitLoss.holdingName}</td>
+                          <td>{profitLoss.instrumentName}</td>
+                          <td class="numeric">{formatQuantity(profitLoss.quantity)}</td>
+                          <td class="numeric">{formatMoney(profitLoss.bookValue, section.currency)}</td>
+                          <td class="numeric">{formatMoney(profitLoss.realizedPnL, section.currency)}</td>
+                          <td class="numeric">{formatOptionalMoney(profitLoss.unrealizedPnL, section.currency)}</td>
+                          <td class="numeric">{formatOptionalMoney(profitLoss.totalPnL, section.currency)}</td>
+                          <td>{profitLoss.complete ? 'Complete' : profitLoss.incompleteReason || 'Incomplete'}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                {:else}
+                  <div class="report-empty-state">No profit/loss rows are available for this report.</div>
                 {/if}
               {/if}
             </div>
@@ -1462,10 +1514,18 @@
   }
 
   .report-transaction-table,
+  .report-profit-loss-table,
   .report-cash-table {
     border-collapse: collapse;
     font-size: 0.6875rem;
     width: 100%;
+  }
+
+  .report-profit-loss-method {
+    color: rgb(71 85 105);
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
   }
 
   .report-cash-groups {
@@ -1494,6 +1554,7 @@
   }
 
   .report-transaction-table th,
+  .report-profit-loss-table th,
   .report-cash-table th {
     border-bottom: 1px solid rgb(203 213 225);
     color: rgb(71 85 105);
@@ -1507,12 +1568,15 @@
 
   .report-transaction-table th.numeric,
   .report-transaction-table td.numeric,
+  .report-profit-loss-table th.numeric,
+  .report-profit-loss-table td.numeric,
   .report-cash-table th.numeric,
   .report-cash-table td.numeric {
     text-align: right;
   }
 
   .report-transaction-table td,
+  .report-profit-loss-table td,
   .report-cash-table td {
     border-bottom: 1px solid rgb(226 232 240);
     color: rgb(15 23 42);
@@ -1520,6 +1584,7 @@
   }
 
   .report-transaction-table td.numeric,
+  .report-profit-loss-table td.numeric,
   .report-cash-table td.numeric {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }

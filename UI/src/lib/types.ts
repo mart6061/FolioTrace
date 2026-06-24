@@ -191,6 +191,8 @@ export type InstrumentPriceBasis = 'Bid' | 'Ask' | 'Mid' | 'NAV';
 
 export type ProfitLossMethod = 'FIFO' | 'LIFO' | 'RunningAverage';
 
+export type ReportProfitLossMethod = 'Default' | ProfitLossMethod;
+
 export type ProfitLossMethodValue = {
   method: ProfitLossMethod;
   realizedPnL: number;
@@ -404,6 +406,7 @@ export type ReportNodeType =
   | 'ReportNodeChart'
   | 'ReportNodeValuation'
   | 'ReportNodeTransactions'
+  | 'ReportNodeProfitLoss'
   | 'ReportNodeCash';
 
 export type ReportNodePageOrientation = 'Portrait' | 'Landscape';
@@ -423,6 +426,7 @@ export type ReportNodeBase = {
   colourBullet?: boolean;
   colourText?: boolean;
   displayHoldings?: boolean;
+  profitLossMethod?: ReportProfitLossMethod;
 };
 
 export type ReportConfig = {

@@ -71,6 +71,7 @@ public static class ReportConfigBuilder
                 Columns = NormaliseValuationColumns(valuation.Columns)
             },
             ReportNodeTransactions transactions => transactions with { Name = Clean(transactions.Name), Title = Clean(transactions.Title) },
+            ReportNodeProfitLoss profitLoss => profitLoss with { Name = Clean(profitLoss.Name), Title = Clean(profitLoss.Title) },
             ReportNodeCash cash => cash with { Name = Clean(cash.Name), Title = Clean(cash.Title) },
             _ => throw new InvalidOperationException($"Unsupported report node type '{node.GetType().Name}'.")
         };
