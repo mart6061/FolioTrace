@@ -17,6 +17,7 @@
     HoldingDateBasis,
     HoldingHistoryEvent,
     InstrumentPriceBasis,
+    ProfitLossMethod,
     TransactionReferenceEvent,
     ValuationItem,
     Valuations
@@ -38,6 +39,39 @@
     valuations: Valuations | null;
   };
   type ExperienceRenderMode = 'full' | 'filter' | 'body';
+  type AssetProfitLossRow = {
+    rowID: string;
+    transactionType: 'Credit' | 'Debit';
+    instrumentName: string;
+    displayDateTime: string;
+    quantity: number;
+    bookCost: number;
+    realizedPnL: number | null;
+  };
+  type AssetProfitLossSummary = {
+    bookValue: number;
+    complete: boolean;
+    incompleteReason: string | null;
+    realizedPnL: number;
+    totalPnL: number | null;
+    unrealizedPnL: number | null;
+  };
+  type AssetProfitLossDetails = {
+    accountID: string;
+    currency: string;
+    holdingID: string;
+    holdingName: string;
+    instrumentName: string;
+    method: ProfitLossMethod;
+    methodLabel: string;
+    rows: AssetProfitLossRow[];
+    summary: AssetProfitLossSummary | null;
+  };
+  type AssetProfitLossState = {
+    details: AssetProfitLossDetails | null;
+    error: string;
+    loading: boolean;
+  };
 
   let {
     data,
@@ -63,6 +97,7 @@
     'FXRates'
   ];
   let openHistoryHoldingID = $state('');
+  let openProfitLossHoldingID = $state('');
   let accountDropdownOpen = $state(false);
   let accountFilterText = $state('');
   let accountSelectionDirty = $state(false);
@@ -70,6 +105,7 @@
   let displayMode: 'Discrete' | 'Aggregate' = $derived(data.assetViewMode);
   let expandedAggregateAssetID = $state('');
   let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
+  let profitLossByHoldingID = $state<Record<string, AssetProfitLossState>>({});
 
   const valuations = $derived(data.valuations);
   const accounts = $derived(data.accounts?.items ?? []);
@@ -449,6 +485,7 @@
     }
 
     openHistoryHoldingID = holdingID;
+    openProfitLossHoldingID = '';
 
     if (historyByHoldingID[holdingID])
       return;
@@ -484,6 +521,62 @@
         loading: false
       };
     }
+  }
+
+  async function toggleProfitLoss(item: ValuationItem) {
+    if (openProfitLossHoldingID === item.holdingID) {
+      openProfitLossHoldingID = '';
+      delete profitLossByHoldingID[item.holdingID];
+      return;
+    }
+
+    openProfitLossHoldingID = item.holdingID;
+    openHistoryHoldingID = '';
+
+    if (profitLossByHoldingID[item.holdingID])
+      return;
+
+    await loadProfitLoss(item);
+  }
+
+  async function loadProfitLoss(item: ValuationItem) {
+    profitLossByHoldingID[item.holdingID] = { details: null, error: '', loading: true };
+
+    try {
+      const profitLossUrl = new URL('/Asset/ProfitLoss', window.location.origin);
+      profitLossUrl.searchParams.set('accountID', item.accountID);
+      profitLossUrl.searchParams.set('holdingID', item.holdingID);
+      profitLossUrl.searchParams.set('holdingDateBasis', data.holdingDateBasis);
+      profitLossUrl.searchParams.set('instrumentPriceBasis', data.instrumentPriceBasis);
+      profitLossUrl.searchParams.set('valuationDateTime', toApiDateTime(data.valuationDate));
+
+      if (data.auditDateTime)
+        profitLossUrl.searchParams.set('auditDateTime', toApiDateTime(data.auditDateTime));
+
+      const response = await fetch(`${profitLossUrl.pathname}${profitLossUrl.search}`);
+
+      if (!response.ok)
+        throw new Error(`Profit/Loss request returned ${response.status} ${response.statusText}`);
+
+      profitLossByHoldingID[item.holdingID] = {
+        details: await response.json() as AssetProfitLossDetails,
+        error: '',
+        loading: false
+      };
+    } catch (error) {
+      profitLossByHoldingID[item.holdingID] = {
+        details: null,
+        error: error instanceof Error ? error.message : 'Unable to load Profit/Loss.',
+        loading: false
+      };
+    }
+  }
+
+  function moneyTone(value: number | null | undefined) {
+    if (value === null || value === undefined || !Number.isFinite(value) || value === 0)
+      return 'text-slate-700';
+
+    return value > 0 ? 'text-emerald-700' : 'text-rose-700';
   }
 
   function holdingEventSummary(event: HoldingHistoryEvent) {
@@ -889,9 +982,36 @@
                       <td class="px-3 py-2 text-right font-mono font-semibold text-slate-950">{formatMoney(item.bookValue, item.valuationCurrency)}</td>
                       <td class="px-3 py-2 text-right font-mono">{formatMoney(item.bookCost, item.valuationCurrency)}</td>
                       <td class="px-3 py-2 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                          <button class="house-button house-button-secondary house-button-md" onclick={() => toggleHistory(item.holdingID)} type="button">
-                            {openHistoryHoldingID === item.holdingID ? 'Hide' : 'History'}
+                        <div class="asset-row-actions">
+                          <button
+                            aria-label={`${openHistoryHoldingID === item.holdingID ? 'Hide' : 'Show'} history for ${itemDisplay.instrumentName}`}
+                            aria-pressed={openHistoryHoldingID === item.holdingID}
+                            class:asset-action-button-active={openHistoryHoldingID === item.holdingID}
+                            class="asset-action-button asset-action-button-history"
+                            onclick={() => toggleHistory(item.holdingID)}
+                            title="History"
+                            type="button"
+                          >
+                            <svg aria-hidden="true" viewBox="0 0 24 24">
+                              <path d="M3 12a9 9 0 1 0 3-6.7" />
+                              <path d="M3 4v5h5" />
+                              <path d="M12 7v5l3 2" />
+                            </svg>
+                          </button>
+                          <button
+                            aria-label={`${openProfitLossHoldingID === item.holdingID ? 'Hide' : 'Show'} Profit/Loss for ${itemDisplay.instrumentName}`}
+                            aria-pressed={openProfitLossHoldingID === item.holdingID}
+                            class:asset-action-button-active={openProfitLossHoldingID === item.holdingID}
+                            class="asset-action-button asset-action-button-pnl"
+                            onclick={() => toggleProfitLoss(item)}
+                            title="Profit/Loss"
+                            type="button"
+                          >
+                            <svg aria-hidden="true" viewBox="0 0 24 24">
+                              <path d="M4 18h16" />
+                              <path d="m7 15 4-4 3 3 4-7" />
+                              <path d="M17 7h4v4" />
+                            </svg>
                           </button>
                           <button
                             aria-label={statusDetail(item)}
@@ -929,6 +1049,95 @@
                               />
                             {/if}
                           </div>
+                        </td>
+                      </tr>
+                    {/if}
+                    {#if openProfitLossHoldingID === item.holdingID}
+                      {@const profitLoss = profitLossByHoldingID[item.holdingID]}
+                      <tr class="bg-slate-50/80">
+                        <td class="px-3 py-3" colspan="10">
+                          {#if profitLoss?.loading}
+                            <div class="text-sm text-slate-600">Loading Profit/Loss...</div>
+                          {:else if profitLoss?.error}
+                            <div class="status-panel status-panel-error">{profitLoss.error}</div>
+                          {:else if profitLoss?.details}
+                            <section class="asset-pnl-card" aria-label={`Profit/Loss for ${itemDisplay.instrumentName}`}>
+                              <header class="asset-pnl-header">
+                                <div>
+                                  <h3>Profit/Loss</h3>
+                                  <p>{profitLoss.details.methodLabel}</p>
+                                </div>
+                                {#if profitLoss.details.summary}
+                                  <div class={`asset-pnl-total ${moneyTone(profitLoss.details.summary.totalPnL)}`}>
+                                    {formatMoney(profitLoss.details.summary.totalPnL, profitLoss.details.currency)}
+                                  </div>
+                                {/if}
+                              </header>
+
+                              {#if profitLoss.details.summary && !profitLoss.details.summary.complete && profitLoss.details.summary.incompleteReason}
+                                <div class="status-panel status-panel-warning">{profitLoss.details.summary.incompleteReason}</div>
+                              {/if}
+
+                              <div class="asset-pnl-table-wrap">
+                                <table class="asset-pnl-table">
+                                  <thead>
+                                    <tr>
+                                      <th scope="col">Instrument</th>
+                                      <th scope="col">Date</th>
+                                      <th scope="col" class="text-right">Qty</th>
+                                      <th scope="col" class="text-right">Book cost</th>
+                                      <th scope="col" class="text-right">PnL</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {#if profitLoss.details.rows.length}
+                                      {#each profitLoss.details.rows as row (row.rowID)}
+                                        <tr>
+                                          <td>
+                                            <div class="asset-pnl-instrument">
+                                              <span>{row.instrumentName || profitLoss.details.instrumentName || itemDisplay.instrumentName}</span>
+                                              <small>{row.transactionType}</small>
+                                            </div>
+                                          </td>
+                                          <td>{formatTableDateTime(row.displayDateTime)}</td>
+                                          <td class="text-right font-mono">{formatNumber(row.quantity)}</td>
+                                          <td class="text-right font-mono">{formatMoney(row.bookCost, profitLoss.details.currency)}</td>
+                                          <td class={`text-right font-mono font-semibold ${moneyTone(row.realizedPnL)}`}>
+                                            {formatMoney(row.realizedPnL, profitLoss.details.currency)}
+                                          </td>
+                                        </tr>
+                                      {/each}
+                                    {:else}
+                                      <tr>
+                                        <td class="asset-pnl-empty" colspan="5">No transactions found.</td>
+                                      </tr>
+                                    {/if}
+
+                                    {#if profitLoss.details.summary}
+                                      <tr class="asset-pnl-summary-row">
+                                        <th scope="row" colspan="4">Realised PnL</th>
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.realizedPnL)}`}>
+                                          {formatMoney(profitLoss.details.summary.realizedPnL, profitLoss.details.currency)}
+                                        </td>
+                                      </tr>
+                                      <tr class="asset-pnl-summary-row">
+                                        <th scope="row" colspan="4">Unrealised PnL</th>
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.unrealizedPnL)}`}>
+                                          {formatMoney(profitLoss.details.summary.unrealizedPnL, profitLoss.details.currency)}
+                                        </td>
+                                      </tr>
+                                      <tr class="asset-pnl-summary-row asset-pnl-summary-total">
+                                        <th scope="row" colspan="4">Total PnL</th>
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.totalPnL)}`}>
+                                          {formatMoney(profitLoss.details.summary.totalPnL, profitLoss.details.currency)}
+                                        </td>
+                                      </tr>
+                                    {/if}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </section>
+                          {/if}
                         </td>
                       </tr>
                     {/if}
@@ -1211,6 +1420,62 @@
     letter-spacing: 0;
   }
 
+  .asset-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .asset-action-button {
+    display: inline-grid;
+    width: 2rem;
+    height: 1.75rem;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: var(--house-radius-sm);
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      background-color 0.14s ease,
+      border-color 0.14s ease,
+      color 0.14s ease,
+      box-shadow 0.14s ease;
+  }
+
+  .asset-action-button:hover,
+  .asset-action-button:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent-strong);
+    outline: none;
+  }
+
+  .asset-action-button svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .asset-action-button-history {
+    background: color-mix(in srgb, var(--accent-soft) 56%, var(--panel));
+    color: var(--accent-strong);
+  }
+
+  .asset-action-button-pnl {
+    background: color-mix(in srgb, #ecfdf5 68%, var(--panel));
+    color: #047857;
+  }
+
+  .asset-action-button-active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
   .asset-detail-link {
     display: inline-flex;
     border: 0;
@@ -1294,6 +1559,124 @@
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 2;
+  }
+
+  .asset-pnl-card {
+    display: grid;
+    gap: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+    border-radius: var(--house-radius);
+    background: var(--panel);
+    padding: 0.9rem;
+    box-shadow: 0 10px 24px rgb(15 23 42 / 0.06);
+  }
+
+  .asset-pnl-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .asset-pnl-header h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.95rem;
+    font-weight: 760;
+    letter-spacing: 0;
+    line-height: 1.2;
+  }
+
+  .asset-pnl-header p {
+    margin: 0.15rem 0 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 620;
+    line-height: 1.25;
+  }
+
+  .asset-pnl-total {
+    flex: 0 0 auto;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.95rem;
+    font-weight: 760;
+    line-height: 1.2;
+  }
+
+  .asset-pnl-table-wrap {
+    overflow-x: auto;
+  }
+
+  .asset-pnl-table {
+    width: 100%;
+    min-width: 44rem;
+    border-collapse: collapse;
+    color: var(--ink);
+    font-size: 0.82rem;
+  }
+
+  .asset-pnl-table th,
+  .asset-pnl-table td {
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+    padding: 0.45rem 0.55rem;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .asset-pnl-table thead th {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 760;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .asset-pnl-table .text-right {
+    text-align: right;
+  }
+
+  .asset-pnl-instrument {
+    display: grid;
+    min-width: 0;
+    gap: 0.05rem;
+  }
+
+  .asset-pnl-instrument span {
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .asset-pnl-instrument small {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 640;
+    line-height: 1.1;
+  }
+
+  .asset-pnl-empty {
+    color: var(--muted);
+    font-weight: 560;
+    text-align: center;
+  }
+
+  .asset-pnl-summary-row th,
+  .asset-pnl-summary-row td {
+    background: color-mix(in srgb, var(--panel-muted) 58%, var(--panel));
+  }
+
+  .asset-pnl-summary-row th {
+    color: var(--muted);
+    font-weight: 740;
+    text-align: right;
+  }
+
+  .asset-pnl-summary-total th,
+  .asset-pnl-summary-total td {
+    border-bottom: 0;
+    background: color-mix(in srgb, var(--accent-soft) 40%, var(--panel));
   }
 
   .asset-table {

@@ -46,6 +46,7 @@ function normalizeAccountEvent(event: Record<string, unknown>) {
     name: readString(event, 'name', 'Name'),
     formalName: readString(event, 'formalName', 'FormalName'),
     bookCurrency: readString(event, 'bookCurrency', 'BookCurrency'),
+    bookCostBasis: readString(event, 'bookCostBasis', 'BookCostBasis'),
     active: readOptionalBoolean(event, 'active', 'Active'),
     propertyDetails: readEventPropertyDetails(event)
   };

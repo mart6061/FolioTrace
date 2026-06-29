@@ -1,5 +1,6 @@
 using FolioTrace.Aggregates;
 using FolioTrace;
+using FolioTrace.Types;
 using Repository;
 using System.Text.Json;
 
@@ -104,5 +105,37 @@ public sealed class ReportConfigBuilderTests
         Assert.IsType<ReportNodeChart>(roundTripped.Nodes[2]);
         var valuation = Assert.IsType<ReportNodeValuation>(roundTripped.Nodes[3]);
         Assert.True(valuation.DisplayHoldings);
+    }
+
+    [Fact]
+    public void ReportCreatedEvent_SerializesProfitLossNodeMethod()
+    {
+        var assetAllocationID = AssetAllocationIDBuilder.Create();
+        var createdEvent = ReportCreatedEventBuilder.Create(
+            Constants.Initialisation.UserID,
+            ReportIDBuilder.Create(),
+            "Profit Loss Report",
+            true,
+            [
+                new ReportNodeProfitLoss(
+                    ReportNodeIDBuilder.Create(),
+                    1,
+                    "Profit Loss",
+                    "Profit Loss",
+                    assetAllocationID,
+                    ReportProfitLossMethod.LIFO)
+            ]).Value!;
+
+        var json = JsonSerializer.Serialize(createdEvent);
+        using var document = JsonDocument.Parse(json);
+        var node = document.RootElement.GetProperty("Nodes")[0];
+        Assert.Equal("ReportNodeProfitLoss", node.GetProperty("$type").GetString());
+        Assert.Equal("LIFO", node.GetProperty("ProfitLossMethod").GetString());
+
+        var roundTripped = JsonSerializer.Deserialize<ReportCreatedEvent>(json);
+
+        Assert.NotNull(roundTripped);
+        var profitLoss = Assert.IsType<ReportNodeProfitLoss>(roundTripped.Nodes[0]);
+        Assert.Equal(ReportProfitLossMethod.LIFO, profitLoss.ProfitLossMethod);
     }
 }

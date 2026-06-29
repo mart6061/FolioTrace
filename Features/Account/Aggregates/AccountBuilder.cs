@@ -9,7 +9,7 @@ public static class AccountBuilder
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Account(createdEvent.AccountID, createdEvent.Name, createdEvent.FormalName, createdEvent.BookCurrency, createdEvent.Active, displayOrder, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
+        return new Account(createdEvent.AccountID, createdEvent.Name, createdEvent.FormalName, createdEvent.BookCurrency, createdEvent.BookCostBasis, createdEvent.Active, displayOrder, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
     }
 
     extension(Account account)
@@ -26,6 +26,7 @@ public static class AccountBuilder
             {
                 Name = modifiedEvent.Name,
                 FormalName = modifiedEvent.FormalName,
+                BookCostBasis = modifiedEvent.BookCostBasis,
                 ValuationDateTime = modifiedEvent.EventDateTime,
                 AsOfDateTime = modifiedEvent.AuditDateTime,
                 LastEventID = modifiedEvent.EventID,

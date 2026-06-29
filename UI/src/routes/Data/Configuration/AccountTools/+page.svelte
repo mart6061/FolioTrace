@@ -4,7 +4,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { Button, Field, Select, TextInput, Toggle } from '$lib/components/forms';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput } from '$lib/dates';
-  import type { Account, Holding, HoldingKind, Instrument, ValuationSetting } from '$lib/types';
+  import type { Account, Holding, HoldingKind, Instrument, ProfitLossMethod, ValuationSetting } from '$lib/types';
 
   let { data, form } = $props();
 
@@ -27,6 +27,11 @@
   ];
   const NOMINAL_HOLDING_KINDS: HoldingKind[] = ['NominalInflow', 'NominalOutflow', 'NominalInSpecieIn', 'NominalInSpecieOut', 'NominalFeesCustodian', 'NominalFeesAdministrator', 'NominalFeesBank', 'NominalIncome', 'NominalInterest'];
   const BANK_HOLDING_KINDS: HoldingKind[] = ['CashDebt', 'CashInvestable', 'CashNonInvestable'];
+  const profitLossMethodOptions: { value: ProfitLossMethod; label: string }[] = [
+    { value: 'FIFO', label: 'FIFO' },
+    { value: 'LIFO', label: 'LIFO' },
+    { value: 'RunningAverage', label: 'Weighted average' }
+  ];
 
   let selectedAccountID = $state('');
   let filterText = $state('');
@@ -52,7 +57,7 @@
       if (!filter)
         return true;
 
-      return [account.name, account.formalName, account.bookCurrency, account.active ? 'active' : 'inactive']
+      return [account.name, account.formalName, account.bookCurrency, profitLossMethodLabel(account.bookCostBasis), account.active ? 'active' : 'inactive']
         .some((value) => value.toLocaleLowerCase().includes(filter));
     })
   );
@@ -77,6 +82,10 @@
       .replace(/([a-z])([A-Z])/g, '$1 $2')
       .replace(/^Nominal /, '')
       .replace('Cash Investable', 'Cash Investable');
+  }
+
+  function profitLossMethodLabel(value: ProfitLossMethod | undefined) {
+    return profitLossMethodOptions.find((option) => option.value === value)?.label ?? 'FIFO';
   }
 
   function instrumentName(instrumentID: string) {
@@ -106,7 +115,7 @@
   }
 
   function accountOptionLabel(account: Account) {
-    return `${account.name} - ${account.formalName} (${account.bookCurrency}, ${account.active ? 'Active' : 'Inactive'})`;
+    return `${account.name} - ${account.formalName} (${account.bookCurrency}, ${profitLossMethodLabel(account.bookCostBasis)}, ${account.active ? 'Active' : 'Inactive'})`;
   }
 
   const selectedAccountLabel = $derived(selectedAccount ? accountOptionLabel(selectedAccount) : 'Select account');
@@ -241,7 +250,7 @@
                     bind:value={filterText}
                     class="house-control house-control-md house-control-full"
                     onkeydown={handleAccountSearchKeydown}
-                    placeholder="Search name, formal name, currency, status"
+                    placeholder="Search name, formal name, currency, basis, status"
                     type="search"
                     {@attach captureAccountSearchInput}
                   />
@@ -256,7 +265,7 @@
                         type="button"
                       >
                         <span>{account.name}</span>
-                        <small>{account.formalName} - {account.bookCurrency} - {account.active ? 'Active' : 'Inactive'}</small>
+                        <small>{account.formalName} - {account.bookCurrency} - {profitLossMethodLabel(account.bookCostBasis)} - {account.active ? 'Active' : 'Inactive'}</small>
                       </button>
                     {:else}
                       <div class="account-combobox-empty">No accounts match the search</div>
@@ -298,6 +307,10 @@
               <strong>{selectedAccount.bookCurrency}</strong>
             </div>
             <div>
+              <span>Book cost basis</span>
+              <strong>{profitLossMethodLabel(selectedAccount.bookCostBasis)}</strong>
+            </div>
+            <div>
               <span>Holdings</span>
               <strong>{selectedHoldings.length}</strong>
             </div>
@@ -315,6 +328,13 @@
               </Field>
               <Field label="Book currency">
                 <TextInput disabled fullWidth value={selectedAccount.bookCurrency} />
+              </Field>
+              <Field label="Book cost basis" required>
+                <Select fullWidth name="bookCostBasis" required value={selectedAccount.bookCostBasis}>
+                  {#each profitLossMethodOptions as option (option.value)}
+                    <option value={option.value}>{option.label}</option>
+                  {/each}
+                </Select>
               </Field>
               <Field label="Name" required>
                 <TextInput fullWidth name="name" required value={selectedAccount.name} />
@@ -549,6 +569,13 @@
                   <option value="">Select currency</option>
                   {#each currencies as currency (currency.alphabeticCode)}
                     <option value={currency.alphabeticCode}>{currency.alphabeticCode} - {currency.name}</option>
+                  {/each}
+                </Select>
+              </Field>
+              <Field label="Book cost basis" required>
+                <Select fullWidth name="bookCostBasis" required value="FIFO">
+                  {#each profitLossMethodOptions as option (option.value)}
+                    <option value={option.value}>{option.label}</option>
                   {/each}
                 </Select>
               </Field>

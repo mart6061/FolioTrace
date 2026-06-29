@@ -3,7 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import { MultiSelect, Toggle } from '$lib/components/forms';
-  import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
+  import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportProfitLossMethod, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -14,6 +14,7 @@
     { type: 'ReportNodeChart', label: 'Chart', title: 'Asset Allocation Chart' },
     { type: 'ReportNodeValuation', label: 'Valuation', title: 'Valuation' },
     { type: 'ReportNodeTransactions', label: 'Transactions', title: 'Transactions' },
+    { type: 'ReportNodeProfitLoss', label: 'Profit Loss', title: 'Profit Loss' },
     { type: 'ReportNodeCash', label: 'Cash', title: 'Cash' }
   ];
 
@@ -24,6 +25,10 @@
     { key: 'QuotePrice', label: 'Quote Price' },
     { key: 'Quantity', label: 'Quantity' },
     { key: 'BookValue', label: 'Book Value' },
+    { key: 'BookValueDefault', label: 'Book Value (default)' },
+    { key: 'BookValueFIFO', label: 'Book Value (FIFO)' },
+    { key: 'BookValueLIFO', label: 'Book Value (LIFO)' },
+    { key: 'BookValueRunningAverage', label: 'Book Value (w/avg)' },
     { key: 'BookCost', label: 'Book Cost' },
     { key: 'Weight', label: 'Weight' },
     { key: 'Target', label: 'Target' },
@@ -40,6 +45,13 @@
     { value: 1, label: 'Level 1' },
     { value: 2, label: 'Level 2' },
     { value: 3, label: 'Level 3' }
+  ];
+
+  const profitLossMethodOptions: { value: ReportProfitLossMethod; label: string }[] = [
+    { value: 'Default', label: 'Default' },
+    { value: 'FIFO', label: 'FIFO' },
+    { value: 'LIFO', label: 'LIFO' },
+    { value: 'RunningAverage', label: 'W/Avg' }
   ];
 
   const accounts = $derived(data.accounts?.items ?? []);
@@ -99,7 +111,8 @@
       columns: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined,
       colourBullet: reportNodeType(node) === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
       colourText: reportNodeType(node) === 'ReportNodeValuation' ? node.colourText ?? false : undefined,
-      displayHoldings: reportNodeType(node) === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined
+      displayHoldings: reportNodeType(node) === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined,
+      profitLossMethod: reportNodeType(node) === 'ReportNodeProfitLoss' ? normalizeProfitLossMethod(node.profitLossMethod) : undefined
     }));
   }
 
@@ -123,7 +136,8 @@
         columns: type === 'ReportNodeValuation' ? normalizeValuationColumns(node.columns) : undefined,
         colourBullet: type === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
         colourText: type === 'ReportNodeValuation' ? node.colourText ?? false : undefined,
-        displayHoldings: type === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined
+        displayHoldings: type === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined,
+        profitLossMethod: type === 'ReportNodeProfitLoss' ? normalizeProfitLossMethod(node.profitLossMethod) : undefined
       };
     });
   }
@@ -144,12 +158,16 @@
     return value === 2 || value === 3 ? value : 1;
   }
 
+  function normalizeProfitLossMethod(value: ReportNodeBase['profitLossMethod']): ReportProfitLossMethod {
+    return value === 'FIFO' || value === 'LIFO' || value === 'RunningAverage' ? value : 'Default';
+  }
+
   function firstAssetAllocationID() {
     return assetAllocations[0]?.assetAllocationID ?? '';
   }
 
   function requiresAssetAllocation(type: ReportNodeType) {
-    return type === 'ReportNodeChart' || type === 'ReportNodeValuation' || type === 'ReportNodeTransactions' || type === 'ReportNodeCash';
+    return type === 'ReportNodeChart' || type === 'ReportNodeValuation' || type === 'ReportNodeTransactions' || type === 'ReportNodeProfitLoss' || type === 'ReportNodeCash';
   }
 
   function createNode(type: ReportNodeType): ReportNodeBase {
@@ -177,6 +195,9 @@
       node.colourText = false;
       node.displayHoldings = true;
     }
+
+    if (type === 'ReportNodeProfitLoss')
+      node.profitLossMethod = 'Default';
 
     return node;
   }
@@ -682,6 +703,19 @@
                           {/if}
                         {/if}
                       </div>
+                      {#if type === 'ReportNodeProfitLoss'}
+                        <fieldset class="field report-profit-loss-method-field">
+                          <legend>Profit/loss method</legend>
+                          <div class="report-segmented-control report-profit-loss-method-control">
+                            {#each profitLossMethodOptions as option (option.value)}
+                              <label>
+                                <input name={`profitLossMethod-${node.reportNodeID}`} type="radio" bind:group={node.profitLossMethod} value={option.value} />
+                                <span>{option.label}</span>
+                              </label>
+                            {/each}
+                          </div>
+                        </fieldset>
+                      {/if}
                       {#if type === 'ReportNodeValuation'}
                         {@const valuationColumns = valuationNodeColumns(node)}
                         <div class="report-valuation-display-options" aria-label="Valuation display options">
@@ -750,9 +784,6 @@
                             </div>
                           </div>
                         </div>
-                      {/if}
-                      {#if requiresAssetAllocation(type)}
-                        <div class="report-node-footnote">{assetAllocationName(node.assetAllocationID)}</div>
                       {/if}
                     </section>
                   {:else}
@@ -1184,6 +1215,19 @@
     outline-offset: -2px;
   }
 
+  .report-profit-loss-method-field {
+    margin: 0;
+    min-width: 0;
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    padding: 0.7rem 0 0;
+  }
+
+  .report-profit-loss-method-control {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 24rem;
+  }
+
   .report-valuation-display-options {
     display: flex;
     flex-wrap: wrap;
@@ -1319,12 +1363,6 @@
     font-size: 0.78rem;
     font-weight: 680;
     padding: 0 0.25rem;
-  }
-
-  .report-node-footnote {
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 650;
   }
 
   .report-flow-empty {

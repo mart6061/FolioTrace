@@ -23,7 +23,7 @@ import {
   type HoldingCreatedRequest,
   type HoldingModifiedRequest
 } from '$lib/server/api';
-import type { Holding, HoldingKind, Instrument } from '$lib/types';
+import type { Holding, HoldingKind, Instrument, ProfitLossMethod } from '$lib/types';
 
 type NominalHoldingKind = Extract<
   HoldingKind,
@@ -44,6 +44,10 @@ const REQUIRED_NOMINAL_HOLDINGS: { kind: NominalHoldingKind; name: string }[] = 
 
 const BANK_HOLDING_KINDS = new Set<HoldingKind>(['CashDebt', 'CashInvestable', 'CashNonInvestable']);
 const NOMINAL_HOLDING_KIND_SET = new Set<HoldingKind>(REQUIRED_NOMINAL_HOLDINGS.map((holding) => holding.kind));
+
+function normaliseProfitLossMethod(value: string): ProfitLossMethod {
+  return value === 'LIFO' || value === 'RunningAverage' ? value : 'FIFO';
+}
 
 export const load = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -98,9 +102,10 @@ export const actions = {
     const name = getFormString(formData, 'name');
     const formalName = getFormString(formData, 'formalName');
     const bookCurrency = getFormString(formData, 'bookCurrency');
+    const bookCostBasis = normaliseProfitLossMethod(getFormString(formData, 'bookCostBasis'));
     const active = getFormString(formData, 'active') === 'true';
     const bankFields = getBankFields(formData);
-    const values = { active, bankFields, bookCurrency, eventDateTime: eventDateTimeInput, formalName, name };
+    const values = { active, bankFields, bookCostBasis, bookCurrency, eventDateTime: eventDateTimeInput, formalName, name };
 
     if (!eventDateTimeInput || !name || !formalName || !bookCurrency)
       return fail(400, failure('createAccount', 'Start date, name, formal name, and book currency are required.', values));
@@ -119,6 +124,7 @@ export const actions = {
       const accountCreatedRequest: AccountCreatedRequest = {
         accountID,
         active,
+        bookCostBasis,
         bookCurrency,
         eventDateTime,
         formalName,
@@ -148,7 +154,8 @@ export const actions = {
     const eventDateTimeInput = getFormString(formData, 'eventDateTime');
     const name = getFormString(formData, 'name');
     const formalName = getFormString(formData, 'formalName');
-    const values = { accountID, eventDateTime: eventDateTimeInput, formalName, name };
+    const bookCostBasis = normaliseProfitLossMethod(getFormString(formData, 'bookCostBasis'));
+    const values = { accountID, bookCostBasis, eventDateTime: eventDateTimeInput, formalName, name };
 
     if (!accountID || !eventDateTimeInput || !name || !formalName)
       return fail(400, failure('modifyAccount', 'Account, start date, name, and formal name are required.', values));
@@ -156,6 +163,7 @@ export const actions = {
     try {
       const accountModifiedRequest: AccountModifiedRequest = {
         accountID,
+        bookCostBasis,
         eventDateTime: toApiDateTime(eventDateTimeInput),
         formalName,
         name,

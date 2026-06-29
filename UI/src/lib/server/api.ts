@@ -43,6 +43,8 @@ import type {
   HoldingDateBasis,
   EventPropertyDetail,
   InstrumentPriceBasis,
+  ProfitLosses,
+  ProfitLossMethod,
   ReportConfigs,
   ReportNodeBase,
   Valuations,
@@ -69,6 +71,7 @@ export type AccountModifiedRequest = {
   accountID: string;
   name: string;
   formalName: string;
+  bookCostBasis: ProfitLossMethod;
 };
 
 export type AccountCreatedRequest = AccountModifiedRequest & {
@@ -708,6 +711,33 @@ export async function getValuations(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as Valuations;
+}
+
+export async function getProfitLosses(
+  fetchApi: typeof fetch,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  holdingDateBasis: HoldingDateBasis,
+  instrumentPriceBasis: InstrumentPriceBasis,
+  accountID: string | null = null
+) {
+  const url = new URL(`${getApiBaseUrl()}/ProfitLoss/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  url.searchParams.set('holdingDateBasis', holdingDateBasis);
+  url.searchParams.set('instrumentPriceBasis', instrumentPriceBasis);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  if (accountID)
+    url.searchParams.set('accountID', accountID);
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as ProfitLosses;
 }
 
 export async function getCurrencies(
@@ -2138,6 +2168,7 @@ async function postAccountEvent(
   if ('name' in request) {
     body.Name = request.name;
     body.FormalName = request.formalName;
+    body.BookCostBasis = request.bookCostBasis;
   }
 
   if (eventType === 'AccountCreatedEvent')
@@ -2578,6 +2609,9 @@ function toReportNodeBody(node: ReportNodeRequest) {
     body.ColourText = node.colourText ?? false;
     body.DisplayHoldings = node.displayHoldings ?? true;
   }
+
+  if (type === 'ReportNodeProfitLoss')
+    body.ProfitLossMethod = node.profitLossMethod ?? 'Default';
 
   return body;
 }
