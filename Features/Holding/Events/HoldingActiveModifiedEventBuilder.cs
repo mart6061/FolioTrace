@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class HoldingActiveModifiedEventBuilder
 {
     public static Result<HoldingActiveModifiedEvent> Create(HoldingActiveModifiedRequest request, Holdings? holdings = null)

@@ -1,10 +1,16 @@
 using API;
+using API.Auth;
 using API.FoleoTrader;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Logging;
 using Repository;
 using Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
 
 builder.Logging.Configure(options =>
 {
@@ -17,6 +23,32 @@ builder.Logging.Configure(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.Configure<WorkOSAuthOptions>(builder.Configuration.GetSection(WorkOSAuthOptions.SectionName));
+var workOSAuthOptions = builder.Configuration
+    .GetSection(WorkOSAuthOptions.SectionName)
+    .Get<WorkOSAuthOptions>() ?? new WorkOSAuthOptions();
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = workOSAuthOptions.CookieName;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(Math.Max(5, workOSAuthOptions.SessionLifetimeMinutes));
+        options.SlidingExpiration = true;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v0", new()
@@ -39,6 +71,10 @@ builder.Services.AddSingleton(
         .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
+builder.Services.AddSingleton<IWorkOSAuthKitClient, WorkOSAuthKitClient>();
+builder.Services.AddSingleton<IWorkOSSsoClient>(sp => (IWorkOSSsoClient)sp.GetRequiredService<IWorkOSAuthKitClient>());
+builder.Services.AddSingleton<WorkOSAuthorizationStateService>();
+builder.Services.AddSingleton<FolioTraceUserIdentityService>();
 builder.AddApiObservability();
 builder.Services.AddHostedService<AggregateMaintenanceHostedService>();
 
@@ -60,6 +96,8 @@ if (app.Environment.IsDevelopment())
 app.UseApiRequestLogging();
 app.UseApiExchangeCapture();
 app.UseApiUnhandledExceptionLogging();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapFolioTraceApi();
 

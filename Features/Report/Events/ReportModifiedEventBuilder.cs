@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class ReportModifiedEventBuilder
 {
     public static Result<ReportModifiedEvent> Create(ReportModifiedRequest request, ReportConfigs? reportConfigs = null, ValuationSettings? valuationSettings = null)

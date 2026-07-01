@@ -21,17 +21,8 @@ import {
 import { fail } from '@sveltejs/kit';
 import type { UserBookmarkItem } from '$lib/types';
 
-type DecodedUserJWT = {
-  formattedToken: string;
-  headerJSON: string;
-  payloadJSON: string;
-  error: string;
-};
-
 export const load = async ({ fetch, locals, url }) => {
   const currentUser = requireCurrentUser(locals);
-  const userJWT = locals.auth?.accessToken ?? '';
-  const decodedUserJWT = decodeUserJWT(userJWT);
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = nowForInput();
   const apiEventDateTime = toApiDateTime(eventDateTime);
@@ -50,8 +41,6 @@ export const load = async ({ fetch, locals, url }) => {
       error: '',
       eventDateTime,
       currentUser,
-      userJWT,
-      decodedUserJWT,
       menuPreferences,
       userBookmarks,
       valuationPreferences
@@ -63,8 +52,6 @@ export const load = async ({ fetch, locals, url }) => {
       error: error instanceof Error ? error.message : 'Unable to load user preferences.',
       eventDateTime,
       currentUser,
-      userJWT,
-      decodedUserJWT,
       menuPreferences: defaultUserMenuPreferences(currentUser.userID),
       userBookmarks: defaultUserBookmarks(currentUser.userID),
       valuationPreferences: defaultUserValuationPreferences(currentUser.userID)
@@ -183,58 +170,6 @@ export const actions = {
     }
   }
 };
-
-function decodeUserJWT(token: string): DecodedUserJWT {
-  const empty: DecodedUserJWT = {
-    formattedToken: '',
-    headerJSON: '',
-    payloadJSON: '',
-    error: ''
-  };
-
-  if (!token)
-    return empty;
-
-  const parts = token.split('.');
-  const formattedToken = formatJWT(parts);
-
-  if (parts.length !== 3 || parts.some((part) => part.length === 0)) {
-    return {
-      ...empty,
-      formattedToken,
-      error: 'JWT must contain header, payload, and signature segments.'
-    };
-  }
-
-  try {
-    return {
-      formattedToken,
-      headerJSON: JSON.stringify(decodeJWTJSONSegment(parts[0]), null, 2),
-      payloadJSON: JSON.stringify(decodeJWTJSONSegment(parts[1]), null, 2),
-      error: ''
-    };
-  } catch (error) {
-    return {
-      ...empty,
-      formattedToken,
-      error: error instanceof Error ? `Unable to decode JWT: ${error.message}` : 'Unable to decode JWT.'
-    };
-  }
-}
-
-function formatJWT(parts: string[]) {
-  if (parts.length !== 3)
-    return parts.join('\n');
-
-  return `${parts[0]}.\n${parts[1]}.\n${parts[2]}`;
-}
-
-function decodeJWTJSONSegment(segment: string): unknown {
-  const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');
-  const decoded = Buffer.from(padded, 'base64').toString('utf-8');
-  return JSON.parse(decoded);
-}
 
 function getFormString(formData: FormData, name: string) {
   const value = formData.get(name);

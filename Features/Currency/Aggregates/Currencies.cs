@@ -1,10 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FolioTrace;
+using FolioTrace.Common;
 using FolioTrace.Types;
+
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Currencies")]
 public sealed record Currencies : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

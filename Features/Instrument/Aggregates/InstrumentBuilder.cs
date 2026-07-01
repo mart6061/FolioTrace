@@ -1,5 +1,8 @@
+using FolioTrace.Common;
+
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class InstrumentBuilder
 {
     public static Instrument Create(InstrumentCreatedEvent createdEvent)

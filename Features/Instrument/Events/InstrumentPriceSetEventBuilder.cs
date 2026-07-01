@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class InstrumentPriceSetEventBuilder
 {
     public static Result<InstrumentPriceSetEvent> Create(InstrumentPriceSetRequest request)

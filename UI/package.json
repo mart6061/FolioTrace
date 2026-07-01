@@ -26,9 +26,7 @@
     "typescript": "^5.8.0",
     "vite": "^6.3.0"
   },
-  "dependencies": {
-    "@workos/authkit-sveltekit": "^0.3.0"
-  },
+  "dependencies": {},
   "engines": {
   "node": ">=22.0.0"
   }

@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class AccountDisplayOrderSetEventBuilder
 {
     public static Result<AccountDisplayOrderSetEvent> Create(AccountDisplayOrderSetRequest request, Accounts? accounts = null)

@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class AccountsBuilder
 {
     public static Accounts Create(EventDateTime eventDate, AuditDateTime auditDateTime, List<IAccountEvent> accountEvents)

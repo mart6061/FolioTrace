@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserMenuPreferencesModifiedEventBuilder
 {
     public static Result<UserMenuPreferencesModifiedEvent> Create(UserMenuPreferencesRequest request)

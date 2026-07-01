@@ -5,6 +5,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Foreign exchange rates")]
 public sealed record FXRates : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

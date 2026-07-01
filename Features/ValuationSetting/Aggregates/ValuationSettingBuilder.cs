@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class ValuationSettingBuilder
 {
     public static ValuationSetting Create(AssetAllocationCreatedEvent createdEvent)

@@ -1,7 +1,10 @@
 using System;
 
+using FolioTrace.Common;
+
 namespace FolioTrace.Types;
 
+[Builder]
 public static class SedolBuilder
 {
     // Create a new Sedol from provided value (validation enforced by Sedol constructor)

@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserBookmarkCreatedEventBuilder
 {
     public static Result<UserBookmarkCreatedEvent> Create(UserBookmarkRequest request)

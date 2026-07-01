@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class TransactionBuilder
 {
     public static Result<IReadOnlyList<ITransactionMovementEvent>> Create(TransactionSetRequest request, Holdings? holdings = null, Accounts? accounts = null)

@@ -32,7 +32,8 @@ export const menuPreferenceDefinitions: MenuPreferenceDefinition[] = [
   { id: 'diagnostics', label: 'Diagnostics' },
   { id: 'system-logs', label: 'Request Trace', parentID: 'diagnostics' },
   { id: 'system-fix-trace', label: 'FIX Trace', parentID: 'diagnostics' },
-  { id: 'system-stats', label: 'Stats for Nerds', parentID: 'diagnostics' }
+  { id: 'system-stats', label: 'Stats for Nerds', parentID: 'diagnostics' },
+  { id: 'ideas', label: 'Ideas' }
 ];
 
 export const controlledMenuItemIDs = menuPreferenceDefinitions.map((item) => item.id);

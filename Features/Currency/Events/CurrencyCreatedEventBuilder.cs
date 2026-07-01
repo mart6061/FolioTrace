@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class CurrencyCreatedEventBuilder
 {
     public static Result<CurrencyCreatedEvent> Create(CurrencyCreatedRequest request)

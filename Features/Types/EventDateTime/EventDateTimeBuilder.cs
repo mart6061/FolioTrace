@@ -1,7 +1,10 @@
 using System;
 
+using FolioTrace.Common;
+
 namespace FolioTrace.Types;
 
+[Builder]
 public static class EventDateTimeBuilder
 {
     // Create a new EventDateTime using current UTC time

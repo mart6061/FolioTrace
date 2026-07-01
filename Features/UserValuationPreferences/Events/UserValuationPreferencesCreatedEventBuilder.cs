@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserValuationPreferencesCreatedEventBuilder
 {
     public static Result<UserValuationPreferencesCreatedEvent> Create(UserValuationPreferencesRequest request)

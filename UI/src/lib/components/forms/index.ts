@@ -1,4 +1,6 @@
+export { default as AccountDropdown } from './AccountDropdown.svelte';
 export { default as Button } from './Button.svelte';
+export { default as ComplexSelect } from './ComplexSelect.svelte';
 export { default as Field } from './Field.svelte';
 export { default as MultiSelect } from './MultiSelect.svelte';
 export { default as PillGroup } from './PillGroup.svelte';
@@ -7,4 +9,5 @@ export { default as TextArea } from './TextArea.svelte';
 export { default as TextInput } from './TextInput.svelte';
 export { default as Toggle } from './Toggle.svelte';
 export type { ButtonSize, ButtonVariant, ControlSize } from './controls';
+export type { ComplexSelectOption } from './ComplexSelect.svelte';
 export type { PillOption } from './PillGroup.svelte';

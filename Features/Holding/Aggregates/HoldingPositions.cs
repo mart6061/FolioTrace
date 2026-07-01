@@ -5,6 +5,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Holding positions")]
 public sealed record HoldingPositions : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

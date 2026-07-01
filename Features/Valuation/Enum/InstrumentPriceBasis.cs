@@ -6,15 +6,15 @@ namespace FolioTrace.Aggregates;
 [JsonConverter(typeof(JsonStringEnumConverter<InstrumentPriceBasis>))]
 public enum InstrumentPriceBasis
 {
-    [Description("Bid")]
+    [Description("Bid price")]
     Bid,
 
-    [Description("Ask")]
+    [Description("Ask price")]
     Ask,
 
-    [Description("Mid")]
+    [Description("Mid price")]
     Mid,
 
-    [Description("NAV")]
+    [Description("Net Asset Value")]
     NAV
 }

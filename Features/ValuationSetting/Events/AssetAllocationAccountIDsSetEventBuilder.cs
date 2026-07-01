@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class AssetAllocationAccountIDsSetEventBuilder
 {
     public static Result<AssetAllocationAccountIDsSetEvent> Create(AssetAllocationAccountIDsSetRequest request, ValuationSettings? valuationSettings = null)

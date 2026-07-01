@@ -775,6 +775,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             AuditDateTimeBuilder.Create(),
             holdingEvents.Cast<IHoldingEvent>().ToList());
         var events = new List<ITransactionEvent>();
+        var fxPairSeeds = SeedFXData.CreatePairSeeds();
         var startDate = DateTime.UtcNow.Date.AddYears(-1);
         var endDate = startDate.AddYears(1);
 
@@ -806,6 +807,9 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                     cashInstrument.InstrumentID,
                     inflowAmount,
                     inflowAmount,
+                    Alpha3Builder.Create(cashInstrument.Currency),
+                    Alpha3Builder.Create(account.BookCurrency),
+                    fxPairSeeds,
                     monthDate.AddHours(9),
                     $"Seed monthly cash in {month + 1}"));
 
@@ -817,6 +821,9 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                     cashInstrument.InstrumentID,
                     outflowAmount,
                     outflowAmount,
+                    Alpha3Builder.Create(cashInstrument.Currency),
+                    Alpha3Builder.Create(account.BookCurrency),
+                    fxPairSeeds,
                     monthDate.AddDays(2).AddHours(9),
                     $"Seed monthly cash out {month + 1}"));
 
@@ -827,9 +834,12 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
                     foreach (var equity in selectedEquities.Select((seed, index) => (Seed: seed, Index: index)))
                     {
-                        var bookCost = RoundMoney(inflowAmount * 0.10m);
-                        var quantity = RoundQuantity(bookCost / equity.Seed.BasePrice);
-                        if (quantity <= 0m || bookCost <= 0m)
+                        var localCost = RoundMoney(inflowAmount * 0.10m);
+                        var localCostCurrency = Alpha3Builder.Create(equity.Seed.Currency);
+                        var bookCurrency = Alpha3Builder.Create(account.BookCurrency);
+                        var resolvedBookCost = ResolveSeedBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, $"Seed weekly InSpecie in {equity.Seed.Ticker}");
+                        var quantity = RoundQuantity(localCost / equity.Seed.BasePrice);
+                        if (quantity <= 0m || localCost <= 0m)
                             continue;
 
                         var assetHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingPositionAsset), $"Asset {equity.Seed.Ticker}");
@@ -842,12 +852,15 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                             inSpecieInHolding,
                             equity.Seed.InstrumentID,
                             quantity,
-                            bookCost,
+                            localCost,
+                            localCostCurrency,
+                            bookCurrency,
+                            fxPairSeeds,
                             weekDate.AddHours(10 + equity.Index),
                             $"Seed weekly InSpecie in {equity.Seed.Ticker}"));
 
                         positionState.Quantity += quantity;
-                        positionState.BookCost += bookCost;
+                        positionState.BookCost += resolvedBookCost.BookCost.Value;
                     }
                 }
 
@@ -860,6 +873,9 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
                 var outAssetHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingPositionAsset), $"Asset {outEquity.Ticker}");
                 var inSpecieOutHolding = FindSeedHolding(holdings, account.AccountID, outEquity.InstrumentID, typeof(HoldingNominalInSpecieOut), $"InSpecie Out {outEquity.Ticker}");
+                var outLocalCostCurrency = Alpha3Builder.Create(outEquity.Currency);
+                var outBookCurrency = Alpha3Builder.Create(account.BookCurrency);
+                var outLocalCost = ResolveSeedLocalCost(outBookCost, outLocalCostCurrency, outBookCurrency, fxPairSeeds, $"Seed monthly InSpecie out {outEquity.Ticker}");
 
                 events.AddRange(CreateSeedTransactionSet(
                     holdings,
@@ -867,7 +883,10 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                     outAssetHolding,
                     outEquity.InstrumentID,
                     outQuantity,
-                    outBookCost,
+                    outLocalCost,
+                    outLocalCostCurrency,
+                    outBookCurrency,
+                    fxPairSeeds,
                     monthEnd.AddHours(15),
                     $"Seed monthly InSpecie out {outEquity.Ticker}"));
 
@@ -883,16 +902,27 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             .ToList();
     }
 
-    private static IReadOnlyList<ITransactionEvent> CreateSeedTransactionSet(Holdings holdings, HoldingBase creditHolding, HoldingBase debitHolding, InstrumentID instrumentID, decimal quantity, decimal bookCost, DateTime eventDateTime, string reason)
+    private static IReadOnlyList<ITransactionEvent> CreateSeedTransactionSet(
+        Holdings holdings,
+        HoldingBase creditHolding,
+        HoldingBase debitHolding,
+        InstrumentID instrumentID,
+        decimal quantity,
+        decimal localCost,
+        Alpha3 localCostCurrency,
+        Alpha3 bookCurrency,
+        IReadOnlyList<FXPairSeed> fxPairSeeds,
+        DateTime eventDateTime,
+        string reason)
     {
-        var localCostCurrency = Alpha3Builder.Create("GBP");
+        var bookCost = ResolveSeedBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, reason);
         var request = new TransactionSetRequest(
             Constants.Initialisation.UserID,
             EventDateTimeBuilder.Create(eventDateTime),
             SettlementDateTimeBuilder.Create(eventDateTime.AddDays(2)),
             reason,
-            [CreateSeedTransactionLeg(creditHolding, instrumentID, quantity, bookCost, localCostCurrency)],
-            [CreateSeedTransactionLeg(debitHolding, instrumentID, quantity, bookCost, localCostCurrency)]);
+            [CreateSeedTransactionLeg(creditHolding, instrumentID, quantity, localCost, localCostCurrency, bookCost)],
+            [CreateSeedTransactionLeg(debitHolding, instrumentID, quantity, localCost, localCostCurrency, bookCost)]);
         var result = TransactionBuilder.Create(request, holdings);
 
         if (result.IsValid && result.Value is not null)
@@ -901,17 +931,52 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         throw new InvalidOperationException($"Unable to create seed transaction '{reason}': {string.Join("; ", result.ValidationErrors)}");
     }
 
-    private static TransactionRequest CreateSeedTransactionLeg(HoldingBase holding, InstrumentID instrumentID, decimal quantity, decimal bookCost, Alpha3 localCostCurrency) =>
+    private static ResolvedSeedBookCost ResolveSeedBookCost(decimal localCost, Alpha3 localCostCurrency, Alpha3 bookCurrency, IReadOnlyList<FXPairSeed> fxPairSeeds, string reason)
+    {
+        if (localCostCurrency == bookCurrency)
+            return new ResolvedSeedBookCost(new TransactionBookCost(localCost), BookCostSource.SameCurrency, false);
+
+        var pair = fxPairSeeds.FirstOrDefault(seed =>
+            seed.Pair.BaseCurrency == localCostCurrency &&
+            seed.Pair.QuoteCurrency == bookCurrency);
+
+        if (pair is null)
+            throw new InvalidOperationException($"Unable to create seed transaction '{reason}': missing seed FX {localCostCurrency}/{bookCurrency}.");
+
+        return new ResolvedSeedBookCost(
+            new TransactionBookCost(RoundMoney(localCost * pair.BaselineMid)),
+            BookCostSource.FxEstimate,
+            true);
+    }
+
+    private static decimal ResolveSeedLocalCost(decimal bookCost, Alpha3 localCostCurrency, Alpha3 bookCurrency, IReadOnlyList<FXPairSeed> fxPairSeeds, string reason)
+    {
+        if (localCostCurrency == bookCurrency)
+            return bookCost;
+
+        var pair = fxPairSeeds.FirstOrDefault(seed =>
+            seed.Pair.BaseCurrency == localCostCurrency &&
+            seed.Pair.QuoteCurrency == bookCurrency);
+
+        if (pair is null)
+            throw new InvalidOperationException($"Unable to create seed transaction '{reason}': missing seed FX {localCostCurrency}/{bookCurrency}.");
+
+        return RoundMoney(bookCost / pair.BaselineMid);
+    }
+
+    private static TransactionRequest CreateSeedTransactionLeg(HoldingBase holding, InstrumentID instrumentID, decimal quantity, decimal localCost, Alpha3 localCostCurrency, ResolvedSeedBookCost bookCost) =>
         new(
             holding.HoldingID,
             instrumentID,
             holding.AccountID,
             new TransactionQuantity(quantity),
-            new TransactionLocalCost(bookCost),
+            new TransactionLocalCost(localCost),
             localCostCurrency,
-            new TransactionBookCost(bookCost),
-            BookCostSource.SameCurrency,
-            false);
+            bookCost.BookCost,
+            bookCost.Source,
+            bookCost.Estimated);
+
+    private sealed record ResolvedSeedBookCost(TransactionBookCost BookCost, BookCostSource Source, bool Estimated);
 
     private static HoldingBase FindSeedHolding(Holdings holdings, AccountID accountID, InstrumentID instrumentID, Type holdingType, string name)
     {

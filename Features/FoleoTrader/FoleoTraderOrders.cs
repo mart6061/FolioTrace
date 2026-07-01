@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Foleo Trader orders")]
 public sealed record FoleoTraderOrders : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

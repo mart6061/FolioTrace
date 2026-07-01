@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class BrokerModifiedEventBuilder
 {
     public static Result<BrokerModifiedEvent> Create(BrokerModifiedRequest request)

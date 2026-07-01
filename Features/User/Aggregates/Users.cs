@@ -1,9 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FolioTrace.Types;
+using FolioTrace.Common;
+
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Users")]
 public sealed record Users : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

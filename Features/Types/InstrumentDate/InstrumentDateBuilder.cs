@@ -1,5 +1,8 @@
+using FolioTrace.Common;
+
 namespace FolioTrace.Types;
 
+[Builder]
 public static class InstrumentDateBuilder
 {
     public static InstrumentDate Create() => new InstrumentDate(DateOnly.FromDateTime(DateTime.UtcNow));

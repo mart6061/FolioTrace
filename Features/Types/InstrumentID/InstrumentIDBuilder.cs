@@ -1,7 +1,10 @@
 using System;
 
+using FolioTrace.Common;
+
 namespace FolioTrace.Types;
 
+[Builder]
 public static class InstrumentIDBuilder
 {
     // Create a new InstrumentID with a newly generated non-empty GUID

@@ -1,4 +1,3 @@
-import type { AuthKitAuth } from '@workos/authkit-sveltekit';
 import type { CurrentUser } from '$lib/authTypes';
 
 declare global {
@@ -8,7 +7,6 @@ declare global {
     }
 
     interface Locals {
-      auth: AuthKitAuth | null;
       currentUser: CurrentUser | null;
     }
 
