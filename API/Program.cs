@@ -33,6 +33,7 @@ builder.Services
     {
         options.Cookie.Name = workOSAuthOptions.CookieName;
         options.Cookie.HttpOnly = true;
+        options.Cookie.Path = "/";
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(Math.Max(5, workOSAuthOptions.SessionLifetimeMinutes));

@@ -1,7 +1,6 @@
 using API.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using System.Net;
 
 public sealed class AuthTests
 {
@@ -32,6 +31,21 @@ public sealed class AuthTests
         Assert.Equal(identity.Email, currentUser.Email);
         Assert.Equal(identity.DisplayName, currentUser.DisplayName);
         Assert.Equal(identity.OrganizationID, currentUser.OrganizationID);
+    }
+
+    [Fact]
+    public void CreatePrincipal_IncludesWorkOSSessionClaimWhenAvailable()
+    {
+        var identity = new FolioTraceUserIdentity(
+            Guid.Parse("32fa305b-1eb1-5fd2-9f00-61d16e627499"),
+            "prof_123",
+            "person@example.com",
+            "Person Example",
+            "org_123");
+
+        var principal = AuthEndpointRegistration.CreatePrincipal(identity, "session_123");
+
+        Assert.Equal("session_123", principal.FindFirst(FolioTraceAuthClaims.WorkOSSessionID)?.Value);
     }
 
     [Fact]
@@ -78,52 +92,52 @@ public sealed class AuthTests
     }
 
     [Fact]
-    public async Task WorkOSSsoClient_TokenExchangeSendsClientSecretInFormBody()
+    public void WorkOSAuthKitClient_GetAuthorizationUrl_UsesConfiguredCallbackAndOrganization()
     {
-        HttpRequestMessage? capturedRequest = null;
-        string? capturedBody = null;
-        var handler = new TestHttpMessageHandler(async request =>
-        {
-            capturedRequest = request;
-            capturedBody = request.Content is null
-                ? null
-                : await request.Content.ReadAsStringAsync();
-
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("""
-                {
-                  "access_token": "access_123",
-                  "profile": {
-                    "id": "prof_123",
-                    "email": "person@example.com",
-                    "first_name": "Person",
-                    "last_name": "Example",
-                    "organization_id": "org_123"
-                  }
-                }
-                """)
-            };
-        });
-        var client = new WorkOSSsoClient(
-            new HttpClient(handler),
+        var client = new WorkOSAuthKitClient(
             Options.Create(new WorkOSAuthOptions
             {
                 ClientId = "client_123",
-                ApiKey = "secret_123",
+                ApiKey = "sk_test_123",
                 RedirectUri = "https://localhost:7058/API/Auth/Callback",
-                OrganizationIds = ["org_123"],
-                TokenEndpoint = "https://workos.test/sso/token"
+                OrganizationIds = ["org_123"]
             }));
 
-        var result = await client.GetProfileAndTokenAsync("code_123", CancellationToken.None);
+        var authorizationUrl = client.GetAuthorizationUrl("state_123");
+        var query = ParseQueryString(new Uri(authorizationUrl).Query);
 
-        Assert.NotNull(capturedRequest);
-        Assert.Null(capturedRequest.Headers.Authorization);
-        Assert.Contains("client_id=client_123", capturedBody);
-        Assert.Contains("client_secret=secret_123", capturedBody);
-        Assert.Contains("code=code_123", capturedBody);
-        Assert.Equal("prof_123", result.Profile.Id);
+        Assert.Equal("client_123", query["client_id"]);
+        Assert.Equal("https://localhost:7058/API/Auth/Callback", query["redirect_uri"]);
+        Assert.Equal("org_123", query["organization_id"]);
+        Assert.Equal("state_123", query["state"]);
+    }
+
+    [Fact]
+    public void WorkOSAuthKitClient_GetLogoutUrl_UsesSessionAndReturnUrl()
+    {
+        var client = new WorkOSAuthKitClient(
+            Options.Create(new WorkOSAuthOptions
+            {
+                ClientId = "client_123",
+                ApiKey = "sk_test_123",
+                RedirectUri = "https://localhost:7058/API/Auth/Callback"
+            }));
+
+        var logoutUrl = client.GetLogoutUrl("session_123", "https://localhost:5173/");
+        var query = ParseQueryString(new Uri(logoutUrl).Query);
+
+        Assert.Equal("session_123", query["session_id"]);
+        Assert.Equal("https://localhost:5173/", query["return_to"]);
+    }
+
+    [Fact]
+    public void WorkOSAuthKitClient_GetSessionIdFromAccessToken_ReadsSidClaim()
+    {
+        var accessToken = $"{ToBase64Url("""{"alg":"none"}""")}.{ToBase64Url("""{"sid":"session_123"}""")}.";
+
+        var sessionID = WorkOSAuthKitClient.GetSessionIdFromAccessToken(accessToken);
+
+        Assert.Equal("session_123", sessionID);
     }
 
     private static DefaultHttpContext CreateAuthenticatedContext(Guid userID)
@@ -148,14 +162,21 @@ public sealed class AuthTests
         Assert.Equal(expectedStatusCode, statusCode);
     }
 
-    private sealed record TestUserRequest(Guid UserID);
+    private static Dictionary<string, string> ParseQueryString(string query) =>
+        query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .ToDictionary(
+                pair => Uri.UnescapeDataString(pair[0]),
+                pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : string.Empty);
 
-    private sealed class TestHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler)
-        : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            handler(request);
-    }
+    private static string ToBase64Url(string value) =>
+        Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(value))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
+    private sealed record TestUserRequest(Guid UserID);
 
     private sealed class TestEndpointFilterInvocationContext(HttpContext httpContext, IList<object?> arguments)
         : EndpointFilterInvocationContext

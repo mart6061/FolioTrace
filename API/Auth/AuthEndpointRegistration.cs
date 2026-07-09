@@ -57,7 +57,7 @@ public static class AuthEndpointRegistration
                 await identityService.RecordSignInAsync(identity, cancellationToken);
                 await context.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    CreatePrincipal(identity),
+                    CreatePrincipal(identity, profileAndToken.SessionId),
                     new AuthenticationProperties
                     {
                         IsPersistent = true,
@@ -84,24 +84,34 @@ public static class AuthEndpointRegistration
 
         auth.MapGet("/SignOut", async (
             HttpContext context,
+            IWorkOSAuthKitClient workOSClient,
             FolioTraceUserIdentityService identityService,
+            IOptions<WorkOSAuthOptions> options,
             string? returnTo,
             CancellationToken cancellationToken) =>
         {
             var currentUser = CurrentUserFromPrincipal(context.User);
+            var workOSSessionID = context.User.FindFirstValue(FolioTraceAuthClaims.WorkOSSessionID);
             if (currentUser is not null)
                 await identityService.RecordSignOutAsync(currentUser.UserID, cancellationToken);
 
             await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Results.Redirect(GetApplicationRedirectUrl(WorkOSAuthorizationStateService.NormalizeReturnTo(returnTo), context.RequestServices.GetRequiredService<IOptions<WorkOSAuthOptions>>().Value));
-        }).RequireAuthorization();
+            var applicationRedirectUrl = GetApplicationRedirectUrl(
+                WorkOSAuthorizationStateService.NormalizeReturnTo(returnTo),
+                options.Value);
+
+            if (!string.IsNullOrWhiteSpace(workOSSessionID) && options.Value.IsConfigured)
+                return Results.Redirect(workOSClient.GetLogoutUrl(workOSSessionID, applicationRedirectUrl));
+
+            return Results.Redirect(applicationRedirectUrl);
+        }).AllowAnonymous();
 
         return api;
     }
 
-    public static ClaimsPrincipal CreatePrincipal(FolioTraceUserIdentity identity)
+    public static ClaimsPrincipal CreatePrincipal(FolioTraceUserIdentity identity, string? workOSSessionID = null)
     {
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(FolioTraceAuthClaims.UserID, identity.UserID.ToString()),
             new Claim(FolioTraceAuthClaims.WorkOSUserID, identity.WorkOSUserID),
@@ -112,6 +122,9 @@ public static class AuthEndpointRegistration
             new Claim(ClaimTypes.Email, identity.Email),
             new Claim(ClaimTypes.Name, identity.DisplayName)
         };
+
+        if (!string.IsNullOrWhiteSpace(workOSSessionID))
+            claims.Add(new Claim(FolioTraceAuthClaims.WorkOSSessionID, workOSSessionID));
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }

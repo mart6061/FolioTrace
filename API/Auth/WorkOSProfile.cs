@@ -11,4 +11,5 @@ public sealed record WorkOSProfile(
 
 public sealed record WorkOSProfileAndToken(
     [property: JsonPropertyName("access_token")] string AccessToken,
-    [property: JsonPropertyName("profile")] WorkOSProfile Profile);
+    [property: JsonPropertyName("profile")] WorkOSProfile Profile,
+    [property: JsonPropertyName("session_id")] string? SessionId);
