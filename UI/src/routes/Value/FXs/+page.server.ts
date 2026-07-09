@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getCountries,
@@ -10,7 +11,7 @@ import {
   type FXCreatedRequest
 } from '$lib/server/api';
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = toApiDateTime(valuationDate);
@@ -42,7 +43,7 @@ export const load = async ({ fetch, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   createFX: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

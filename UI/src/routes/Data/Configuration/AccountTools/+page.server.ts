@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
@@ -49,7 +50,7 @@ function normaliseProfitLossMethod(value: string): ProfitLossMethod {
   return value === 'LIFO' || value === 'RunningAverage' ? value : 'FIFO';
 }
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
 
@@ -93,7 +94,7 @@ export const load = async ({ fetch, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   createAccount: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
 import type { AssetAllocationMapping, AssetAllocationNode, HoldingPosition, ValuationSetting } from '$lib/types';
 import {
@@ -22,7 +23,7 @@ import {
 const SPECIAL_NODE_NAME = 'Unallocated';
 const SPECIAL_NODE_COLOUR = '#dc2626';
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
 
@@ -70,7 +71,7 @@ export const load = async ({ fetch, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   createAllocation: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

@@ -1,6 +1,7 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getCurrencies, getInstruments } from '$lib/server/api';
+import { getAccounts, getCurrencies, getHoldings, getInstruments } from '$lib/server/api';
 import type { HoldingDateBasis, InstrumentPriceBasis } from '$lib/types';
+import type { PageServerLoad } from './$types';
 
 type EnumOption<TValue extends string> = {
   description: string;
@@ -19,16 +20,17 @@ const instrumentPriceBasisOptions: EnumOption<InstrumentPriceBasis>[] = [
   { description: 'Net Asset Value', label: 'NAV', value: 'NAV' }
 ];
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
 
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, currencies, instruments] = await Promise.all([
+    const [accounts, currencies, holdings, instruments] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
       getCurrencies(fetch, valuationDateTime, asAtDateTime),
+      getHoldings(fetch, valuationDateTime, asAtDateTime),
       getInstruments(fetch, valuationDateTime, asAtDateTime)
     ]);
 
@@ -38,6 +40,7 @@ export const load = async ({ fetch, url }) => {
       currencies,
       error: '',
       holdingDateBasisOptions,
+      holdings,
       instrumentPriceBasisOptions,
       instruments,
       valuationDate
@@ -49,6 +52,7 @@ export const load = async ({ fetch, url }) => {
       currencies: null,
       error: error instanceof Error ? error.message : 'Unable to load ideas.',
       holdingDateBasisOptions,
+      holdings: null,
       instrumentPriceBasisOptions,
       instruments: null,
       valuationDate

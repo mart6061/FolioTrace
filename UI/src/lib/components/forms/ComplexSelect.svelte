@@ -2,13 +2,7 @@
   import { tick } from 'svelte';
   import { closeOnOutside } from '$lib/actions/dropdown';
   import { classNames } from './controls';
-
-  export type ComplexSelectOption = {
-    id: string;
-    name: string;
-    meta?: string;
-    search?: string;
-  };
+  import type { ComplexSelectOption } from './types';
 
   type Props = {
     class?: string;
@@ -243,6 +237,7 @@
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--house-radius-sm);
+    box-sizing: border-box;
     box-shadow: 0 0.9rem 1.8rem color-mix(in srgb, var(--surface-shadow) 88%, transparent);
     display: grid;
     gap: 0.35rem;
@@ -250,13 +245,12 @@
     padding: 0.4rem;
     position: absolute;
     top: calc(100% + 0.25rem);
-    width: min(100%, 48rem);
+    width: min(150%, calc(100vw - 1rem), 48rem);
     z-index: 1000;
   }
 
   .complex-select-compact-brand .complex-select-menu {
     border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
-    width: 100%;
   }
 
   .complex-select-options {

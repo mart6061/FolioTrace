@@ -11,7 +11,16 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (isPublicPagePath(event.url.pathname) || isPublicPath(event.url.pathname))
     return resolve(event);
 
-  const currentUser = await getCurrentUser(event.fetch, event.request.headers.get('cookie'));
+  let currentUser: CurrentUser | null;
+  try {
+    currentUser = await getCurrentUser(event.fetch, event.request.headers.get('cookie'));
+  } catch (error) {
+    if (error instanceof ApiSessionError)
+      return new Response(error.message, { status: error.status });
+
+    throw error;
+  }
+
   if (currentUser) {
     event.locals.currentUser = currentUser;
     return resolve(event);
@@ -38,16 +47,27 @@ async function getCurrentUser(fetchApi: typeof fetch, cookie: string | null) {
   if (cookie)
     headers.set('cookie', cookie);
 
-  const response = await fetchApi(`${apiBaseUrl}/Auth/Session`, {
-    headers,
-    credentials: 'include'
-  });
+  let response: Response;
+  try {
+    response = await fetchApi(`${apiBaseUrl}/Auth/Session`, {
+      headers,
+      credentials: 'include'
+    });
+  } catch {
+    throw new ApiSessionError(
+      503,
+      `FolioTrace API is not reachable at ${apiBaseUrl}. Start the API and refresh the page.`
+    );
+  }
 
   if (response.status === 401)
     return null;
 
+  if (response.status === 429)
+    throw new ApiSessionError(429, 'Authentication is temporarily rate limited. Wait a few minutes before trying again.');
+
   if (!response.ok)
-    throw new Error(`API session check returned ${response.status} ${response.statusText}`);
+    throw new ApiSessionError(response.status, `API session check returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as CurrentUser;
 }
@@ -70,4 +90,10 @@ function isPublicPath(pathname: string) {
 
 function isConfiguredApiUrl(url: string) {
   return url.startsWith(`${apiBaseUrl}/`);
+}
+
+class ApiSessionError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
 }

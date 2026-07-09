@@ -1,7 +1,8 @@
 import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
 import { getApiBaseUrl, getApiExchanges } from '$lib/server/api';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const today = new Date();
   const filters = {
     fromUtc: url.searchParams.get('fromUtc') || startOfDayForInput(today),

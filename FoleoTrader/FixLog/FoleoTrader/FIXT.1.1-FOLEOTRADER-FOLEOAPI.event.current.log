@@ -3638,3 +3638,7 @@
 20260701-02:12:22.190 : Sending logout response
 20260701-02:12:22.191 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI disconnecting: Received logout request
 20260701-02:12:44.403 : Created session
+20260708-13:14:04.787 : Session FIXT.1.1:FOLEOTRADER->FOLEOAPI already disconnected: Resetting...
+20260708-13:14:04.798 : Session reset: New session
+20260708-13:14:04.798 : Created session
+20260708-13:17:10.808 : Created session

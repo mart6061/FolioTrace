@@ -1,24 +1,32 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, ComplexSelect, PillGroup, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, ComplexSelect, HoldingDropdown, PillGroup, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
 
   let { data } = $props();
 
   let displayMode = $state('Discrete');
   let holdingDateBasis = $state('EventDateTime');
   let instrumentPriceBasis = $state('Mid');
+  let ideasValuationDateOverride = $state<string | null>(null);
   let selectedSideFilter = $state('All');
   let selectedStageFilters = $state(['All']);
   let singleAccountID = $state('');
   let multiAccountIDs = $state<string[]>([]);
+  let multiHoldingIDs = $state<string[]>([]);
   let selectedCurrencyCode = $state('');
+  let selectedHoldingID = $state('');
   let selectedInstrumentID = $state('');
 
   const accounts = $derived(data.accounts?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
+  const holdings = $derived(data.holdings?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
+  const accountHoldings = $derived(holdings.filter((holding) => holding.accountID === singleAccountID));
   const dropdownPlaceholder = $derived(accounts.length ? 'Select account' : 'No accounts available');
+  const holdingPlaceholder = $derived(singleAccountID
+    ? accountHoldings.length ? 'Select holding' : 'No holdings for account'
+    : 'Select account first');
   const instrumentPriceBasisOptions = $derived<ComplexSelectOption[]>(data.instrumentPriceBasisOptions.map((option) => ({
     id: option.value,
     name: option.label,
@@ -42,12 +50,13 @@
     .map((instrument) => ({
       id: instrument.instrumentID,
       name: instrument.name,
-      meta: `${instrument.formalName} - ${instrument.priceCurrency} - ${instrument.active ? 'Active' : 'Inactive'}`,
+      meta: `${instrument.formalName} - ${instrument.priceCurrency}${instrument.active ? '' : ' - Inactive'}`,
       search: `${instrument.instrumentID} ${instrument.name} ${instrument.formalName} ${instrument.priceCurrency} ${instrument.exchange} ${instrument.cfi}`
     }))
     .sort((left, right) => left.name.localeCompare(right.name)));
   const instrumentPlaceholder = $derived(instrumentOptions.length ? 'Select instrument' : 'No instruments available');
-  const summaryText = $derived(`${accounts.length} accounts | ${instruments.length} instruments | ${currencies.length} currencies`);
+  const ideasValuationDate = $derived(ideasValuationDateOverride ?? data.valuationDate);
+  const summaryText = $derived(`${accounts.length} accounts | ${accountHoldings.length || holdings.length} holdings | ${instruments.length} instruments | ${currencies.length} currencies`);
   const displayModeOptions = [
     { label: 'Discrete', value: 'Discrete' },
     { label: 'Aggregate', value: 'Aggregate' }
@@ -78,6 +87,16 @@
 
     if (!selectedStageFilters.length)
       selectedStageFilters = ['All'];
+  }
+
+  function setIdeasValuationDate(value: string) {
+    ideasValuationDateOverride = value;
+  }
+
+  function setSingleAccountID(accountID: string) {
+    singleAccountID = accountID;
+    selectedHoldingID = '';
+    multiHoldingIDs = [];
   }
 </script>
 
@@ -153,7 +172,7 @@
             name="singleAccountID"
             nameOnlySummary
             placeholder={dropdownPlaceholder}
-            bind:selectedAccountID={singleAccountID}
+            bind:selectedAccountID={() => singleAccountID, setSingleAccountID}
           />
         </div>
 
@@ -168,6 +187,35 @@
             nameOnlySummary
             placeholder={dropdownPlaceholder}
             bind:selectedAccountIDs={multiAccountIDs}
+          />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>Single Holding</span>
+          <HoldingDropdown
+            accountID={singleAccountID}
+            compactBrand
+            disabled={!singleAccountID || !accountHoldings.length}
+            {holdings}
+            name="singleHoldingID"
+            nameOnlySummary
+            placeholder={holdingPlaceholder}
+            bind:selectedHoldingID={selectedHoldingID}
+          />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>Multi Holding</span>
+          <HoldingDropdown
+            accountID={singleAccountID}
+            compactBrand
+            disabled={!singleAccountID || !accountHoldings.length}
+            {holdings}
+            multiple
+            name="multiHoldingIDs"
+            nameOnlySummary
+            placeholder={holdingPlaceholder}
+            bind:selectedHoldingIDs={multiHoldingIDs}
           />
         </div>
 
@@ -251,7 +299,8 @@
       <div class="ideas-control-grid">
         <div class="create-ticket-field ideas-date-field">
           <span>Valuation Date</span>
-          <DateTimeInput fullWidth name="valuationDate" size="sm" step="1" value={data.valuationDate} />
+          <DateTimeInput fullWidth name="valuationDate" size="sm" step="1" bind:value={() => ideasValuationDate, setIdeasValuationDate} />
+          <span class="ideas-date-dev-value">Value: {ideasValuationDate || '(empty)'}</span>
         </div>
       </div>
     </section>
@@ -315,6 +364,15 @@
 
   :global(.ideas-simple-select.complex-select) {
     width: min(100%, 11.5rem);
+  }
+
+  .ideas-date-dev-value {
+    color: color-mix(in srgb, var(--muted) 82%, var(--panel));
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
   }
 
   .ideas-wide-field {

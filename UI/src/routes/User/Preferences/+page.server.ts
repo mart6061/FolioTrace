@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
+import type { PageServerLoad, Actions } from './$types';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
@@ -21,7 +22,7 @@ import {
 import { fail } from '@sveltejs/kit';
 import type { UserBookmarkItem } from '$lib/types';
 
-export const load = async ({ fetch, locals, url }) => {
+export const load: PageServerLoad = async ({ fetch, locals, url }) => {
   const currentUser = requireCurrentUser(locals);
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = nowForInput();
@@ -59,7 +60,7 @@ export const load = async ({ fetch, locals, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   savePreferences: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

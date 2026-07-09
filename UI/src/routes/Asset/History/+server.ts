@@ -1,6 +1,7 @@
 import { getHoldingEvents, getTransactionEvents, readEventPropertyDetails } from '$lib/server/api';
 import { json } from '@sveltejs/kit';
 import type { HoldingHistoryEvent, HoldingKind, HoldingReferenceEvent, TransactionReferenceEvent, ValuationHistoryEvent } from '$lib/types';
+import type { RequestHandler } from './$types';
 
 const holdingKinds: HoldingKind[] = [
   'PositionMemo',
@@ -20,7 +21,7 @@ const holdingKinds: HoldingKind[] = [
   'NominalInterest'
 ];
 
-export const GET = async ({ fetch, url }) => {
+export const GET: RequestHandler = async ({ fetch, url }) => {
   const accountID = (url.searchParams.get('accountID') || '').trim();
   const valuationDateTime = parseOptionalDate(url.searchParams.get('valuationDateTime'));
   const auditDateTime = parseOptionalDate(url.searchParams.get('auditDateTime'));
