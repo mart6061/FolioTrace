@@ -6,6 +6,7 @@
   type Props = {
     brokers: Broker[];
     class?: string;
+    compactBrand?: boolean;
     disabled?: boolean;
     method?: 'FIX' | 'TradeFile';
     name?: string;
@@ -16,6 +17,7 @@
   let {
     brokers,
     class: className = '',
+    compactBrand = false,
     disabled = false,
     method,
     name = '',
@@ -43,6 +45,7 @@
 
 <ComplexSelect
   class={className}
+  {compactBrand}
   {disabled}
   {name}
   {options}

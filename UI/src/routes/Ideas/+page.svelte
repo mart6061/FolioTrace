@@ -324,17 +324,17 @@
 
         <div class="create-ticket-field ideas-account-field">
           <span>All Brokers</span>
-          <BrokerDropdown {brokers} name="brokerLEI" bind:selectedBrokerLEI />
+          <BrokerDropdown {brokers} compactBrand name="brokerLEI" bind:selectedBrokerLEI />
         </div>
 
         <div class="create-ticket-field ideas-account-field">
           <span>FIX Brokers</span>
-          <BrokerDropdown {brokers} method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
+          <BrokerDropdown {brokers} compactBrand method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
         </div>
 
         <div class="create-ticket-field ideas-account-field">
           <span>TradeFile Brokers</span>
-          <BrokerDropdown {brokers} method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
+          <BrokerDropdown {brokers} compactBrand method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
         </div>
       </div>
     </section>
