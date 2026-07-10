@@ -3,6 +3,7 @@ export type ComplexSelectOption = {
   name: string;
   meta?: string;
   search?: string;
+  tone?: 'default' | 'alert';
 };
 
 export type PillOption = {

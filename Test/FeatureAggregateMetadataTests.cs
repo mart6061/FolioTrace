@@ -19,6 +19,7 @@ public sealed class FeatureAggregateMetadataTests
             [nameof(InstrumentValues)] = "Instrument prices and income",
             [nameof(Holdings)] = "Holdings",
             [nameof(HoldingPositions)] = "Holding positions",
+            [nameof(InputControlSettings)] = "Input control settings",
             [nameof(Valuations)] = "Portfolio valuations",
             [nameof(ProfitLosses)] = "Profit and loss",
             [nameof(ReportConfigs)] = "Report configurations",

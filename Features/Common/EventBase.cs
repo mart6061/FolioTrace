@@ -103,6 +103,8 @@ namespace FolioTrace.Common;
 [JsonDerivedType(typeof(UserBookmarkModifiedEvent), nameof(UserBookmarkModifiedEvent))]
 [JsonDerivedType(typeof(UserBookmarkDisplayOrderSetEvent), nameof(UserBookmarkDisplayOrderSetEvent))]
 [JsonDerivedType(typeof(UserBookmarkDeletedEvent), nameof(UserBookmarkDeletedEvent))]
+[JsonDerivedType(typeof(InputControlSettingsCreatedEvent), nameof(InputControlSettingsCreatedEvent))]
+[JsonDerivedType(typeof(InputControlSettingsModifiedEvent), nameof(InputControlSettingsModifiedEvent))]
 [JsonDerivedType(typeof(ReportCreatedEvent), nameof(ReportCreatedEvent))]
 [JsonDerivedType(typeof(ReportModifiedEvent), nameof(ReportModifiedEvent))]
 public abstract record EventBase(EventID EventID, UserID UserID, EventDateTime EventDateTime, AuditDateTime AuditDateTime, string Reason)

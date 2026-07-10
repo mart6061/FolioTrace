@@ -72,6 +72,10 @@ builder.Services.AddSingleton(
         .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
+builder.Services.Configure<RequestTraceOptions>(builder.Configuration.GetSection(RequestTraceOptions.SectionName));
+builder.Services.AddSingleton<RequestTraceSettingsService>();
+builder.Services.AddSingleton<RequestTraceLogQueue>();
+builder.Services.AddHostedService<RequestTraceLogBackgroundService>();
 builder.Services.AddSingleton<IWorkOSAuthKitClient, WorkOSAuthKitClient>();
 builder.Services.AddSingleton<IWorkOSSsoClient>(sp => (IWorkOSSsoClient)sp.GetRequiredService<IWorkOSAuthKitClient>());
 builder.Services.AddSingleton<WorkOSAuthorizationStateService>();
@@ -94,8 +98,8 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseRequestTraceCapture();
 app.UseApiRequestLogging();
-app.UseApiExchangeCapture();
 app.UseApiUnhandledExceptionLogging();
 app.UseAuthentication();
 app.UseAuthorization();

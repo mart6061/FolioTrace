@@ -1,14 +1,27 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, ComplexSelect, HoldingDropdown, PillGroup, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { toApiDateTime } from '$lib/dates';
+  import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
   let { data } = $props();
 
   let displayMode = $state('Discrete');
   let holdingDateBasis = $state('EventDateTime');
+  let inputPolicyError = $state('');
   let instrumentPriceBasis = $state('Mid');
   let ideasValuationDateOverride = $state<string | null>(null);
+  let moneyDisplayValue = $state('');
+  let moneyFormattedValue = $state('');
+  let moneyValidationMessages = $state<string[]>([]);
+  let moneyValue = $state('1234.56');
+  let policyRefreshSerial = 0;
+  let quantityDisplayValue = $state('');
+  let quantityFormattedValue = $state('');
+  let quantityValidationMessages = $state<string[]>([]);
+  let quantityValue = $state('1234.5678');
+  let refreshedInputPolicies = $state<InputControlPolicy[] | null>(null);
   let selectedSideFilter = $state('All');
   let selectedStageFilters = $state(['All']);
   let singleAccountID = $state('');
@@ -17,11 +30,13 @@
   let selectedCurrencyCode = $state('');
   let selectedHoldingID = $state('');
   let selectedInstrumentID = $state('');
+  let selectedPolicyCurrency = $state('GBP');
 
   const accounts = $derived(data.accounts?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
   const holdings = $derived(data.holdings?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
+  const inputPolicies = $derived(refreshedInputPolicies ?? data.inputPolicies ?? []);
   const accountHoldings = $derived(holdings.filter((holding) => holding.accountID === singleAccountID));
   const dropdownPlaceholder = $derived(accounts.length ? 'Select account' : 'No accounts available');
   const holdingPlaceholder = $derived(singleAccountID
@@ -41,7 +56,7 @@
     .map((currency) => ({
       id: currency.alphabeticCode,
       name: currency.alphabeticCode,
-      meta: `${currency.name} - ${currency.decimalPlace} dp`,
+      meta: `${currency.alphabeticCode} - ${currency.name} - ${currency.decimalPlace} decimal places`,
       search: `${currency.alphabeticCode} ${currency.name} ${currency.numericCode}`
     }))
     .sort((left, right) => left.name.localeCompare(right.name)));
@@ -51,11 +66,18 @@
       id: instrument.instrumentID,
       name: instrument.name,
       meta: `${instrument.formalName} - ${instrument.priceCurrency}${instrument.active ? '' : ' - Inactive'}`,
-      search: `${instrument.instrumentID} ${instrument.name} ${instrument.formalName} ${instrument.priceCurrency} ${instrument.exchange} ${instrument.cfi}`
+      search: `${instrument.instrumentID} ${instrument.name} ${instrument.formalName} ${instrument.priceCurrency} ${instrument.exchange} ${instrument.cfi}`,
+      tone: instrument.active ? undefined : ('alert' as const)
     }))
     .sort((left, right) => left.name.localeCompare(right.name)));
   const instrumentPlaceholder = $derived(instrumentOptions.length ? 'Select instrument' : 'No instruments available');
   const ideasValuationDate = $derived(ideasValuationDateOverride ?? data.valuationDate);
+  const moneyPolicy = $derived(
+    inputPolicies.find((policy) => policy.controlKind === 'Money' && policy.currency === selectedPolicyCurrency) ?? fallbackPolicy('Money', selectedPolicyCurrency)
+  );
+  const quantityPolicy = $derived(inputPolicies.find((policy) => policy.controlKind === 'Quantity') ?? fallbackPolicy('Quantity'));
+  const moneyValidationText = $derived(moneyValidationMessages.length ? moneyValidationMessages.join(' ') : 'Valid');
+  const quantityValidationText = $derived(quantityValidationMessages.length ? quantityValidationMessages.join(' ') : 'Valid');
   const summaryText = $derived(`${accounts.length} accounts | ${accountHoldings.length || holdings.length} holdings | ${instruments.length} instruments | ${currencies.length} currencies`);
   const displayModeOptions = [
     { label: 'Discrete', value: 'Discrete' },
@@ -98,6 +120,57 @@
     selectedHoldingID = '';
     multiHoldingIDs = [];
   }
+
+  async function refreshInputPolicies(accountID: string, currency: string, valuationDate: string, auditDateTime: string) {
+    const serial = ++policyRefreshSerial;
+    const params = new URLSearchParams({
+      controlKinds: 'Quantity,Money',
+      currency,
+      eventDateTime: toApiDateTime(valuationDate)
+    });
+
+    if (accountID)
+      params.set('accountID', accountID);
+    if (auditDateTime)
+      params.set('auditDateTime', toApiDateTime(auditDateTime));
+
+    try {
+      const response = await fetch(`/API/InputPolicies?${params}`);
+      if (!response.ok)
+        throw new Error(`Policy API returned ${response.status} ${response.statusText}`);
+
+      const policies = await response.json() as InputControlPolicy[];
+      if (serial === policyRefreshSerial) {
+        refreshedInputPolicies = policies;
+        inputPolicyError = '';
+      }
+    } catch (error) {
+      if (serial === policyRefreshSerial)
+        inputPolicyError = error instanceof Error ? error.message : 'Unable to refresh input policies.';
+    }
+  }
+
+  function fallbackPolicy(controlKind: InputControlKind, currency: string | null = null): InputControlPolicy {
+    const decimalPlaces = controlKind === 'Money'
+      ? (currencies.find((currencyDefinition) => currencyDefinition.alphabeticCode === currency)?.decimalPlace ?? 8)
+      : 8;
+
+    return {
+      allowNegative: false,
+      controlKind,
+      currency,
+      decimalPlaces,
+      formatPattern: controlKind === 'Money' ? '#,##0.00######' : '#,##0.########',
+      formatSource: 'TypeDefault',
+      maxValue: null,
+      minValue: controlKind === 'Quantity' ? 0.00000001 : 0,
+      validationMessages: []
+    };
+  }
+
+  $effect(() => {
+    refreshInputPolicies(singleAccountID, selectedPolicyCurrency || 'GBP', data.valuationDate, data.auditDateTime);
+  });
 </script>
 
 <svelte:head>
@@ -200,6 +273,7 @@
             name="singleHoldingID"
             nameOnlySummary
             placeholder={holdingPlaceholder}
+            showInstrumentID={false}
             bind:selectedHoldingID={selectedHoldingID}
           />
         </div>
@@ -215,6 +289,7 @@
             name="multiHoldingIDs"
             nameOnlySummary
             placeholder={holdingPlaceholder}
+            showInstrumentID={false}
             bind:selectedHoldingIDs={multiHoldingIDs}
           />
         </div>
@@ -304,6 +379,68 @@
         </div>
       </div>
     </section>
+
+    <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
+      <div class="filter-card-header">
+        <h2 class="create-ticket-title">Numeric Inputs</h2>
+      </div>
+
+      <div class="ideas-control-grid">
+        <div class="create-ticket-field ideas-number-field">
+          <QuantityInput
+            label="Quantity"
+            name="ideasQuantity"
+            policy={quantityPolicy}
+            size="sm"
+            bind:displayValue={quantityDisplayValue}
+            bind:formattedValue={quantityFormattedValue}
+            bind:validationMessages={quantityValidationMessages}
+            bind:value={quantityValue}
+          />
+          <div class="ideas-input-dev-values">
+            <span>Raw: {quantityValue || '(empty)'}</span>
+            <span>Display: {quantityFormattedValue || quantityDisplayValue || '(empty)'}</span>
+            <span>Decimals: {quantityPolicy.decimalPlaces}</span>
+            <span>Format: {quantityPolicy.formatPattern} ({quantityPolicy.formatSource})</span>
+            <span class:ideas-valid-value={!quantityValidationMessages.length}>Validation: {quantityValidationText}</span>
+          </div>
+        </div>
+
+        <div class="create-ticket-field ideas-number-field">
+          <span>Money Currency</span>
+          <ComplexSelect
+            compactBrand
+            disabled={!currencyOptions.length}
+            name="moneyPolicyCurrency"
+            options={currencyOptions}
+            placeholder={currencyPlaceholder}
+            bind:value={selectedPolicyCurrency}
+          />
+          <MoneyInput
+            currency={selectedPolicyCurrency}
+            label="Money"
+            name="ideasMoney"
+            policy={moneyPolicy}
+            size="sm"
+            bind:displayValue={moneyDisplayValue}
+            bind:formattedValue={moneyFormattedValue}
+            bind:validationMessages={moneyValidationMessages}
+            bind:value={moneyValue}
+          />
+          <div class="ideas-input-dev-values">
+            <span>Raw: {moneyValue || '(empty)'}</span>
+            <span>Display: {moneyFormattedValue || moneyDisplayValue || '(empty)'}</span>
+            <span>Decimals: {moneyPolicy.decimalPlaces}</span>
+            <span>Format: {moneyPolicy.formatPattern} ({moneyPolicy.formatSource})</span>
+            <span class:ideas-valid-value={!moneyValidationMessages.length}>Validation: {moneyValidationText}</span>
+          </div>
+        </div>
+
+        {#if inputPolicyError}
+          <p class="status-panel status-panel-warning ideas-wide-field">{inputPolicyError}</p>
+        {/if}
+      </div>
+    </section>
   </section>
 </main>
 
@@ -357,6 +494,7 @@
 
   .ideas-account-field,
   .ideas-date-field,
+  .ideas-number-field,
   .ideas-select-field,
   .ideas-toggle-field {
     min-width: 0;
@@ -373,6 +511,29 @@
     font-weight: 600;
     line-height: 1.1;
     overflow-wrap: anywhere;
+  }
+
+  .ideas-input-dev-values {
+    color: color-mix(in srgb, var(--muted) 86%, var(--panel));
+    display: grid;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.625rem;
+    font-weight: 600;
+    gap: 0.12rem;
+    line-height: 1.15;
+    margin-top: 0.15rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .ideas-number-field {
+    align-self: start;
+    display: grid;
+    gap: 0.28rem;
+  }
+
+  .ideas-valid-value {
+    color: color-mix(in srgb, var(--success) 72%, var(--ink));
   }
 
   .ideas-wide-field {

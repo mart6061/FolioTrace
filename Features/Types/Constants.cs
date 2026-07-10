@@ -53,6 +53,8 @@ public static class Constants
 
         public static readonly Guid UserBookmarksStreamId = Guid.Parse("4f8e4ab1-7cc9-43f8-b11b-ec8932f1b8b7");
 
+        public static readonly Guid InputControlSettingsStreamId = Guid.Parse("a6501be1-3d19-4765-b4ec-61bf3ec75c79");
+
         public static readonly EventID EmptyViewEventID = Guid.Parse("11111111-1111-4111-8111-111111111111");
 
         public static readonly EventDateTime EventDateTime = EventDateTimeBuilder.Create(DateTime.MinValue.AddTicks(1));

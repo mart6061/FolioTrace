@@ -73,32 +73,100 @@ public sealed record AggregateMaintenanceDiagnosticsResponse(
     string? LastError,
     IReadOnlyList<string> RecentErrors);
 
-public sealed record ApiExchangeSearchResponse(
-    IReadOnlyList<ApiExchangeResponse> Items,
+public sealed record RequestTraceSearchResponse(
+    IReadOnlyList<RequestTraceResponse> Items,
     int TotalCount,
     int Page,
-    int PageSize);
+    int PageSize,
+    RequestTraceSettingsResponse Settings);
 
-public sealed record ApiExchangeResponse(
-    Guid Id,
+public sealed record RequestTraceResponse(
+    Guid RequestId,
+    string Source,
     DateTime StartedAtUtc,
-    DateTime CompletedAtUtc,
-    long DurationMilliseconds,
+    DateTime? CompletedAtUtc,
+    long? DurationMilliseconds,
     string Method,
     string Path,
     string QueryString,
     int? StatusCode,
-    string? ExceptionType,
-    string? ExceptionMessage,
-    ApiHttpMessageResponse Request,
-    ApiHttpMessageResponse Response);
+    bool HasResponse,
+    bool HasException,
+    int LogCount,
+    TraceHttpMessageResponse? Request,
+    TraceHttpMessageResponse? Response,
+    RequestTraceExceptionResponse? Exception,
+    IReadOnlyList<TraceLogEntryResponse> Logs);
 
-public sealed record ApiHttpMessageResponse(
+public sealed record TraceHttpMessageResponse(
     Dictionary<string, string[]> Headers,
     string? Body,
     string? ContentType,
     long? ContentLength,
     bool BodyTruncated);
+
+public sealed record RequestTraceExceptionResponse(
+    DateTime RecordedAtUtc,
+    string? ExceptionType,
+    string? ExceptionMessage,
+    string? StackTrace);
+
+public sealed record TraceLogEntryResponse(
+    DateTime RecordedAtUtc,
+    string Level,
+    string Category,
+    string? EventId,
+    string Message,
+    string? ExceptionType,
+    string? ExceptionMessage,
+    string? StackTrace);
+
+public sealed record RequestTraceSettingsResponse(
+    bool Enabled,
+    bool CaptureApi,
+    bool CaptureUi,
+    bool CaptureBodies,
+    bool Capture500StackTraces,
+    bool CaptureLogMessages,
+    string MinimumLogLevel,
+    int MaximumBodyCharacters,
+    IReadOnlyList<string> CapturedContentTypePrefixes,
+    IReadOnlyList<string> ExcludedPathPrefixes,
+    IReadOnlyList<string> RedactedHeaders);
+
+public sealed record RequestTraceSettingsRequest(
+    bool Enabled,
+    bool CaptureApi,
+    bool CaptureUi,
+    bool CaptureBodies,
+    bool Capture500StackTraces,
+    bool CaptureLogMessages,
+    string MinimumLogLevel,
+    int MaximumBodyCharacters,
+    IReadOnlyList<string> CapturedContentTypePrefixes,
+    IReadOnlyList<string> ExcludedPathPrefixes,
+    IReadOnlyList<string> RedactedHeaders);
+
+public sealed record RequestTracePurgeRequest(string Confirmation, DateTime? BeforeUtc);
+
+public sealed record RequestTracePurgeResponse(int DeletedCount);
+
+public sealed record RequestTraceEventIngestRequest(
+    Guid RequestId,
+    string Source,
+    string Kind,
+    DateTime RecordedAtUtc,
+    DateTime? StartedAtUtc,
+    DateTime? CompletedAtUtc,
+    long? DurationMilliseconds,
+    string Method,
+    string Path,
+    string QueryString,
+    int? StatusCode,
+    TraceHttpMessageResponse? Message,
+    string? ExceptionType,
+    string? ExceptionMessage,
+    string? StackTrace);
 
 public sealed record FIXOperationSearchResponse(
     IReadOnlyList<FIXOperationResponse> Items,

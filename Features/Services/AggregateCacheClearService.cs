@@ -16,6 +16,7 @@ public sealed class AggregateCacheClearService(
     UserMenuPreferencesService userMenuPreferencesService,
     UserValuationPreferencesService userValuationPreferencesService,
     UserBookmarksService userBookmarksService,
+    InputControlSettingsService inputControlSettingsService,
     ValuationSettingService valuationSettingService,
     AssetAllocationMappingService assetAllocationMappingService,
     ReportConfigService reportConfigService)
@@ -37,10 +38,11 @@ public sealed class AggregateCacheClearService(
         var userMenuPreferences = userMenuPreferencesService.InvalidateAll();
         var userValuationPreferences = userValuationPreferencesService.InvalidateAll();
         var userBookmarks = userBookmarksService.InvalidateAll();
+        var inputControlSettings = inputControlSettingsService.InvalidateAll();
         var valuationSettings = valuationSettingService.InvalidateAll();
         var assetAllocationMappings = assetAllocationMappingService.InvalidateAll();
         var reportConfigs = reportConfigService.InvalidateAll();
 
-        return new AggregateCacheClearResult(accounts, brokers, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks, valuationSettings, assetAllocationMappings, reportConfigs);
+        return new AggregateCacheClearResult(accounts, brokers, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks, inputControlSettings, valuationSettings, assetAllocationMappings, reportConfigs);
     }
 }

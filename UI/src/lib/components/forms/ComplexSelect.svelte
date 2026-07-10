@@ -141,15 +141,22 @@
         {#each filteredOptions as option (option.id)}
           <button
             aria-selected={option.id === value}
-            class={classNames('complex-select-option', option.id === value && 'complex-select-option-selected')}
+            class={classNames('complex-select-option', option.tone === 'alert' && 'complex-select-option-alert', option.id === value && 'complex-select-option-selected')}
             onclick={() => chooseOption(option.id)}
             role="option"
             type="button"
           >
-            <span>{option.name}</span>
-            {#if option.meta}
-              <small>{option.meta}</small>
-            {/if}
+            <span class="complex-select-option-copy">
+              <span>{option.name}</span>
+              {#if option.meta}
+                <small>{option.meta}</small>
+              {/if}
+            </span>
+            <span aria-hidden="true" class="complex-select-check-icon">
+              {#if option.id === value}
+                <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+              {/if}
+            </span>
           </button>
         {:else}
           <div class="complex-select-empty">No options match the search</div>
@@ -267,6 +274,7 @@
     color: var(--ink);
     cursor: pointer;
     display: grid;
+    grid-template-columns: minmax(0, 1fr) 1.15rem;
     gap: 0.04rem;
     min-width: 0;
     padding: 0.22rem 0.36rem;
@@ -281,20 +289,81 @@
     outline: none;
   }
 
-  .complex-select-option span {
+  .complex-select-option-alert {
+    background: color-mix(in srgb, var(--warning-soft) 42%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 44%, var(--line));
+    color: var(--warning-text);
+  }
+
+  .complex-select-option-alert:hover,
+  .complex-select-option-alert:focus-visible {
+    background: color-mix(in srgb, var(--warning-soft) 78%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 68%, var(--line));
+  }
+
+  .complex-select-option-alert.complex-select-option-selected {
+    background: color-mix(in srgb, var(--danger-soft) 82%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 76%, var(--line));
+    color: var(--danger-text);
+  }
+
+  .complex-select-option-copy {
+    display: grid;
+    gap: 0.04rem;
+    min-width: 0;
+  }
+
+  .complex-select-option-copy > span {
     font-size: 0.75rem;
     font-weight: 750;
     line-height: 1.12;
     overflow-wrap: anywhere;
   }
 
-  .complex-select-option small,
+  .complex-select-check-icon {
+    align-items: center;
+    color: var(--accent-strong);
+    display: inline-flex;
+    height: 1.15rem;
+    justify-content: center;
+    margin-top: 0.03rem;
+    width: 1.15rem;
+  }
+
+  .complex-select-option-alert .complex-select-check-icon {
+    color: var(--warning-strong);
+  }
+
+  .complex-select-option-alert.complex-select-option-selected .complex-select-check-icon {
+    color: var(--danger-strong);
+  }
+
+  .complex-select-check-icon svg {
+    display: block;
+    fill: none;
+    height: 1rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+    width: 1rem;
+  }
+
+  .complex-select-option-copy > small,
   .complex-select-empty {
     color: color-mix(in srgb, var(--muted) 72%, var(--panel));
     font-size: 0.6rem;
     font-weight: 500;
     line-height: 1.08;
     overflow-wrap: anywhere;
+  }
+
+  .complex-select-option-alert .complex-select-option-copy > small {
+    color: var(--warning-strong);
+  }
+
+  .complex-select-option-alert.complex-select-option-selected .complex-select-option-copy > small {
+    color: var(--danger-strong);
   }
 
   .complex-select-empty {

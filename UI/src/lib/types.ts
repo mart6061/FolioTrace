@@ -337,6 +337,20 @@ export type Currencies = {
   items: Currency[];
 };
 
+export type InputControlKind = 'Quantity' | 'Money';
+
+export type InputControlPolicy = {
+  controlKind: InputControlKind;
+  decimalPlaces: number;
+  minValue: number | null;
+  maxValue: number | null;
+  formatPattern: string;
+  formatSource: string;
+  allowNegative: boolean;
+  currency: string | null;
+  validationMessages: string[];
+};
+
 export type AssetAllocationNodeAccountSetting = {
   accountID: string;
   targetWeight: number | null;
@@ -980,7 +994,7 @@ export type MemoryDiagnostics = {
   };
 };
 
-export type ApiHttpMessage = {
+export type TraceHttpMessage = {
   headers: Record<string, string[]>;
   body: string | null;
   contentType: string | null;
@@ -988,26 +1002,63 @@ export type ApiHttpMessage = {
   bodyTruncated: boolean;
 };
 
-export type ApiExchange = {
-  id: string;
+export type RequestTraceException = {
+  recordedAtUtc: string;
+  exceptionType: string | null;
+  exceptionMessage: string | null;
+  stackTrace: string | null;
+};
+
+export type TraceLogEntry = {
+  recordedAtUtc: string;
+  level: string;
+  category: string;
+  eventId: string | null;
+  message: string;
+  exceptionType: string | null;
+  exceptionMessage: string | null;
+  stackTrace: string | null;
+};
+
+export type RequestTrace = {
+  requestId: string;
+  source: string;
   startedAtUtc: string;
-  completedAtUtc: string;
-  durationMilliseconds: number;
+  completedAtUtc: string | null;
+  durationMilliseconds: number | null;
   method: string;
   path: string;
   queryString: string;
   statusCode: number | null;
-  exceptionType: string | null;
-  exceptionMessage: string | null;
-  request: ApiHttpMessage;
-  response: ApiHttpMessage;
+  hasResponse: boolean;
+  hasException: boolean;
+  logCount: number;
+  request: TraceHttpMessage | null;
+  response: TraceHttpMessage | null;
+  exception: RequestTraceException | null;
+  logs: TraceLogEntry[];
 };
 
-export type ApiExchangeSearchResponse = {
-  items: ApiExchange[];
+export type RequestTraceSettings = {
+  enabled: boolean;
+  captureApi: boolean;
+  captureUi: boolean;
+  captureBodies: boolean;
+  capture500StackTraces: boolean;
+  captureLogMessages: boolean;
+  minimumLogLevel: string;
+  maximumBodyCharacters: number;
+  capturedContentTypePrefixes: string[];
+  excludedPathPrefixes: string[];
+  redactedHeaders: string[];
+};
+
+export type RequestTraceSearchResponse = {
+  items: RequestTrace[];
   totalCount: number;
   page: number;
   pageSize: number;
+  settings: RequestTraceSettings;
 };
 
 export type FIXOperation = {
