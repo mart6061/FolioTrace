@@ -18,6 +18,7 @@ public sealed class SeedRepositoryTests
         { "account created", () => SeedRepository.CreateInitialAccountCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "account modified", () => SeedRepository.CreateInitialAccountModifiedEvents().Cast<IAuditEventBase>().ToList() },
         { "account active set", () => SeedRepository.CreateInitialAccountActiveModifiedEvents().Cast<IAuditEventBase>().ToList() },
+        { "account identifier set", () => SeedRepository.CreateInitialAccountIdentifierSetEvents().Cast<IAuditEventBase>().ToList() },
         { "asset allocation created", () => SeedRepository.CreateInitialAssetAllocationCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "report created", () => SeedRepository.CreateInitialReportCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "holding created", () => SeedRepository.CreateInitialHoldingCreatedEvents().Cast<IAuditEventBase>().ToList() },

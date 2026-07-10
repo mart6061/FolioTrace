@@ -4,6 +4,18 @@ namespace FolioTrace.Aggregates;
 
 internal static class AccountEventValidation
 {
+    public static List<string> ValidateCommon(EventID? eventID, UserID? userID, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AccountID? accountID)
+    {
+        var messages = new List<string>();
+        if (eventID is null) messages.Add("EventID is required.");
+        if (userID is null) messages.Add("UserID is required.");
+        if (eventDateTime is null) messages.Add("EventDateTime is required.");
+        if (auditDateTime is null) messages.Add("AuditDateTime is required.");
+        if (string.IsNullOrWhiteSpace(reason)) messages.Add("Reason is required.");
+        if (accountID is null) messages.Add("AccountID is required.");
+        return messages;
+    }
+
     public static List<string> ValidateAccountChange(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, AccountID? accountID, string? name, string? formalName)
     {
         var messages = new List<string>();
