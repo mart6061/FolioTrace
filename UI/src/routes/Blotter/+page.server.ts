@@ -2,6 +2,7 @@ import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, t
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getAccounts,
+  getActiveTradeFiles,
   getBrokers,
   getFoleoTraderOrders,
   getHoldings,
@@ -30,6 +31,8 @@ import {
   postTicketTradeNotApprovedEvent,
   postTicketTradeProgressNotesSetEvent,
   postFoleoTraderOrder,
+  postTradeFilePending,
+  postTradeFileRequest,
   type TicketProposalRequest,
   type TicketTextSetRequest,
   type TicketTradeRequest
@@ -45,7 +48,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
   const asOfDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
 
   try {
-    const [tickets, accounts, brokers, holdings, instruments, instrumentValues, ticketStageOptions, foleoTraderOrders] = await Promise.all([
+    const [tickets, accounts, brokers, holdings, instruments, instrumentValues, ticketStageOptions, foleoTraderOrders, tradeFiles] = await Promise.all([
       getTickets(fetch, eventDateTime, asOfDateTime, true),
       getAccounts(fetch, eventDateTime, asOfDateTime),
       getBrokers(fetch, eventDateTime, asOfDateTime),
@@ -53,7 +56,8 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       getInstruments(fetch, eventDateTime, asOfDateTime),
       getInstrumentValues(fetch, eventDateTime, asOfDateTime),
       getTicketStageOptions(fetch),
-      getFoleoTraderOrders(fetch, eventDateTime, asOfDateTime)
+      getFoleoTraderOrders(fetch, eventDateTime, asOfDateTime),
+      getActiveTradeFiles(fetch)
     ]);
 
     return {
@@ -67,6 +71,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       instrumentValues,
       ticketStageOptions,
       tickets,
+      tradeFiles,
       valuationDate
     };
   } catch (error) {
@@ -81,6 +86,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       instrumentValues: null,
       ticketStageOptions: [],
       tickets: null,
+      tradeFiles: [],
       valuationDate
     };
   }
@@ -531,20 +537,64 @@ export const actions: Actions = {
     const formData = await request.formData();
     const ticketNumber = getFormNumber(formData, 'ticketNumber');
     const eventDateTime = getFormString(formData, 'eventDateTime');
+    const brokerLEI = getFormString(formData, 'brokerLEI');
 
-    if (!ticketNumber || !eventDateTime)
-      return fail(400, responseFailure('sendFoleoTraderOrder', 'Ticket and event date are required.'));
+    if (!ticketNumber || !eventDateTime || !brokerLEI)
+      return fail(400, responseFailure('sendFoleoTraderOrder', 'Ticket, event date, and FIX broker are required.'));
 
     try {
       const result = await postFoleoTraderOrder(fetch, {
         eventDateTime: toApiDateTime(eventDateTime),
         ticketNumber,
+        brokerLEI,
         userID: currentUser.userID
       });
 
       return responseSuccess('sendFoleoTraderOrder', `FoleoTrader order sent (${result.clOrdID}).`, result.eventID);
     } catch (error) {
       return fail(502, responseFailure('sendFoleoTraderOrder', readError(error)));
+    }
+  },
+  sendTradeFileTicket: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const ticketNumber = getFormNumber(formData, 'ticketNumber');
+    const eventDateTime = getFormString(formData, 'eventDateTime');
+    const brokerLEI = getFormString(formData, 'brokerLEI');
+    if (!ticketNumber || !eventDateTime || !brokerLEI)
+      return fail(400, responseFailure('sendTradeFileTicket', 'Ticket, event date, and TradeFile broker are required.'));
+    try {
+      const result = await postTradeFilePending(fetch, {
+        userID: currentUser.userID,
+        eventDateTime: toApiDateTime(eventDateTime),
+        reason: `Assign ticket ${ticketNumber} to TradeFile broker`,
+        ticketNumber,
+        brokerLEI
+      });
+      return responseSuccess('sendTradeFileTicket', 'Ticket added to the Trade Files queue.', result.eventID ?? '');
+    } catch (error) {
+      return fail(502, responseFailure('sendTradeFileTicket', readError(error), ticketNumber));
+    }
+  },
+  sendTradeFileBatch: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const eventDateTime = getFormString(formData, 'eventDateTime');
+    const brokerLEI = getFormString(formData, 'brokerLEI');
+    const ticketNumbers = getFormStrings(formData, 'ticketNumbers').map(Number).filter(Number.isFinite);
+    if (!eventDateTime || !brokerLEI || ticketNumbers.length === 0)
+      return fail(400, responseFailure('sendTradeFileBatch', 'Broker and at least one ticket are required.'));
+    try {
+      const result = await postTradeFileRequest(fetch, {
+        userID: currentUser.userID,
+        eventDateTime: toApiDateTime(eventDateTime),
+        reason: 'Request TradeFile',
+        brokerLEI,
+        ticketNumbers
+      });
+      return responseSuccess('sendTradeFileBatch', 'TradeFile requested.', result.tradeFileID ?? '');
+    } catch (error) {
+      return fail(502, responseFailure('sendTradeFileBatch', readError(error)));
     }
   },
   tradeApprove: async ({ fetch, locals, request }) => approveTrade(fetch, request, true, requireCurrentUser(locals).userID),

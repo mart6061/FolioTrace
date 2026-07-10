@@ -59,6 +59,7 @@ public sealed record FoleoTraderOrders : IAggregate
             case FoleoTraderOrderSubmittedEvent submitted:
                 Items.Add(new FoleoTraderOrder(
                     submitted.TicketNumber,
+                    submitted.BrokerLEI,
                     submitted.ClOrdID,
                     FoleoTraderOrderStatus.Submitted,
                     submitted.OrderQuantity,

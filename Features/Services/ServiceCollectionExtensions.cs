@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ValuationService>();
         services.AddSingleton<ProfitLossService>();
         services.AddSingleton<TicketService>();
+        services.AddSingleton<TradeFileService>();
         services.AddSingleton<UserService>();
         services.AddSingleton<UserMenuPreferencesService>();
         services.AddSingleton<UserValuationPreferencesService>();

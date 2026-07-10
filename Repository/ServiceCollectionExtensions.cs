@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidFrom);
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidTo);
             options.Schema.For<FXRatePointReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
+            options.Schema.For<StoredFilePayload>();
         });
 
         services.AddSingleton<MartenEventRepository>();

@@ -86,7 +86,7 @@ public static partial class TicketEventBuilder
             messages.Add($"Proposal can only be {verb} while the ticket is in Proposal stage.");
     }
 
-    private static List<string> ValidateTicketMutation(UserID userID, EventDateTime eventDateTime, string reason, TicketNumber ticketNumber, Tickets tickets, out Ticket? ticket)
+    private static List<string> ValidateTicketMutation(UserID userID, EventDateTime eventDateTime, string reason, TicketNumber ticketNumber, Tickets tickets, out Ticket? ticket, bool allowExecutionLocked = false)
     {
         var messages = ValidateBase(userID, eventDateTime, reason);
         ticket = null;
@@ -103,6 +103,8 @@ public static partial class TicketEventBuilder
             messages.Add($"Ticket '{ticketNumber}' is complete and cannot be changed.");
         else if (ticket.Stage == TicketStage.Cancelled)
             messages.Add($"Ticket '{ticketNumber}' is cancelled and cannot be changed.");
+        else if (ticket.IsExecutionLocked && !allowExecutionLocked)
+            messages.Add($"Ticket '{ticketNumber}' is locked while trade execution is {ticket.TradeExecutionStatus}.");
 
         return messages;
     }

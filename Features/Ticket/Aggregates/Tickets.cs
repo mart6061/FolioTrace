@@ -89,7 +89,7 @@ public sealed record Tickets : IAggregate
                 Update(@event, ticket => ticket with { Stage = TicketStage.Proposal, ProposalDecision = TicketDecision.PendingApproval });
                 break;
             case TicketProposalApprovedEvent @event:
-                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, ProposalDecision = TicketDecision.Approved, TradeDecision = TicketDecision.InProgress });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Trade, ProposalDecision = TicketDecision.Approved, TradeDecision = TicketDecision.InProgress, TradeExecutionStatus = TicketTradeExecutionStatus.Ready, TradeExecutionMethod = null, ExecutionBrokerLEI = null, TradeFileID = null, TradeExecutionError = string.Empty });
                 break;
             case TicketProposalNotApprovedEvent @event:
                 Update(@event, ticket => ticket with { Stage = TicketStage.Proposal, ProposalDecision = TicketDecision.InProgress });
@@ -145,7 +145,7 @@ public sealed record Tickets : IAggregate
                 Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.PendingApproval });
                 break;
             case TicketTradeApprovedEvent @event:
-                Update(@event, ticket => ticket with { Stage = TicketStage.Completed, TradeDecision = TicketDecision.Approved });
+                Update(@event, ticket => ticket with { Stage = TicketStage.Completed, TradeDecision = TicketDecision.Approved, TradeExecutionStatus = TicketTradeExecutionStatus.Completed });
                 break;
             case TicketTradeNotApprovedEvent @event:
                 Update(@event, ticket => ticket with { Stage = TicketStage.Trade, TradeDecision = TicketDecision.InProgress });
@@ -158,6 +158,9 @@ public sealed record Tickets : IAggregate
                 break;
             case TicketCancelledEvent @event:
                 Update(@event, ticket => ticket with { Stage = TicketStage.Cancelled });
+                break;
+            case TicketTradeExecutionEventBase @event:
+                Apply(@event);
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported ticket event type '{ticketEvent.GetType().Name}'.");
@@ -181,6 +184,7 @@ public sealed record Tickets : IAggregate
             Stage = TicketStage.Proposal,
             ProposalDecision = TicketDecision.InProgress,
             TradeDecision = TicketDecision.InProgress,
+            TradeExecutionStatus = TicketTradeExecutionStatus.Ready,
             AccountIDs = [],
             ProposalAllocations = [],
             ProposalReason = string.Empty,
@@ -195,6 +199,30 @@ public sealed record Tickets : IAggregate
             LastAuditDateTime = LastAuditDateTimeBuilder.Create(createdEvent.AuditDateTime.Value)
         });
         UpdateProvenance(createdEvent);
+    }
+
+    private void Apply(TicketTradeExecutionEventBase @event)
+    {
+        var status = @event switch
+        {
+            TicketFIXRequestedEvent => TicketTradeExecutionStatus.FIXRequested,
+            TicketTradeFilePendingEvent => TicketTradeExecutionStatus.PendingTradeFile,
+            TicketTradeFileRequestedEvent => TicketTradeExecutionStatus.TradeFileRequested,
+            TicketTradeFileCreatedEvent => TicketTradeExecutionStatus.TradeFileCreated,
+            TicketTradeFileSentEvent => TicketTradeExecutionStatus.TradeFileSent,
+            TicketTradeFileAcknowledgedEvent => TicketTradeExecutionStatus.TradeFileAcknowledged,
+            TicketTradeExecutionInProgressEvent => TicketTradeExecutionStatus.InProgress,
+            TicketTradeExecutionFailedEvent => TicketTradeExecutionStatus.Failed,
+            _ => throw new InvalidOperationException($"Unsupported execution event '{@event.Type}'.")
+        };
+        Update(@event, ticket => ticket with
+        {
+            TradeExecutionStatus = status,
+            TradeExecutionMethod = @event.TradeMethodType,
+            ExecutionBrokerLEI = @event.BrokerLEI,
+            TradeFileID = @event.TradeFileID,
+            TradeExecutionError = @event is TicketTradeExecutionFailedEvent failed ? failed.Error : string.Empty
+        });
     }
 
     private void Update(ITicket @event, Func<Ticket, Ticket> update)

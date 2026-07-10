@@ -28,7 +28,7 @@ public static class BrokerBuilder
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Broker(createdEvent.Name, createdEvent.LEI, createdEvent.Commission, createdEvent.Active, createdEvent.ApprovedDateTime, createdEvent.NextReview, createdEvent.Notes, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
+        return new Broker(createdEvent.Name, createdEvent.LEI, createdEvent.Commission, createdEvent.Active, createdEvent.ApprovedDateTime, createdEvent.NextReview, createdEvent.Notes, [], createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
     }
 
     extension(Broker broker)
@@ -123,5 +123,23 @@ public static class BrokerBuilder
                 LastAuditDateTime = notesSetEvent.AuditDateTime
             };
         }
+
+        public Broker Apply(BrokerTradeMethodSetEventBase setEvent) => broker with
+        {
+            TradeMethods = [.. broker.TradeMethods.Where(method => method.Type != setEvent.TradeMethod.Type), setEvent.TradeMethod],
+            ValuationDateTime = setEvent.EventDateTime,
+            AsOfDateTime = setEvent.AuditDateTime,
+            LastEventID = setEvent.EventID,
+            LastAuditDateTime = setEvent.AuditDateTime
+        };
+
+        public Broker Apply(BrokerTradeMethodUnsetEvent unsetEvent) => broker with
+        {
+            TradeMethods = broker.TradeMethods.Where(method => method.Type != unsetEvent.TradeMethodType).ToList(),
+            ValuationDateTime = unsetEvent.EventDateTime,
+            AsOfDateTime = unsetEvent.AuditDateTime,
+            LastEventID = unsetEvent.EventID,
+            LastAuditDateTime = unsetEvent.AuditDateTime
+        };
     }
 }

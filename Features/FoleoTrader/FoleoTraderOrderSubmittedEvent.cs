@@ -9,6 +9,9 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
     [EventProperty(Description = "Ticket Number")]
     public TicketNumber TicketNumber { get; init; } = null!;
 
+    [EventProperty(Description = "Broker LEI")]
+    public LegalEntityIdentifier BrokerLEI { get; init; } = null!;
+
     [EventProperty(Description = "Cl Ord ID")]
     public string ClOrdID { get; init; } = string.Empty;
 
@@ -34,7 +37,7 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
     public string Symbol { get; init; } = string.Empty;
 
     private FoleoTraderOrderSubmittedEvent()
-        : this(null!, null!, null!, null!, string.Empty, null!, string.Empty, TicketSide.Buy, 0m, null!, null!, string.Empty, string.Empty, string.Empty)
+        : this(null!, null!, null!, null!, string.Empty, null!, null!, string.Empty, TicketSide.Buy, 0m, null!, null!, string.Empty, string.Empty, string.Empty)
     {
     }
 
@@ -45,6 +48,7 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
         AuditDateTime auditDateTime,
         string reason,
         TicketNumber ticketNumber,
+        LegalEntityIdentifier brokerLEI,
         string clOrdID,
         TicketSide side,
         decimal orderQuantity,
@@ -56,6 +60,7 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
         : base(eventID, userID, eventDateTime, auditDateTime, reason)
     {
         TicketNumber = ticketNumber;
+        BrokerLEI = brokerLEI;
         ClOrdID = clOrdID;
         Side = side;
         OrderQuantity = orderQuantity;

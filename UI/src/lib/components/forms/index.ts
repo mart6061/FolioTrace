@@ -1,5 +1,6 @@
 export { default as AccountDropdown } from './AccountDropdown.svelte';
 export { default as Button } from './Button.svelte';
+export { default as BrokerDropdown } from './BrokerDropdown.svelte';
 export { default as ComplexSelect } from './ComplexSelect.svelte';
 export { default as Field } from './Field.svelte';
 export { default as HoldingDropdown } from './HoldingDropdown.svelte';

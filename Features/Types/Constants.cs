@@ -38,6 +38,8 @@ public static class Constants
         public static readonly Guid TransactionsStreamId = Guid.Parse("9e6cc40d-df4f-4e6a-aa0e-d624635bcf68");
 
         public static readonly Guid TicketsStreamId = Guid.Parse("f389de8b-08e0-4e05-8b46-76f37f0dfb72");
+        public static readonly Guid TradeFilesStreamId = Guid.Parse("ec99041a-6b1c-4ed5-b291-539d0e421f65");
+        public static readonly Guid StoredFilesStreamId = Guid.Parse("5fc05bd2-3946-45c3-8706-ea5e109d24c7");
 
         public static readonly Guid UsersStreamId = Guid.Parse("02ff99c6-dfe9-4e61-aa02-bd1ca3a540a2");
 

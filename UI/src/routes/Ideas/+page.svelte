@@ -1,7 +1,7 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, BrokerDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
@@ -30,9 +30,13 @@
   let selectedCurrencyCode = $state('');
   let selectedHoldingID = $state('');
   let selectedInstrumentID = $state('');
+  let selectedBrokerLEI = $state('');
+  let selectedFIXBrokerLEI = $state('');
+  let selectedTradeFileBrokerLEI = $state('');
   let selectedPolicyCurrency = $state('GBP');
 
   const accounts = $derived(data.accounts?.items ?? []);
+  const brokers = $derived(data.brokers?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
   const holdings = $derived(data.holdings?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
@@ -316,6 +320,21 @@
             placeholder={currencyPlaceholder}
             bind:value={selectedCurrencyCode}
           />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>All Brokers</span>
+          <BrokerDropdown {brokers} name="brokerLEI" bind:selectedBrokerLEI />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>FIX Brokers</span>
+          <BrokerDropdown {brokers} method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>TradeFile Brokers</span>
+          <BrokerDropdown {brokers} method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
         </div>
       </div>
     </section>

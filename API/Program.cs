@@ -1,6 +1,7 @@
 using API;
 using API.Auth;
 using API.FoleoTrader;
+using API.TradeFiles;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Logging;
 using Repository;
@@ -66,6 +67,11 @@ builder.Services.AddSingleton<FoleoTraderOrderProcessor>();
 builder.Services.AddSingleton<FoleoTraderFIXOperationRecorder>();
 builder.Services.AddSingleton<FoleoTraderFixClient>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<FoleoTraderFixClient>());
+builder.Services.Configure<TradeFileOptions>(builder.Configuration.GetSection(TradeFileOptions.SectionName));
+builder.Services.AddSingleton<TradeFileWorkbookGenerator>();
+builder.Services.AddHttpClient<ITradeFileSender, FoleoTraderTradeFileSender>();
+builder.Services.AddSingleton<TradeFileWorkflowService>();
+builder.Services.AddHostedService<TradeFileProcessingHostedService>();
 builder.Services.AddSingleton(
     builder.Configuration
         .GetSection(AggregateMaintenanceOptions.SectionName)

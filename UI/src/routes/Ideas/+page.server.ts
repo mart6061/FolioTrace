@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getCurrencies, getHoldings, getInputPolicies, getInstruments } from '$lib/server/api';
+import { getAccounts, getBrokers, getCurrencies, getHoldings, getInputPolicies, getInstruments } from '$lib/server/api';
 import type { HoldingDateBasis, InstrumentPriceBasis } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -28,8 +28,9 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, currencies, holdings, inputPolicies, instruments] = await Promise.all([
+    const [accounts, brokers, currencies, holdings, inputPolicies, instruments] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
+      getBrokers(fetch, valuationDateTime, asAtDateTime),
       getCurrencies(fetch, valuationDateTime, asAtDateTime),
       getHoldings(fetch, valuationDateTime, asAtDateTime),
       getInputPolicies(fetch, {
@@ -45,6 +46,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
     return {
       accounts,
       auditDateTime,
+      brokers,
       currencies,
       error: '',
       holdingDateBasisOptions,
@@ -58,6 +60,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
     return {
       accounts: null,
       auditDateTime,
+      brokers: null,
       currencies: null,
       error: error instanceof Error ? error.message : 'Unable to load ideas.',
       holdingDateBasisOptions,

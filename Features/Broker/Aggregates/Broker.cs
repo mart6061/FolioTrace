@@ -20,6 +20,8 @@ public sealed record Broker : IModel
 
     public required string Notes { get; init; }
 
+    public required List<ITradeMethod> TradeMethods { get; init; }
+
     public required EventDateTime ValuationDateTime { get; init; }
 
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -30,7 +32,7 @@ public sealed record Broker : IModel
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public Broker(string name, LegalEntityIdentifier lei, FeeRate commission, Active active, EventDateTime approvedDateTime, EventDateTime nextReview, string notes, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    public Broker(string name, LegalEntityIdentifier lei, FeeRate commission, Active active, EventDateTime approvedDateTime, EventDateTime nextReview, string notes, List<ITradeMethod> tradeMethods, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
         Name = name;
         LEI = lei;
@@ -39,6 +41,7 @@ public sealed record Broker : IModel
         ApprovedDateTime = approvedDateTime;
         NextReview = nextReview;
         Notes = notes;
+        TradeMethods = tradeMethods;
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
         LastEventID = lastEventID;
@@ -46,8 +49,8 @@ public sealed record Broker : IModel
     }
 
     [SetsRequiredMembers]
-    public Broker(string name, LegalEntityIdentifier lei, FeeRate commission, Active active, EventDateTime approvedDateTime, EventDateTime nextReview, string notes, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
-        : this(name, lei, commission, active, approvedDateTime, nextReview, notes, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
+    public Broker(string name, LegalEntityIdentifier lei, FeeRate commission, Active active, EventDateTime approvedDateTime, EventDateTime nextReview, string notes, List<ITradeMethod> tradeMethods, EventDateTime valuationDateTime, AuditDateTime auditDateTime, EventID lastEventID)
+        : this(name, lei, commission, active, approvedDateTime, nextReview, notes, tradeMethods, valuationDateTime, auditDateTime, lastEventID, new LastAuditDateTime(auditDateTime.Value))
     {
     }
 

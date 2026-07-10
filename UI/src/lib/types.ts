@@ -461,6 +461,23 @@ export type ReportConfigs = {
   items: ReportConfig[];
 };
 
+export type TradeMethodKind = 'FIX' | 'Phone' | 'Fax' | 'TradeFile' | 'Manual';
+
+export type TradeMethod = {
+  $type: string;
+  type: TradeMethodKind;
+  enabled?: boolean;
+  host?: string;
+  port?: number;
+  senderCompID?: string;
+  targetCompID?: string;
+  heartbeatSeconds?: number;
+  fileNameTemplate?: string;
+  columns?: string[];
+  sendConfig?: unknown;
+  telephoneNumber?: string;
+};
+
 export type Broker = {
   name: string;
   lei: string;
@@ -468,7 +485,8 @@ export type Broker = {
   active: boolean;
   approvedDateTime: string;
   nextReview: string;
-  notes: string;
+    notes: string;
+    tradeMethods: TradeMethod[];
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -672,7 +690,13 @@ export type Ticket = {
   tradeCurrency: string;
   stage: TicketStage;
   proposalDecision: TicketDecision;
-  tradeDecision: TicketDecision;
+    tradeDecision: TicketDecision;
+    tradeExecutionStatus: 'Ready' | 'FIXRequested' | 'PendingTradeFile' | 'TradeFileRequested' | 'TradeFileCreated' | 'TradeFileSent' | 'TradeFileAcknowledged' | 'InProgress' | 'Failed' | 'Completed';
+    tradeExecutionMethod?: TradeMethodKind | null;
+    executionBrokerLEI?: string | null;
+    tradeFileID?: string | null;
+    tradeExecutionError: string;
+    isExecutionLocked: boolean;
   accountIDs: string[];
   proposalTargetPrice?: number | null;
   proposalAllocations: TicketProposalAllocation[];
@@ -698,6 +722,19 @@ export type Tickets = {
   lastEventID: string;
   lastAuditDateTime: string;
   items: Ticket[];
+};
+
+export type TradeFileStatus = 'Requested' | 'Created' | 'Sent' | 'Acknowledged' | 'InProgress' | 'Completed' | 'Failed';
+
+export type TradeFile = {
+  tradeFileID: string;
+  brokerLEI: string;
+  brokerName: string;
+  status: TradeFileStatus;
+  fileName: string;
+  error: string;
+  tickets: { ticketNumber: number; quantity: number; price: number; currency: string; isin: string; sedol: string }[];
+  confirmedTickets: number[];
 };
 
 export type FoleoTraderOrderStatus = 'Submitted' | 'PartiallyFilled' | 'Filled' | 'Rejected' | 'Failed';
@@ -895,6 +932,7 @@ export type MemoryDiagnostics = {
       recordedAtUtc: string;
     }[];
   };
+
   accountService?: {
     cacheEntryCount: number;
     accountCount: number;
@@ -1106,7 +1144,8 @@ export type AggregateKind =
   | 'Instruments'
   | 'InstrumentValues'
   | 'ReportConfigs'
-  | 'Tickets'
+    | 'Tickets'
+    | 'TradeFiles'
   | 'Users'
   | 'UserBookmarks'
   | 'UserMenuPreferences'

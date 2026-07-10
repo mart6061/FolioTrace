@@ -3,7 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { MultiSelect } from '$lib/components/forms';
+  import { BrokerDropdown, MultiSelect } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
   import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
@@ -20,6 +20,10 @@
   let selectedSides = $state<TicketSide[]>([]);
   let selectedStages = $state<TicketStage[]>([]);
   let selectedEstimatedBookCosts = $state(false);
+  let fixBrokerByTicket = $state<Record<number, string>>({});
+  let tradeFileBrokerByTicket = $state<Record<number, string>>({});
+  let selectedTradeFileBatchBrokerLEI = $state('');
+  let selectedPendingTicketNumbers = $state<number[]>([]);
   let freeTextFilter = $state('');
   let ticketViewMode = $state<'Detailed' | 'Compact'>('Compact');
   let expandedTicketNumbers = $state<number[]>([]);
@@ -44,6 +48,9 @@
   const hasOpenTickets = $derived(tickets.some(isOpenTicket));
   const accounts = $derived(data.accounts?.items ?? []);
   const brokers = $derived(data.brokers?.items ?? []);
+  const pendingTradeFileTickets = $derived(tickets.filter((ticket) => ticket.tradeExecutionStatus === 'PendingTradeFile'));
+  const pendingTicketsForBatchBroker = $derived(pendingTradeFileTickets.filter((ticket) => ticket.executionBrokerLEI === selectedTradeFileBatchBrokerLEI));
+  const pendingTicketSummary = $derived(selectedPendingTicketNumbers.length ? selectedPendingTicketNumbers.length + ' selected' : 'Select tickets');
   const holdings = $derived(data.holdings?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
   const instrumentValues = $derived(data.instrumentValues?.items ?? []);
@@ -64,6 +71,7 @@
     data.foleoTraderOrders?.lastEventID ?? null
   ]);
   const hasActiveFoleoTraderOrders = $derived(foleoTraderOrders.some((order) => order.status === 'Submitted' || order.status === 'PartiallyFilled'));
+  const hasActiveTradeFiles = $derived(pendingTradeFileTickets.length > 0 || (data.tradeFiles?.length ?? 0) > 0);
   const formTicketNumber = $derived(form?.status === 'failure' ? readFormTicketNumber(form) || submittedTicketNumber : 0);
   const historyContextKey = $derived([
     data.valuationDate,
@@ -636,15 +644,15 @@
   }
 
   function canEditTrade(ticket: Ticket) {
-    return ticket.stage === 'Trade' && ticket.proposalDecision === 'Approved' && ticket.tradeDecision === 'InProgress';
+    return ticket.stage === 'Trade' && ticket.proposalDecision === 'Approved' && ticket.tradeDecision === 'InProgress' && !ticket.isExecutionLocked;
   }
 
   function canSetTradeText(ticket: Ticket) {
-    return ticket.stage === 'Trade';
+    return ticket.stage === 'Trade' && !ticket.isExecutionLocked;
   }
 
   function canEditFills(ticket: Ticket) {
-    return ticket.stage === 'Trade';
+    return ticket.stage === 'Trade' && !ticket.isExecutionLocked;
   }
 
   function isAwaitingTradeDecision(ticket: Ticket) {
@@ -677,7 +685,13 @@
       ticket.tradePrice == null &&
       ticket.tradeAllocations.length === 0 &&
       ticket.fills.length === 0 &&
+      (ticket.tradeExecutionStatus === 'Ready' || ticket.tradeExecutionStatus === 'Failed') &&
       order === null;
+  }
+
+  function selectBatchBroker(lei: string) {
+    selectedTradeFileBatchBrokerLEI = lei;
+    selectedPendingTicketNumbers = [];
   }
 
   function foleoTraderStatusText(order: FoleoTraderOrder | null) {
@@ -1015,11 +1029,11 @@
 
   <section class="page-container page-section space-y-6">
     <AggregateUpdateWatcher
-      aggregateKind={['Tickets', 'FoleoTraderOrders']}
+      aggregateKind={['Tickets', 'FoleoTraderOrders', 'TradeFiles']}
       autoReload={!editingTicket.ticketNumber && !cancelConfirmingTicketNumber}
       valuationDate={data.valuationDate}
       lastEventIDs={liveUpdateLastEventIDs}
-      pollIntervalMs={hasActiveFoleoTraderOrders ? 2000 : 0}
+      pollIntervalMs={hasActiveFoleoTraderOrders || hasActiveTradeFiles ? 2000 : 0}
       auditDateTime={data.auditDateTime}
     />
 
@@ -1069,6 +1083,46 @@
         </button>
       </form>
     </section>
+
+    {#if pendingTradeFileTickets.length > 0}
+      <section class="section-band create-ticket-card create-ticket-action-card trade-file-card">
+        <div class="filter-card-header">
+          <div>
+            <p class="page-kicker">Execution</p>
+            <h2 class="create-ticket-title">Trade Files</h2>
+          </div>
+          <span class="page-header-summary">{pendingTradeFileTickets.length} pending</span>
+        </div>
+        <form class="trade-file-batch-controls" method="POST" action="?/sendTradeFileBatch" use:enhance={enhanceAction('trade-file-batch')}>
+          <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+          <BrokerDropdown
+            {brokers}
+            method="TradeFile"
+            name="brokerLEI"
+            placeholder="Select TradeFile broker"
+            bind:selectedBrokerLEI={() => selectedTradeFileBatchBrokerLEI, selectBatchBroker}
+          />
+          <MultiSelect
+            disabled={!selectedTradeFileBatchBrokerLEI || !pendingTicketsForBatchBroker.length}
+            summary={pendingTicketSummary}
+          >
+            {#each pendingTicketsForBatchBroker as pendingTicket (pendingTicket.ticketNumber)}
+              <label class="house-multiselect-option">
+                <input bind:group={selectedPendingTicketNumbers} name="ticketNumbers" type="checkbox" value={pendingTicket.ticketNumber} />
+                <span>Ticket {pendingTicket.ticketNumber} - {instrumentName(pendingTicket.instrumentID)}</span>
+              </label>
+            {/each}
+          </MultiSelect>
+          <button
+            class="ticket-action-button ticket-action-button-warning"
+            type="submit"
+            disabled={!selectedTradeFileBatchBrokerLEI || selectedPendingTicketNumbers.length === 0 || submitting === 'trade-file-batch'}
+          >
+            Send File
+          </button>
+        </form>
+      </section>
+    {/if}
 
     <section class="section-band create-ticket-card create-ticket-action-card">
       <div class="filter-card-header">
@@ -1218,18 +1272,48 @@
                 {/if}
                 {#if ticketExpanded && ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress'}
                   {#if canSendFoleoTrader(ticket, foleoTraderOrder)}
-                    <form
-                      class="ticket-save-form"
-                      method="POST"
-                      action="?/sendFoleoTraderOrder"
-                      use:enhance={enhanceAction(`foleo-trader-${ticket.ticketNumber}`)}
-                    >
-                      <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
-                      <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                      <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}`}>
-                        Foleo Trader (FIX)
-                      </button>
-                    </form>
+                    <div class="trade-execution-groups">
+                      <form
+                        class="ticket-save-form trade-execution-group"
+                        method="POST"
+                        action="?/sendFoleoTraderOrder"
+                        use:enhance={enhanceAction(`foleo-trader-${ticket.ticketNumber}`)}
+                      >
+                        <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                        <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                        <span class="trade-execution-label">FIX</span>
+                        <BrokerDropdown
+                          {brokers}
+                          method="FIX"
+                          name="brokerLEI"
+                          placeholder="Select FIX broker"
+                          bind:selectedBrokerLEI={fixBrokerByTicket[ticket.ticketNumber]}
+                        />
+                        <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}` || !fixBrokerByTicket[ticket.ticketNumber]}>
+                          Send Trade
+                        </button>
+                      </form>
+                      <form
+                        class="ticket-save-form trade-execution-group"
+                        method="POST"
+                        action="?/sendTradeFileTicket"
+                        use:enhance={enhanceAction(`trade-file-ticket-${ticket.ticketNumber}`)}
+                      >
+                        <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                        <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                        <span class="trade-execution-label">TradeFile</span>
+                        <BrokerDropdown
+                          {brokers}
+                          method="TradeFile"
+                          name="brokerLEI"
+                          placeholder="Select TradeFile broker"
+                          bind:selectedBrokerLEI={tradeFileBrokerByTicket[ticket.ticketNumber]}
+                        />
+                        <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `trade-file-ticket-${ticket.ticketNumber}` || !tradeFileBrokerByTicket[ticket.ticketNumber]}>
+                          Send Trade
+                        </button>
+                      </form>
+                    </div>
                   {/if}
                   <form
                     class="ticket-save-form"

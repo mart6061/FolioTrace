@@ -24,6 +24,7 @@ public sealed class FeatureAggregateMetadataTests
             [nameof(ProfitLosses)] = "Profit and loss",
             [nameof(ReportConfigs)] = "Report configurations",
             [nameof(Tickets)] = "Trade tickets",
+            [nameof(TradeFiles)] = "Trade files",
             [nameof(TicketDetails)] = "Trade ticket details",
             [nameof(Users)] = "Users",
             [nameof(FoleoTraderOrders)] = "Foleo Trader orders",

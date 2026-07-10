@@ -4,6 +4,7 @@ using QuickFix.Fields;
 using QuickFix.Logger;
 using QuickFix.Store;
 using QuickFix.Transport;
+using FolioTrace.Aggregates;
 
 namespace API.FoleoTrader;
 
@@ -20,6 +21,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private bool loggedOn;
     private DateTime lastActivityUtc = DateTime.MinValue;
     private Timer? idleTimer;
+    private FIXTradeMethod? activeMethod;
 
     public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ILogger<FoleoTraderFixClient> logger)
     {
@@ -42,9 +44,9 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         return Task.CompletedTask;
     }
 
-    public async Task SendAsync(FoleoTraderFixOrder order, CancellationToken cancellationToken)
+    public async Task SendAsync(FoleoTraderFixOrder order, FIXTradeMethod method, CancellationToken cancellationToken)
     {
-        EnsureStarted();
+        EnsureStarted(method);
 
         var session = await WaitForLogonAsync(cancellationToken);
         var message = new QuickFix.FIX50SP2.NewOrderSingle(
@@ -55,7 +57,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
 
         message.Set(new OrderQty(order.Quantity));
         message.Set(new Price(order.Price));
-        message.Set(new Currency(order.Currency));
+        message.Set(new QuickFix.Fields.Currency(order.Currency));
         message.Set(new Symbol(order.Symbol));
         message.Set(new SecurityID(order.SecurityID));
         message.Set(new SecurityIDSource(order.SecurityIDSource));
@@ -136,15 +138,17 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         idleTimer?.Dispose();
     }
 
-    private void EnsureStarted()
+    private void EnsureStarted(FIXTradeMethod method)
     {
         lock (syncRoot)
         {
-            if (initiator is not null)
+            if (initiator is not null && activeMethod == method)
             {
                 MarkActivity();
                 return;
             }
+            if (initiator is not null)
+                StopInitiator();
 
             Directory.CreateDirectory(options.StorePath);
             Directory.CreateDirectory(options.LogPath);
@@ -159,11 +163,11 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
             dictionary.SetString("ConnectionType", "initiator");
             dictionary.SetString("BeginString", "FIXT.1.1");
             dictionary.SetString("DefaultApplVerID", "FIX.5.0SP2");
-            dictionary.SetString("SenderCompID", options.SenderCompID);
-            dictionary.SetString("TargetCompID", options.TargetCompID);
-            dictionary.SetString("SocketConnectHost", options.Host);
-            dictionary.SetString("SocketConnectPort", options.Port.ToString());
-            dictionary.SetString("HeartBtInt", options.HeartbeatSeconds.ToString());
+            dictionary.SetString("SenderCompID", method.SenderCompID);
+            dictionary.SetString("TargetCompID", method.TargetCompID);
+            dictionary.SetString("SocketConnectHost", method.Host);
+            dictionary.SetString("SocketConnectPort", method.Port.ToString());
+            dictionary.SetString("HeartBtInt", method.HeartbeatSeconds.ToString());
             dictionary.SetString("StartTime", "00:00:00");
             dictionary.SetString("EndTime", "23:59:59");
             dictionary.SetString("UseDataDictionary", "N");
@@ -171,11 +175,12 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
             dictionary.SetString("FileStorePath", options.StorePath);
             dictionary.SetString("FileLogPath", options.LogPath);
 
-            var session = new SessionID("FIXT.1.1", options.SenderCompID, options.TargetCompID);
+            var session = new SessionID("FIXT.1.1", method.SenderCompID, method.TargetCompID);
             settings.Set(session, dictionary);
 
             initiator = new SocketInitiator(this, new FileStoreFactory(settings), settings, new FileLogFactory(settings), new DefaultMessageFactory());
             initiator.Start();
+            activeMethod = method;
             sessionID = session;
             MarkActivity();
         }
@@ -272,6 +277,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         {
             initiator?.Stop();
             initiator = null;
+            activeMethod = null;
             sessionID = null;
             loggedOn = false;
             logonCompletion?.TrySetCanceled();

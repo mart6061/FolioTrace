@@ -4,6 +4,7 @@ namespace FolioTrace.Aggregates;
 
 public sealed record FoleoTraderOrder(
     TicketNumber TicketNumber,
+    LegalEntityIdentifier BrokerLEI,
     string ClOrdID,
     FoleoTraderOrderStatus Status,
     decimal OrderQuantity,

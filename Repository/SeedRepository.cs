@@ -207,7 +207,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private async Task CreateBrokerSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
         var createdEvents = CreateInitialBrokerCreatedEvents();
-        var eventCount = createdEvents.Count;
+        var tradeMethodEvents = CreateInitialBrokerTradeMethodSetEvents();
+        var eventCount = createdEvents.Count + tradeMethodEvents.Count;
 
         progress("Brokers", $"Seeding {eventCount:N0} broker events.", 0, false);
 
@@ -215,6 +216,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             Constants.Initialisation.BrokersStreamId,
             createdEvents,
             cancellationToken);
+
+        await AppendEvents(Constants.Initialisation.BrokersStreamId, tradeMethodEvents, cancellationToken);
 
         progress("Brokers", $"Seeded {eventCount:N0} broker events.", eventCount, true);
     }
@@ -300,6 +303,25 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 Alpha3Builder.Create(account.BookCurrency),
                 account.Active).Value!)
             .ToList();
+
+    public static IReadOnlyList<IBrokerEvent> CreateInitialBrokerTradeMethodSetEvents()
+    {
+        var methods = SeedBrokers.Select(broker => (broker.LEI, Method: (ITradeMethod)new ManualTradeMethod())).ToList();
+        methods.Add((SeedBrokers[0].LEI, new FIXTradeMethod("localhost", 9878, "FOLEOAPI", "FOLEOTRADER", 20)));
+        methods.Add((SeedBrokers[1].LEI, new TradeFileTradeMethod(
+            new FileNameTemplate("{brokername}{yyyymmddhhmmssnn}.xlsx"),
+            [TradeFileColumn.TicketID, TradeFileColumn.ISIN, TradeFileColumn.Sedol, TradeFileColumn.Quantity, TradeFileColumn.Price, TradeFileColumn.Currency],
+            new FTPTradeMethodFileSendConfig("foleotrader", 21, "/incoming", "foliotrace", null))));
+
+        return methods.Select((item, index) => BrokerTradeMethodEventBuilder.SetSeed(
+            Guid.CreateGuid7(),
+            Constants.Initialisation.UserID,
+            EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(30 + index)),
+            AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(30 + index)),
+            Constants.Initialisation.Reason,
+            new LegalEntityIdentifier(item.LEI),
+            item.Method).Value!).ToList();
+    }
 
     public static IReadOnlyList<AccountModifiedEvent> CreateInitialAccountModifiedEvents()
     {
@@ -1441,6 +1463,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var currencyEvents = CreateInitialCurrencyCreatedEvents().Count
             + CreateInitialCurrencyModifiedEvents().Count;
         var brokerEvents = CreateInitialBrokerCreatedEvents().Count;
+        brokerEvents += CreateInitialBrokerTradeMethodSetEvents().Count;
         var accountEvents = CreateInitialAccountCreatedEvents().Count
             + CreateInitialAccountModifiedEvents().Count
             + CreateInitialAccountActiveModifiedEvents().Count

@@ -1,4 +1,5 @@
 using FolioTrace.Common;
+using FolioTrace.Aggregates;
 using FolioTrace.Types;
 using Services;
 
@@ -196,6 +197,24 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             writeLock.Release();
         }
     }
+
+    public async Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> workflowStreams, StoredFilePayload? storedFile = null, CancellationToken cancellationToken = default)
+    {
+        await EnsureLoadedAsync(cancellationToken);
+        await writeLock.WaitAsync(cancellationToken);
+        try
+        {
+            await durableRepository.AppendWorkflowAsync(workflowStreams, storedFile, cancellationToken);
+            lock (sync)
+                foreach (var stream in workflowStreams)
+                    foreach (var @event in stream.Value)
+                        AddEvent(stream.Key, @event);
+        }
+        finally { writeLock.Release(); }
+    }
+
+    public Task<StoredFilePayload?> LoadStoredFileAsync(Guid id, CancellationToken cancellationToken = default) =>
+        durableRepository.LoadStoredFileAsync(id, cancellationToken);
 
     private async Task EnsureLoadedAsync(CancellationToken cancellationToken)
     {

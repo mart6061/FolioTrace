@@ -7,6 +7,10 @@ builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(
 builder.Services.AddSingleton<FoleoTraderMessageMonitor>();
 builder.Services.AddSingleton<FoleoTraderFixApplication>();
 builder.Services.AddHostedService<FoleoTraderFixAcceptorHostedService>();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<TradeFileSimulator>();
+builder.Services.AddHostedService<TradeFileConfirmationHostedService>();
 
 var app = builder.Build();
 
@@ -19,6 +23,12 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.MapPost("/trade-files", async (FolioTrace.Aggregates.TradeFileDeliveryRequest request, TradeFileSimulator simulator, CancellationToken cancellationToken) =>
+{
+    await simulator.ReceiveAsync(request, cancellationToken);
+    return Results.Accepted();
+});
 
 app.MapControllerRoute(
     name: "default",
