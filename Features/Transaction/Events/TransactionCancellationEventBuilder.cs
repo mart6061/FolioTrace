@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class TransactionCancellationEventBuilder
 {
     public static Result<IReadOnlyList<TransactionCancellationEvent>> Create(TransactionCancellationRequest request, IReadOnlyList<ITransactionEvent> transactionEvents)

@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class CountryModifiedEventBuilder
 {
     public static Result<CountryModifiedEvent> Create(CountryModifiedRequest request)

@@ -1,12 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FolioTrace.Types;
 using FolioTrace.Common;
+using FolioTrace.Types;
 
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Instrument prices and income")]
 public sealed record InstrumentValues : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

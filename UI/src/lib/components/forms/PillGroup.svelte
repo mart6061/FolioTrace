@@ -1,12 +1,6 @@
 <script lang="ts">
   import { classNames } from './controls';
-
-  export type PillOption = {
-    disabled?: boolean;
-    label: string;
-    tone?: 'buy' | 'sell' | 'default';
-    value: string;
-  };
+  import type { PillOption } from './types';
 
   type Props = {
     ariaLabel: string;

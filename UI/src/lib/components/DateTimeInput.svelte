@@ -41,6 +41,8 @@
   }: Props = $props();
 
   let maxRefreshKey = $state(0);
+  let activeShortcut = $state<'start' | 'end' | null>(null);
+  let activeShortcutValue = $state('');
   const effectiveMax = $derived(currentEffectiveMax(maxRefreshKey));
   const useEmbeddedShortcuts = $derived(showShortcuts && shortcutMode === 'embedded');
   const containerClass = $derived(
@@ -53,6 +55,8 @@
     )
   );
   const inputClass = $derived(controlClass(size, fullWidth, invalid, className));
+  const startShortcutActive = $derived(activeShortcut === 'start' && isSameDateTimeValue(value, activeShortcutValue));
+  const endShortcutActive = $derived(activeShortcut === 'end' && isSameDateTimeValue(value, activeShortcutValue));
 
   function currentEffectiveMax(_refreshKey: number) {
     return futureLimited ? nowForInput() : (max ?? '');
@@ -72,22 +76,43 @@
     return clamped;
   }
 
-  function setShortcut(nextValue: string) {
+  function setShortcut(nextValue: string, shortcut: 'start' | 'end' | null = null) {
     refreshEffectiveMax();
-    value = clampToLimits(nextValue);
+    const clampedValue = clampToLimits(nextValue);
+
+    value = clampedValue;
+    activeShortcut = shortcut;
+    activeShortcutValue = shortcut ? clampedValue : '';
     onchange?.(new Event('change'));
   }
 
   function setStartOfDay() {
-    setShortcut(startOfDayForInput(value));
+    setShortcut(startOfDayForInput(value), 'start');
   }
 
   function setEndOfDay() {
-    setShortcut(endOfDayForInput(value));
+    setShortcut(endOfDayForInput(value), 'end');
   }
 
   function setNow() {
     setShortcut(nowForInput());
+  }
+
+  function isSameDateTimeValue(left: string, right: string) {
+    if (!left || !right)
+      return false;
+
+    const leftDate = new Date(left);
+    const rightDate = new Date(right);
+
+    return !Number.isNaN(leftDate.getTime()) &&
+      !Number.isNaN(rightDate.getTime()) &&
+      leftDate.getTime() === rightDate.getTime();
+  }
+
+  function handleInput(event: Event) {
+    value = (event.currentTarget as HTMLInputElement).value;
+    refreshEffectiveMax();
   }
 
   function handleChange(event: Event) {
@@ -114,14 +139,29 @@
     {step}
     onclick={refreshEffectiveMax}
     onchange={handleChange}
+    oninput={handleInput}
     onfocus={refreshEffectiveMax}
     type="datetime-local"
   />
   {#if showShortcuts}
     <span class="datetime-input-shortcuts" aria-label="Date time shortcuts">
-      <button aria-label="Start of day" disabled={disabled} onclick={setStartOfDay} title="Start of day" type="button">S</button>
+      <button
+        aria-label="Start of day"
+        class:datetime-input-shortcut-active={startShortcutActive}
+        disabled={disabled}
+        onclick={setStartOfDay}
+        title="Start of day"
+        type="button"
+      >S</button>
       <button aria-label="Now" disabled={disabled} onclick={setNow} title="Now" type="button">N</button>
-      <button aria-label="End of day" disabled={disabled} onclick={setEndOfDay} title="End of day" type="button">E</button>
+      <button
+        aria-label="End of day"
+        class:datetime-input-shortcut-active={endShortcutActive}
+        disabled={disabled}
+        onclick={setEndOfDay}
+        title="End of day"
+        type="button"
+      >E</button>
     </span>
   {/if}
 </span>

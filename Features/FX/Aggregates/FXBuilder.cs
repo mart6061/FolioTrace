@@ -1,5 +1,8 @@
+using FolioTrace.Common;
+
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class FXBuilder
 {
     public static FX Create(FXCreatedEvent createdEvent)

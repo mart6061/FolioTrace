@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class InstrumentModifiedEventBuilder
 {
     public static Result<InstrumentModifiedEvent> Create(InstrumentModifiedRequest request)

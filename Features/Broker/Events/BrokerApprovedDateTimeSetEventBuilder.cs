@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class BrokerApprovedDateTimeSetEventBuilder
 {
     public static Result<BrokerApprovedDateTimeSetEvent> Create(BrokerApprovedDateTimeSetRequest request)

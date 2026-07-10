@@ -1,5 +1,6 @@
 ﻿.vs/
 .vscode/
+.worktrees/
 [Bb]in/
 [Oo]bj/
 TestResults/

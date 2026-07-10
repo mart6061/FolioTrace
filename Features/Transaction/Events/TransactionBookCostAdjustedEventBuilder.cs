@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class TransactionBookCostAdjustedEventBuilder
 {
     public static Result<TransactionBookCostAdjustedEvent> Create(TransactionBookCostAdjustmentRequest request, IReadOnlyList<ITransactionEvent> transactionEvents)

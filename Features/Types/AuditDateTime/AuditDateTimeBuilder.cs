@@ -1,7 +1,10 @@
 using System;
 
+using FolioTrace.Common;
+
 namespace FolioTrace.Types;
 
+[Builder]
 public static class AuditDateTimeBuilder
 {
     // Create a new AuditDateTime using current UTC time

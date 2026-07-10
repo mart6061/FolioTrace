@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserBuilder
 {
     public static User Create(UserID userId, string displayName, UserDisplayPreferences displayPreferences, UserProfileValuationPreferences valuationPreferences)

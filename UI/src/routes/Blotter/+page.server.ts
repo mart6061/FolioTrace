@@ -36,8 +36,9 @@ import {
 } from '$lib/server/api';
 import type { Account, Instrument, Ticket, TicketProposalAllocation, TicketSide, TicketTradeAllocation } from '$lib/types';
 import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = toApiDateTime(valuationDate);
@@ -85,7 +86,7 @@ export const load = async ({ fetch, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   createTicket: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class AccountBuilder
 {
     public static Account Create(AccountCreatedEvent createdEvent, DisplayOrder displayOrder)

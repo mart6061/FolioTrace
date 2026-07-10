@@ -4,7 +4,7 @@ public sealed class FoleoTraderOptions
 {
     public const string SectionName = "FoleoTrader";
 
-    public string Host { get; init; } = "127.0.0.1";
+    public string Host { get; init; } = "localhost";
 
     public int Port { get; init; } = 9878;
 

@@ -5,11 +5,12 @@ import { isPublicPagePath } from '$lib/publicRoutes';
 import { requireCurrentUser } from '$lib/server/auth';
 import { getSystemVersion, getUserBookmarks, getUserMenuPreferences } from '$lib/server/api';
 import { getUiVersion } from '$lib/server/version';
+import type { LayoutServerLoad } from './$types';
 
 let cachedApiVersion: string | null = null;
 let apiVersionRequest: Promise<string> | null = null;
 
-export const load = async ({ fetch, locals, url }) => {
+export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
   const uiVersion = getUiVersion();
 
   if (isPublicPagePath(url.pathname))

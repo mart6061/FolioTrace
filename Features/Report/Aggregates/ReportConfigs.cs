@@ -1,10 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FolioTrace;
+using FolioTrace.Common;
 using FolioTrace.Types;
+
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Report configurations")]
 public sealed record ReportConfigs : IAggregate
 {
     [JsonIgnore]

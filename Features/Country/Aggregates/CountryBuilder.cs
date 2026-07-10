@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class CountryBuilder
 {
     public static Country Create(UserID userId, Alpha2 alpha2, Alpha3 alpha3, short numeric, string name)

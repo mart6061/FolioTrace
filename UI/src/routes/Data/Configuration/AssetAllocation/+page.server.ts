@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, todayEndForInput, toApiDateTime } from '$lib/dates';
+import type { PageServerLoad, Actions } from './$types';
 import {
   getAccounts,
   getAssetAllocationMappings,
@@ -18,7 +19,7 @@ type MappingChange = {
   nodeID: string;
 };
 
-export const load = async ({ fetch, locals, url }) => {
+export const load: PageServerLoad = async ({ fetch, locals, url }) => {
   const currentUser = requireCurrentUser(locals);
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
@@ -80,7 +81,7 @@ export const load = async ({ fetch, locals, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   saveMappings: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

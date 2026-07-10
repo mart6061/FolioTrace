@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserBookmarkDeletedEventBuilder
 {
     public static Result<UserBookmarkDeletedEvent> Create(UserBookmarkDeletedRequest request)

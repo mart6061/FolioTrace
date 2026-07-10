@@ -1,8 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
 using FolioTrace.Types;
+using FolioTrace.Common;
+
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Portfolio valuations")]
 public sealed record Valuations : IAggregate
 {
     private static readonly Dictionary<string, int> HoldingKindOrder = new(StringComparer.Ordinal)

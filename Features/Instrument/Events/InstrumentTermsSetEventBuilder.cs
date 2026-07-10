@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class InstrumentTermsSetEventBuilder
 {
     public static Result<InstrumentTermsSetEvent> Create(InstrumentTermsSetRequest request)

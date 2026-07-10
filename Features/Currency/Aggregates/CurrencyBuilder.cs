@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class CurrencyBuilder
 {
     public static Currency Create(UserID userId, Alpha3 alphabeticCode, int numericCode, short decimalPlace, string name)

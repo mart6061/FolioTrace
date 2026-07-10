@@ -1,7 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import { ApiError, getApiBaseUrl, getMemoryDiagnostics, postSystemBuild, postSystemClearCacheAndProjections } from '$lib/server/api';
+import type { PageServerLoad, Actions } from './$types';
 
-export const load = async ({ fetch }) => {
+export const load: PageServerLoad = async ({ fetch }) => {
   try {
     return {
       apiBaseUrl: getApiBaseUrl(),
@@ -17,7 +18,7 @@ export const load = async ({ fetch }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   build: async ({ fetch }) => {
     try {
       const result = await postSystemBuild(fetch);

@@ -6,9 +6,9 @@ namespace FolioTrace.Aggregates;
 [JsonConverter(typeof(JsonStringEnumConverter<HoldingDateBasis>))]
 public enum HoldingDateBasis
 {
-    [Description("Execution")]
+    [Description("Execution date and time")]
     EventDateTime,
 
-    [Description("Settlement")]
+    [Description("Settlement date and time")]
     SettlementDateTime
 }

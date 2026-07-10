@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '$lib/server/api';
+import type { RequestHandler } from './$types';
 
-export const GET = async ({ fetch }) => {
+export const GET: RequestHandler = async ({ fetch }) => {
   const response = await fetch(`${getApiBaseUrl()}/Notifications/Aggregates`, {
     headers: {
       accept: 'text/event-stream'

@@ -1,109 +1,85 @@
-import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit';
-import { dev } from '$app/environment';
-import { env } from '$env/dynamic/private';
-import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
+import { redirect, type Handle, type HandleFetch } from '@sveltejs/kit';
 import { isPublicPagePath } from '$lib/publicRoutes';
-import { currentUserFromWorkOSUser, ensureFolioTraceUser } from '$lib/server/auth';
-import { getAuthKitConfig, getAuthKitDiagnostics, prepareAuthKitEnvironment } from '$lib/server/workos';
+import { getApiBaseUrl } from '$lib/server/api';
+import type { CurrentUser } from '$lib/authTypes';
 
-const sessionCookieName = 'wos-session';
+const apiBaseUrl = getApiBaseUrl();
 
-const authKitConfig = getAuthKitConfig();
-const authKitConfigured = authKitConfig !== null;
-const devAuthConfigured = hasDevAuthConfigured();
-
-if (authKitConfig) {
-  prepareAuthKitEnvironment(authKitConfig);
-  configureAuthKit(authKitConfig);
-}
-
-const workosHandle: Handle = authKitConfigured && !devAuthConfigured
-  ? authKitHandle({
-      onError: (error) => {
-        console.error('WorkOS AuthKit request authentication failed.', {
-          ...getErrorDetails(error),
-          authKit: getAuthKitDiagnostics(authKitConfig)
-        });
-      }
-    })
-  : async ({ event, resolve }) => {
-      event.locals.auth = null;
-      event.locals.currentUser = null;
-      return resolve(event);
-    };
-
-const authGateHandle: Handle = async ({ event, resolve }) => {
+export const handle: Handle = async ({ event, resolve }) => {
   event.locals.currentUser = null;
-
-  const canonicalAuthRedirect = getCanonicalAuthRedirect(event);
-  if (canonicalAuthRedirect)
-    throw redirect(302, canonicalAuthRedirect);
 
   if (isPublicPagePath(event.url.pathname) || isPublicPath(event.url.pathname))
     return resolve(event);
 
-  const devCurrentUser = getDevCurrentUser();
-  if (devCurrentUser) {
-    event.locals.currentUser = devCurrentUser;
-    await ensureFolioTraceUser(event.fetch, devCurrentUser);
+  let currentUser: CurrentUser | null;
+  try {
+    currentUser = await getCurrentUser(event.fetch, event.request.headers.get('cookie'));
+  } catch (error) {
+    if (error instanceof ApiSessionError)
+      return new Response(error.message, { status: error.status });
+
+    throw error;
+  }
+
+  if (currentUser) {
+    event.locals.currentUser = currentUser;
     return resolve(event);
   }
 
-  if (!authKitConfigured)
-    return new Response('WorkOS AuthKit is not configured.', { status: 503 });
+  if (event.url.pathname.startsWith('/API/'))
+    return new Response('Authentication required.', { status: 401 });
 
-  if (!event.locals.auth?.user) {
-    const staleAuthCookieNames = getStaleAuthCookieNames(event.request.headers.get('cookie'));
-    if (staleAuthCookieNames.includes(sessionCookieName)) {
-      console.warn('WorkOS session cookie was present but no authenticated user was available.', {
-        host: getRequestHost(event.request.headers) ?? event.url.host,
-        pathname: event.url.pathname,
-        staleAuthCookieNames
-      });
-
-      if (event.url.pathname.startsWith('/API/'))
-        return withExpiredAuthCookies(
-          new Response('Authentication session was not accepted.', {
-            status: 401,
-            headers: { 'Cache-Control': 'no-store' }
-          }),
-          staleAuthCookieNames
-        );
-
-      return withExpiredAuthCookies(
-        new Response(null, {
-          status: 302,
-          headers: {
-            Location: '/auth/error?code=SESSION_NOT_ACCEPTED',
-            'Cache-Control': 'no-store'
-          }
-        }),
-        staleAuthCookieNames
-      );
-    }
-
-    if (event.url.pathname.startsWith('/API/'))
-      return new Response('Authentication required.', { status: 401 });
-
-    const signInUrl = new URL('/sign-in', event.url);
-    signInUrl.searchParams.set('returnTo', `${event.url.pathname}${event.url.search}`);
-    throw redirect(302, `${signInUrl.pathname}${signInUrl.search}`);
-  }
-
-  const currentUser = currentUserFromWorkOSUser(event.locals.auth.user);
-  event.locals.currentUser = currentUser;
-  await ensureFolioTraceUser(event.fetch, currentUser);
-
-  return resolve(event);
+  throw redirect(302, getSsoUrl(event.url));
 };
 
-export const handle = sequence(workosHandle, authGateHandle);
+export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
+  if (isConfiguredApiUrl(request.url)) {
+    const cookie = event.request.headers.get('cookie');
+    if (cookie)
+      request.headers.set('cookie', cookie);
+  }
+
+  return fetch(request);
+};
+
+async function getCurrentUser(fetchApi: typeof fetch, cookie: string | null) {
+  const headers = new Headers();
+  if (cookie)
+    headers.set('cookie', cookie);
+
+  let response: Response;
+  try {
+    response = await fetchApi(`${apiBaseUrl}/Auth/Session`, {
+      headers,
+      credentials: 'include'
+    });
+  } catch {
+    throw new ApiSessionError(
+      503,
+      `FolioTrace API is not reachable at ${apiBaseUrl}. Start the API and refresh the page.`
+    );
+  }
+
+  if (response.status === 401)
+    return null;
+
+  if (response.status === 429)
+    throw new ApiSessionError(429, 'Authentication is temporarily rate limited. Wait a few minutes before trying again.');
+
+  if (!response.ok)
+    throw new ApiSessionError(response.status, `API session check returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as CurrentUser;
+}
+
+function getSsoUrl(url: URL) {
+  const ssoUrl = new URL(`${apiBaseUrl}/Auth/SSO`);
+  ssoUrl.searchParams.set('returnTo', `${url.pathname}${url.search}`);
+  return ssoUrl.toString();
+}
 
 function isPublicPath(pathname: string) {
-  return pathname === '/callback'
-    || pathname === '/sign-in'
-    || pathname === '/sign-out'
+  return pathname === '/sign-out'
     || pathname === '/auth/error'
     || pathname === '/health'
     || pathname.startsWith('/_app/')
@@ -112,84 +88,12 @@ function isPublicPath(pathname: string) {
     || pathname === '/robots.txt';
 }
 
-function getCanonicalAuthRedirect(event: RequestEvent) {
-  const { url } = event;
-  if (!authKitConfig || url.pathname.startsWith('/API/'))
-    return null;
-
-  if (url.pathname !== '/sign-in' && url.pathname !== '/callback' && (isPublicPagePath(url.pathname) || isPublicPath(url.pathname)))
-    return null;
-
-  const redirectUri = new URL(authKitConfig.redirectUri);
-  const requestHost = getRequestHost(event.request.headers) ?? url.host;
-  if (requestHost.toLowerCase() === redirectUri.host.toLowerCase())
-    return null;
-
-  const canonicalUrl = new URL(url);
-  canonicalUrl.protocol = redirectUri.protocol;
-  canonicalUrl.host = redirectUri.host;
-  return canonicalUrl.toString();
+function isConfiguredApiUrl(url: string) {
+  return url.startsWith(`${apiBaseUrl}/`);
 }
 
-function getRequestHost(headers: Headers) {
-  const forwardedHost = headers.get('x-forwarded-host')?.split(',')[0]?.trim();
-  if (forwardedHost)
-    return forwardedHost;
-
-  return headers.get('host')?.trim() || null;
-}
-
-function getStaleAuthCookieNames(cookieHeader: string | null) {
-  return getCookieNames(cookieHeader).filter((name) => name === sessionCookieName || name.startsWith('wos-auth-verifier-'));
-}
-
-function getCookieNames(cookieHeader: string | null) {
-  if (!cookieHeader)
-    return [];
-
-  return cookieHeader
-    .split(';')
-    .map((part) => part.trim().split('=')[0])
-    .filter(Boolean);
-}
-
-function withExpiredAuthCookies(response: Response, cookieNames: string[]) {
-  for (const cookieName of new Set(cookieNames))
-    response.headers.append('Set-Cookie', `${cookieName}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`);
-
-  return response;
-}
-
-function getErrorDetails(error: unknown) {
-  if (!(error instanceof Error))
-    return { message: String(error) };
-
-  return {
-    name: error.name,
-    message: error.message,
-    stack: error.stack,
-    causeName: error.cause instanceof Error ? error.cause.name : undefined,
-    causeMessage: error.cause instanceof Error ? error.cause.message : undefined,
-    causeStack: error.cause instanceof Error ? error.cause.stack : undefined
-  };
-}
-
-function hasDevAuthConfigured() {
-  return dev && Boolean(env.FOLIOTRACE_DEV_AUTH_EMAIL?.trim());
-}
-
-function getDevCurrentUser() {
-  if (!hasDevAuthConfigured())
-    return null;
-
-  const email = env.FOLIOTRACE_DEV_AUTH_EMAIL?.trim() ?? '';
-  if (!email)
-    return null;
-
-  return currentUserFromWorkOSUser({
-    id: `foliotrace-dev:${email.toLowerCase()}`,
-    email,
-    firstName: env.FOLIOTRACE_DEV_AUTH_NAME?.trim() || 'FolioTrace Dev',
-    lastName: ''
-  });
+class ApiSessionError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
 }

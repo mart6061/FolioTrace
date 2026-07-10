@@ -1,5 +1,8 @@
+using FolioTrace.Common;
+
 namespace FolioTrace.Types;
 
+[Builder]
 public static class AssetAllocationIDBuilder
 {
     public static AssetAllocationID Create() => new(Guid.CreateGuid7());

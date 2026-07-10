@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class HoldingsBuilder
 {
     public static Holdings Create(EventDateTime valuationDateTime, IEnumerable<IHoldingEvent> events) =>

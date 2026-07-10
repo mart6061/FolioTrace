@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static partial class TicketEventBuilder
 {
     private static Result<TEvent> CreateProposalDecisionEvent<TEvent>(TicketApprovalRequest request, Tickets tickets, Func<TEvent> create)

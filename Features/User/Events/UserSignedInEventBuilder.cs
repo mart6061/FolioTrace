@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserSignedInEventBuilder
 {
     public static Result<UserSignedInEvent> Create(UserID userId, EventDateTime eventDateTime, string reason)

@@ -8,6 +8,7 @@ import type {
 	ProfitLossMethodValue,
 	TransactionReferenceEvent
 } from '$lib/types';
+import type { RequestHandler } from './$types';
 
 type AssetProfitLossRow = {
 	rowID: string;
@@ -30,7 +31,7 @@ type TransactionMovementEvent = TransactionReferenceEvent & {
 
 const instrumentPriceBasisOptions: InstrumentPriceBasis[] = ['Mid', 'Bid', 'Ask', 'NAV'];
 
-export async function GET({ fetch, url }) {
+export const GET: RequestHandler = async ({ fetch, url }) => {
 	const holdingID = url.searchParams.get('holdingID') ?? '';
 	const accountID = url.searchParams.get('accountID') ?? '';
 	const valuationDateTime = url.searchParams.get('valuationDateTime') ?? '';

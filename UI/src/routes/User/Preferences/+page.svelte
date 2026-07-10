@@ -205,52 +205,6 @@
   </section>
 
   <section class="page-container page-section">
-    <div class="data-panel menu-preference-card developer-jwt-card">
-      <h2 class="menu-preference-title">Developer JWT (REMOVE)</h2>
-      {#if data.userJWT}
-        <div class="grid gap-4">
-          <label class="grid gap-2">
-            <span class="text-sm font-semibold text-slate-800">Formatted token</span>
-            <textarea
-              aria-label="Formatted user JWT"
-              class="house-control house-control-md house-control-full min-h-32 font-mono"
-              readonly
-              spellcheck="false"
-              value={data.decodedUserJWT.formattedToken}
-            ></textarea>
-          </label>
-          {#if data.decodedUserJWT.error}
-            <p class="status-panel status-panel-warning">{data.decodedUserJWT.error}</p>
-          {:else}
-            <div class="grid gap-4 lg:grid-cols-2">
-              <label class="grid gap-2">
-                <span class="text-sm font-semibold text-slate-800">Header JSON</span>
-                <textarea
-                  aria-label="Decoded JWT header JSON"
-                  class="house-control house-control-md house-control-full min-h-56 font-mono"
-                  readonly
-                  spellcheck="false"
-                  value={data.decodedUserJWT.headerJSON}
-                ></textarea>
-              </label>
-              <label class="grid gap-2">
-                <span class="text-sm font-semibold text-slate-800">Payload JSON</span>
-                <textarea
-                  aria-label="Decoded JWT payload JSON"
-                  class="house-control house-control-md house-control-full min-h-56 font-mono"
-                  readonly
-                  spellcheck="false"
-                  value={data.decodedUserJWT.payloadJSON}
-                ></textarea>
-              </label>
-            </div>
-          {/if}
-        </div>
-      {:else}
-        <p class="menu-preference-empty">No JWT is available for this session.</p>
-      {/if}
-    </div>
-
     <div class="data-panel menu-preference-card">
       <h2 class="menu-preference-title">Appearance</h2>
       <div class="menu-preference-list">

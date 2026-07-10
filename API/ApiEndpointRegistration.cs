@@ -2,6 +2,7 @@ using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
+using API.Auth;
 using API.FoleoTrader;
 using Repository;
 using Services;
@@ -39,48 +40,55 @@ public static class ApiEndpointRegistration
     {
         var api = app.MapGroup("");
 
-        api.MapDiagnosticsEndpoints();
-        api.MapNotificationEndpoints();
-        api.MapSystemEndpoints();
-        api.MapAccountEndpoints();
-        api.MapBrokerEndpoints();
-        api.MapCountryEndpoints();
-        api.MapCurrencyEndpoints();
-        api.MapFXEndpoints();
-        api.MapFXRateEndpoints();
-        api.MapFoleoTraderEndpoints();
-        api.MapHoldingEndpoints();
-        api.MapValuationEndpoints();
-        api.MapProfitLossEndpoints();
-        api.MapValuationSettingEndpoints();
-        api.MapAssetAllocationMappingEndpoints();
-        api.MapReportConfigEndpoints();
-        api.MapInstrumentEndpoints();
-        api.MapInstrumentValueEndpoints();
-        api.MapTicketEndpoints();
-        api.MapUserEndpoints();
-        api.MapUserMenuPreferencesEndpoints();
-        api.MapUserValuationPreferencesEndpoints();
-        api.MapUserBookmarksEndpoints();
-        api.MapAccountEventEndpoints();
-        api.MapBrokerEventEndpoints();
-        api.MapCountryEventEndpoints();
-        api.MapCurrencyEventEndpoints();
-        api.MapFXEventEndpoints();
-        api.MapFXRateEventEndpoints();
-        api.MapHoldingEventEndpoints();
-        api.MapInstrumentEventEndpoints();
-        api.MapInstrumentPriceEventEndpoints();
-        api.MapInstrumentIncomeEventEndpoints();
-        api.MapTransactionEventEndpoints();
-        api.MapTicketEventEndpoints();
-        api.MapUserEventEndpoints();
-        api.MapUserMenuPreferencesEventEndpoints();
-        api.MapUserValuationPreferencesEventEndpoints();
-        api.MapUserBookmarksEventEndpoints();
-        api.MapValuationSettingEventEndpoints();
-        api.MapAssetAllocationMappingEventEndpoints();
-        api.MapReportEventEndpoints();
+        api.MapAuthEndpoints();
+        api.MapSystemHealthEndpoint();
+
+        var protectedApi = api.MapGroup("")
+            .RequireAuthorization()
+            .AddEndpointFilter<UserConsistencyEndpointFilter>();
+
+        protectedApi.MapDiagnosticsEndpoints();
+        protectedApi.MapNotificationEndpoints();
+        protectedApi.MapSystemEndpoints();
+        protectedApi.MapAccountEndpoints();
+        protectedApi.MapBrokerEndpoints();
+        protectedApi.MapCountryEndpoints();
+        protectedApi.MapCurrencyEndpoints();
+        protectedApi.MapFXEndpoints();
+        protectedApi.MapFXRateEndpoints();
+        protectedApi.MapFoleoTraderEndpoints();
+        protectedApi.MapHoldingEndpoints();
+        protectedApi.MapValuationEndpoints();
+        protectedApi.MapProfitLossEndpoints();
+        protectedApi.MapValuationSettingEndpoints();
+        protectedApi.MapAssetAllocationMappingEndpoints();
+        protectedApi.MapReportConfigEndpoints();
+        protectedApi.MapInstrumentEndpoints();
+        protectedApi.MapInstrumentValueEndpoints();
+        protectedApi.MapTicketEndpoints();
+        protectedApi.MapUserEndpoints();
+        protectedApi.MapUserMenuPreferencesEndpoints();
+        protectedApi.MapUserValuationPreferencesEndpoints();
+        protectedApi.MapUserBookmarksEndpoints();
+        protectedApi.MapAccountEventEndpoints();
+        protectedApi.MapBrokerEventEndpoints();
+        protectedApi.MapCountryEventEndpoints();
+        protectedApi.MapCurrencyEventEndpoints();
+        protectedApi.MapFXEventEndpoints();
+        protectedApi.MapFXRateEventEndpoints();
+        protectedApi.MapHoldingEventEndpoints();
+        protectedApi.MapInstrumentEventEndpoints();
+        protectedApi.MapInstrumentPriceEventEndpoints();
+        protectedApi.MapInstrumentIncomeEventEndpoints();
+        protectedApi.MapTransactionEventEndpoints();
+        protectedApi.MapTicketEventEndpoints();
+        protectedApi.MapUserEventEndpoints();
+        protectedApi.MapUserMenuPreferencesEventEndpoints();
+        protectedApi.MapUserValuationPreferencesEventEndpoints();
+        protectedApi.MapUserBookmarksEventEndpoints();
+        protectedApi.MapValuationSettingEventEndpoints();
+        protectedApi.MapAssetAllocationMappingEventEndpoints();
+        protectedApi.MapReportEventEndpoints();
 
         return app;
     }
@@ -410,13 +418,6 @@ public static class ApiEndpointRegistration
     {
         var system = api.MapGroup("/System").WithTags("System");
 
-        system.MapGet("/Health", () => Results.Ok(new
-        {
-            Status = "Healthy",
-            Service = "FolioTrace API",
-            CheckedAtUtc = DateTime.UtcNow
-        }));
-
         system.MapGet("/Version", (ApiVersionInfo versionInfo) =>
         {
             return Results.Ok(new
@@ -574,6 +575,18 @@ public static class ApiEndpointRegistration
                 currency,
                 account));
         });
+    }
+
+    private static void MapSystemHealthEndpoint(this RouteGroupBuilder api)
+    {
+        var system = api.MapGroup("/System").WithTags("System").AllowAnonymous();
+
+        system.MapGet("/Health", () => Results.Ok(new
+        {
+            Status = "Healthy",
+            Service = "FolioTrace API",
+            CheckedAtUtc = DateTime.UtcNow
+        }));
     }
 
     private static void MapProfitLossEndpoints(this RouteGroupBuilder api)

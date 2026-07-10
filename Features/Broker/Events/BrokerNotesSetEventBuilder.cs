@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class BrokerNotesSetEventBuilder
 {
     public static Result<BrokerNotesSetEvent> Create(BrokerNotesSetRequest request)

@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class UserBookmarkDisplayOrderSetEventBuilder
 {
     public static Result<UserBookmarkDisplayOrderSetEvent> Create(UserBookmarkDisplayOrderSetRequest request)

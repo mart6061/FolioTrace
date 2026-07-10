@@ -1,7 +1,9 @@
+using FolioTrace.Common;
 using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class ReportConfigBuilder
 {
     private static readonly ReportValuationColumnKey[] DefaultValuationColumnKeys =

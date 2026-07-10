@@ -4,6 +4,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[FeatureAggregate(Description = "Profit and loss")]
 public sealed record ProfitLosses : IAggregate
 {
     public required EventDateTime ValuationDateTime { get; init; }

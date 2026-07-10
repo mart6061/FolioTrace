@@ -2,12 +2,11 @@
   import { page } from '$app/state';
 
   const messages: Record<string, string> = {
-    PKCE_COOKIE_MISSING: 'The sign-in cookie was not available when WorkOS returned to FolioTrace.',
-    STATE_MISMATCH: 'The sign-in state did not match the browser session.',
+    STATE_INVALID: 'The sign-in state did not match the browser session.',
     ACCESS_DENIED: 'Access was not granted for this sign-in attempt.',
-    SESSION_ENCRYPTION_FAILED: 'The authenticated session could not be created.',
-    SESSION_NOT_ACCEPTED: 'The sign-in session cookie was set, but FolioTrace could not accept it on the next request.',
-    AUTH_ERROR: 'WorkOS returned an authentication error.',
+    AUTH_NOT_CONFIGURED: 'Authentication is not configured.',
+    ORGANIZATION_NOT_ALLOWED: 'Your organization is not allowed to access this FolioTrace instance.',
+    AUTH_ERROR: 'Authentication could not be completed.',
     AUTH_FAILED: 'The sign-in attempt could not be completed.'
   };
 
@@ -24,11 +23,8 @@
     <p class="eyebrow">Authentication</p>
     <h1 id="auth-error-title">Sign-in could not be completed</h1>
     <p>{message}</p>
-    <p class="detail">
-      Start a fresh sign-in from the same FolioTrace domain. If this keeps happening, check that
-      <code>ORIGIN</code> and <code>WORKOS_REDIRECT_URI</code> use the same public host.
-    </p>
-    <a href="/sign-in">Try again</a>
+    <p class="detail">Start a fresh sign-in. If this keeps happening, check the API WorkOS configuration.</p>
+    <a href="/">Try again</a>
   </section>
 </main>
 
@@ -75,10 +71,6 @@
 
   .detail {
     color: #4d5b55;
-  }
-
-  code {
-    font-size: 0.9em;
   }
 
   a {

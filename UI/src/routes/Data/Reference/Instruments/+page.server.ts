@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getInstruments,
@@ -16,7 +17,7 @@ import {
 
 const identifierTypes = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'] as const;
 
-export const load = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiValuationDate = toApiDateTime(valuationDate);
@@ -41,7 +42,7 @@ export const load = async ({ fetch, url }) => {
   }
 };
 
-export const actions = {
+export const actions: Actions = {
   createInstrument: async ({ fetch, locals, request }) => {
     const currentUser = requireCurrentUser(locals);
     const formData = await request.formData();

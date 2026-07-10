@@ -42,6 +42,12 @@
       tint: '#f4dfe7',
       tintText: '#7d2d49'
     },
+    ideas: {
+      border: '#f0a7c8',
+      strong: '#c02675',
+      tint: '#fce4f1',
+      tintText: '#9d1d60'
+    },
     logs: {
       border: '#e6c17b',
       strong: '#b9822f',
@@ -104,7 +110,8 @@
     { id: 'account', label: 'Account', path: '/Data/Reference/Accounts', tone: menuTones.reference },
     { id: 'data-list', label: 'Data List', tone: menuTones.reference },
     { id: 'tools', label: 'Tools', tone: menuTones.configuration },
-    { id: 'diagnostics', label: 'Diagnostics', tone: menuTones.logs }
+    { id: 'diagnostics', label: 'Diagnostics', tone: menuTones.logs },
+    { id: 'ideas', label: 'Ideas', path: '/Ideas', tone: menuTones.ideas }
   ];
   const toolsItems: MenuItem[] = [
     { id: 'configuration-account-tools', label: 'Account Tools', path: '/Data/Configuration/AccountTools', tone: menuTones.configuration },
@@ -437,6 +444,20 @@
                   </div>
                 {/if}
               </div>
+            {:else if item.id === 'ideas'}
+              <a
+                aria-current={isActiveMenuItem(item) ? 'page' : undefined}
+                aria-label="Ideas"
+                class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only system-menu-pill-ideas ${isActiveMenuItem(item) ? 'system-menu-pill-active' : ''}`}
+                href={menuHref(item)}
+                onclick={() => handleLeafClick(item)}
+                style={menuStyle(item.tone, 40 - topIndex)}
+                title="Ideas"
+              >
+                <span aria-hidden="true" class="system-menu-ideas-icon">
+                  <svg viewBox="0 0 24 24"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M8.5 14.5a6 6 0 1 1 7 0c-.7.6-1.1 1.3-1.3 2.5h-4.4c-.2-1.2-.6-1.9-1.3-2.5z" /></svg>
+                </span>
+              </a>
             {:else if item.id === 'data-list'}
               <div class="system-menu-bookmark-cluster">
                 <button aria-expanded={openTopMenu === 'data-list'} aria-label="Data list" class={`system-menu-pill system-menu-pill-top system-menu-pill-icon-only ${isOpenTopMenu(item.id) ? 'system-menu-pill-active' : ''}`} onclick={() => toggleTopMenu('data-list')} style={menuStyle(item.tone, 40 - topIndex)} title="Data list" type="button">

@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class HoldingPositionMemoModifiedEventBuilder
 {
     public static Result<HoldingPositionMemoModifiedEvent> Create(HoldingPositionMemoModifiedRequest request, Holdings? holdings = null) =>

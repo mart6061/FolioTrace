@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class FXCreatedEventBuilder
 {
     public static Result<FXCreatedEvent> Create(FXCreatedRequest request)

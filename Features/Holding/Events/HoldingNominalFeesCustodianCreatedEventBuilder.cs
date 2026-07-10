@@ -3,6 +3,7 @@ using FolioTrace.Types;
 
 namespace FolioTrace.Aggregates;
 
+[Builder]
 public static class HoldingNominalFeesCustodianCreatedEventBuilder
 {
     public static Result<HoldingNominalFeesCustodianCreatedEvent> Create(HoldingNominalFeesCustodianCreatedRequest request, Accounts? accounts = null, Instruments? instruments = null, Holdings? holdings = null) =>
