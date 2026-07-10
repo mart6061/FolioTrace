@@ -3062,7 +3062,8 @@ tbody tr {
   overflow: hidden;
 }
 
-.ticket-card:has(.house-multiselect[open]) {
+.ticket-card:has(.house-multiselect[open]),
+.ticket-card:has(.complex-select-menu) {
   z-index: 20;
   overflow: visible;
 }
