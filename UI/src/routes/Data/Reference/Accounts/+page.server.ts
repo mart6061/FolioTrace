@@ -13,11 +13,14 @@ import {
   postHoldingModifiedEvent,
   postAccountActiveModifiedEvent,
   postAccountCreatedEvent,
+  postAccountIdentifierSetEvent,
+  postAccountIdentifierUnsetEvent,
   postAccountModifiedEvent,
   postTransactionCancellation,
   postTransactionSet,
   type AccountActiveModifiedRequest,
   type AccountCreatedRequest,
+  type AccountIdentifierSetRequest,
   type AccountModifiedRequest,
   type HoldingActiveModifiedRequest,
   type HoldingCreatedRequest,
@@ -26,6 +29,8 @@ import {
   type TransactionSetRequest
 } from '$lib/server/api';
 import type { Holding, HoldingKind, Instrument, ProfitLossMethod } from '$lib/types';
+
+const identifierTypes = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'] as const;
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
@@ -141,6 +146,39 @@ export const actions: Actions = {
       return { accountID, eventID: result.eventID, intent: 'modifyAccountActive', message: `${name || 'Account'} was ${active ? 'activated' : 'deactivated'} successfully.`, status: 'success' };
     } catch (error) {
       return fail(502, { accountID, intent: 'modifyAccountActive', message: error instanceof Error ? error.message : 'Unable to update account status.', status: 'failure' });
+    }
+  },
+
+  setAccountIdentifier: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const accountID = getFormString(formData, 'accountID');
+    const identifierType = normaliseIdentifierType(getFormString(formData, 'identifierType'));
+    const identifierValue = getFormString(formData, 'identifierValue').toUpperCase();
+    const eventDateTime = getFormString(formData, 'eventDateTime');
+    if (!accountID || !identifierType || !identifierValue || !eventDateTime)
+      return fail(400, { accountID, intent: 'setAccountIdentifier', message: 'Identifier type, value, and event date are required.', status: 'failure' });
+    try {
+      const result = await postAccountIdentifierSetEvent(fetch, { accountID, eventDateTime: toApiDateTime(eventDateTime), identifierType, identifierValue, reason: `Set ${identifierType} ${identifierValue}` }, currentUser.userID);
+      return { accountID, eventID: result.eventID, intent: 'setAccountIdentifier', message: `${identifierType} was set successfully.`, status: 'success' };
+    } catch (error) {
+      return fail(502, { accountID, intent: 'setAccountIdentifier', message: error instanceof Error ? error.message : 'Unable to set identifier.', status: 'failure' });
+    }
+  },
+
+  unsetAccountIdentifier: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const accountID = getFormString(formData, 'accountID');
+    const identifierType = normaliseIdentifierType(getFormString(formData, 'identifierType'));
+    const eventDateTime = getFormString(formData, 'eventDateTime');
+    if (!accountID || !identifierType || !eventDateTime)
+      return fail(400, { accountID, intent: 'unsetAccountIdentifier', message: 'Identifier type and event date are required.', status: 'failure' });
+    try {
+      const result = await postAccountIdentifierUnsetEvent(fetch, { accountID, eventDateTime: toApiDateTime(eventDateTime), identifierType, reason: `Unset ${identifierType}` }, currentUser.userID);
+      return { accountID, eventID: result.eventID, intent: 'unsetAccountIdentifier', message: `${identifierType} was removed successfully.`, status: 'success' };
+    } catch (error) {
+      return fail(502, { accountID, intent: 'unsetAccountIdentifier', message: error instanceof Error ? error.message : 'Unable to remove identifier.', status: 'failure' });
     }
   },
 
@@ -698,6 +736,10 @@ export const actions: Actions = {
     }
   }
 };
+
+function normaliseIdentifierType(value: string): AccountIdentifierSetRequest['identifierType'] | '' {
+  return identifierTypes.find((type) => type.toLocaleLowerCase() === value.toLocaleLowerCase()) ?? '';
+}
 
 function readAccountForm(formData: FormData) {
   return {

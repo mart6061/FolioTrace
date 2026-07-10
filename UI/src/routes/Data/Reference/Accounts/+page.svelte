@@ -73,6 +73,7 @@
   let addingAccount = $state(false);
   let editingAccountID = $state('');
   let submittingAccountID = $state('');
+  let submittingIdentifierKey = $state('');
   let submittingCreate = $state(false);
   let cashInAccountID = $state('');
   let cashOutAccountID = $state('');
@@ -99,6 +100,7 @@
     { value: 'LIFO', label: 'LIFO' },
     { value: 'RunningAverage', label: 'Weighted average' }
   ];
+  const identifierTypeOptions = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'];
   const accountByID = $derived(new Map((data.accounts?.items ?? []).map((account) => [account.accountID, account])));
   const instrumentByID = $derived(new Map((data.instruments?.items ?? []).map((instrument) => [instrument.instrumentID, instrument])));
   const holdingByID = $derived(new Map((data.holdings?.items ?? []).map((holding) => [holding.holdingID, holding])));
@@ -181,6 +183,7 @@
       return [
         account.name,
         account.formalName,
+        ...account.identifiers.map((identifier) => `${identifier.type} ${identifier.value}`),
         account.bookCurrency,
         profitLossMethodLabel(account.bookCostBasis),
         account.active ? 'active' : 'inactive',
@@ -567,6 +570,17 @@
     };
   };
 
+  const enhanceIdentifier: SubmitFunction = ({ formData }) => {
+    const accountID = formData.get('accountID');
+    const identifierType = formData.get('identifierType');
+    const action = formData.get('formAction');
+    submittingIdentifierKey = [accountID, identifierType, action].map((value) => typeof value === 'string' ? value : '').join('|');
+    return async ({ update }) => {
+      await update({ reset: false });
+      submittingIdentifierKey = '';
+    };
+  };
+
   const enhanceHoldingCardEdit: SubmitFunction = ({ formData }) => {
     const holdingID = formData.get('holdingID');
 
@@ -767,6 +781,10 @@
   function accountEventSummary(event: HistoryEvent) {
     if ((event.$type === 'AccountActiveSetEvent' || event.$type === 'AccountActiveModifiedEvent') && 'active' in event)
       return event.active ? 'Activated' : 'Deactivated';
+    if (event.$type === 'AccountIdentifierSetEvent' && 'identifier' in event && event.identifier)
+      return `Set ${identifierTypeName(event.identifier.type)}: ${event.identifier.value}`;
+    if (event.$type === 'AccountIdentifierUnsetEvent' && 'identifierType' in event)
+      return `Unset ${identifierTypeName(event.identifierType ?? '')}`;
     if (!('name' in event) || !('formalName' in event))
       return '';
 
@@ -844,6 +862,16 @@
 
   function holdingDisplayName(holding: Holding) {
     return holding.name || holdingKindLabel(holding.holdingKind);
+  }
+
+  function identifierTypeName(type: string | number) {
+    const lookup: Record<string, string> = { '0': 'SEDOL', '1': 'ISIN', '2': 'Ticker', '3': 'CUSIP', '4': 'FIGI', '5': 'RIC', sedol: 'SEDOL', isin: 'ISIN', ticker: 'Ticker', cusip: 'CUSIP', figi: 'FIGI', ric: 'RIC' };
+    return lookup[String(type).toLocaleLowerCase()] ?? String(type);
+  }
+
+  function identifierTypeValue(type: string | number) {
+    const lookup: Record<string, string> = { '0': 'Sedol', '1': 'ISIN', '2': 'Ticker', '3': 'CUSIP', '4': 'FIGI', '5': 'RIC', sedol: 'Sedol', isin: 'ISIN', ticker: 'Ticker', cusip: 'CUSIP', figi: 'FIGI', ric: 'RIC' };
+    return lookup[String(type).toLocaleLowerCase()] ?? String(type);
   }
 
   function holdingKindLabel(holdingKind: HoldingKind) {
@@ -1521,6 +1549,41 @@
                           value={form?.accountID === account.accountID ? (accountFormValues?.eventDateTime ?? eventDateDefault) : eventDateDefault}
                         />
                       </label>
+                      {#if account.identifiers.length}
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                          {#each account.identifiers as identifier (`${identifier.type}-${identifier.value}`)}
+                            {@const identifierType = identifierTypeValue(identifier.type)}
+                            {@const unsetKey = `${account.accountID}|${identifierType}|unsetAccountIdentifier`}
+                            <form action="?/unsetAccountIdentifier" class="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] leading-4 text-slate-700" method="POST" use:enhance={enhanceIdentifier}>
+                              <input name="formAction" type="hidden" value="unsetAccountIdentifier" />
+                              <input name="accountID" type="hidden" value={account.accountID} />
+                              <input name="identifierType" type="hidden" value={identifierType} />
+                              <input name="eventDateTime" type="hidden" value={eventDateDefault} />
+                              <span class="font-semibold text-slate-500">{identifierTypeName(identifier.type)}</span>
+                              <span class="font-mono">{identifier.value}</span>
+                              <button aria-label={`Remove ${identifierTypeName(identifier.type)} ${identifier.value}`} class="ml-0.5 rounded px-1 font-semibold text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:cursor-wait disabled:opacity-60" disabled={submittingIdentifierKey === unsetKey} title="Remove identifier" type="submit">x</button>
+                            </form>
+                          {/each}
+                        </div>
+                      {/if}
+                      <form action="?/setAccountIdentifier" class="mt-2 flex flex-wrap items-end gap-1.5" method="POST" use:enhance={enhanceIdentifier}>
+                        <input name="formAction" type="hidden" value="setAccountIdentifier" />
+                        <input name="accountID" type="hidden" value={account.accountID} />
+                        <input name="eventDateTime" type="hidden" value={eventDateDefault} />
+                        <label class="grid gap-0.5 text-[11px] font-medium text-slate-500">
+                          <span>Identifier</span>
+                          <select class="house-control house-control-compact" name="identifierType">
+                            {#each identifierTypeOptions as identifierType (identifierType)}
+                              <option value={identifierType}>{identifierType}</option>
+                            {/each}
+                          </select>
+                        </label>
+                        <label class="grid gap-0.5 text-[11px] font-medium text-slate-500">
+                          <span>Value</span>
+                          <input class="house-control house-control-compact w-32 font-mono uppercase" name="identifierValue" required type="text" />
+                        </label>
+                        <button class="house-button house-button-secondary house-button-compact" disabled={submittingIdentifierKey.endsWith('|setAccountIdentifier') && submittingIdentifierKey.startsWith(`${account.accountID}|`)} type="submit">Set</button>
+                      </form>
                     </td>
                     <td class="px-3 py-2">
                       <div class="grid justify-end gap-1 text-xs font-medium text-slate-600">
@@ -1548,7 +1611,16 @@
                 {:else}
                   <tr class="hover:bg-slate-50">
                     <td class="px-3 py-2 font-medium text-slate-950">{account.name}</td>
-                    <td class="px-3 py-2 text-slate-700">{account.formalName}</td>
+                    <td class="px-3 py-2 text-slate-700">
+                      <div>{account.formalName}</div>
+                      {#if account.identifiers.length}
+                        <div class="mt-1 flex flex-wrap gap-1">
+                          {#each account.identifiers as identifier (`${identifier.type}-${identifier.value}`)}
+                            <span class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px]"><span class="font-semibold text-slate-500">{identifierTypeName(identifier.type)}</span> <span class="font-mono">{identifier.value}</span></span>
+                          {/each}
+                        </div>
+                      {/if}
+                    </td>
                     <td class="px-3 py-2 font-mono text-slate-700">{account.bookCurrency}</td>
                     <td class="px-3 py-2 text-slate-700">{profitLossMethodLabel(account.bookCostBasis)}</td>
                     <td class="px-3 py-2">

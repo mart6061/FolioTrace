@@ -96,6 +96,16 @@ export type AccountDisplayOrderSetRequest = {
   displayOrder: number;
 };
 
+export type AccountIdentifierSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  accountID: string;
+  identifierType: InstrumentIdentifierSetRequest['identifierType'];
+  identifierValue: string;
+};
+
+export type AccountIdentifierUnsetRequest = Omit<AccountIdentifierSetRequest, 'identifierValue'>;
+
 export type HoldingCreatedRequest = {
   eventDateTime: string;
   reason: string;
@@ -1423,6 +1433,14 @@ export async function postAccountDisplayOrderSetEvent(
   return postAccountEvent(fetchApi, 'AccountDisplayOrderSetEvent', request, userID);
 }
 
+export async function postAccountIdentifierSetEvent(fetchApi: typeof fetch, request: AccountIdentifierSetRequest, userID: string) {
+  return postAccountEvent(fetchApi, 'AccountIdentifierSetEvent', request, userID);
+}
+
+export async function postAccountIdentifierUnsetEvent(fetchApi: typeof fetch, request: AccountIdentifierUnsetRequest, userID: string) {
+  return postAccountEvent(fetchApi, 'AccountIdentifierUnsetEvent', request, userID);
+}
+
 export async function postHoldingCreatedEvent(
   fetchApi: typeof fetch,
   request: HoldingCreatedRequest,
@@ -2216,8 +2234,8 @@ async function postCountryEvent(
 
 async function postAccountEvent(
   fetchApi: typeof fetch,
-  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveSetEvent' | 'AccountDisplayOrderSetEvent',
-  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest | AccountDisplayOrderSetRequest,
+  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveSetEvent' | 'AccountDisplayOrderSetEvent' | 'AccountIdentifierSetEvent' | 'AccountIdentifierUnsetEvent',
+  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest | AccountDisplayOrderSetRequest | AccountIdentifierSetRequest | AccountIdentifierUnsetRequest,
   userID: string
 ) {
   const body: Record<string, unknown> = {
@@ -2243,6 +2261,11 @@ async function postAccountEvent(
 
   if ('displayOrder' in request)
     body.DisplayOrder = request.displayOrder;
+
+  if ('identifierValue' in request)
+    body.Identifier = { Type: request.identifierType, Value: request.identifierValue };
+  else if ('identifierType' in request)
+    body.IdentifierType = request.identifierType;
 
   const response = await fetchApi(`${getApiBaseUrl()}/Events/Account/${eventType}`, {
     method: 'POST',

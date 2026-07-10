@@ -1140,6 +1140,12 @@ public static class ApiEndpointRegistration
             cacheInvalidationService.Invalidate(result.Value);
             return Results.Accepted(AccountEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(AccountEventsRoute, result.Value));
         });
+
+        accountEvents.MapPost($"/{nameof(AccountIdentifierSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountIdentifierSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(Constants.Initialisation.AccountsStreamId, AccountEventsRoute, eventRepository, cacheInvalidationService, () => AccountIdentifierSetEventBuilder.Create(request), cancellationToken));
+
+        accountEvents.MapPost($"/{nameof(AccountIdentifierUnsetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, AccountIdentifierUnsetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(Constants.Initialisation.AccountsStreamId, AccountEventsRoute, eventRepository, cacheInvalidationService, () => AccountIdentifierUnsetEventBuilder.Create(request), cancellationToken));
     }
 
     private static void MapBrokerEventEndpoints(this RouteGroupBuilder api)
@@ -2475,6 +2481,8 @@ public static class ApiEndpointRegistration
             AccountModifiedEvent modifiedEvent => modifiedEvent.AccountID.Value,
             AccountActiveSetEvent activeEvent => activeEvent.AccountID.Value,
             AccountDisplayOrderSetEvent displayOrderSetEvent => displayOrderSetEvent.AccountID.Value,
+            AccountIdentifierSetEvent identifierSetEvent => identifierSetEvent.AccountID.Value,
+            AccountIdentifierUnsetEvent identifierUnsetEvent => identifierUnsetEvent.AccountID.Value,
             _ => null
         };
 
@@ -2867,6 +2875,28 @@ public static class ApiEndpointRegistration
                 displayOrderSetEvent.Reason,
                 AccountID = displayOrderSetEvent.AccountID.Value,
                 DisplayOrder = displayOrderSetEvent.DisplayOrder.Value
+            },
+            AccountIdentifierSetEvent identifierSetEvent => new
+            {
+                Type = identifierSetEvent.Type,
+                EventID = identifierSetEvent.EventID.Value,
+                UserID = identifierSetEvent.UserID.Value,
+                EventDateTime = identifierSetEvent.EventDateTime.Value,
+                AuditDateTime = identifierSetEvent.AuditDateTime.Value,
+                identifierSetEvent.Reason,
+                AccountID = identifierSetEvent.AccountID.Value,
+                identifierSetEvent.Identifier
+            },
+            AccountIdentifierUnsetEvent identifierUnsetEvent => new
+            {
+                Type = identifierUnsetEvent.Type,
+                EventID = identifierUnsetEvent.EventID.Value,
+                UserID = identifierUnsetEvent.UserID.Value,
+                EventDateTime = identifierUnsetEvent.EventDateTime.Value,
+                AuditDateTime = identifierUnsetEvent.AuditDateTime.Value,
+                identifierUnsetEvent.Reason,
+                AccountID = identifierUnsetEvent.AccountID.Value,
+                IdentifierType = identifierUnsetEvent.IdentifierType.ToString()
             },
             _ => new
             {

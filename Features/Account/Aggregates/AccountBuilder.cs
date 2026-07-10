@@ -11,7 +11,7 @@ public static class AccountBuilder
         if (createdEvent is null)
             throw new ArgumentNullException(nameof(createdEvent));
 
-        return new Account(createdEvent.AccountID, createdEvent.Name, createdEvent.FormalName, createdEvent.BookCurrency, createdEvent.BookCostBasis, createdEvent.Active, displayOrder, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
+        return new Account(createdEvent.AccountID, createdEvent.Name, createdEvent.FormalName, createdEvent.BookCurrency, createdEvent.BookCostBasis, [], createdEvent.Active, displayOrder, createdEvent.EventDateTime, createdEvent.AuditDateTime, createdEvent.EventID);
     }
 
     extension(Account account)
@@ -69,6 +69,36 @@ public static class AccountBuilder
                 AsOfDateTime = displayOrderSetEvent.AuditDateTime,
                 LastEventID = displayOrderSetEvent.EventID,
                 LastAuditDateTime = displayOrderSetEvent.AuditDateTime
+            };
+        }
+
+        public Account Apply(AccountIdentifierSetEvent setEvent)
+        {
+            var identifiers = account.Identifiers
+                .Where(identifier => identifier.Type != setEvent.Identifier.Type)
+                .Append(setEvent.Identifier)
+                .OrderBy(identifier => identifier.Type)
+                .ToList();
+
+            return account with
+            {
+                Identifiers = identifiers,
+                ValuationDateTime = setEvent.EventDateTime,
+                AsOfDateTime = setEvent.AuditDateTime,
+                LastEventID = setEvent.EventID,
+                LastAuditDateTime = setEvent.AuditDateTime
+            };
+        }
+
+        public Account Apply(AccountIdentifierUnsetEvent unsetEvent)
+        {
+            return account with
+            {
+                Identifiers = account.Identifiers.Where(identifier => identifier.Type != unsetEvent.IdentifierType).ToList(),
+                ValuationDateTime = unsetEvent.EventDateTime,
+                AsOfDateTime = unsetEvent.AuditDateTime,
+                LastEventID = unsetEvent.EventID,
+                LastAuditDateTime = unsetEvent.AuditDateTime
             };
         }
     }

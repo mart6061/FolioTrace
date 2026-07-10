@@ -28,6 +28,7 @@ export type Account = {
   formalName: string;
   bookCurrency: string;
   bookCostBasis: ProfitLossMethod;
+  identifiers: InstrumentIdentifier[];
   active: boolean;
   displayOrder: number;
   valuationDateTime: string;
@@ -808,6 +809,8 @@ export type AccountReferenceEvent = ReferenceEventBase & {
   bookCostBasis?: ProfitLossMethod;
   active?: boolean;
   displayOrder?: number;
+  identifier?: InstrumentIdentifier | null;
+  identifierType?: string | number;
 };
 
 export type HoldingReferenceEvent = ReferenceEventBase & {

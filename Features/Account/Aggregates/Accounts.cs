@@ -80,6 +80,12 @@ public sealed record Accounts : IAggregate
             case AccountDisplayOrderSetEvent displayOrderSetEvent:
                 Apply(displayOrderSetEvent);
                 break;
+            case AccountIdentifierSetEvent identifierSetEvent:
+                Apply(identifierSetEvent);
+                break;
+            case AccountIdentifierUnsetEvent identifierUnsetEvent:
+                Apply(identifierUnsetEvent);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported account event type '{accountEvent.GetType().Name}'.");
         }
@@ -133,6 +139,28 @@ public sealed record Accounts : IAggregate
         Items[index] = Items[index].Apply(displayOrderSetEvent);
         SortItems();
         LastEventID = displayOrderSetEvent.EventID;
+        LastAuditDateTime = GetLastAuditDateTime(Items);
+    }
+
+    public void Apply(AccountIdentifierSetEvent setEvent)
+    {
+        var index = Items.FindIndex(account => account.AccountID == setEvent.AccountID);
+        if (index < 0)
+            throw new InvalidOperationException(nameof(setEvent));
+
+        Items[index] = Items[index].Apply(setEvent);
+        LastEventID = setEvent.EventID;
+        LastAuditDateTime = GetLastAuditDateTime(Items);
+    }
+
+    public void Apply(AccountIdentifierUnsetEvent unsetEvent)
+    {
+        var index = Items.FindIndex(account => account.AccountID == unsetEvent.AccountID);
+        if (index < 0)
+            throw new InvalidOperationException(nameof(unsetEvent));
+
+        Items[index] = Items[index].Apply(unsetEvent);
+        LastEventID = unsetEvent.EventID;
         LastAuditDateTime = GetLastAuditDateTime(Items);
     }
 
