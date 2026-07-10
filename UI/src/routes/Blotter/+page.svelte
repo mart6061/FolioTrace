@@ -694,6 +694,14 @@
     selectedPendingTicketNumbers = [];
   }
 
+  function selectFixBroker(ticketNumber: number, lei: string) {
+    fixBrokerByTicket = { ...fixBrokerByTicket, [ticketNumber]: lei };
+  }
+
+  function selectTradeFileBroker(ticketNumber: number, lei: string) {
+    tradeFileBrokerByTicket = { ...tradeFileBrokerByTicket, [ticketNumber]: lei };
+  }
+
   function foleoTraderStatusText(order: FoleoTraderOrder | null) {
     if (!order)
       return '';
@@ -1287,7 +1295,7 @@
                           method="FIX"
                           name="brokerLEI"
                           placeholder="Select FIX broker"
-                          bind:selectedBrokerLEI={fixBrokerByTicket[ticket.ticketNumber]}
+                          bind:selectedBrokerLEI={() => fixBrokerByTicket[ticket.ticketNumber] ?? '', (lei) => selectFixBroker(ticket.ticketNumber, lei)}
                         />
                         <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}` || !fixBrokerByTicket[ticket.ticketNumber]}>
                           Send Trade
@@ -1307,7 +1315,7 @@
                           method="TradeFile"
                           name="brokerLEI"
                           placeholder="Select TradeFile broker"
-                          bind:selectedBrokerLEI={tradeFileBrokerByTicket[ticket.ticketNumber]}
+                          bind:selectedBrokerLEI={() => tradeFileBrokerByTicket[ticket.ticketNumber] ?? '', (lei) => selectTradeFileBroker(ticket.ticketNumber, lei)}
                         />
                         <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `trade-file-ticket-${ticket.ticketNumber}` || !tradeFileBrokerByTicket[ticket.ticketNumber]}>
                           Send Trade
