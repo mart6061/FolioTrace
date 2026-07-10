@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Broker, TradeMethodKind } from '$lib/types';
+  import type { Broker } from '$lib/types';
   import ComplexSelect from './ComplexSelect.svelte';
   import type { ComplexSelectOption } from './types';
 
@@ -27,7 +27,7 @@
 
   const eligibleBrokers = $derived(
     brokers
-      .filter((broker) => !method || (broker.active && broker.tradeMethods.some((tradeMethod) => methodEnabled(tradeMethod.type, tradeMethod.enabled))))
+      .filter((broker) => !method || (broker.active && brokerHasEnabledMethod(broker, method)))
       .sort((left, right) => left.name.localeCompare(right.name))
   );
   const options = $derived<ComplexSelectOption[]>(eligibleBrokers.map((broker) => ({
@@ -38,8 +38,9 @@
     tone: broker.active ? undefined : 'alert'
   })));
 
-  function methodEnabled(kind: TradeMethodKind, enabled: boolean | undefined) {
-    return kind === method && enabled !== false;
+  function brokerHasEnabledMethod(broker: Broker, methodKind: 'FIX' | 'TradeFile') {
+    return (broker.tradeMethods ?? [])
+      .some((tradeMethod) => tradeMethod.type === methodKind && tradeMethod.enabled !== false);
   }
 </script>
 
