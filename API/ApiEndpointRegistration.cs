@@ -32,6 +32,7 @@ public static class ApiEndpointRegistration
     private const string UserMenuPreferencesEventsRoute = "/API/Events/UserMenuPreferences";
     private const string UserValuationPreferencesEventsRoute = "/API/Events/UserValuationPreferences";
     private const string UserBookmarksEventsRoute = "/API/Events/UserBookmarks";
+    private const string InputControlSettingsEventsRoute = "/API/Events/InputControlSettings";
     private const string ValuationSettingEventsRoute = "/API/Events/ValuationSetting";
     private const string AssetAllocationMappingEventsRoute = "/API/Events/AssetAllocationMapping";
     private const string ReportEventsRoute = "/API/Events/Report";
@@ -70,6 +71,8 @@ public static class ApiEndpointRegistration
         protectedApi.MapUserMenuPreferencesEndpoints();
         protectedApi.MapUserValuationPreferencesEndpoints();
         protectedApi.MapUserBookmarksEndpoints();
+        protectedApi.MapInputControlSettingsEndpoints();
+        protectedApi.MapInputPolicyEndpoints();
         protectedApi.MapAccountEventEndpoints();
         protectedApi.MapBrokerEventEndpoints();
         protectedApi.MapCountryEventEndpoints();
@@ -86,6 +89,7 @@ public static class ApiEndpointRegistration
         protectedApi.MapUserMenuPreferencesEventEndpoints();
         protectedApi.MapUserValuationPreferencesEventEndpoints();
         protectedApi.MapUserBookmarksEventEndpoints();
+        protectedApi.MapInputControlSettingsEventEndpoints();
         protectedApi.MapValuationSettingEventEndpoints();
         protectedApi.MapAssetAllocationMappingEventEndpoints();
         protectedApi.MapReportEventEndpoints();
@@ -323,13 +327,14 @@ public static class ApiEndpointRegistration
             string? text,
             int? page,
             int? pageSize,
-            IApiExchangeRepository repository,
+            IRequestTraceRepository repository,
+            RequestTraceSettingsService settingsService,
             CancellationToken cancellationToken) =>
         {
             try
             {
                 var result = await repository.SearchAsync(
-                    new ApiExchangeSearchCriteria(
+                    new RequestTraceSearchCriteria(
                         fromUtc,
                         toUtc,
                         method,
@@ -341,35 +346,79 @@ public static class ApiEndpointRegistration
                         page ?? 1,
                         pageSize ?? 50),
                     cancellationToken);
+                var settings = await settingsService.GetAsync(cancellationToken);
 
-                return Results.Ok(new ApiExchangeSearchResponse(
+                return Results.Ok(new RequestTraceSearchResponse(
                     result.Items.Select(ToResponse).ToList(),
                     result.TotalCount,
                     result.Page,
-                    result.PageSize));
+                    result.PageSize,
+                    ToResponse(settings)));
             }
-            catch (Exception exception) when (IsApiExchangeStoreUnavailable(exception))
+            catch (Exception exception) when (IsRequestTraceStoreUnavailable(exception))
             {
                 return RequestTraceUnavailable();
             }
         });
 
-        diagnostics.MapGet("/RequestTrace/{id:guid}", async (Guid id, IApiExchangeRepository repository, CancellationToken cancellationToken) =>
+        diagnostics.MapGet("/RequestTrace/Settings", async (RequestTraceSettingsService settingsService, CancellationToken cancellationToken) =>
+            Results.Ok(ToResponse(await settingsService.GetAsync(cancellationToken))));
+
+        diagnostics.MapPut("/RequestTrace/Settings", async (
+            RequestTraceSettingsRequest request,
+            RequestTraceSettingsService settingsService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(ToResponse(await settingsService.UpdateAsync(ToSettings(request), cancellationToken))));
+
+        diagnostics.MapPost("/RequestTrace/Purge", async (
+            RequestTracePurgeRequest request,
+            IRequestTraceRepository repository,
+            CancellationToken cancellationToken) =>
         {
-            ApiExchange? exchange;
+            if (!string.Equals(request.Confirmation, "Purge", StringComparison.Ordinal))
+                return Results.BadRequest(new { message = "Confirmation must be exactly 'Purge'." });
 
             try
             {
-                exchange = await repository.LoadAsync(id, cancellationToken);
+                var result = await repository.PurgeAsync(request.BeforeUtc, cancellationToken);
+                return Results.Ok(new RequestTracePurgeResponse(result.DeletedCount));
             }
-            catch (Exception exception) when (IsApiExchangeStoreUnavailable(exception))
+            catch (Exception exception) when (IsRequestTraceStoreUnavailable(exception))
+            {
+                return RequestTraceUnavailable();
+            }
+        });
+
+        diagnostics.MapPost("/RequestTrace/Events", async (
+            RequestTraceEventIngestRequest request,
+            IRequestTraceRepository repository,
+            RequestTraceSettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var settings = await settingsService.GetAsync(cancellationToken);
+            if (!settings.Enabled || !settings.CaptureUi)
+                return Results.Accepted();
+
+            await repository.AppendAsync(ToTraceEvent(request), cancellationToken);
+            return Results.Accepted();
+        });
+
+        diagnostics.MapGet("/RequestTrace/{requestId:guid}", async (Guid requestId, IRequestTraceRepository repository, CancellationToken cancellationToken) =>
+        {
+            RequestTrace? trace;
+
+            try
+            {
+                trace = await repository.LoadAsync(requestId, cancellationToken);
+            }
+            catch (Exception exception) when (IsRequestTraceStoreUnavailable(exception))
             {
                 return RequestTraceUnavailable();
             }
 
-            return exchange is null
+            return trace is null
                 ? Results.NotFound()
-                : Results.Ok(ToResponse(exchange));
+                : Results.Ok(ToResponse(trace));
         });
 
         diagnostics.MapGet("/FIXTrace", async (
@@ -926,6 +975,89 @@ public static class ApiEndpointRegistration
                 ? Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
                 : Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate));
         });
+    }
+
+    private static void MapInputControlSettingsEndpoints(this RouteGroupBuilder api)
+    {
+        var inputControlSettings = api.MapGroup("/InputControlSettings").WithTags("Input Control Settings");
+
+        inputControlSettings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, InputControlSettingsService inputControlSettingsService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+
+            return auditDateTime.HasValue
+                ? Results.Ok(await inputControlSettingsService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
+                : Results.Ok(await inputControlSettingsService.Get(valuationDate));
+        });
+    }
+
+    private static void MapInputPolicyEndpoints(this RouteGroupBuilder api)
+    {
+        var inputPolicies = api.MapGroup("/InputPolicies").WithTags("Input Policies");
+
+        inputPolicies.MapGet("/", async Task<IResult> (
+            DateTime eventDateTime,
+            DateTime? auditDateTime,
+            string? controlKind,
+            string? controlKinds,
+            Guid? accountID,
+            Guid? userID,
+            string? currency,
+            bool? allowNegative,
+            InputPolicyService inputPolicyService) =>
+        {
+            if (!TryParseInputControlKinds(controlKind, controlKinds, out var resolvedControlKinds, out var parseError))
+                return Results.BadRequest(new { Message = parseError });
+
+            var request = new InputPolicyResolveRequest(
+                EventDateTimeBuilder.Create(eventDateTime),
+                auditDateTime.HasValue ? AuditDateTimeBuilder.Create(auditDateTime.Value) : null,
+                resolvedControlKinds,
+                accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null,
+                userID.HasValue ? new UserID(userID.Value) : null,
+                string.IsNullOrWhiteSpace(currency) ? null : Alpha3Builder.Create(currency.Trim().ToUpperInvariant()),
+                allowNegative);
+
+            return Results.Ok(await inputPolicyService.Resolve(request));
+        });
+    }
+
+    private static void MapInputControlSettingsEventEndpoints(this RouteGroupBuilder api)
+    {
+        var inputControlSettingsEvents = api.MapGroup("/Events/InputControlSettings").WithTags("Input Control Settings Events");
+
+        inputControlSettingsEvents.MapGet("/", async (DateTime? valuationDateTime, DateTime? auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var events = await eventRepository.LoadStreamAsync<IInputControlSettingsEvent>(Constants.Initialisation.InputControlSettingsStreamId, cancellationToken);
+
+            return Results.Ok(EventHistoryResponseFactory.Create(events, valuationDateTime, auditDateTime, ToInputControlSettingsEventResponse));
+        });
+
+        inputControlSettingsEvents.MapGet("/{eventId:guid}", async (Guid eventId, IEventRepository eventRepository, CancellationToken cancellationToken) =>
+        {
+            var @event = await eventRepository.LoadAsync<IEventBase>(eventId, cancellationToken);
+            return @event is IInputControlSettingsEvent inputControlSettingsEvent
+                ? Results.Ok(ToInputControlSettingsEventResponse(inputControlSettingsEvent))
+                : Results.NotFound();
+        });
+
+        inputControlSettingsEvents.MapPost($"/{nameof(InputControlSettingsCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InputControlSettingsRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InputControlSettingsStreamId,
+                InputControlSettingsEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InputControlSettingsCreatedEventBuilder.Create(request),
+                cancellationToken));
+
+        inputControlSettingsEvents.MapPost($"/{nameof(InputControlSettingsModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InputControlSettingsRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(
+                Constants.Initialisation.InputControlSettingsStreamId,
+                InputControlSettingsEventsRoute,
+                eventRepository,
+                cacheInvalidationService,
+                () => InputControlSettingsModifiedEventBuilder.Create(request),
+                cancellationToken));
     }
 
     private static void MapAccountEventEndpoints(this RouteGroupBuilder api)
@@ -2295,6 +2427,38 @@ public static class ApiEndpointRegistration
                 cancellationToken));
     }
 
+    private static bool TryParseInputControlKinds(string? controlKind, string? controlKinds, out IReadOnlyList<InputControlKind> resolvedControlKinds, out string parseError)
+    {
+        var values = new[] { controlKind, controlKinds }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .SelectMany(value => value!.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            .ToList();
+
+        if (values.Count == 0)
+        {
+            resolvedControlKinds = [InputControlKind.Quantity, InputControlKind.Money];
+            parseError = string.Empty;
+            return true;
+        }
+
+        var parsedValues = new List<InputControlKind>();
+        foreach (var value in values)
+        {
+            if (!Enum.TryParse<InputControlKind>(value, ignoreCase: true, out var parsedValue) || !Enum.IsDefined(parsedValue))
+            {
+                resolvedControlKinds = [];
+                parseError = $"Unknown input control kind '{value}'.";
+                return false;
+            }
+
+            parsedValues.Add(parsedValue);
+        }
+
+        resolvedControlKinds = parsedValues.Distinct().ToList();
+        parseError = string.Empty;
+        return true;
+    }
+
     private static UserDisplayPreferences CreateUserDisplayPreferences(UserEventRequest request) =>
         new(request.DisplayPreferences.DarkMode, request.DisplayPreferences.RememberTraceDate);
 
@@ -2453,23 +2617,102 @@ public static class ApiEndpointRegistration
         return reportEvents.Count == 0 ? null : new ReportConfigs(eventDateTime, auditDateTime, reportEvents.ToList());
     }
 
-    private static ApiExchangeResponse ToResponse(ApiExchange exchange) =>
+    private static RequestTraceResponse ToResponse(RequestTrace trace) =>
         new(
-            exchange.Id,
-            exchange.StartedAtUtc,
-            exchange.CompletedAtUtc,
-            exchange.DurationMilliseconds,
-            exchange.Method,
-            exchange.Path,
-            exchange.QueryString,
-            exchange.StatusCode,
-            exchange.ExceptionType,
-            exchange.ExceptionMessage,
-            ToResponse(exchange.Request),
-            ToResponse(exchange.Response));
+            trace.RequestId,
+            trace.Source,
+            trace.StartedAtUtc,
+            trace.CompletedAtUtc,
+            trace.DurationMilliseconds,
+            trace.Method,
+            trace.Path,
+            trace.QueryString,
+            trace.StatusCode,
+            trace.HasResponse,
+            trace.HasException,
+            trace.LogCount,
+            trace.Request is null ? null : ToResponse(trace.Request),
+            trace.Response is null ? null : ToResponse(trace.Response),
+            trace.Exception is null
+                ? null
+                : new RequestTraceExceptionResponse(
+                    trace.Exception.RecordedAtUtc,
+                    trace.Exception.ExceptionType,
+                    trace.Exception.ExceptionMessage,
+                    trace.Exception.StackTrace),
+            trace.Logs.Select(log => new TraceLogEntryResponse(
+                log.RecordedAtUtc,
+                log.Level,
+                log.Category,
+                log.EventId,
+                log.Message,
+                log.ExceptionType,
+                log.ExceptionMessage,
+                log.StackTrace)).ToList());
 
-    private static ApiHttpMessageResponse ToResponse(ApiHttpMessage message) =>
+    private static TraceHttpMessageResponse ToResponse(TraceHttpMessage message) =>
         new(message.Headers, message.Body, message.ContentType, message.ContentLength, message.BodyTruncated);
+
+    private static RequestTraceSettingsResponse ToResponse(RequestTraceSettings settings) =>
+        new(
+            settings.Enabled,
+            settings.CaptureApi,
+            settings.CaptureUi,
+            settings.CaptureBodies,
+            settings.Capture500StackTraces,
+            settings.CaptureLogMessages,
+            settings.MinimumLogLevel,
+            settings.MaximumBodyCharacters,
+            settings.CapturedContentTypePrefixes,
+            settings.ExcludedPathPrefixes,
+            settings.RedactedHeaders);
+
+    private static RequestTraceSettings ToSettings(RequestTraceSettingsRequest request) =>
+        new()
+        {
+            Enabled = request.Enabled,
+            CaptureApi = request.CaptureApi,
+            CaptureUi = request.CaptureUi,
+            CaptureBodies = request.CaptureBodies,
+            Capture500StackTraces = request.Capture500StackTraces,
+            CaptureLogMessages = request.CaptureLogMessages,
+            MinimumLogLevel = request.MinimumLogLevel,
+            MaximumBodyCharacters = request.MaximumBodyCharacters,
+            CapturedContentTypePrefixes = request.CapturedContentTypePrefixes.ToArray(),
+            ExcludedPathPrefixes = request.ExcludedPathPrefixes.ToArray(),
+            RedactedHeaders = request.RedactedHeaders.ToArray()
+        };
+
+    private static RequestTraceEvent ToTraceEvent(RequestTraceEventIngestRequest request) =>
+        new()
+        {
+            RequestId = request.RequestId,
+            Source = string.Equals(request.Source, RequestTraceSources.Ui, StringComparison.OrdinalIgnoreCase)
+                ? RequestTraceSources.Ui
+                : RequestTraceSources.Api,
+            Kind = request.Kind,
+            RecordedAtUtc = request.RecordedAtUtc,
+            StartedAtUtc = request.StartedAtUtc,
+            CompletedAtUtc = request.CompletedAtUtc,
+            DurationMilliseconds = request.DurationMilliseconds,
+            Method = request.Method.ToUpperInvariant(),
+            Path = request.Path,
+            QueryString = request.QueryString,
+            StatusCode = request.StatusCode,
+            Message = request.Message is null
+                ? null
+                : new TraceHttpMessage
+                {
+                    Headers = request.Message.Headers,
+                    Body = request.Message.Body,
+                    ContentType = request.Message.ContentType,
+                    ContentLength = request.Message.ContentLength,
+                    BodyTruncated = request.Message.BodyTruncated
+                },
+            ExceptionType = request.ExceptionType,
+            ExceptionMessage = request.ExceptionMessage,
+            StackTrace = request.StackTrace
+        };
 
     private static FIXOperationResponse ToResponse(FoleoTraderFIXOperationRecordedEvent @event) =>
         new(
@@ -2535,16 +2778,42 @@ public static class ApiEndpointRegistration
             _ => string.IsNullOrWhiteSpace(msgType) ? "Unknown" : msgType
         };
 
-    private static bool IsApiExchangeStoreUnavailable(Exception exception) =>
+    private static bool IsRequestTraceStoreUnavailable(Exception exception) =>
         exception is TimeoutException ||
         exception.GetType().FullName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true ||
-        exception.InnerException is not null && IsApiExchangeStoreUnavailable(exception.InnerException);
+        exception.InnerException is not null && IsRequestTraceStoreUnavailable(exception.InnerException);
 
     private static IResult RequestTraceUnavailable() =>
         Results.Problem(
             title: "Request trace store is unavailable.",
-            detail: "The API exchange capture database cannot be reached. Start the configured Postgres instance or update ConnectionStrings:FolioTrace.",
+            detail: "The request trace database cannot be reached. Start the configured Postgres instance or update ConnectionStrings:FolioTrace.",
             statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    private static object ToInputControlSettingsEventResponse(IInputControlSettingsEvent @event) =>
+        EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch
+        {
+            InputControlSettingsCreatedEvent createdEvent => new
+            {
+                Type = createdEvent.Type,
+                EventID = createdEvent.EventID.Value,
+                UserID = createdEvent.UserID.Value,
+                EventDateTime = createdEvent.EventDateTime.Value,
+                AuditDateTime = createdEvent.AuditDateTime.Value,
+                createdEvent.Reason,
+                createdEvent.Settings
+            },
+            InputControlSettingsModifiedEvent modifiedEvent => new
+            {
+                Type = modifiedEvent.Type,
+                EventID = modifiedEvent.EventID.Value,
+                UserID = modifiedEvent.UserID.Value,
+                EventDateTime = modifiedEvent.EventDateTime.Value,
+                AuditDateTime = modifiedEvent.AuditDateTime.Value,
+                modifiedEvent.Reason,
+                modifiedEvent.Settings
+            },
+            _ => @event
+        });
 
     private static object ToAccountEventResponse(IAccountEvent @event) =>
         EventPropertyDetailsFactory.WithPropertyDetails(@event, @event switch

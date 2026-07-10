@@ -8,6 +8,7 @@ declare global {
 
     interface Locals {
       currentUser: CurrentUser | null;
+      requestTraceId: string;
     }
 
     interface PageData {

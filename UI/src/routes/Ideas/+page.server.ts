@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getCurrencies, getHoldings, getInstruments } from '$lib/server/api';
+import { getAccounts, getCurrencies, getHoldings, getInputPolicies, getInstruments } from '$lib/server/api';
 import type { HoldingDateBasis, InstrumentPriceBasis } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -20,17 +20,25 @@ const instrumentPriceBasisOptions: EnumOption<InstrumentPriceBasis>[] = [
   { description: 'Net Asset Value', label: 'NAV', value: 'NAV' }
 ];
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
+  const { currentUser } = await parent();
 
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, currencies, holdings, instruments] = await Promise.all([
+    const [accounts, currencies, holdings, inputPolicies, instruments] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
       getCurrencies(fetch, valuationDateTime, asAtDateTime),
       getHoldings(fetch, valuationDateTime, asAtDateTime),
+      getInputPolicies(fetch, {
+        auditDateTime: asAtDateTime,
+        controlKinds: ['Quantity', 'Money'],
+        currency: 'GBP',
+        eventDateTime: valuationDateTime,
+        userID: currentUser?.userID
+      }),
       getInstruments(fetch, valuationDateTime, asAtDateTime)
     ]);
 
@@ -41,6 +49,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       error: '',
       holdingDateBasisOptions,
       holdings,
+      inputPolicies,
       instrumentPriceBasisOptions,
       instruments,
       valuationDate
@@ -53,6 +62,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       error: error instanceof Error ? error.message : 'Unable to load ideas.',
       holdingDateBasisOptions,
       holdings: null,
+      inputPolicies: [],
       instrumentPriceBasisOptions,
       instruments: null,
       valuationDate

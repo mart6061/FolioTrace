@@ -14,6 +14,7 @@
     name?: string;
     nameOnlySummary?: boolean;
     placeholder?: string;
+    showInstrumentID?: boolean;
     selectedHoldingID?: string;
     selectedHoldingIDs?: string[];
   };
@@ -28,6 +29,7 @@
     name = '',
     nameOnlySummary = false,
     placeholder = 'Select holding',
+    showInstrumentID = true,
     selectedHoldingID = $bindable(''),
     selectedHoldingIDs = $bindable([])
   }: Props = $props();
@@ -73,7 +75,7 @@
   function holdingMeta(holding: Holding) {
     return [
       holding.holdingKind,
-      holding.instrumentID,
+      showInstrumentID ? holding.instrumentID : '',
       holding.includeInValuation ? '' : 'Excluded',
       holding.active ? '' : 'Inactive'
     ].filter(Boolean).join(' - ');
@@ -222,22 +224,22 @@
       <div class="holding-combobox-options">
         {#each filteredHoldings as holding (holding.holdingID)}
           {#if multiple}
-            <label class={classNames('holding-combobox-option', 'holding-combobox-option-check', isSelected(holding.holdingID) && 'holding-combobox-option-selected')}>
+            <label class={classNames('holding-combobox-option', !holding.active && 'holding-combobox-option-alert', 'holding-combobox-option-check', isSelected(holding.holdingID) && 'holding-combobox-option-selected')}>
               <input checked={isSelected(holding.holdingID)} onchange={() => toggleHolding(holding.holdingID)} type="checkbox" value={holding.holdingID} />
+              <span class="holding-combobox-option-copy">
+                <span>{holdingLabel(holding)}</span>
+                <small>{holdingMeta(holding)}</small>
+              </span>
               <span aria-hidden="true" class="holding-combobox-check-icon">
                 {#if isSelected(holding.holdingID)}
                   <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
                 {/if}
               </span>
-              <span>
-                <span>{holdingLabel(holding)}</span>
-                <small>{holdingMeta(holding)}</small>
-              </span>
             </label>
           {:else}
             <button
               aria-selected={isSelected(holding.holdingID)}
-              class={classNames('holding-combobox-option', isSelected(holding.holdingID) && 'holding-combobox-option-selected')}
+              class={classNames('holding-combobox-option', !holding.active && 'holding-combobox-option-alert', isSelected(holding.holdingID) && 'holding-combobox-option-selected')}
               onclick={() => chooseHolding(holding.holdingID)}
               role="option"
               type="button"
@@ -407,6 +409,24 @@
     outline: none;
   }
 
+  .holding-combobox-option-alert {
+    background: color-mix(in srgb, var(--warning-soft) 42%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 44%, var(--line));
+    color: var(--warning-text);
+  }
+
+  .holding-combobox-option-alert:hover,
+  .holding-combobox-option-alert:focus-visible {
+    background: color-mix(in srgb, var(--warning-soft) 78%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 68%, var(--line));
+  }
+
+  .holding-combobox-option-alert.holding-combobox-option-selected {
+    background: color-mix(in srgb, var(--danger-soft) 82%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 76%, var(--line));
+    color: var(--danger-text);
+  }
+
   .holding-combobox-option span {
     font-size: 0.75rem;
     font-weight: 750;
@@ -423,15 +443,23 @@
     overflow-wrap: anywhere;
   }
 
+  .holding-combobox-option-alert small {
+    color: var(--warning-strong);
+  }
+
+  .holding-combobox-option-alert.holding-combobox-option-selected small {
+    color: var(--danger-strong);
+  }
+
   .holding-combobox-option-check {
     align-items: start;
-    grid-template-columns: 1.25rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 1.25rem;
     position: relative;
   }
 
   .holding-combobox-option-check input {
     height: 1px;
-    left: 0.55rem;
+    right: 0.55rem;
     opacity: 0;
     pointer-events: none;
     position: absolute;
@@ -455,6 +483,14 @@
     width: 1.15rem;
   }
 
+  .holding-combobox-option-alert .holding-combobox-check-icon {
+    color: var(--warning-strong);
+  }
+
+  .holding-combobox-option-alert.holding-combobox-option-selected .holding-combobox-check-icon {
+    color: var(--danger-strong);
+  }
+
   .holding-combobox-check-icon svg {
     display: block;
     fill: none;
@@ -466,7 +502,7 @@
     width: 1rem;
   }
 
-  .holding-combobox-option-check > span {
+  .holding-combobox-option-copy {
     display: grid;
     gap: 0.05rem;
     min-width: 0;

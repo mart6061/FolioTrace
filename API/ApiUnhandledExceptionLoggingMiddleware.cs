@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using Repository;
 
 namespace API;
 
@@ -10,7 +11,10 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
     ILogger<ApiUnhandledExceptionLoggingMiddleware> logger,
     ApiUnhandledExceptionLoggingOptions options)
 {
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(
+        HttpContext context,
+        IRequestTraceRepository requestTraceRepository,
+        RequestTraceSettingsService requestTraceSettingsService)
     {
         try
         {
@@ -20,6 +24,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
         {
             var errorId = Guid.CreateGuid7();
             await WriteExceptionLogAsync(context, exception, errorId);
+            await WriteTraceExceptionAsync(context, exception, requestTraceRepository, requestTraceSettingsService);
             var statusCode = exception switch
             {
                 BadHttpRequestException badRequestException => badRequestException.StatusCode,
@@ -52,6 +57,45 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
 
     private static bool IsRequestValidationException(ArgumentException exception) =>
         exception.Message.Contains("Value must not be in the future.", StringComparison.Ordinal);
+
+    private async Task WriteTraceExceptionAsync(
+        HttpContext context,
+        Exception exception,
+        IRequestTraceRepository requestTraceRepository,
+        RequestTraceSettingsService requestTraceSettingsService)
+    {
+        try
+        {
+            var settings = await requestTraceSettingsService.GetAsync(CancellationToken.None);
+            if (!settings.Enabled || !settings.CaptureApi)
+                return;
+
+            if (!context.Items.TryGetValue(RequestTraceConstants.HttpContextRequestIdItem, out var requestIdValue) ||
+                requestIdValue is not Guid requestId)
+                return;
+
+            await requestTraceRepository.AppendAsync(
+                new RequestTraceEvent
+                {
+                    RequestId = requestId,
+                    Source = RequestTraceSources.Api,
+                    Kind = RequestTraceEventKinds.Exception,
+                    RecordedAtUtc = DateTime.UtcNow,
+                    Method = context.Request.Method,
+                    Path = context.Request.Path.Value ?? string.Empty,
+                    QueryString = context.Request.QueryString.Value ?? string.Empty,
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    ExceptionType = exception.GetType().FullName,
+                    ExceptionMessage = exception.Message,
+                    StackTrace = settings.Capture500StackTraces ? exception.ToString() : null
+                },
+                CancellationToken.None);
+        }
+        catch (Exception traceException)
+        {
+            logger.LogWarning(traceException, "Failed to persist request trace exception event for {Method} {Path}.", context.Request.Method, context.Request.Path);
+        }
+    }
 
     private async Task WriteExceptionLogAsync(HttpContext context, Exception exception, Guid errorId)
     {
