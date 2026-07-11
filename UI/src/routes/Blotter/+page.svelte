@@ -1281,52 +1281,6 @@
                   </form>
                 {/if}
                 {#if ticketExpanded && ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress'}
-                  {#if canSendFoleoTrader(ticket, foleoTraderOrder)}
-                    <div class="trade-execution-groups">
-                      <form
-                        class="ticket-save-form trade-execution-group"
-                        method="POST"
-                        action="?/sendFoleoTraderOrder"
-                        use:enhance={enhanceAction(`foleo-trader-${ticket.ticketNumber}`)}
-                      >
-                        <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
-                        <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                        <span class="trade-execution-label">FIX</span>
-                        <BrokerDropdown
-                          {brokers}
-                          compactBrand
-                          method="FIX"
-                          name="brokerLEI"
-                          placeholder="Select FIX broker"
-                          bind:selectedBrokerLEI={() => fixBrokerByTicket[ticket.ticketNumber] ?? '', (lei) => selectFixBroker(ticket.ticketNumber, lei)}
-                        />
-                        <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}` || !fixBrokerByTicket[ticket.ticketNumber]}>
-                          Send Trade
-                        </button>
-                      </form>
-                      <form
-                        class="ticket-save-form trade-execution-group"
-                        method="POST"
-                        action="?/sendTradeFileTicket"
-                        use:enhance={enhanceAction(`trade-file-ticket-${ticket.ticketNumber}`)}
-                      >
-                        <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
-                        <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                        <span class="trade-execution-label">TradeFile</span>
-                        <BrokerDropdown
-                          {brokers}
-                          compactBrand
-                          method="TradeFile"
-                          name="brokerLEI"
-                          placeholder="Select TradeFile broker"
-                          bind:selectedBrokerLEI={() => tradeFileBrokerByTicket[ticket.ticketNumber] ?? '', (lei) => selectTradeFileBroker(ticket.ticketNumber, lei)}
-                        />
-                        <button class="ticket-action-button ticket-action-button-warning" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `trade-file-ticket-${ticket.ticketNumber}` || !tradeFileBrokerByTicket[ticket.ticketNumber]}>
-                          Send Trade
-                        </button>
-                      </form>
-                    </div>
-                  {/if}
                   <form
                     class="ticket-save-form"
                     method="POST"
@@ -1407,6 +1361,52 @@
                   </svg>
                 </button>
               </div>
+              {#if ticketExpanded && ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress' && canSendFoleoTrader(ticket, foleoTraderOrder)}
+                <div class="trade-execution-groups">
+                  <form
+                    class="trade-execution-group"
+                    method="POST"
+                    action="?/sendFoleoTraderOrder"
+                    use:enhance={enhanceAction(`foleo-trader-${ticket.ticketNumber}`)}
+                  >
+                    <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                    <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                    <span class="trade-execution-label">FIX</span>
+                    <BrokerDropdown
+                      {brokers}
+                      compactBrand
+                      method="FIX"
+                      name="brokerLEI"
+                      placeholder="Select FIX broker"
+                      bind:selectedBrokerLEI={() => fixBrokerByTicket[ticket.ticketNumber] ?? '', (lei) => selectFixBroker(ticket.ticketNumber, lei)}
+                    />
+                    <button class="house-button house-button-secondary house-button-md" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `foleo-trader-${ticket.ticketNumber}` || !fixBrokerByTicket[ticket.ticketNumber]}>
+                      Send Trade
+                    </button>
+                  </form>
+                  <form
+                    class="trade-execution-group"
+                    method="POST"
+                    action="?/sendTradeFileTicket"
+                    use:enhance={enhanceAction(`trade-file-ticket-${ticket.ticketNumber}`)}
+                  >
+                    <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
+                    <input type="hidden" name="eventDateTime" value={eventDateDefault} />
+                    <span class="trade-execution-label">TradeFile</span>
+                    <BrokerDropdown
+                      {brokers}
+                      compactBrand
+                      method="TradeFile"
+                      name="brokerLEI"
+                      placeholder="Select TradeFile broker"
+                      bind:selectedBrokerLEI={() => tradeFileBrokerByTicket[ticket.ticketNumber] ?? '', (lei) => selectTradeFileBroker(ticket.ticketNumber, lei)}
+                    />
+                    <button class="house-button house-button-secondary house-button-md" type="submit" disabled={ticketCancelConfirming || ticketEditing || submitting === `trade-file-ticket-${ticket.ticketNumber}` || !tradeFileBrokerByTicket[ticket.ticketNumber]}>
+                      Send Trade
+                    </button>
+                  </form>
+                </div>
+              {/if}
             </header>
 
             {#if form?.message && formTicketNumber === ticket.ticketNumber}

@@ -3103,6 +3103,7 @@ tbody tr {
 
 .ticket-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.65rem;
@@ -3167,6 +3168,45 @@ tbody tr {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.35rem;
+}
+
+.trade-execution-groups {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.trade-execution-group {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) auto;
+  align-items: end;
+  gap: 0.22rem 0.5rem;
+  min-width: 0;
+}
+
+.trade-execution-label {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+@media (max-width: 760px) {
+  .trade-execution-groups {
+    justify-content: flex-start;
+  }
+
+  .trade-execution-group {
+    grid-template-columns: minmax(0, 14rem);
+  }
+
+  .trade-execution-group .house-button {
+    justify-self: start;
+  }
 }
 
 .ticket-save-form {
