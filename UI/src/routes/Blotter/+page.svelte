@@ -1095,10 +1095,7 @@
     {#if pendingTradeFileTickets.length > 0}
       <section class="section-band create-ticket-card create-ticket-action-card trade-file-card">
         <div class="filter-card-header">
-          <div>
-            <p class="page-kicker">Execution</p>
-            <h2 class="create-ticket-title">Trade Files</h2>
-          </div>
+          <h2 class="create-ticket-title">Trade Files</h2>
           <span class="page-header-summary">{pendingTradeFileTickets.length} pending</span>
         </div>
         <form class="trade-file-batch-controls" method="POST" action="?/sendTradeFileBatch" use:enhance={enhanceAction('trade-file-batch')}>
