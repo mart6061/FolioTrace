@@ -3,7 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { BrokerDropdown, MultiSelect, TicketDropdown } from '$lib/components/forms';
+  import { BrokerDropdown, ComplexSelect, MultiSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
   import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
@@ -63,6 +63,12 @@
   const sortedInstruments = $derived(
     [...activeInstruments].sort((left, right) => instrumentLabel(left).localeCompare(instrumentLabel(right)))
   );
+  const createTicketInstrumentOptions = $derived<ComplexSelectOption[]>(sortedInstruments.map((instrument) => ({
+    id: instrument.instrumentID,
+    name: instrument.name,
+    meta: `${instrument.formalName} - ${instrument.priceCurrency}`,
+    search: `${instrument.instrumentID} ${instrument.name} ${instrument.formalName} ${instrument.priceCurrency} ${instrument.exchange} ${instrument.cfi}`
+  })));
   const asOfSummary = $derived(data.auditDateTime && data.tickets ? formatDisplayDateTime(data.tickets.asOfDateTime) : 'now');
   const ticketSummaryQualifier = $derived(selectedStages.length === 0 && !selectedEstimatedBookCosts ? 'active ' : '');
   const liveUpdateLastEventIDs = $derived([
@@ -1070,20 +1076,13 @@
           </div>
         </fieldset>
         <div class="create-ticket-field">
-          <input
-            aria-label="Instrument"
-            class="house-control house-control-md"
-            bind:value={createTicketInstrument}
-            list="ticket-instrument-options"
+          <ComplexSelect
+            compactBrand
             name="instrumentID"
-            placeholder="Search instruments"
-            required
+            options={createTicketInstrumentOptions}
+            placeholder={createTicketInstrumentOptions.length ? 'Select instrument' : 'No instruments available'}
+            bind:value={createTicketInstrument}
           />
-          <datalist id="ticket-instrument-options">
-            {#each sortedInstruments as instrument (instrument.instrumentID)}
-              <option label={instrumentLabel(instrument)} value={instrumentLabel(instrument)}></option>
-            {/each}
-          </datalist>
         </div>
         <button class="commit-ticket-button" type="submit" disabled={!canCommitTicket}>
           Commit

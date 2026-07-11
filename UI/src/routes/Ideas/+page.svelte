@@ -216,6 +216,7 @@
           <span>Price Basis</span>
           <ComplexSelect
             class="ideas-simple-select"
+            compactBrand
             name="instrumentPriceBasis"
             options={instrumentPriceBasisOptions}
             placeholder="Select price basis"
@@ -227,6 +228,7 @@
           <span>Holding Basis</span>
           <ComplexSelect
             class="ideas-simple-select"
+            compactBrand
             name="holdingDateBasis"
             options={holdingDateBasisOptions}
             placeholder="Select holding basis"
@@ -516,6 +518,12 @@
 
   .ideas-page-body :global(.create-ticket-field) {
     gap: 0.22rem;
+  }
+
+  .ideas-page-body :global(.house-control),
+  .ideas-page-body :global(.datetime-input-control-embedded) {
+    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
   }
 
   .ideas-account-field,
