@@ -3,7 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { BrokerDropdown, MultiSelect } from '$lib/components/forms';
+  import { BrokerDropdown, MultiSelect, TicketDropdown } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
   import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
@@ -50,7 +50,6 @@
   const brokers = $derived(data.brokers?.items ?? []);
   const pendingTradeFileTickets = $derived(tickets.filter((ticket) => ticket.tradeExecutionStatus === 'PendingTradeFile'));
   const pendingTicketsForBatchBroker = $derived(pendingTradeFileTickets.filter((ticket) => ticket.executionBrokerLEI === selectedTradeFileBatchBrokerLEI));
-  const pendingTicketSummary = $derived(selectedPendingTicketNumbers.length ? selectedPendingTicketNumbers.length + ' selected' : 'Select tickets');
   const holdings = $derived(data.holdings?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
   const instrumentValues = $derived(data.instrumentValues?.items ?? []);
@@ -1108,18 +1107,14 @@
             placeholder="Select TradeFile broker"
             bind:selectedBrokerLEI={() => selectedTradeFileBatchBrokerLEI, selectBatchBroker}
           />
-          <MultiSelect
+          <TicketDropdown
             compactBrand
             disabled={!selectedTradeFileBatchBrokerLEI || !pendingTicketsForBatchBroker.length}
-            summary={pendingTicketSummary}
-          >
-            {#each pendingTicketsForBatchBroker as pendingTicket (pendingTicket.ticketNumber)}
-              <label class="house-multiselect-option">
-                <input bind:group={selectedPendingTicketNumbers} name="ticketNumbers" type="checkbox" value={pendingTicket.ticketNumber} />
-                <span>Ticket {pendingTicket.ticketNumber} - {instrumentName(pendingTicket.instrumentID)}</span>
-              </label>
-            {/each}
-          </MultiSelect>
+            {instruments}
+            name="ticketNumbers"
+            tickets={pendingTicketsForBatchBroker}
+            bind:selectedTicketNumbers={selectedPendingTicketNumbers}
+          />
           <button
             class="house-button house-button-secondary house-button-md"
             type="submit"

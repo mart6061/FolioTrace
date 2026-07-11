@@ -11,6 +11,7 @@ export { default as QuantityInput } from './QuantityInput.svelte';
 export { default as Select } from './Select.svelte';
 export { default as TextArea } from './TextArea.svelte';
 export { default as TextInput } from './TextInput.svelte';
+export { default as TicketDropdown } from './TicketDropdown.svelte';
 export { default as Toggle } from './Toggle.svelte';
 export type { ButtonSize, ButtonVariant, ControlSize } from './controls';
 export type { ComplexSelectOption, PillOption } from './types';

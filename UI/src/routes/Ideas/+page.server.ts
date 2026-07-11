@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getBrokers, getCurrencies, getHoldings, getInputPolicies, getInstruments } from '$lib/server/api';
+import { getAccounts, getBrokers, getCurrencies, getHoldings, getInputPolicies, getInstruments, getTickets } from '$lib/server/api';
 import type { HoldingDateBasis, InstrumentPriceBasis } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, brokers, currencies, holdings, inputPolicies, instruments] = await Promise.all([
+    const [accounts, brokers, currencies, holdings, inputPolicies, instruments, tickets] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
       getBrokers(fetch, valuationDateTime, asAtDateTime),
       getCurrencies(fetch, valuationDateTime, asAtDateTime),
@@ -40,7 +40,8 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
         eventDateTime: valuationDateTime,
         userID: currentUser?.userID
       }),
-      getInstruments(fetch, valuationDateTime, asAtDateTime)
+      getInstruments(fetch, valuationDateTime, asAtDateTime),
+      getTickets(fetch, valuationDateTime, asAtDateTime, true)
     ]);
 
     return {
@@ -54,6 +55,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       inputPolicies,
       instrumentPriceBasisOptions,
       instruments,
+      tickets,
       valuationDate
     };
   } catch (error) {
@@ -68,6 +70,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       inputPolicies: [],
       instrumentPriceBasisOptions,
       instruments: null,
+      tickets: null,
       valuationDate
     };
   }
