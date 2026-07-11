@@ -308,10 +308,11 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     {
         var methods = SeedBrokers.Select(broker => (broker.LEI, Method: (ITradeMethod)new ManualTradeMethod())).ToList();
         methods.Add((SeedBrokers[0].LEI, new FIXTradeMethod("localhost", 9878, "FOLEOAPI", "FOLEOTRADER", 20)));
-        methods.Add((SeedBrokers[1].LEI, new TradeFileTradeMethod(
+        var tradeFileSendConfig = new FTPTradeMethodFileSendConfig("foleotrader", 21, "/incoming", "foliotrace", null);
+        methods.AddRange(SeedBrokers.Skip(1).Take(3).Select(broker => (broker.LEI, Method: (ITradeMethod)new TradeFileTradeMethod(
             new FileNameTemplate("{brokername}{yyyymmddhhmmssnn}.xlsx"),
             [TradeFileColumn.TicketID, TradeFileColumn.ISIN, TradeFileColumn.Sedol, TradeFileColumn.Quantity, TradeFileColumn.Price, TradeFileColumn.Currency],
-            new FTPTradeMethodFileSendConfig("foleotrader", 21, "/incoming", "foliotrace", null))));
+            tradeFileSendConfig))));
 
         return methods.Select((item, index) => BrokerTradeMethodEventBuilder.SetSeed(
             Guid.CreateGuid7(),

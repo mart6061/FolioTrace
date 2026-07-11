@@ -16,7 +16,9 @@ public sealed class BrokerTradeMethodTests
 
         Assert.All(brokers.Items, broker => Assert.Single(broker.TradeMethods, method => method.Type == TradeMethodType.Manual));
         Assert.Single(brokers.Items.SelectMany(broker => broker.TradeMethods.OfType<FIXTradeMethod>()));
-        Assert.Single(brokers.Items.SelectMany(broker => broker.TradeMethods.OfType<TradeFileTradeMethod>()));
+        var tradeFileMethods = brokers.Items.SelectMany(broker => broker.TradeMethods.OfType<TradeFileTradeMethod>()).ToList();
+        Assert.Equal(3, tradeFileMethods.Count);
+        Assert.Single(tradeFileMethods.Select(method => method.SendConfig).Distinct());
         Assert.All(brokers.Items, broker => Assert.Equal(broker.TradeMethods.Count, broker.TradeMethods.Select(method => method.Type).Distinct().Count()));
     }
 
