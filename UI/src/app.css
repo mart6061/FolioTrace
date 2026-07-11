@@ -1048,6 +1048,17 @@ button.h-10 {
     0 0.75rem 1.5rem color-mix(in srgb, var(--surface-shadow) 82%, transparent);
 }
 
+.house-multiselect-compact-brand {
+  width: min(100%, 14rem);
+  border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+  background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
+}
+
+.house-multiselect-compact-brand .house-multiselect-options {
+  border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
+  background: var(--panel);
+}
+
 .house-multiselect[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.64;
@@ -3066,6 +3077,20 @@ tbody tr {
 .ticket-card:has(.complex-select-menu) {
   z-index: 20;
   overflow: visible;
+}
+
+.trade-file-batch-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 14rem)) auto;
+  align-items: end;
+  justify-content: start;
+  gap: 0.55rem 0.75rem;
+}
+
+@media (max-width: 760px) {
+  .trade-file-batch-controls {
+    grid-template-columns: minmax(0, 14rem);
+  }
 }
 
 .ticket-card-buy {

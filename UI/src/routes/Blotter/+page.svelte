@@ -1105,12 +1105,14 @@
           <input type="hidden" name="eventDateTime" value={eventDateDefault} />
           <BrokerDropdown
             {brokers}
+            compactBrand
             method="TradeFile"
             name="brokerLEI"
             placeholder="Select TradeFile broker"
             bind:selectedBrokerLEI={() => selectedTradeFileBatchBrokerLEI, selectBatchBroker}
           />
           <MultiSelect
+            compactBrand
             disabled={!selectedTradeFileBatchBrokerLEI || !pendingTicketsForBatchBroker.length}
             summary={pendingTicketSummary}
           >
@@ -1122,7 +1124,7 @@
             {/each}
           </MultiSelect>
           <button
-            class="ticket-action-button ticket-action-button-warning"
+            class="house-button house-button-secondary house-button-md"
             type="submit"
             disabled={!selectedTradeFileBatchBrokerLEI || selectedPendingTicketNumbers.length === 0 || submitting === 'trade-file-batch'}
           >
@@ -1292,6 +1294,7 @@
                         <span class="trade-execution-label">FIX</span>
                         <BrokerDropdown
                           {brokers}
+                          compactBrand
                           method="FIX"
                           name="brokerLEI"
                           placeholder="Select FIX broker"
@@ -1312,6 +1315,7 @@
                         <span class="trade-execution-label">TradeFile</span>
                         <BrokerDropdown
                           {brokers}
+                          compactBrand
                           method="TradeFile"
                           name="brokerLEI"
                           placeholder="Select TradeFile broker"

@@ -7,6 +7,7 @@
     children?: Snippet;
     class?: string;
     close?: () => void;
+    compactBrand?: boolean;
     disabled?: boolean;
     ontoggle?: (event: Event) => void;
     open?: boolean;
@@ -17,6 +18,7 @@
     children,
     class: className = '',
     close,
+    compactBrand = false,
     disabled = false,
     ontoggle,
     open = $bindable(false),
@@ -42,7 +44,7 @@
 <details
   aria-disabled={disabled ? 'true' : undefined}
   bind:open
-  class={classNames('house-multiselect', className)}
+  class={classNames('house-multiselect', compactBrand && 'house-multiselect-compact-brand', className)}
   ontoggle={ontoggle}
   use:closeOnOutside={{ close: closeDropdown, enabled: open }}
 >
