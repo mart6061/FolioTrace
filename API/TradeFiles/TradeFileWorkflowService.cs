@@ -54,12 +54,11 @@ public sealed class TradeFileWorkflowService(
 
             var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == ticket.InstrumentID)
                 ?? throw new ArgumentException($"The instrument for ticket {ticketNumber.Value} was not found.");
+            if (instrument.Identifiers.Count == 0)
+                throw new ArgumentException($"Ticket {ticketNumber.Value} requires at least one instrument identifier.");
+
             var isin = instrument.Identifiers.SingleOrDefault(item => item.Type == InstrumentIdentifierType.ISIN)?.Value ?? string.Empty;
             var sedol = instrument.Identifiers.SingleOrDefault(item => item.Type == InstrumentIdentifierType.Sedol)?.Value ?? string.Empty;
-            if (method.Columns.Contains(TradeFileColumn.ISIN) && string.IsNullOrWhiteSpace(isin))
-                throw new ArgumentException($"Ticket {ticketNumber.Value} requires an ISIN.");
-            if (method.Columns.Contains(TradeFileColumn.Sedol) && string.IsNullOrWhiteSpace(sedol))
-                throw new ArgumentException($"Ticket {ticketNumber.Value} requires a Sedol.");
 
             snapshots.Add(new(ticket.TicketNumber, isin, sedol, ticket.ProposalAllocations.Sum(item => item.Quantity), ticket.ProposalTargetPrice, ticket.TradeCurrency));
         }
