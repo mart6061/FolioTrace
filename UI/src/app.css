@@ -3073,9 +3073,28 @@ tbody tr {
   overflow: hidden;
 }
 
+.page-header:has(.house-multiselect[open]),
+.page-header:has(.complex-select-menu),
+.page-header:has(.account-combobox-menu),
+.page-header:has(.holding-combobox-menu),
+.filter-panel:has(.house-multiselect[open]),
+.filter-panel:has(.complex-select-menu),
+.filter-panel:has(.account-combobox-menu),
+.filter-panel:has(.holding-combobox-menu),
+.section-band:has(.house-multiselect[open]),
+.section-band:has(.complex-select-menu),
+.section-band:has(.account-combobox-menu),
+.section-band:has(.holding-combobox-menu),
+.data-panel:has(.house-multiselect[open]),
+.data-panel:has(.complex-select-menu),
+.data-panel:has(.account-combobox-menu),
+.data-panel:has(.holding-combobox-menu),
 .ticket-card:has(.house-multiselect[open]),
-.ticket-card:has(.complex-select-menu) {
-  z-index: 20;
+.ticket-card:has(.complex-select-menu),
+.ticket-card:has(.account-combobox-menu),
+.ticket-card:has(.holding-combobox-menu) {
+  position: relative;
+  z-index: 25;
   overflow: visible;
 }
 
