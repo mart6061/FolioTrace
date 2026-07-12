@@ -243,6 +243,7 @@
   .viewer-metric-card {
     min-height: 8rem;
     border: 1px solid var(--line);
+    border-top: 3px solid var(--brand-green);
     border-radius: var(--house-radius);
     background: var(--panel);
     box-shadow: var(--house-panel-shadow);
