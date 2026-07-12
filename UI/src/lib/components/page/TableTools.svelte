@@ -47,7 +47,7 @@
 
 <style>
   .table-tools-template {
-    margin: -1rem -1rem 0;
+    margin: 0 -1rem;
     border-radius: calc(var(--house-radius) - 1px) calc(var(--house-radius) - 1px) 0 0;
   }
 </style>
