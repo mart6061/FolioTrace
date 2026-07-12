@@ -555,6 +555,9 @@
   }
 
   :global(.ideas-page.ideas-page .house-multiselect > summary) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.15;
     min-height: calc(var(--house-control-height) - 2px);
     padding: 0.25rem 0.5rem;
   }
