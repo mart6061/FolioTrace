@@ -235,9 +235,9 @@
       <p class="status-panel status-panel-warning">{data.error}</p>
     {/if}
 
-    <PageCard title="Filter Card with Menu Card Group">
+    <FilterCard title="Filter Card Template with Menu Card Group">
       <MenuCardGroup bind:selected={selectedTemplateCard} items={templateMenuCards} />
-    </PageCard>
+    </FilterCard>
 
     <PageCard title="Page Card Template">
       <p class="ideas-template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
