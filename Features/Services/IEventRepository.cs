@@ -1,4 +1,5 @@
 using FolioTrace.Common;
+using FolioTrace.Aggregates;
 using FolioTrace.Types;
 
 namespace Repository;
@@ -29,4 +30,10 @@ public interface IEventRepository
     Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase;
 
     Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default);
+
+    Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> streams, StoredFilePayload? storedFile = null, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("Atomic workflow writes are not supported by this repository.");
+
+    Task<StoredFilePayload?> LoadStoredFileAsync(Guid id, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("Stored files are not supported by this repository.");
 }

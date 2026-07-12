@@ -319,8 +319,8 @@
   }
 
   .holding-combobox-compact-brand .holding-combobox-trigger {
-    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
-    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: var(--panel);
+    border-color: color-mix(in srgb, var(--brand-gold) 62%, var(--line));
     color: var(--ink);
   }
 
@@ -352,7 +352,7 @@
   }
 
   .holding-combobox-compact-brand .holding-combobox-menu {
-    border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
+    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
   }
 
   .holding-combobox-options {
@@ -404,8 +404,8 @@
   .holding-combobox-option:hover,
   .holding-combobox-option:focus-visible,
   .holding-combobox-option-selected {
-    background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+    background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
+    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
     outline: none;
   }
 

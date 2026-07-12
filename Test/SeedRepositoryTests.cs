@@ -15,6 +15,7 @@ public sealed class SeedRepositoryTests
         { "currency created", () => SeedRepository.CreateInitialCurrencyCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "currency modified", () => SeedRepository.CreateInitialCurrencyModifiedEvents().Cast<IAuditEventBase>().ToList() },
         { "broker created", () => SeedRepository.CreateInitialBrokerCreatedEvents().Cast<IAuditEventBase>().ToList() },
+        { "broker trade methods", () => SeedRepository.CreateInitialBrokerTradeMethodSetEvents().Cast<IAuditEventBase>().ToList() },
         { "account created", () => SeedRepository.CreateInitialAccountCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "account modified", () => SeedRepository.CreateInitialAccountModifiedEvents().Cast<IAuditEventBase>().ToList() },
         { "account active set", () => SeedRepository.CreateInitialAccountActiveModifiedEvents().Cast<IAuditEventBase>().ToList() },

@@ -1,4 +1,5 @@
 export function isPublicPagePath(pathname: string) {
   return pathname === '/Test'
-    || pathname === '/auth/error';
+    || pathname === '/auth/error'
+    || pathname === '/StartPending';
 }

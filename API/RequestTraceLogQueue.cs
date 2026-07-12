@@ -21,10 +21,13 @@ public sealed class RequestTraceLogQueue
 public sealed class RequestTraceLogBackgroundService(
     RequestTraceLogQueue queue,
     IServiceScopeFactory scopeFactory,
+    ApiReadinessState readinessState,
     ILogger<RequestTraceLogBackgroundService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await readinessState.WaitUntilReadyAsync(stoppingToken);
+
         await foreach (var traceEvent in queue.ReadAllAsync(stoppingToken))
         {
             try

@@ -482,6 +482,7 @@ export type FoleoTraderOrderRequest = {
   userID: string;
   eventDateTime: string;
   ticketNumber: number;
+  brokerLEI: string;
 };
 
 export type FoleoTraderOrderSubmissionResponse = {
@@ -1921,10 +1922,11 @@ export async function postFoleoTraderOrder(fetchApi: typeof fetch, request: Fole
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      UserID: request.userID,
-      EventDateTime: request.eventDateTime,
-      TicketNumber: request.ticketNumber
-    })
+        UserID: request.userID,
+        EventDateTime: request.eventDateTime,
+        TicketNumber: request.ticketNumber,
+        BrokerLEI: request.brokerLEI
+      })
   });
 
   if (!response.ok) {
@@ -1933,6 +1935,59 @@ export async function postFoleoTraderOrder(fetchApi: typeof fetch, request: Fole
   }
 
   return (await response.json()) as FoleoTraderOrderSubmissionResponse;
+}
+
+export async function getActiveTradeFiles(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/TradeFiles/Active`);
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+  return (await response.json()) as import('$lib/types').TradeFile[];
+}
+
+export async function postTradeFilePending(fetchApi: typeof fetch, request: {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  brokerLEI: string;
+}) {
+  return postTradeFileJson(fetchApi, '/TradeFiles/Pending', {
+    UserID: request.userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    TicketNumber: request.ticketNumber,
+    TradeMethodType: 'TradeFile',
+    BrokerLEI: request.brokerLEI
+  });
+}
+
+export async function postTradeFileRequest(fetchApi: typeof fetch, request: {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  brokerLEI: string;
+  ticketNumbers: number[];
+}) {
+  return postTradeFileJson(fetchApi, '/TradeFiles/Requests', {
+    UserID: request.userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    BrokerLEI: request.brokerLEI,
+    TicketNumbers: request.ticketNumbers
+  });
+}
+
+async function postTradeFileJson(fetchApi: typeof fetch, path: string, body: unknown) {
+  const response = await fetchApi(`${getApiBaseUrl()}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+  return await response.json();
 }
 
 export async function postTicketTradeInstructionNotesSetEvent(fetchApi: typeof fetch, request: TicketTextSetRequest) {

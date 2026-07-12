@@ -4,6 +4,7 @@ using FolioTrace.Common;
 using FolioTrace.Types;
 using API.Auth;
 using API.FoleoTrader;
+using API.TradeFiles;
 using Repository;
 using Services;
 using System.ComponentModel;
@@ -43,6 +44,7 @@ public static class ApiEndpointRegistration
 
         api.MapAuthEndpoints();
         api.MapSystemHealthEndpoint();
+        api.MapTradeFileCallbackEndpoints();
 
         var protectedApi = api.MapGroup("")
             .RequireAuthorization()
@@ -67,6 +69,7 @@ public static class ApiEndpointRegistration
         protectedApi.MapInstrumentEndpoints();
         protectedApi.MapInstrumentValueEndpoints();
         protectedApi.MapTicketEndpoints();
+        protectedApi.MapTradeFileEndpoints();
         protectedApi.MapUserEndpoints();
         protectedApi.MapUserMenuPreferencesEndpoints();
         protectedApi.MapUserValuationPreferencesEndpoints();
@@ -630,9 +633,10 @@ public static class ApiEndpointRegistration
     {
         var system = api.MapGroup("/System").WithTags("System").AllowAnonymous();
 
-        system.MapGet("/Health", () => Results.Ok(new
+        system.MapGet("/Health", (ApiReadinessState readinessState) => Results.Ok(new
         {
-            Status = "Healthy",
+            Ready = readinessState.Ready,
+            Status = readinessState.Ready ? "Ready" : "Starting",
             Service = "FolioTrace API",
             CheckedAtUtc = DateTime.UtcNow
         }));
@@ -1170,13 +1174,18 @@ public static class ApiEndpointRegistration
         });
 
         brokerEvents.MapPost($"/{nameof(BrokerCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerCreatedRequest request, CancellationToken cancellationToken) =>
-            await EventEndpointFactory.CreateAndAppend(
-                Constants.Initialisation.BrokersStreamId,
-                BrokerEventsRoute,
-                eventRepository,
-                cacheInvalidationService,
-                () => BrokerCreatedEventBuilder.Create(request),
-                cancellationToken));
+        {
+            var createdResult = BrokerCreatedEventBuilder.Create(request);
+            if (!createdResult.IsValid || createdResult.Value is null)
+                return Results.BadRequest(createdResult);
+            var manualResult = BrokerTradeMethodEventBuilder.Set(new BrokerTradeMethodSetRequest(
+                request.UserID, request.EventDateTime, $"Enable manual trading for broker {request.LEI}", request.LEI, new ManualTradeMethod()));
+            if (!manualResult.IsValid || manualResult.Value is null)
+                return Results.BadRequest(manualResult);
+            await eventRepository.AppendAsync(Constants.Initialisation.BrokersStreamId, [(IAuditEventBase)createdResult.Value, (IAuditEventBase)manualResult.Value], cancellationToken);
+            cacheInvalidationService.Invalidate([createdResult.Value, manualResult.Value]);
+            return Results.Accepted(BrokerEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(BrokerEventsRoute, createdResult.Value));
+        });
 
         brokerEvents.MapPost($"/{nameof(BrokerModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerModifiedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
@@ -1222,6 +1231,12 @@ public static class ApiEndpointRegistration
                 cacheInvalidationService,
                 () => BrokerNotesSetEventBuilder.Create(request),
                 cancellationToken));
+
+        brokerEvents.MapPost("/TradeMethodSetEvent", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerTradeMethodSetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(Constants.Initialisation.BrokersStreamId, BrokerEventsRoute, eventRepository, cacheInvalidationService, () => BrokerTradeMethodEventBuilder.Set(request), cancellationToken));
+
+        brokerEvents.MapPost($"/{nameof(BrokerTradeMethodUnsetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, BrokerTradeMethodUnsetRequest request, CancellationToken cancellationToken) =>
+            await EventEndpointFactory.CreateAndAppend(Constants.Initialisation.BrokersStreamId, BrokerEventsRoute, eventRepository, cacheInvalidationService, () => BrokerTradeMethodEventBuilder.Unset(request), cancellationToken));
     }
 
     private static void MapCountryEventEndpoints(this RouteGroupBuilder api)
@@ -2495,6 +2510,8 @@ public static class ApiEndpointRegistration
             BrokerApprovedDateTimeSetEvent approvedEvent => approvedEvent.LEI.Value,
             BrokerNextReviewSetEvent nextReviewEvent => nextReviewEvent.LEI.Value,
             BrokerNotesSetEvent notesEvent => notesEvent.LEI.Value,
+            BrokerTradeMethodSetEventBase tradeMethodEvent => tradeMethodEvent.LEI.Value,
+            BrokerTradeMethodUnsetEvent unsetEvent => unsetEvent.LEI.Value,
             _ => null
         };
 
@@ -2983,6 +3000,28 @@ public static class ApiEndpointRegistration
                 notesSetEvent.Reason,
                 LEI = notesSetEvent.LEI.Value,
                 notesSetEvent.Notes
+            },
+            BrokerTradeMethodSetEventBase tradeMethodSetEvent => new
+            {
+                Type = tradeMethodSetEvent.Type,
+                EventID = tradeMethodSetEvent.EventID.Value,
+                UserID = tradeMethodSetEvent.UserID.Value,
+                EventDateTime = tradeMethodSetEvent.EventDateTime.Value,
+                AuditDateTime = tradeMethodSetEvent.AuditDateTime.Value,
+                tradeMethodSetEvent.Reason,
+                LEI = tradeMethodSetEvent.LEI.Value,
+                tradeMethodSetEvent.TradeMethod
+            },
+            BrokerTradeMethodUnsetEvent tradeMethodUnsetEvent => new
+            {
+                Type = tradeMethodUnsetEvent.Type,
+                EventID = tradeMethodUnsetEvent.EventID.Value,
+                UserID = tradeMethodUnsetEvent.UserID.Value,
+                EventDateTime = tradeMethodUnsetEvent.EventDateTime.Value,
+                AuditDateTime = tradeMethodUnsetEvent.AuditDateTime.Value,
+                tradeMethodUnsetEvent.Reason,
+                LEI = tradeMethodUnsetEvent.LEI.Value,
+                tradeMethodUnsetEvent.TradeMethodType
             },
             _ => new
             {

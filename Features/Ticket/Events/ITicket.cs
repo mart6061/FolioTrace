@@ -26,6 +26,14 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(TicketTradeInstructionNotesSetEvent), nameof(TicketTradeInstructionNotesSetEvent))]
 [JsonDerivedType(typeof(TicketTradeProgressNotesSetEvent), nameof(TicketTradeProgressNotesSetEvent))]
 [JsonDerivedType(typeof(TicketCancelledEvent), nameof(TicketCancelledEvent))]
+[JsonDerivedType(typeof(TicketFIXRequestedEvent), nameof(TicketFIXRequestedEvent))]
+[JsonDerivedType(typeof(TicketTradeFilePendingEvent), nameof(TicketTradeFilePendingEvent))]
+[JsonDerivedType(typeof(TicketTradeFileRequestedEvent), nameof(TicketTradeFileRequestedEvent))]
+[JsonDerivedType(typeof(TicketTradeFileCreatedEvent), nameof(TicketTradeFileCreatedEvent))]
+[JsonDerivedType(typeof(TicketTradeFileSentEvent), nameof(TicketTradeFileSentEvent))]
+[JsonDerivedType(typeof(TicketTradeFileAcknowledgedEvent), nameof(TicketTradeFileAcknowledgedEvent))]
+[JsonDerivedType(typeof(TicketTradeExecutionInProgressEvent), nameof(TicketTradeExecutionInProgressEvent))]
+[JsonDerivedType(typeof(TicketTradeExecutionFailedEvent), nameof(TicketTradeExecutionFailedEvent))]
 public interface ITicket : IEventBase
 {
     TicketNumber TicketNumber { get; }

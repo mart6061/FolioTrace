@@ -23,6 +23,9 @@
       ? requestedCardKey
       : data.selectedCardKey
   );
+  const selectedCard = $derived(data.cards.find((card) => card.key === selectedCardKey));
+  const selectedPageHeading = $derived(selectedCard?.heading ?? data.title);
+  const selectedPageKicker = $derived(selectedCard?.kicker ?? 'Reference Data');
   const brokerPageData = $derived(data.experience as BrokerPageData);
   const brokerForm = $derived(form as BrokerActionData);
   const holdingPageData = $derived(data.experience as HoldingPageData);
@@ -38,7 +41,7 @@
 </script>
 
 <svelte:head>
-  <title>{data.title} | Data List | FolioTrace</title>
+  <title>{selectedPageHeading} | Data List | FolioTrace</title>
 </svelte:head>
 
 {#if data.category === 'Broker'}
@@ -51,16 +54,16 @@
       <div class="page-container">
         <div class="page-header-content">
           <div class="page-header-main">
-            <p class="page-kicker">Data List</p>
+            <p class="page-kicker">{selectedPageKicker}</p>
             <div class="page-title-row">
-              <h1 class="page-title">{data.title}</h1>
+              <h1 class="page-title">{selectedPageHeading}</h1>
               <BookmarkButton />
             </div>
           </div>
         </div>
 
         {#if data.cards.length > 0}
-          <section class="data-list-card-menu" aria-label={`${data.title} menu`}>
+          <section class="house-form data-list-card-menu" aria-label={`${data.title} menu`}>
             <div class="data-list-option-grid">
               {#each data.cards as card (card.key)}
                 <a
@@ -128,12 +131,7 @@
   .data-list-card-menu {
     display: grid;
     gap: 0.75rem;
-    border: 1px solid var(--line);
-    border-radius: var(--house-radius);
-    background: var(--panel);
-    box-shadow: var(--house-panel-shadow);
     overflow: visible;
-    padding: 1rem;
     position: relative;
     z-index: 20;
   }
@@ -146,7 +144,6 @@
 
   .data-list-filter-region {
     border-top: 1px solid var(--line-soft);
-    background: var(--panel);
     padding-top: 0.75rem;
   }
 
@@ -159,6 +156,8 @@
     background: transparent;
     background-color: transparent;
     background-image: none;
+    border: 0;
+    box-shadow: none;
     overflow: visible;
     padding: 0;
   }
@@ -222,8 +221,8 @@
   }
 
   .data-list-option-card-selected {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), var(--house-panel-shadow);
+    border-color: var(--brand-gold);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-gold) 22%, transparent), var(--house-panel-shadow);
   }
 
   .data-list-option-title {

@@ -4,10 +4,13 @@ namespace API;
 
 public sealed class AggregateMaintenanceHostedService(
     AggregateMaintenanceOptions options,
-    AggregateMaintenanceCoordinator coordinator) : BackgroundService
+    AggregateMaintenanceCoordinator coordinator,
+    ApiReadinessState readinessState) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await readinessState.WaitUntilReadyAsync(stoppingToken);
+
         if (!options.Enabled || options.PeriodicDelay <= TimeSpan.Zero)
             return;
 

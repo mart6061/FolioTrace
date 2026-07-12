@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { closeOnOutside } from '$lib/actions/dropdown';
+  import { closeOnOutside, floatingPopover } from '$lib/actions/dropdown';
   import { classNames } from './controls';
 
   type Props = {
     children?: Snippet;
     class?: string;
     close?: () => void;
+    compactBrand?: boolean;
     disabled?: boolean;
     ontoggle?: (event: Event) => void;
     open?: boolean;
@@ -17,6 +18,7 @@
     children,
     class: className = '',
     close,
+    compactBrand = false,
     disabled = false,
     ontoggle,
     open = $bindable(false),
@@ -42,14 +44,18 @@
 <details
   aria-disabled={disabled ? 'true' : undefined}
   bind:open
-  class={classNames('house-multiselect', className)}
+  class={classNames('house-multiselect', compactBrand && 'house-multiselect-compact-brand', className)}
   ontoggle={ontoggle}
   use:closeOnOutside={{ close: closeDropdown, enabled: open }}
 >
   <summary onclick={preventDisabledToggle}>
     <span class="truncate">{summary}</span>
   </summary>
-  <div class="house-multiselect-options">
+  <div
+    class="house-multiselect-options"
+    popover="auto"
+    use:floatingPopover={{ close: closeDropdown, enabled: open }}
+  >
     {@render children?.()}
   </div>
 </details>

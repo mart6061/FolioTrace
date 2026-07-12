@@ -15,6 +15,13 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (isPublicPagePath(event.url.pathname) || isPublicPath(event.url.pathname))
     return resolve(event);
 
+  const readiness = await getApiReadiness(event.fetch);
+  if (!readiness.ready) {
+    const pendingUrl = new URL('/StartPending', event.url);
+    pendingUrl.searchParams.set('returnTo', `${event.url.pathname}${event.url.search}`);
+    throw redirect(302, `${pendingUrl.pathname}${pendingUrl.search}`);
+  }
+
   let currentUser: CurrentUser | null;
   try {
     currentUser = await getCurrentUser(event.fetch, event.request.headers.get('cookie'));
@@ -137,10 +144,23 @@ function isPublicPath(pathname: string) {
   return pathname === '/sign-out'
     || pathname === '/auth/error'
     || pathname === '/health'
+    || pathname === '/StartPending'
     || pathname.startsWith('/_app/')
     || pathname.startsWith('/brand/')
     || pathname === '/favicon.ico'
     || pathname === '/robots.txt';
+}
+
+async function getApiReadiness(fetchApi: typeof fetch) {
+  try {
+    const response = await fetchApi(`${apiBaseUrl}/System/Health`);
+    if (!response.ok)
+      return { ready: false };
+
+    return (await response.json()) as { ready: boolean };
+  } catch {
+    return { ready: false };
+  }
 }
 
 function isConfiguredApiUrl(url: string) {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, BrokerDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
@@ -30,12 +30,18 @@
   let selectedCurrencyCode = $state('');
   let selectedHoldingID = $state('');
   let selectedInstrumentID = $state('');
+  let selectedBrokerLEI = $state('');
+  let selectedFIXBrokerLEI = $state('');
+  let selectedTradeFileBrokerLEI = $state('');
+  let selectedTicketNumbers = $state<number[]>([]);
   let selectedPolicyCurrency = $state('GBP');
 
   const accounts = $derived(data.accounts?.items ?? []);
+  const brokers = $derived(data.brokers?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
   const holdings = $derived(data.holdings?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
+  const tickets = $derived(data.tickets?.items ?? []);
   const inputPolicies = $derived(refreshedInputPolicies ?? data.inputPolicies ?? []);
   const accountHoldings = $derived(holdings.filter((holding) => holding.accountID === singleAccountID));
   const dropdownPlaceholder = $derived(accounts.length ? 'Select account' : 'No accounts available');
@@ -78,7 +84,7 @@
   const quantityPolicy = $derived(inputPolicies.find((policy) => policy.controlKind === 'Quantity') ?? fallbackPolicy('Quantity'));
   const moneyValidationText = $derived(moneyValidationMessages.length ? moneyValidationMessages.join(' ') : 'Valid');
   const quantityValidationText = $derived(quantityValidationMessages.length ? quantityValidationMessages.join(' ') : 'Valid');
-  const summaryText = $derived(`${accounts.length} accounts | ${accountHoldings.length || holdings.length} holdings | ${instruments.length} instruments | ${currencies.length} currencies`);
+  const summaryText = $derived(`${accounts.length} accounts | ${accountHoldings.length || holdings.length} holdings | ${instruments.length} instruments | ${tickets.length} tickets | ${currencies.length} currencies`);
   const displayModeOptions = [
     { label: 'Discrete', value: 'Discrete' },
     { label: 'Aggregate', value: 'Aggregate' }
@@ -210,6 +216,7 @@
           <span>Price Basis</span>
           <ComplexSelect
             class="ideas-simple-select"
+            compactBrand
             name="instrumentPriceBasis"
             options={instrumentPriceBasisOptions}
             placeholder="Select price basis"
@@ -221,6 +228,7 @@
           <span>Holding Basis</span>
           <ComplexSelect
             class="ideas-simple-select"
+            compactBrand
             name="holdingDateBasis"
             options={holdingDateBasisOptions}
             placeholder="Select holding basis"
@@ -316,6 +324,26 @@
             placeholder={currencyPlaceholder}
             bind:value={selectedCurrencyCode}
           />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>All Brokers</span>
+          <BrokerDropdown {brokers} compactBrand name="brokerLEI" bind:selectedBrokerLEI />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>FIX Brokers</span>
+          <BrokerDropdown {brokers} compactBrand method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>TradeFile Brokers</span>
+          <BrokerDropdown {brokers} compactBrand method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
+        </div>
+
+        <div class="create-ticket-field ideas-account-field">
+          <span>Tickets</span>
+          <TicketDropdown {instruments} {tickets} compactBrand name="ticketNumbers" bind:selectedTicketNumbers />
         </div>
       </div>
     </section>
@@ -490,6 +518,12 @@
 
   .ideas-page-body :global(.create-ticket-field) {
     gap: 0.22rem;
+  }
+
+  .ideas-page-body :global(.house-control),
+  .ideas-page-body :global(.datetime-input-control-embedded) {
+    border-color: color-mix(in srgb, var(--brand-gold) 62%, var(--line));
+    background: var(--panel);
   }
 
   .ideas-account-field,

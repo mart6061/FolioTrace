@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="refresh" content="5" />
-    <title>FoleoTrader</title>
+    <title>@(ViewData["Title"] ?? "FoleoTrader") - FoleoTrader</title>
     <style>
         :root {
             color-scheme: light;
@@ -20,7 +20,16 @@
         header {
             background: #172033;
             color: white;
-            padding: 16px 24px;
+            padding: 14px 24px;
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            max-width: 1600px;
+            margin: 0 auto;
         }
 
         main {
@@ -30,6 +39,30 @@
         h1 {
             font-size: 22px;
             margin: 0;
+        }
+
+        nav {
+            display: flex;
+            gap: 6px;
+        }
+
+        nav a {
+            border: 1px solid rgb(255 255 255 / 0.2);
+            border-radius: 6px;
+            color: #dbe5f2;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 7px 13px;
+            text-decoration: none;
+        }
+
+        nav a:hover,
+        nav a:focus-visible,
+        nav a.active {
+            border-color: #8fd6b2;
+            background: #176b4b;
+            color: white;
+            outline: none;
         }
 
         table {
@@ -71,11 +104,39 @@
         .muted {
             color: #667085;
         }
+
+        .status {
+            display: inline-flex;
+            border-radius: 999px;
+            background: #e8f5ee;
+            color: #176b4b;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 8px;
+        }
+
+        .status.complete {
+            background: #e8eef7;
+            color: #334155;
+        }
+
+        @@media (max-width: 640px) {
+            .header-inner {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>FoleoTrader FIX Monitor</h1>
+        <div class="header-inner">
+            <h1>FoleoTrader</h1>
+            <nav aria-label="FoleoTrader sections">
+                <a asp-controller="FoleoTrader" asp-action="Index" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : null)">FIX</a>
+                <a asp-controller="FoleoTrader" asp-action="FTP" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "FTP" ? "active" : null)">FTP</a>
+            </nav>
+        </div>
     </header>
     <main>
         @RenderBody()
