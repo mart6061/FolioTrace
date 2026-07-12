@@ -2955,6 +2955,10 @@ tbody tr {
   border-top-color: var(--house-data-top);
 }
 
+.blotter-page .create-ticket-action-card.blotter-filter-card {
+  border-top-color: var(--house-filter-top);
+}
+
 .create-ticket-action-card .create-ticket-title {
   color: var(--accent-strong);
 }

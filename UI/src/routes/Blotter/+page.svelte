@@ -1077,6 +1077,72 @@
           </div>
         </div>
       </div>
+
+      <section class="section-band create-ticket-card create-ticket-action-card blotter-filter-card">
+        <div class="filter-card-header">
+          <h2 class="create-ticket-title">Filter</h2>
+          <div class="side-radio-group ticket-view-group" role="radiogroup" aria-label="Ticket display mode">
+            <label class="side-radio-pill ticket-filter-pill">
+              <input checked={ticketViewMode === 'Compact'} name="ticketViewMode" type="radio" value="Compact" onchange={() => ticketViewMode = 'Compact'} />
+              <span>Compact</span>
+            </label>
+            <label class="side-radio-pill ticket-filter-pill">
+              <input checked={ticketViewMode === 'Detailed'} name="ticketViewMode" type="radio" value="Detailed" onchange={() => ticketViewMode = 'Detailed'} />
+              <span>Detailed</span>
+            </label>
+          </div>
+        </div>
+        <div class="ticket-filter-layout">
+          <div class="side-radio-group ticket-filter-group ticket-side-filter-group" role="radiogroup" aria-label="Ticket side filters">
+            <label class="side-radio-pill ticket-filter-pill">
+              <input checked={selectedSides.length === 0} name="ticketSideFilter" type="radio" value="All" onchange={clearSideFilters} />
+              <span>All</span>
+            </label>
+            {#each ticketSideOptions as side (side)}
+              <label class="side-radio-pill ticket-filter-pill">
+                <input
+                  checked={selectedSides.includes(side)}
+                  name="ticketSideFilter"
+                  type="radio"
+                  value={side}
+                  onchange={() => selectSideFilter(side)}
+                />
+                <span>{side}</span>
+              </label>
+            {/each}
+          </div>
+          <div class="side-radio-group ticket-filter-group ticket-stage-filter-group" role="group" aria-label="Ticket stage filters">
+            <label class="side-radio-pill ticket-filter-pill">
+              <input checked={selectedStages.length === 0} name="ticketStageFilterAll" type="checkbox" onchange={clearStageFilters} />
+              <span>All</span>
+            </label>
+            {#each ticketStageOptions as option (option.stage)}
+              <label class="side-radio-pill ticket-filter-pill">
+                <input
+                  checked={selectedStages.includes(option.stage)}
+                  name={`ticketStageFilter-${option.stage}`}
+                  type="checkbox"
+                  onchange={() => toggleStageFilter(option.stage)}
+                />
+                <span>{option.description}</span>
+              </label>
+            {/each}
+            <label class="side-radio-pill ticket-filter-pill">
+              <input checked={selectedEstimatedBookCosts} name="ticketEstimatedBookCostFilter" type="checkbox" onchange={toggleEstimatedBookCostFilter} />
+              <span>Estimated</span>
+            </label>
+          </div>
+          <label class="create-ticket-field ticket-text-filter">
+            <input
+              aria-label="Filter tickets"
+              class="house-control house-control-md"
+              bind:value={freeTextFilter}
+              placeholder="Filter tickets"
+              type="search"
+            />
+          </label>
+        </div>
+      </section>
     </div>
   </section>
 
@@ -1164,72 +1230,6 @@
         </form>
       </section>
     {/if}
-
-    <section class="section-band create-ticket-card create-ticket-action-card">
-      <div class="filter-card-header">
-        <h2 class="create-ticket-title">Filter</h2>
-        <div class="side-radio-group ticket-view-group" role="radiogroup" aria-label="Ticket display mode">
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={ticketViewMode === 'Compact'} name="ticketViewMode" type="radio" value="Compact" onchange={() => ticketViewMode = 'Compact'} />
-            <span>Compact</span>
-          </label>
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={ticketViewMode === 'Detailed'} name="ticketViewMode" type="radio" value="Detailed" onchange={() => ticketViewMode = 'Detailed'} />
-            <span>Detailed</span>
-          </label>
-        </div>
-      </div>
-      <div class="ticket-filter-layout">
-        <div class="side-radio-group ticket-filter-group ticket-side-filter-group" role="radiogroup" aria-label="Ticket side filters">
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={selectedSides.length === 0} name="ticketSideFilter" type="radio" value="All" onchange={clearSideFilters} />
-            <span>All</span>
-          </label>
-          {#each ticketSideOptions as side (side)}
-            <label class="side-radio-pill ticket-filter-pill">
-              <input
-                checked={selectedSides.includes(side)}
-                name="ticketSideFilter"
-                type="radio"
-                value={side}
-                onchange={() => selectSideFilter(side)}
-              />
-              <span>{side}</span>
-            </label>
-          {/each}
-        </div>
-        <div class="side-radio-group ticket-filter-group ticket-stage-filter-group" role="group" aria-label="Ticket stage filters">
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={selectedStages.length === 0} name="ticketStageFilterAll" type="checkbox" onchange={clearStageFilters} />
-            <span>All</span>
-          </label>
-          {#each ticketStageOptions as option (option.stage)}
-            <label class="side-radio-pill ticket-filter-pill">
-              <input
-                checked={selectedStages.includes(option.stage)}
-                name={`ticketStageFilter-${option.stage}`}
-                type="checkbox"
-                onchange={() => toggleStageFilter(option.stage)}
-              />
-              <span>{option.description}</span>
-            </label>
-          {/each}
-          <label class="side-radio-pill ticket-filter-pill">
-            <input checked={selectedEstimatedBookCosts} name="ticketEstimatedBookCostFilter" type="checkbox" onchange={toggleEstimatedBookCostFilter} />
-            <span>Estimated</span>
-          </label>
-        </div>
-        <label class="create-ticket-field ticket-text-filter">
-          <input
-            aria-label="Filter tickets"
-            class="house-control house-control-md"
-            bind:value={freeTextFilter}
-            placeholder="Filter tickets"
-            type="search"
-          />
-        </label>
-      </div>
-    </section>
 
     {#if filteredTickets.length === 0}
       <section class="empty-state">{tickets.length === 0 || (selectedStages.length === 0 && !selectedEstimatedBookCosts && !hasOpenTickets) ? 'No active tickets.' : 'No tickets match the selected filters.'}</section>
