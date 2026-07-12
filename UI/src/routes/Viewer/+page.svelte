@@ -133,6 +133,7 @@
     display: grid;
     gap: 0.75rem;
     border: 1px solid var(--line);
+    border-top: 3px solid var(--brand-gold);
     overflow: visible;
     position: relative;
     z-index: 20;
