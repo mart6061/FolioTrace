@@ -212,7 +212,7 @@
       </div>
     </div>
 
-    <form id="preferences-form" method="POST" action="?/savePreferences" use:enhance={enhanceSavePreferences}>
+    <form id="preferences-form" method="POST" action="/User/Preferences?/savePreferences" use:enhance={enhanceSavePreferences}>
       <div class="data-panel menu-preference-card">
         <h2 class="menu-preference-title">Menu Options</h2>
 

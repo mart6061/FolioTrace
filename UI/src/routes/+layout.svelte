@@ -10,7 +10,8 @@
   import { normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { applyDarkModePreference, readInitialDarkMode } from '$lib/themeMode';
   import '../app.css';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
+  import PreferencesPage from './User/Preferences/+page.svelte';
 
   let { children, data } = $props();
 
@@ -151,6 +152,37 @@
   let openTopMenu = $state<TopMenuID>(routeTopMenu());
   let activeRouteKey = $state('');
   let selectedMenuItemID = $state(routeActiveItem()?.id ?? '');
+  let meOpen = $state(false);
+  let meCloseButton = $state<HTMLButtonElement>();
+  const meData = $derived({
+    apiBaseUrl: data.apiBaseUrl,
+    apiVersion: data.apiVersion,
+    auditDateTime,
+    currentUser: data.currentUser!,
+    error: '',
+    eventDateTime: nowForInput(),
+    menuPreferences: data.menuPreferences!,
+    publicPage: false,
+    uiVersion: data.uiVersion,
+    userBookmarks: data.userBookmarks!,
+    valuationPreferences: data.valuationPreferences!
+  });
+
+  $effect(() => {
+    if (!browser || !meOpen)
+      return;
+
+    const bodyOverflow = document.body.style.overflow;
+    const documentOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    void tick().then(() => meCloseButton?.focus());
+
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = documentOverflow;
+    };
+  });
 
   onMount(() => {
     applyDarkModePreference(readInitialDarkMode());
@@ -299,6 +331,20 @@
     selectedMenuItemID = '';
   }
 
+  function openMe() {
+    closeMenus();
+    meOpen = true;
+  }
+
+  function closeMe() {
+    meOpen = false;
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (meOpen && event.key === 'Escape')
+      closeMe();
+  }
+
   function handleLeafClick(item: MenuItem) {
     selectedMenuItemID = item.id;
 
@@ -393,10 +439,12 @@
   />
 </svelte:head>
 
+<svelte:window onkeydown={handleWindowKeydown} />
+
 {#if publicPage}
   {@render children()}
 {:else}
-  <div class="app-shell">
+  <div class="app-shell" inert={meOpen}>
     {#if traceMode && auditDateTime}
       <div class="trace-warning" role="alert">
         <div class="page-container trace-warning-inner">
@@ -558,9 +606,9 @@
           {/each}
           </nav>
 
-          <a aria-label="User preferences" class="system-user-link" href={pathWithTrace('/User/Preferences')} title="User preferences">
+          <button aria-expanded={meOpen} aria-haspopup="dialog" aria-label="User preferences" class="system-user-link" onclick={openMe} title="User preferences" type="button">
             me
-          </a>
+          </button>
         </div>
       </div>
     </header>
@@ -605,4 +653,121 @@
       </div>
     </footer>
   </div>
+
+  {#if meOpen}
+    <button aria-label="Close user preferences" class="me-drawer-backdrop" onclick={closeMe} type="button"></button>
+    <dialog aria-labelledby="me-drawer-title" aria-modal="true" class="me-drawer" open>
+      <header class="me-drawer-header">
+        <div>
+          <p>USER</p>
+          <h2 id="me-drawer-title">Me</h2>
+        </div>
+        <button bind:this={meCloseButton} aria-label="Close user preferences" class="me-drawer-close" onclick={closeMe} title="Close" type="button">X</button>
+      </header>
+      <div class="me-drawer-content">
+        <PreferencesPage data={meData} form={null} />
+      </div>
+    </dialog>
+  {/if}
 {/if}
+
+<style>
+  .me-drawer-backdrop {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    border: 0;
+    background: rgb(8 15 12 / 0.56);
+    cursor: default;
+  }
+
+  .me-drawer {
+    position: fixed;
+    z-index: 1001;
+    top: 0;
+    right: 0;
+    display: grid;
+    width: min(48rem, calc(100vw - 2rem));
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    border-left: 1px solid var(--line);
+    background: #fff;
+    box-shadow: -20px 0 50px rgb(8 24 18 / 0.24);
+    color: var(--ink);
+  }
+
+  .me-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 1.25rem;
+  }
+
+  .me-drawer-header p,
+  .me-drawer-header h2 {
+    margin: 0;
+  }
+
+  .me-drawer-header p {
+    color: var(--accent-strong);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+
+  .me-drawer-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .me-drawer-close {
+    display: inline-grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: var(--house-radius-sm);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .me-drawer-close:hover,
+  .me-drawer-close:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent-strong);
+    outline: 3px solid var(--focus-ring);
+  }
+
+  .me-drawer-content {
+    min-height: 0;
+    overflow-y: auto;
+    background: #fff;
+  }
+
+  .me-drawer-content :global(main) {
+    min-height: 0;
+    background: #fff;
+  }
+
+  .me-drawer-content :global(main > .page-header) {
+    display: none;
+  }
+
+  .me-drawer-content :global(.page-section) {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  @media (max-width: 720px) {
+    .me-drawer {
+      width: 100vw;
+    }
+  }
+</style>

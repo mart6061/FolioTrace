@@ -1,9 +1,10 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences } from '$lib/menuPreferences';
+import { defaultUserValuationPreferences } from '$lib/valuationPreferences';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { requireCurrentUser } from '$lib/server/auth';
-import { getSystemVersion, getUserBookmarks, getUserMenuPreferences } from '$lib/server/api';
+import { getApiBaseUrl, getSystemVersion, getUserBookmarks, getUserMenuPreferences, getUserValuationPreferences } from '$lib/server/api';
 import { getUiVersion } from '$lib/server/version';
 import type { LayoutServerLoad } from './$types';
 
@@ -15,11 +16,13 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
 
   if (isPublicPagePath(url.pathname))
     return {
+      apiBaseUrl: getApiBaseUrl(),
       apiVersion: 'unavailable',
       currentUser: null,
       menuPreferences: null,
       publicPage: true,
       userBookmarks: null,
+      valuationPreferences: null,
       uiVersion
     };
 
@@ -28,6 +31,7 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
   let apiVersion = 'unavailable';
   let menuPreferences = defaultUserMenuPreferences(currentUser.userID);
   let userBookmarks = defaultUserBookmarks(currentUser.userID);
+  let valuationPreferences = defaultUserValuationPreferences(currentUser.userID);
 
   try {
     apiVersion = await getApiVersion(fetch);
@@ -38,21 +42,25 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
   try {
     const eventDateTime = toApiDateTime(nowForInput());
     const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    [menuPreferences, userBookmarks] = await Promise.all([
+    [menuPreferences, userBookmarks, valuationPreferences] = await Promise.all([
       getUserMenuPreferences(fetch, currentUser.userID, eventDateTime, apiAuditDateTime),
-      getUserBookmarks(fetch, currentUser.userID, eventDateTime, apiAuditDateTime)
+      getUserBookmarks(fetch, currentUser.userID, eventDateTime, apiAuditDateTime),
+      getUserValuationPreferences(fetch, currentUser.userID, eventDateTime, apiAuditDateTime)
     ]);
   } catch {
     menuPreferences = defaultUserMenuPreferences(currentUser.userID);
     userBookmarks = defaultUserBookmarks(currentUser.userID);
+    valuationPreferences = defaultUserValuationPreferences(currentUser.userID);
   }
 
   return {
     apiVersion,
+    apiBaseUrl: getApiBaseUrl(),
     currentUser,
     menuPreferences,
     publicPage: false,
     userBookmarks,
+    valuationPreferences,
     uiVersion
   };
 };
