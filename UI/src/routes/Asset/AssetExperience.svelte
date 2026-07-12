@@ -1332,13 +1332,13 @@
   }
 
   .asset-filter-viewer-form .asset-account-option:has(input[type='checkbox']:checked) {
-    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
-    background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-gold) 22%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+    background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .asset-filter-viewer-form .asset-account-option:has(input[type='checkbox']:checked) strong {
-    color: var(--ink);
+    color: var(--accent-strong);
   }
 
   .asset-account-option span {
@@ -1372,15 +1372,15 @@
     display: grid;
     width: 100%;
     max-width: 11.25rem;
-    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
-    background: var(--panel);
+    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
     gap: 0.125rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     flex-wrap: nowrap;
   }
 
   :global(.asset-mode-toggle .house-pill input:checked + span) {
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-gold) 22%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   :global(.asset-mode-toggle .house-pill span) {

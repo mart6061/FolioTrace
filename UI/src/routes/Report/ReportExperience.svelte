@@ -1209,8 +1209,8 @@
   .report-filter-option:hover,
   .report-filter-option:focus-visible,
   .report-filter-option-selected {
-    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
-    background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+    background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
     outline: none;
   }
 

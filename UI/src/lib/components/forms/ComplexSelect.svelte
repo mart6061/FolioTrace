@@ -224,8 +224,8 @@
   }
 
   .complex-select-compact-brand .complex-select-trigger {
-    background: var(--panel);
-    border-color: color-mix(in srgb, var(--brand-gold) 62%, var(--line));
+    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
+    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
     color: var(--ink);
   }
 
@@ -257,7 +257,7 @@
   }
 
   .complex-select-compact-brand .complex-select-menu {
-    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
+    border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
   }
 
   .complex-select-options {
@@ -284,8 +284,8 @@
   .complex-select-option:hover,
   .complex-select-option:focus-visible,
   .complex-select-option-selected {
-    background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
-    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
+    background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
     outline: none;
   }
 

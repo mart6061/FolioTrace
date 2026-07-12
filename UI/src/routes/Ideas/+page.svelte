@@ -522,8 +522,8 @@
 
   .ideas-page-body :global(.house-control),
   .ideas-page-body :global(.datetime-input-control-embedded) {
-    border-color: color-mix(in srgb, var(--brand-gold) 62%, var(--line));
-    background: var(--panel);
+    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
   }
 
   .ideas-account-field,

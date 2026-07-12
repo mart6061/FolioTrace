@@ -1052,12 +1052,12 @@ button.h-10 {
 
 .house-multiselect-compact-brand {
   width: min(100%, 14rem);
-  border-color: color-mix(in srgb, var(--brand-gold) 62%, var(--line));
-  background: var(--panel);
+  border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+  background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
 }
 
 .house-multiselect-compact-brand .house-multiselect-options {
-  border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
+  border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
   background: var(--panel);
 }
 
@@ -1466,7 +1466,7 @@ button.h-10 {
 }
 
 .status-panel {
-  border-top-color: color-mix(in srgb, var(--brand-gold) 72%, var(--accent));
+  border-top-color: var(--house-data-top);
   padding: 0.75rem 1rem;
   color: var(--muted);
   font-size: 0.875rem;
@@ -1889,10 +1889,10 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
   height: var(--datetime-shortcut-button-size);
   min-width: var(--datetime-shortcut-button-size);
   min-height: var(--datetime-shortcut-button-size);
-  border-color: var(--brand-gold);
+  border-color: var(--accent);
   border-radius: 5px;
-  background: var(--panel);
-  color: var(--brand-gold);
+  background: var(--accent);
+  color: #fff;
   font-size: 9px;
   padding: 0;
   box-shadow: none;
@@ -1916,9 +1916,9 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 
 .datetime-input-control-embedded .datetime-input-shortcuts button:hover,
 .datetime-input-control-embedded .datetime-input-shortcuts button:focus-visible {
-  border-color: var(--brand-gold);
-  background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
-  color: var(--ink);
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #fff;
 }
 
 .house-form,
@@ -1937,16 +1937,16 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 }
 
 .datetime-input-shortcuts button.datetime-input-shortcut-active {
-  border-color: var(--brand-gold);
-  background: var(--brand-gold);
-  color: var(--ink-strong);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .datetime-input-shortcuts button.datetime-input-shortcut-active:hover,
 .datetime-input-shortcuts button.datetime-input-shortcut-active:focus-visible {
-  border-color: color-mix(in srgb, var(--brand-gold) 82%, var(--ink));
-  background: color-mix(in srgb, var(--brand-gold) 82%, var(--ink));
-  color: var(--panel);
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #fff;
 }
 
 .datetime-input-shortcuts button:disabled {
@@ -1966,16 +1966,16 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 }
 
 .dark .datetime-input-control-embedded .datetime-input-shortcuts button {
-  border-color: var(--brand-gold);
-  background: var(--panel);
-  color: var(--brand-gold);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .dark .datetime-input-shortcuts button.datetime-input-shortcut-active,
 .dark .datetime-input-control-embedded .datetime-input-shortcuts button.datetime-input-shortcut-active {
-  border-color: var(--brand-gold);
-  background: var(--brand-gold);
-  color: var(--ink-strong);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 @media (max-width: 640px) {
@@ -2951,6 +2951,10 @@ tbody tr {
   border-top-color: color-mix(in srgb, var(--brand-gold) 72%, var(--accent));
 }
 
+.blotter-page .create-ticket-action-card {
+  border-top-color: var(--house-data-top);
+}
+
 .create-ticket-action-card .create-ticket-title {
   color: var(--accent-strong);
 }
@@ -3718,8 +3722,8 @@ fieldset.field legend {
 
 .side-radio-pill:hover span,
 .house-pill:hover span {
-  border-color: var(--brand-gold);
-  color: var(--ink);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .side-radio-pill input:focus-visible + span,
@@ -3744,9 +3748,9 @@ fieldset.field legend {
 .ticket-filter-pill input:checked + span,
 .house-pill-default input:checked + span,
 .house-pill input:checked + span {
-  border-color: var(--brand-gold);
-  background: var(--brand-gold);
-  color: var(--ink-strong);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
 }
 
 .house-pill-buy input:checked + span {

@@ -188,8 +188,8 @@
   }
 
   .viewer-option-card-selected {
-    border-color: var(--brand-gold);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-gold) 22%, transparent), var(--house-panel-shadow);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), var(--house-panel-shadow);
   }
 
   .viewer-option-title {
