@@ -503,12 +503,7 @@
 
 <style>
   .ideas-page-container {
-    box-sizing: border-box;
-    max-width: min(80rem, calc(100vw - 2rem));
     min-width: 0;
-    padding-left: 0;
-    padding-right: 0;
-    width: 100%;
   }
 
   .ideas-page-body {
