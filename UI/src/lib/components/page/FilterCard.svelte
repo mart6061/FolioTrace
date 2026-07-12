@@ -4,13 +4,11 @@
   let {
     title = 'Filter',
     visible = true,
-    collapsed = $bindable(false),
     actions,
     children
   }: {
     title?: string;
     visible?: boolean;
-    collapsed?: boolean;
     actions?: Snippet;
     children: Snippet;
   } = $props();
@@ -20,16 +18,9 @@
   <section class="filter-card-template">
     <header>
       <h2>{title}</h2>
-      <div class="filter-card-template-actions">
-        {#if actions}{@render actions()}{/if}
-        <button aria-expanded={!collapsed} onclick={() => collapsed = !collapsed} type="button">
-          {collapsed ? 'Show' : 'Hide'}
-        </button>
-      </div>
+      {#if actions}<div class="filter-card-template-actions">{@render actions()}</div>{/if}
     </header>
-    {#if !collapsed}
-      <div class="filter-card-template-content">{@render children()}</div>
-    {/if}
+    <div class="filter-card-template-content">{@render children()}</div>
   </section>
 {/if}
 
@@ -64,17 +55,6 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-  }
-
-  .filter-card-template-actions button {
-    border: 1px solid var(--line);
-    border-radius: var(--house-radius-sm);
-    background: var(--panel);
-    color: var(--accent-strong);
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 750;
-    padding: 0.3rem 0.55rem;
   }
 
   .filter-card-template-content {

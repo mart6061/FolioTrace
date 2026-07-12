@@ -36,7 +36,6 @@
   let selectedTicketNumbers = $state<number[]>([]);
   let selectedPolicyCurrency = $state('GBP');
   let pageHeaderMinimized = $state(false);
-  let filterTemplateCollapsed = $state(false);
   let selectedTemplateCard = $state('filter-card');
   let tableTemplateFilter = $state('');
   let tableToolStatus = $state('Use the table tools to act on this reusable container.');
@@ -215,7 +214,7 @@
     details={`${summaryText} · as of now`}
   >
     {#snippet filter()}
-      <FilterCard bind:collapsed={filterTemplateCollapsed} title="Filter Card Template">
+      <FilterCard title="Filter Card Template">
         <div class="ideas-control-grid">
           <div class="create-ticket-field ideas-select-field">
             <span>Price Basis</span>
