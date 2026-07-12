@@ -802,7 +802,7 @@
     {/if}
 
     {#if data.reportDocument}
-      <div class="report-action-bar" aria-label="Report actions">
+      <div class="house-card report-action-bar" aria-label="Report actions">
         <button class="house-button house-button-secondary house-button-md" onclick={exportPdf} title="Export PDF" type="button">Export to PDF</button>
         <button class="house-button house-button-secondary house-button-md" onclick={exportWord} title="Export Word" type="button">Export to Word</button>
         <button class="house-button house-button-secondary house-button-md" onclick={shareReport} title="Share" type="button">Share</button>
@@ -1045,6 +1045,8 @@
     gap: 0.5rem;
     align-items: center;
     justify-content: flex-end;
+    width: 100%;
+    border-top: 3px solid var(--brand-green);
   }
 
   .report-action-bar button {
