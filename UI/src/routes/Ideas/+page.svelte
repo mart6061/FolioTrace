@@ -511,6 +511,7 @@
   }
 
   .ideas-filter-card {
+    border-top-color: var(--accent);
     gap: 0.55rem;
     overflow: visible;
     padding: 0.7rem 0.8rem;
