@@ -205,7 +205,7 @@
   <title>Ideas | FolioTrace</title>
 </svelte:head>
 
-<main class="min-h-screen">
+<main class="ideas-page min-h-screen">
   <PageTitle
     bind:minimized={pageHeaderMinimized}
     kicker="System"
@@ -543,10 +543,15 @@
     gap: 0.22rem;
   }
 
-  .ideas-page-body :global(.house-control),
-  .ideas-page-body :global(.datetime-input-control-embedded) {
-    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
-    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
+  :global(.ideas-page .house-control),
+  :global(.ideas-page .complex-select-trigger),
+  :global(.ideas-page .account-combobox-trigger),
+  :global(.ideas-page .holding-combobox-trigger),
+  :global(.ideas-page .house-multiselect > summary),
+  :global(.ideas-page .datetime-input-control-embedded),
+  :global(.ideas-page .table-filter input) {
+    border-color: color-mix(in srgb, var(--accent-strong) 72%, var(--line));
+    background: var(--panel);
   }
 
   .ideas-account-field,
