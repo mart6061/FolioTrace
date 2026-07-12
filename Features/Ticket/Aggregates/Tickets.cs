@@ -38,7 +38,15 @@ public sealed record Tickets : IAggregate
         LastEventID = Constants.Initialisation.EmptyViewEventID;
         LastAuditDateTime = LastAuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value);
 
+        var tradeFileRequestEventDates = items
+            .OfType<TicketTradeFileRequestedEvent>()
+            .Where(@event => @event.TradeFileID is not null)
+            .GroupBy(@event => (@event.TicketNumber, TradeFileID: @event.TradeFileID!))
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(@event => @event.AuditDateTime.Value).ThenBy(@event => @event.EventID.Value).First().EventDateTime);
         var orderedItems = items
+            .Select(item => NormalizeTradeFileEventDate(item, tradeFileRequestEventDates))
             .Where(@event => @event.EventDateTime.Value <= valuationDateTime.Value && @event.AuditDateTime.Value <= asOfDateTime.Value)
             .OrderBy(@event => @event.EventDateTime.Value)
             .ThenBy(@event => @event.AuditDateTime.Value)
@@ -254,5 +262,21 @@ public sealed record Tickets : IAggregate
         return includedItems.Any()
             ? AuditDateTimeBuilder.Create(includedItems.Max(@event => @event.AuditDateTime.Value))
             : AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value);
+    }
+
+    private static ITicket NormalizeTradeFileEventDate(
+        ITicket @event,
+        IReadOnlyDictionary<(TicketNumber TicketNumber, TradeFileID TradeFileID), EventDateTime> requestEventDates)
+    {
+        if (@event is not TicketTradeExecutionEventBase
+            {
+                TradeMethodType: TradeMethodType.TradeFile,
+                TradeFileID: not null
+            } tradeFileEvent ||
+            !requestEventDates.TryGetValue((@event.TicketNumber, tradeFileEvent.TradeFileID), out var requestEventDate) ||
+            @event.EventDateTime.Value >= requestEventDate.Value)
+            return @event;
+
+        return tradeFileEvent with { EventDateTime = requestEventDate };
     }
 }

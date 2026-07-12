@@ -53,7 +53,7 @@
   <title>Viewer | FolioTrace</title>
 </svelte:head>
 
-<main class="viewer-page min-h-screen">
+<main class="viewer-page min-h-screen" style="--house-panel-top: var(--brand-green)">
   <section class="page-header">
     <div class="page-container">
       <div class="page-header-content">
@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <section class="section-band viewer-filter-card" aria-label="Viewer filters">
+      <section class="section-band viewer-filter-card" aria-label="Viewer filters" style="--house-panel-top: var(--brand-gold)">
         <div class="viewer-option-grid">
           {#each viewerOptions as option (option.key)}
             <a
@@ -139,7 +139,13 @@
   }
 
   .viewer-filter-card:has(:global(.house-multiselect[open])) {
-    z-index: 320;
+    overflow: visible;
+    z-index: 400;
+  }
+
+  .viewer-page:has(:global(.house-multiselect[open])) > .page-header {
+    overflow: visible;
+    z-index: 400;
   }
 
   .viewer-page :global(.page-header) {
@@ -182,8 +188,8 @@
   }
 
   .viewer-option-card-selected {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), var(--house-panel-shadow);
+    border-color: var(--brand-gold);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-gold) 22%, transparent), var(--house-panel-shadow);
   }
 
   .viewer-option-title {
@@ -203,6 +209,19 @@
 
   .viewer-selected-filter {
     padding-top: 0.25rem;
+  }
+
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) {
+    position: relative;
+    z-index: 400;
+    overflow: visible;
+  }
+
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.viewer-embedded-page),
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.page-header),
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.page-container),
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.house-form) {
+    overflow: visible;
   }
 
   .viewer-metric-shell {
@@ -243,7 +262,14 @@
 
   :global(.viewer-embedded-page .page-header) {
     background: transparent;
+    border: 0;
+    box-shadow: none;
     padding: 0;
+  }
+
+  :global(.viewer-embedded-page .page-header::before),
+  :global(.viewer-embedded-page .page-header::after) {
+    display: none;
   }
 
   @media (max-width: 980px) {

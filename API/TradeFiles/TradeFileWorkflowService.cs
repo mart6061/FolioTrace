@@ -163,7 +163,7 @@ public sealed class TradeFileWorkflowService(
         if (tradeFile.Status is TradeFileStatus.Acknowledged or TradeFileStatus.InProgress or TradeFileStatus.Completed) return;
         if (tradeFile.Status != TradeFileStatus.Sent) throw new InvalidOperationException("Only sent TradeFiles can be acknowledged.");
 
-        var eventDate = new EventDateTime(confirmation.ReceivedAtUtc.ToUniversalTime());
+        var eventDate = EffectiveEventDate(requested.EventDateTime, confirmation.ReceivedAtUtc);
         var audit = AuditDateTimeBuilder.Create();
         var acknowledged = new TradeFileAcknowledgedEvent(new(Guid.CreateGuid7()), requested.UserID, eventDate, audit, "FoleoTrader acknowledged TradeFile", tradeFile.TradeFileID, confirmation.ConfirmationID);
         var ticketEvents = tradeFile.Tickets.Select(ticket => (IAuditEventBase)new TicketTradeFileAcknowledgedEvent(new(Guid.CreateGuid7()), requested.UserID, eventDate, audit, "FoleoTrader acknowledged TradeFile", ticket.TicketNumber, tradeFile.BrokerLEI, tradeFile.TradeFileID)).ToList();
@@ -190,7 +190,7 @@ public sealed class TradeFileWorkflowService(
         if (confirmation.Quantity <= 0 || confirmation.Quantity > snapshot.Quantity)
             throw new ArgumentException("Confirmed quantity is outside the requested quantity.");
 
-        var eventDate = new EventDateTime(confirmation.ConfirmedAtUtc.ToUniversalTime());
+        var eventDate = EffectiveEventDate(requested.EventDateTime, confirmation.ConfirmedAtUtc);
         var audit = AuditDateTimeBuilder.Create();
         var asOf = AuditDateTimeBuilder.Create();
         var tickets = await ticketService.Get(eventDate, asOf);
@@ -271,4 +271,12 @@ public sealed class TradeFileWorkflowService(
         (await repository.LoadStreamAsync<ITradeFileEvent>(Constants.Initialisation.TradeFilesStreamId, cancellationToken))
             .OfType<TradeFileRequestedEvent>()
             .Single(item => item.TradeFileID == id);
+
+    private static EventDateTime EffectiveEventDate(EventDateTime requestEventDate, DateTime callbackDateTime)
+    {
+        var callbackUtc = callbackDateTime.ToUniversalTime();
+        return callbackUtc > requestEventDate.Value
+            ? EventDateTimeBuilder.Create(callbackUtc)
+            : requestEventDate;
+    }
 }

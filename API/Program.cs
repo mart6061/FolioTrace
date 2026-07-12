@@ -61,6 +61,9 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
 });
 builder.Services.AddSingleton<ApiVersionInfo>();
+builder.Services.Configure<ApiReadinessOptions>(builder.Configuration.GetSection(ApiReadinessOptions.SectionName));
+builder.Services.AddSingleton<ApiReadinessState>();
+builder.Services.AddHostedService<EventStoreStartupHostedService>();
 builder.Services.AddSingleton<BuildCoordinator>();
 builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
 builder.Services.AddSingleton<FoleoTraderOrderProcessor>();
@@ -107,6 +110,7 @@ if (app.Environment.IsDevelopment())
 app.UseRequestTraceCapture();
 app.UseApiRequestLogging();
 app.UseApiUnhandledExceptionLogging();
+app.UseMiddleware<ApiReadinessMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

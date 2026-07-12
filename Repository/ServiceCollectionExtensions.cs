@@ -40,7 +40,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRequestTraceRepository, MartenRequestTraceRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
-        services.AddHostedService<InMemoryEventsRepositoryInitializer>();
         services.AddScoped<ISeedRepository, SeedRepository>();
 
         return services;

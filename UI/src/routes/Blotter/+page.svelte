@@ -6,7 +6,7 @@
   import { BrokerDropdown, ComplexSelect, MultiSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
-  import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage } from '$lib/types';
+  import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   type TicketEditContext = 'Proposal' | 'Trade';
@@ -927,9 +927,49 @@
   function ticketDecisionDescription(ticket: Ticket) {
     if (ticket.stage === 'Proposal')
       return decisionDescription(ticket.proposalDecision);
-    if (ticket.stage === 'Trade' || ticket.stage === 'Completed')
-      return decisionDescription(ticket.tradeDecision);
+    if (ticket.stage === 'Trade' || ticket.stage === 'Completed') {
+      const decision = decisionDescription(ticket.tradeDecision);
+      const tradeFileStatus = ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress'
+        ? ticketTradeFileStatusDescription(ticket)
+        : '';
+      return tradeFileStatus ? `${decision} (TradeFile: ${tradeFileStatus})` : decision;
+    }
     return decisionDescription(ticket.proposalDecision);
+  }
+
+  function ticketTradeFileStatusDescription(ticket: Ticket) {
+    const tradeFile = (data.tradeFiles ?? []).find((candidate) =>
+      (ticket.tradeFileID && candidate.tradeFileID === ticket.tradeFileID) ||
+      candidate.tickets.some((tradeFileTicket) => tradeFileTicket.ticketNumber === ticket.ticketNumber)
+    );
+    const status = tradeFile?.status ?? ticketTradeFileStatus(ticket);
+    return status === 'InProgress' ? 'In progress' : status;
+  }
+
+  function ticketTradeFileStatus(ticket: Ticket): TradeFileStatus | 'Pending' | '' {
+    if (ticket.tradeExecutionMethod !== 'TradeFile' && !ticket.tradeFileID)
+      return '';
+
+    switch (ticket.tradeExecutionStatus) {
+      case 'PendingTradeFile':
+        return 'Pending';
+      case 'TradeFileRequested':
+        return 'Requested';
+      case 'TradeFileCreated':
+        return 'Created';
+      case 'TradeFileSent':
+        return 'Sent';
+      case 'TradeFileAcknowledged':
+        return 'Acknowledged';
+      case 'InProgress':
+        return 'InProgress';
+      case 'Failed':
+        return 'Failed';
+      case 'Completed':
+        return 'Completed';
+      default:
+        return '';
+    }
   }
 
   function ticketHistorySummary(event: TicketReferenceEvent) {
@@ -1019,7 +1059,7 @@
 
 </script>
 
-<main class="min-h-screen">
+<main class="blotter-page min-h-screen">
   <section class="page-header">
     <div class="page-container">
       <p class="page-kicker">Blotter</p>
@@ -1242,7 +1282,7 @@
                 </div>
               </div>
               <div class="ticket-card-actions">
-                {#if ticketExpanded && ticketEditing && !ticketAwaitingDecision}
+                {#if ticketEditing && !ticketAwaitingDecision}
                   <form
                     class="ticket-save-form"
                     id={saveFormID}
@@ -1257,7 +1297,7 @@
                     </button>
                   </form>
                 {/if}
-                {#if ticketExpanded && canEditProposalTerms(ticket)}
+                {#if canEditProposalTerms(ticket)}
                   <form
                     class="ticket-save-form"
                     method="POST"
@@ -1271,7 +1311,7 @@
                     </button>
                   </form>
                 {/if}
-                {#if ticketExpanded && ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress'}
+                {#if ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress'}
                   <form
                     class="ticket-save-form"
                     method="POST"
@@ -1285,7 +1325,7 @@
                     </button>
                   </form>
                 {/if}
-                {#if ticketExpanded && ticketAwaitingProposalDecision}
+                {#if ticketAwaitingProposalDecision}
                   <form
                     class="ticket-save-form"
                     method="POST"
@@ -1301,7 +1341,7 @@
                     </button>
                   </form>
                 {/if}
-                {#if ticketExpanded && ticketAwaitingTradeDecision}
+                {#if ticketAwaitingTradeDecision}
                   <form
                     class="ticket-save-form"
                     method="POST"
@@ -1317,17 +1357,17 @@
                     </button>
                   </form>
                 {/if}
-                {#if ticketExpanded && !ticketAwaitingDecision && canSetProposalText(ticket)}
+                {#if !ticketAwaitingDecision && canSetProposalText(ticket)}
                   <button class="ticket-action-button" onclick={() => ticketEditingProposal ? stopTicketEdit() : startTicketEdit(ticket, 'Proposal')} type="button" disabled={ticketCancelConfirming || ticketEditingTrade}>
                     {ticketEditingProposal ? 'Cancel' : 'Edit Proposal'}
                   </button>
                 {/if}
-                {#if ticketExpanded && !ticketAwaitingDecision && canSetTradeText(ticket)}
+                {#if !ticketAwaitingDecision && canSetTradeText(ticket)}
                   <button class="ticket-action-button" onclick={() => ticketEditingTrade ? stopTicketEdit() : startTicketEdit(ticket, 'Trade')} type="button" disabled={ticketCancelConfirming || ticketEditingProposal}>
                     {ticketEditingTrade ? 'Cancel' : 'Edit Trade'}
                   </button>
                 {/if}
-                {#if ticketExpanded && !ticketAwaitingDecision}
+                {#if !ticketAwaitingDecision}
                   <button class="ticket-action-button" onclick={() => startTicketCancellation(ticket.ticketNumber)} type="button" disabled={ticketCancelConfirming}>
                     Delete
                   </button>
@@ -1352,7 +1392,7 @@
                   </svg>
                 </button>
               </div>
-              {#if ticketExpanded && ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress' && canSendFoleoTrader(ticket, foleoTraderOrder)}
+              {#if ticket.stage === 'Trade' && ticket.tradeDecision === 'InProgress' && canSendFoleoTrader(ticket, foleoTraderOrder)}
                 <div class="trade-execution-groups">
                   <form
                     class="trade-execution-group"
@@ -1426,7 +1466,7 @@
               </section>
             {/if}
 
-            {#if ticketExpanded && ticketCancelConfirming}
+            {#if ticketCancelConfirming}
               <form
                 class="ticket-cancel-confirmation danger-confirmation"
                 method="POST"

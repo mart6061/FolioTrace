@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { closeOnOutside } from '$lib/actions/dropdown';
+  import { closeOnOutside, floatingPopover } from '$lib/actions/dropdown';
   import { classNames } from './controls';
 
   type Props = {
@@ -51,7 +51,11 @@
   <summary onclick={preventDisabledToggle}>
     <span class="truncate">{summary}</span>
   </summary>
-  <div class="house-multiselect-options">
+  <div
+    class="house-multiselect-options"
+    popover="auto"
+    use:floatingPopover={{ close: closeDropdown, enabled: open }}
+  >
     {@render children?.()}
   </div>
 </details>

@@ -430,11 +430,13 @@
     selectedReportID = accountID === data.accountID ? data.reportID : '';
     accountSelectionDirty = selectedAccountID !== data.accountID;
     reportSelectionDirty = false;
+    closeAccountDropdown();
   }
 
   function chooseReport(reportID: string) {
     selectedReportID = reportID;
     reportSelectionDirty = selectedReportID !== data.reportID;
+    closeReportDropdown();
   }
 
   function valuationColumnValue(row: ReportValuationRow, column: ReportValuationColumn, currency: string) {
@@ -1138,10 +1140,6 @@
     z-index: 140;
   }
 
-  :global(.viewer-filter-card:has(.report-filter-select.house-multiselect[open])) {
-    z-index: 140;
-  }
-
   :global(.report-filter-select.house-multiselect[open]),
   :global(.report-filter-select.house-multiselect[open] .house-multiselect-options) {
     z-index: 320;
@@ -1211,8 +1209,8 @@
   .report-filter-option:hover,
   .report-filter-option:focus-visible,
   .report-filter-option-selected {
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
-    background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
+    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
+    background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
     outline: none;
   }
 
@@ -1231,7 +1229,7 @@
   }
 
   .report-filter-option-selected span {
-    color: var(--accent-strong);
+    color: var(--ink);
   }
 
   .report-filter-option small,

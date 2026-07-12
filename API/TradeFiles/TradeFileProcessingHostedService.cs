@@ -3,10 +3,13 @@ namespace API.TradeFiles;
 public sealed class TradeFileProcessingHostedService(
     TradeFileWorkflowService workflow,
     Microsoft.Extensions.Options.IOptions<TradeFileOptions> options,
+    ApiReadinessState readinessState,
     ILogger<TradeFileProcessingHostedService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await readinessState.WaitUntilReadyAsync(stoppingToken);
+
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(1, options.Value.ProcessingIntervalSeconds)));
         do
         {

@@ -1,8 +1,4 @@
-using System.Text.Json.Serialization;
-
 namespace FolioTrace.Aggregates;
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(EmailTradeMethodFileSendConfig), nameof(EmailTradeMethodFileSendConfig))]
-[JsonDerivedType(typeof(FTPTradeMethodFileSendConfig), nameof(FTPTradeMethodFileSendConfig))]
+[System.Text.Json.Serialization.JsonConverter(typeof(TradeMethodFileSendConfigJsonConverter))]
 public interface ITradeMethodFileSendConfig;

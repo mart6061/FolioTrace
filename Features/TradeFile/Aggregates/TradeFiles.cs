@@ -18,7 +18,20 @@ public sealed record TradeFiles : IAggregate
     {
         ValuationDateTime = valuationDateTime; AsOfDateTime = asOfDateTime; Items = [];
         LastEventID = Constants.Initialisation.EmptyViewEventID; LastAuditDateTime = new(asOfDateTime.Value);
-        foreach (var @event in events.Where(item => item.EventDateTime.Value <= valuationDateTime.Value && item.AuditDateTime.Value <= asOfDateTime.Value).OrderBy(item => item.EventDateTime.Value).ThenBy(item => item.AuditDateTime.Value).ThenBy(item => item.EventID.Value)) Apply(@event);
+        var requestEventDates = events
+            .OfType<TradeFileRequestedEvent>()
+            .GroupBy(@event => @event.TradeFileID)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(@event => @event.AuditDateTime.Value).ThenBy(@event => @event.EventID.Value).First().EventDateTime);
+        var normalizedEvents = events.Select(@event => NormalizeEventDate(@event, requestEventDates));
+
+        foreach (var @event in normalizedEvents
+            .Where(item => item.EventDateTime.Value <= valuationDateTime.Value && item.AuditDateTime.Value <= asOfDateTime.Value)
+            .OrderBy(item => item.EventDateTime.Value)
+            .ThenBy(item => item.AuditDateTime.Value)
+            .ThenBy(item => item.EventID.Value))
+            Apply(@event);
     }
 
     public void Apply(ITradeFileEvent @event)
@@ -45,4 +58,14 @@ public sealed record TradeFiles : IAggregate
     }
 
     public TradeFile? Find(TradeFileID id) => Items.SingleOrDefault(item => item.TradeFileID == id);
+
+    private static ITradeFileEvent NormalizeEventDate(ITradeFileEvent @event, IReadOnlyDictionary<TradeFileID, EventDateTime> requestEventDates)
+    {
+        if (@event is not TradeFileEventBase tradeFileEvent ||
+            !requestEventDates.TryGetValue(@event.TradeFileID, out var requestEventDate) ||
+            @event.EventDateTime.Value >= requestEventDate.Value)
+            return @event;
+
+        return tradeFileEvent with { EventDateTime = requestEventDate };
+    }
 }

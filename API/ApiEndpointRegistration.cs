@@ -633,9 +633,10 @@ public static class ApiEndpointRegistration
     {
         var system = api.MapGroup("/System").WithTags("System").AllowAnonymous();
 
-        system.MapGet("/Health", () => Results.Ok(new
+        system.MapGet("/Health", (ApiReadinessState readinessState) => Results.Ok(new
         {
-            Status = "Healthy",
+            Ready = readinessState.Ready,
+            Status = readinessState.Ready ? "Ready" : "Starting",
             Service = "FolioTrace API",
             CheckedAtUtc = DateTime.UtcNow
         }));

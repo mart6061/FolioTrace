@@ -42,6 +42,27 @@ public sealed class TicketBuilderTests
     }
 
     [Fact]
+    public void TradeFileStatusReplayNormalizesLegacyCallbackDate()
+    {
+        var created = CreateTicket();
+        var tradeFileID = new TradeFileID(Guid.CreateGuid7());
+        var requestEventDate = new EventDateTime(EventDate.Value.AddMinutes(1));
+        var callbackEventDate = new EventDateTime(EventDate.Value.AddSeconds(30));
+        var requestAuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-5));
+        var sentAuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-4));
+        var acknowledgedAuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-3));
+        var requested = new TicketTradeFileRequestedEvent(new(Guid.CreateGuid7()), UserID, requestEventDate, requestAuditDate, "Request", created.TicketNumber, BrokerLEI, tradeFileID);
+        var sent = new TicketTradeFileSentEvent(new(Guid.CreateGuid7()), UserID, requestEventDate, sentAuditDate, "Send", created.TicketNumber, BrokerLEI, tradeFileID);
+        var acknowledged = new TicketTradeFileAcknowledgedEvent(new(Guid.CreateGuid7()), UserID, callbackEventDate, acknowledgedAuditDate, "Acknowledge", created.TicketNumber, BrokerLEI, tradeFileID);
+
+        var tickets = new Tickets(requestEventDate, AuditDateTimeBuilder.Create(), [created, acknowledged, sent, requested]);
+
+        var ticket = Assert.Single(tickets.Items);
+        Assert.Equal(TicketTradeExecutionStatus.TradeFileAcknowledged, ticket.TradeExecutionStatus);
+        Assert.Equal(requestEventDate, ticket.ValuationDateTime);
+    }
+
+    [Fact]
     public void AccountAddRemove_UpdatesSingleTicketAggregate()
     {
         var created = CreateTicket();

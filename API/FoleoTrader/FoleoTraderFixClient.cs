@@ -13,6 +13,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private readonly FoleoTraderOptions options;
     private readonly FoleoTraderOrderProcessor processor;
     private readonly FoleoTraderFIXOperationRecorder operationRecorder;
+    private readonly ApiReadinessState readinessState;
     private readonly ILogger<FoleoTraderFixClient> logger;
     private readonly object syncRoot = new();
     private SocketInitiator? initiator;
@@ -23,16 +24,24 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private Timer? idleTimer;
     private FIXTradeMethod? activeMethod;
 
-    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ILogger<FoleoTraderFixClient> logger)
+    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ApiReadinessState readinessState, ILogger<FoleoTraderFixClient> logger)
     {
         this.options = options.Value;
         this.processor = processor;
         this.operationRecorder = operationRecorder;
+        this.readinessState = readinessState;
         this.logger = logger;
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
+        _ = StartWhenReadyAsync(cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    private async Task StartWhenReadyAsync(CancellationToken cancellationToken)
+    {
+        await readinessState.WaitUntilReadyAsync(cancellationToken);
         idleTimer = new Timer(_ => StopIfIdle(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
         await ReplayStoredExecutionReportsAsync(cancellationToken);
     }

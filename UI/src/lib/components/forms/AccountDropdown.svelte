@@ -304,8 +304,8 @@
   }
 
   .account-combobox-compact-brand .account-combobox-trigger {
-    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
-    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: var(--panel);
+    border-color: color-mix(in srgb, var(--brand-gold) 62%, var(--line));
     color: var(--ink);
   }
 
@@ -337,7 +337,7 @@
   }
 
   .account-combobox-compact-brand .account-combobox-menu {
-    border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
+    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
   }
 
   .account-combobox-options {
@@ -389,8 +389,8 @@
   .account-combobox-option:hover,
   .account-combobox-option:focus-visible,
   .account-combobox-option-selected {
-    background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+    background: color-mix(in srgb, var(--brand-gold) 14%, var(--panel));
+    border-color: color-mix(in srgb, var(--brand-gold) 58%, var(--line));
     outline: none;
   }
 
