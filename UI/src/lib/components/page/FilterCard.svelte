@@ -31,7 +31,7 @@
     gap: 0.85rem;
     width: 100%;
     border: 1px solid var(--line);
-    border-top: 3px solid var(--brand-gold);
+    border-top: 3px solid color-mix(in srgb, var(--brand-gold) 72%, var(--accent));
     border-radius: var(--house-radius);
     background: var(--panel);
     box-shadow: var(--house-panel-shadow);
