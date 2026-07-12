@@ -518,8 +518,9 @@
   }
 
   .ideas-filter-card .create-ticket-title {
-    font-size: 0.875rem;
-    line-height: 1.15;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: normal;
   }
 
   .ideas-filter-card .filter-card-header {
