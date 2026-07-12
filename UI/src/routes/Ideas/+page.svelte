@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import { FilterCard, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { AccountDropdown, BrokerDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
@@ -35,6 +35,11 @@
   let selectedTradeFileBrokerLEI = $state('');
   let selectedTicketNumbers = $state<number[]>([]);
   let selectedPolicyCurrency = $state('GBP');
+  let pageHeaderMinimized = $state(false);
+  let filterTemplateCollapsed = $state(false);
+  let selectedTemplateCard = $state('filter-card');
+  let tableTemplateFilter = $state('');
+  let tableToolStatus = $state('Use the table tools to act on this reusable container.');
 
   const accounts = $derived(data.accounts?.items ?? []);
   const brokers = $derived(data.brokers?.items ?? []);
@@ -85,6 +90,19 @@
   const moneyValidationText = $derived(moneyValidationMessages.length ? moneyValidationMessages.join(' ') : 'Valid');
   const quantityValidationText = $derived(quantityValidationMessages.length ? quantityValidationMessages.join(' ') : 'Valid');
   const summaryText = $derived(`${accounts.length} accounts | ${accountHoldings.length || holdings.length} holdings | ${instruments.length} instruments | ${tickets.length} tickets | ${currencies.length} currencies`);
+  const templateMenuCards: [MenuCardItem, MenuCardItem, MenuCardItem] = [
+    { id: 'filter-card', title: 'Filter Card', description: 'Gold-accented container for page filters and view controls.' },
+    { id: 'page-card', title: 'Page Card', description: 'Green-accented container for body content and tables.' },
+    { id: 'table-tools', title: 'Table Tools', description: 'Shared filter, add, export, spreadsheet, and print actions.' }
+  ];
+  const tableTemplateRows = [
+    { name: 'GBP / EUR', type: 'FX', status: 'Active' },
+    { name: 'UK Gilt 4.25%', type: 'Instrument', status: 'Active' },
+    { name: 'Model Portfolio', type: 'Holding', status: 'Draft' }
+  ];
+  const filteredTableTemplateRows = $derived(tableTemplateRows.filter((row) =>
+    `${row.name} ${row.type} ${row.status}`.toLowerCase().includes(tableTemplateFilter.trim().toLowerCase())
+  ));
   const displayModeOptions = [
     { label: 'Discrete', value: 'Discrete' },
     { label: 'Aggregate', value: 'Aggregate' }
@@ -174,6 +192,11 @@
     };
   }
 
+  function showTableToolStatus(action: string) {
+    const rowCount = filteredTableTemplateRows.length;
+    tableToolStatus = `${action} selected for ${rowCount} visible row${rowCount === 1 ? '' : 's'}.`;
+  }
+
   $effect(() => {
     refreshInputPolicies(singleAccountID, selectedPolicyCurrency || 'GBP', data.valuationDate, data.auditDateTime);
   });
@@ -184,59 +207,65 @@
 </svelte:head>
 
 <main class="min-h-screen">
-  <section class="page-header">
-    <div class="page-container ideas-page-container">
-      <p class="page-kicker">System</p>
-      <div class="page-header-content">
-        <div class="page-header-main">
-          <div class="page-title-row">
-            <h1 class="page-title">Ideas</h1>
+  <PageTitle
+    bind:minimized={pageHeaderMinimized}
+    kicker="System"
+    title="Ideas"
+    description="Reusable FolioTrace controls and page composition templates."
+    details={`${summaryText} · as of now`}
+  >
+    {#snippet filter()}
+      <FilterCard bind:collapsed={filterTemplateCollapsed} title="Filter Card Template">
+        <div class="ideas-control-grid">
+          <div class="create-ticket-field ideas-select-field">
+            <span>Price Basis</span>
+            <ComplexSelect class="ideas-simple-select" compactBrand name="instrumentPriceBasis" options={instrumentPriceBasisOptions} placeholder="Select price basis" bind:value={instrumentPriceBasis} />
+          </div>
+          <div class="create-ticket-field ideas-select-field">
+            <span>Holding Basis</span>
+            <ComplexSelect class="ideas-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
           </div>
         </div>
-        <div class="page-header-aside">
-          <BookmarkButton />
-          <div class="page-header-summary">{summaryText}</div>
-        </div>
-      </div>
-    </div>
-  </section>
+      </FilterCard>
+    {/snippet}
+  </PageTitle>
 
   <section class="page-container page-section ideas-page-container ideas-page-body">
     {#if data.error}
       <p class="status-panel status-panel-warning">{data.error}</p>
     {/if}
 
-    <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
-      <div class="filter-card-header">
-        <h2 class="create-ticket-title">Simple Selects</h2>
-      </div>
+    <PageCard title="Filter Card with Menu Card Group">
+      <MenuCardGroup bind:selected={selectedTemplateCard} items={templateMenuCards} />
+    </PageCard>
 
-      <div class="ideas-control-grid">
-        <div class="create-ticket-field ideas-select-field">
-          <span>Price Basis</span>
-          <ComplexSelect
-            class="ideas-simple-select"
-            compactBrand
-            name="instrumentPriceBasis"
-            options={instrumentPriceBasisOptions}
-            placeholder="Select price basis"
-            bind:value={instrumentPriceBasis}
-          />
-        </div>
+    <PageCard title="Page Card Template">
+      <p class="ideas-template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
+    </PageCard>
 
-        <div class="create-ticket-field ideas-select-field">
-          <span>Holding Basis</span>
-          <ComplexSelect
-            class="ideas-simple-select"
-            compactBrand
-            name="holdingDateBasis"
-            options={holdingDateBasisOptions}
-            placeholder="Select holding basis"
-            bind:value={holdingDateBasis}
-          />
-        </div>
+    <PageCard title="Table Tools Container">
+      <TableTools
+        bind:filterText={tableTemplateFilter}
+        filterLabel="Filter template rows"
+        placeholder="Filter template rows..."
+        onadd={() => showTableToolStatus('Add')}
+        onexportjson={() => showTableToolStatus('JSON export')}
+        onexportcsv={() => showTableToolStatus('CSV export')}
+        onexportxlsx={() => showTableToolStatus('XLSX export')}
+        onprint={() => showTableToolStatus('Print')}
+      />
+      <div class="overflow-x-auto">
+        <table class="ideas-template-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+          <tbody>
+            {#each filteredTableTemplateRows as row (row.name)}
+              <tr><td>{row.name}</td><td>{row.type}</td><td>{row.status}</td></tr>
+            {/each}
+          </tbody>
+        </table>
       </div>
-    </section>
+      <p class="ideas-table-tool-status" role="status">{tableToolStatus}</p>
+    </PageCard>
 
     <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
       <div class="filter-card-header">
@@ -625,8 +654,5 @@
       grid-template-columns: 1fr;
     }
 
-    .page-header-aside {
-      justify-self: end;
-    }
   }
 </style>
