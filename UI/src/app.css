@@ -377,7 +377,7 @@ main {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: 900;
   border-bottom: 1px solid color-mix(in srgb, var(--brand-rail) 42%, var(--accent));
   background:
     linear-gradient(90deg, var(--chrome), var(--chrome-strong) 58%, color-mix(in srgb, var(--accent-strong) 30%, var(--chrome)));
@@ -592,7 +592,7 @@ main {
 
 .system-menu-bookmark-cluster {
   position: relative;
-  z-index: 80;
+  z-index: 910;
   display: inline-flex;
 }
 
@@ -600,7 +600,7 @@ main {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  z-index: 79;
+  z-index: 920;
   display: flex;
   max-width: min(72vw, 440px);
   min-width: max-content;
@@ -608,6 +608,7 @@ main {
   align-items: flex-start;
   gap: 7px;
   border: 1px solid rgb(255 255 255 / 0.18);
+  border-top: 0;
   border-radius: 0 0 22px 22px;
   background:
     linear-gradient(90deg, var(--chrome), var(--chrome-strong) 58%, color-mix(in srgb, var(--accent-strong) 30%, var(--chrome)));
