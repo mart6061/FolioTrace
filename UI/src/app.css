@@ -2956,7 +2956,7 @@ tbody tr {
 }
 
 .blotter-page .create-ticket-action-card.blotter-filter-card {
-  border-top-color: var(--house-filter-top);
+  border-top: 3px solid var(--brand-gold);
 }
 
 .create-ticket-action-card .create-ticket-title {
