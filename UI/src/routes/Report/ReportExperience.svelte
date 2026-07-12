@@ -520,14 +520,14 @@
             html, body { margin: 0; padding: 0; }
             body { font-family: Arial, sans-serif; color: #0f172a; }
             .report-document-shell { display: block; margin: 0; padding: 0; }
-            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: ReportPortrait; break-before: page; break-after: page; page-break-before: always; page-break-after: always; mso-page-orientation: portrait; }
+            .report-document-page { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 22mm 18mm; page: ReportPortrait; break-before: page; break-after: page; break-inside: auto; page-break-before: always; page-break-after: always; page-break-inside: auto; mso-page-orientation: portrait; orphans: 3; widows: 3; }
             .report-document-page:first-child { break-before: auto; page-break-before: auto; }
             .report-document-page.portrait-page { page: ReportPortrait; mso-page-orientation: portrait; }
             .report-document-page.landscape-page { width: 297mm; min-height: 210mm; page: ReportLandscape; mso-page-orientation: landscape; }
-            .report-document-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 14px; }
+            .report-document-header { border-bottom: 1px solid #cbd5e1; break-after: avoid-page; page-break-after: avoid; padding-bottom: 14px; }
             .report-document-header h2 { margin: 0; font-size: 30px; line-height: 1.2; }
             .report-document-header p { margin: 6px 0 0; color: #475569; font-size: 16px; }
-            .report-section-content { padding-top: 20px; }
+            .report-section-content { break-inside: auto; page-break-inside: auto; padding-top: 20px; }
             .report-empty-state { border: 1px solid #e2e8f0; color: #64748b; font-size: 14px; padding: 14px; }
             .report-pie-layout { align-items: center; display: grid; gap: 24px; grid-template-columns: minmax(220px, 0.82fr) minmax(220px, 1fr); }
             .report-pie-chart { display: block; height: auto; width: 100%; }
@@ -537,7 +537,7 @@
             .report-pie-swatch { border-radius: 999px; display: block; height: 12px; width: 12px; }
             .report-pie-name { font-size: 14px; font-weight: 700; }
             .report-pie-value { color: #475569; font-family: Consolas, monospace; font-size: 13px; text-align: right; }
-            .report-valuation-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-valuation-table { border-collapse: collapse; break-inside: auto; font-size: 11px; page-break-inside: auto; width: 100%; }
             .report-valuation-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
             .report-valuation-table th.numeric, .report-valuation-table td.numeric { text-align: right; }
             .report-valuation-node-row td { border-top: 1px solid #cbd5e1; color: #0f172a; padding: 10px 6px 5px; }
@@ -551,17 +551,21 @@
             .report-valuation-subtotal td { border-bottom: 1px solid #94a3b8; color: #334155; font-weight: 700; padding: 7px 6px 10px; }
             .report-valuation-subtotal.top-level td { color: #0f172a; }
             .report-valuation-total td { border-bottom: 2px solid #0f172a; border-top: 2px solid #0f172a; color: #0f172a; font-weight: 800; padding: 8px 6px; }
-            .report-transaction-table { border-collapse: collapse; font-size: 11px; width: 100%; }
-            .report-profit-loss-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-transaction-table { border-collapse: collapse; break-inside: auto; font-size: 11px; page-break-inside: auto; width: 100%; }
+            .report-profit-loss-table { border-collapse: collapse; break-inside: auto; font-size: 11px; page-break-inside: auto; width: 100%; }
             .report-profit-loss-method { color: #475569; font-size: 12px; font-weight: 700; margin: 0 0 8px; }
-            .report-cash-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+            .report-cash-table { border-collapse: collapse; break-inside: auto; font-size: 11px; page-break-inside: auto; width: 100%; }
             .report-cash-groups { display: grid; gap: 18px; }
-            .report-cash-group-title { align-items: baseline; border-bottom: 1px solid #cbd5e1; color: #0f172a; display: flex; font-size: 13px; font-weight: 700; gap: 12px; justify-content: space-between; margin: 0 0 6px; padding-bottom: 6px; }
+            .report-cash-group-title { align-items: baseline; border-bottom: 1px solid #cbd5e1; break-after: avoid-page; color: #0f172a; display: flex; font-size: 13px; font-weight: 700; gap: 12px; justify-content: space-between; margin: 0 0 6px; page-break-after: avoid; padding-bottom: 6px; }
             .report-cash-group-total { color: #475569; font-family: Consolas, monospace; font-size: 12px; font-weight: 700; }
             .report-transaction-table th, .report-profit-loss-table th, .report-cash-table th { border-bottom: 1px solid #cbd5e1; color: #475569; font-size: 10px; letter-spacing: 0.04em; padding: 7px 6px; text-align: left; text-transform: uppercase; }
             .report-transaction-table th.numeric, .report-transaction-table td.numeric, .report-profit-loss-table th.numeric, .report-profit-loss-table td.numeric, .report-cash-table th.numeric, .report-cash-table td.numeric { text-align: right; }
             .report-transaction-table td, .report-profit-loss-table td, .report-cash-table td { border-bottom: 1px solid #e2e8f0; color: #0f172a; padding: 6px; }
             .report-transaction-table td.numeric, .report-profit-loss-table td.numeric, .report-cash-table td.numeric { font-family: Consolas, monospace; }
+            .report-valuation-table thead, .report-transaction-table thead, .report-profit-loss-table thead, .report-cash-table thead { display: table-header-group; }
+            .report-valuation-table tfoot, .report-transaction-table tfoot, .report-profit-loss-table tfoot, .report-cash-table tfoot { display: table-footer-group; }
+            .report-valuation-table tr, .report-transaction-table tr, .report-profit-loss-table tr, .report-cash-table tr { break-inside: avoid-page; page-break-inside: avoid; }
+            .report-pie-layout, .report-pie-chart, .report-pie-legend, .report-empty-state { break-inside: avoid-page; page-break-inside: avoid; }
           </style>
         </head>
         <body>${documentElement.outerHTML}</body>
@@ -1639,8 +1643,10 @@
       page: ReportPortrait;
       break-before: page;
       break-after: page;
+      break-inside: auto;
       page-break-before: always;
       page-break-after: always;
+      page-break-inside: auto;
       width: 210mm;
     }
 
@@ -1653,6 +1659,38 @@
       min-height: 210mm;
       page: ReportLandscape;
       width: 297mm;
+    }
+
+    .report-document-header,
+    .report-cash-group-title {
+      break-after: avoid-page;
+      page-break-after: avoid;
+    }
+
+    .report-section-content,
+    .report-valuation-table,
+    .report-transaction-table,
+    .report-profit-loss-table,
+    .report-cash-table {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+
+    .report-valuation-table thead,
+    .report-transaction-table thead,
+    .report-profit-loss-table thead,
+    .report-cash-table thead {
+      display: table-header-group;
+    }
+
+    .report-valuation-table tr,
+    .report-transaction-table tr,
+    .report-profit-loss-table tr,
+    .report-cash-table tr,
+    .report-pie-layout,
+    .report-empty-state {
+      break-inside: avoid-page;
+      page-break-inside: avoid;
     }
   }
 
