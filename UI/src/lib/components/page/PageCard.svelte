@@ -1,10 +1,20 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  let { title = '', actions, children }: { title?: string; actions?: Snippet; children: Snippet } = $props();
+  let {
+    accent = 'green',
+    title = '',
+    actions,
+    children
+  }: {
+    accent?: 'gold' | 'green';
+    title?: string;
+    actions?: Snippet;
+    children: Snippet;
+  } = $props();
 </script>
 
-<section class="page-card-template">
+<section class:page-card-template-gold={accent === 'gold'} class="page-card-template">
   {#if title || actions}
     <header>
       {#if title}<h2>{title}</h2>{/if}
@@ -28,6 +38,10 @@
     padding: 1rem;
   }
 
+  .page-card-template-gold {
+    border-top-color: color-mix(in srgb, var(--brand-gold) 72%, var(--accent));
+  }
+
   .page-card-template header {
     display: flex;
     align-items: center;
@@ -39,6 +53,8 @@
     margin: 0;
     color: var(--accent-strong);
     font-size: 1rem;
+    font-weight: 700;
+    line-height: normal;
   }
 
   .page-card-template-content {

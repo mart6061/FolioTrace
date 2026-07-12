@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FilterCard, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
+  import { MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { AccountDropdown, BrokerDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
@@ -214,7 +214,7 @@
     details={`${summaryText} · as of now`}
   >
     {#snippet filter()}
-      <FilterCard title="Filter Card Template">
+      <PageCard accent="gold" title="Filter Card Template">
         <div class="ideas-control-grid">
           <div class="create-ticket-field ideas-select-field">
             <span>Price Basis</span>
@@ -225,7 +225,7 @@
             <ComplexSelect class="ideas-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
           </div>
         </div>
-      </FilterCard>
+      </PageCard>
     {/snippet}
   </PageTitle>
 
@@ -234,9 +234,9 @@
       <p class="status-panel status-panel-warning">{data.error}</p>
     {/if}
 
-    <FilterCard title="Filter Card Template with Menu Card Group">
+    <PageCard accent="gold" title="Filter Card Template with Menu Card Group">
       <MenuCardGroup bind:selected={selectedTemplateCard} items={templateMenuCards} />
-    </FilterCard>
+    </PageCard>
 
     <PageCard title="Page Card Template">
       <p class="ideas-template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
@@ -266,11 +266,7 @@
       <p class="ideas-table-tool-status" role="status">{tableToolStatus}</p>
     </PageCard>
 
-    <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
-      <div class="filter-card-header">
-        <h2 class="create-ticket-title">Complex Selects</h2>
-      </div>
-
+    <PageCard title="Complex Selects">
       <div class="ideas-control-grid">
         <div class="create-ticket-field ideas-account-field">
           <span>Single Account</span>
@@ -374,13 +370,9 @@
           <TicketDropdown {instruments} {tickets} compactBrand name="ticketNumbers" bind:selectedTicketNumbers />
         </div>
       </div>
-    </section>
+    </PageCard>
 
-    <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
-      <div class="filter-card-header">
-        <h2 class="create-ticket-title">Toggle Button Selects</h2>
-      </div>
-
+    <PageCard title="Toggle Button Selects">
       <div class="ideas-control-grid">
         <div class="create-ticket-field ideas-toggle-field">
           <span>View</span>
@@ -420,13 +412,9 @@
           />
         </div>
       </div>
-    </section>
+    </PageCard>
 
-    <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
-      <div class="filter-card-header">
-        <h2 class="create-ticket-title">Dates</h2>
-      </div>
-
+    <PageCard title="Dates">
       <div class="ideas-control-grid">
         <div class="create-ticket-field ideas-date-field">
           <span>Valuation Date</span>
@@ -434,13 +422,9 @@
           <span class="ideas-date-dev-value">Value: {ideasValuationDate || '(empty)'}</span>
         </div>
       </div>
-    </section>
+    </PageCard>
 
-    <section class="section-band create-ticket-card create-ticket-action-card ideas-filter-card">
-      <div class="filter-card-header">
-        <h2 class="create-ticket-title">Numeric Inputs</h2>
-      </div>
-
+    <PageCard title="Numeric Inputs">
       <div class="ideas-control-grid">
         <div class="create-ticket-field ideas-number-field">
           <QuantityInput
@@ -496,7 +480,7 @@
           <p class="status-panel status-panel-warning ideas-wide-field">{inputPolicyError}</p>
         {/if}
       </div>
-    </section>
+    </PageCard>
   </section>
 </main>
 
@@ -510,25 +494,7 @@
     gap: 0.75rem;
   }
 
-  .ideas-filter-card {
-    border-top-color: var(--accent);
-    gap: 0.55rem;
-    overflow: visible;
-    padding: 0.7rem 0.8rem;
-    position: relative;
-  }
-
-  .ideas-filter-card .create-ticket-title {
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: normal;
-  }
-
-  .ideas-filter-card .filter-card-header {
-    gap: 0.35rem 0.5rem;
-  }
-
-  .ideas-filter-card .create-ticket-field > span {
+  :global(.ideas-page.ideas-page .create-ticket-field > span) {
     font-size: 0.625rem;
     letter-spacing: 0;
     line-height: 1.05;
@@ -541,7 +507,7 @@
     grid-template-columns: repeat(2, minmax(14rem, 1fr));
   }
 
-  .ideas-page-body :global(.create-ticket-field) {
+  :global(.ideas-page.ideas-page .create-ticket-field) {
     gap: 0.22rem;
   }
 
