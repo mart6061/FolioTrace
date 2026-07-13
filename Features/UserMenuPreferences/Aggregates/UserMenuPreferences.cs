@@ -74,8 +74,14 @@ public sealed record UserMenuPreferences : IModel
             Apply(item);
     }
 
-    public bool IsVisible(string menuItemID) =>
-        !UserMenuPreferenceDefaults.IsControlled(menuItemID) || Items.Single(item => item.MenuItemID == menuItemID).Visible;
+    public bool IsVisible(string menuItemID)
+    {
+        if (!UserMenuPreferenceDefaults.IsControlled(menuItemID))
+            return true;
+
+        var normalizedMenuItemID = UserMenuPreferenceDefaults.NormalizeID(menuItemID);
+        return Items.Single(item => item.MenuItemID == normalizedMenuItemID).Visible;
+    }
 
     private void Apply(IUserMenuPreferencesEvent userMenuPreferencesEvent)
     {

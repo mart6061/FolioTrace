@@ -2,6 +2,14 @@ import type { UserMenuPreferenceItem, UserMenuPreferences } from '$lib/types';
 
 const legacyMenuPreferenceIDs = new Map([
   ['value-valuations', 'viewer'],
+  ['asset', 'viewer'],
+  ['report', 'viewer'],
+  ['administration', 'tools'],
+  ['system', 'diagnostics'],
+  ['data', 'data-list'],
+  ['value', 'viewer'],
+  ['reference', 'data-list'],
+  ['configuration', 'tools'],
   ['internals', 'diagnostics'],
   ['reference-valuation-setting', 'configuration-asset-allocation-tools'],
   ['configuration-valuation-setting', 'configuration-asset-allocation-tools']
