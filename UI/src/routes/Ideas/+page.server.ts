@@ -64,7 +64,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       auditDateTime,
       brokers: null,
       currencies: null,
-      error: error instanceof Error ? error.message : 'Unable to load ideas.',
+      error: error instanceof Error ? error.message : 'Unable to load control showcase.',
       holdingDateBasisOptions,
       holdings: null,
       inputPolicies: [],
