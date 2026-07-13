@@ -808,6 +808,7 @@
   }
 
   function startTicketEdit(ticket: Ticket, context: TicketEditContext) {
+    expandTicket(ticket.ticketNumber);
     editingTicket = { ticketNumber: ticket.ticketNumber, context };
     if (context === 'Trade') {
       const tradeDateTime = ticket.tradeDateTime ? dateTimeForInput(ticket.tradeDateTime) : nowForInput();
@@ -815,6 +816,14 @@
       settlementDateDrafts[ticket.ticketNumber] = ticket.settlementDateTime ? dateForInput(ticket.settlementDateTime) : nextWorkingDayDateForInput(tradeDateTime);
     }
     cancelTicketCancellation();
+  }
+
+  function expandTicket(ticketNumber: number) {
+    if (ticketViewMode === 'Detailed') {
+      collapsedTicketNumbers = collapsedTicketNumbers.filter((collapsedTicketNumber) => collapsedTicketNumber !== ticketNumber);
+    } else if (!expandedTicketNumbers.includes(ticketNumber)) {
+      expandedTicketNumbers = [...expandedTicketNumbers, ticketNumber];
+    }
   }
 
   function stopTicketEdit() {
