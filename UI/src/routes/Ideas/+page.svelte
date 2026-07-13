@@ -11,7 +11,7 @@
   let holdingDateBasis = $state('EventDateTime');
   let inputPolicyError = $state('');
   let instrumentPriceBasis = $state('Mid');
-  let showcaseValuationDateOverride = $state<string | null>(null);
+  let templateValuationDateOverride = $state<string | null>(null);
   let moneyDisplayValue = $state('');
   let moneyFormattedValue = $state('');
   let moneyValidationMessages = $state<string[]>([]);
@@ -81,7 +81,7 @@
     }))
     .sort((left, right) => left.name.localeCompare(right.name)));
   const instrumentPlaceholder = $derived(instrumentOptions.length ? 'Select instrument' : 'No instruments available');
-  const showcaseValuationDate = $derived(showcaseValuationDateOverride ?? data.valuationDate);
+  const templateValuationDate = $derived(templateValuationDateOverride ?? data.valuationDate);
   const moneyPolicy = $derived(
     inputPolicies.find((policy) => policy.controlKind === 'Money' && policy.currency === selectedPolicyCurrency) ?? fallbackPolicy('Money', selectedPolicyCurrency)
   );
@@ -134,8 +134,8 @@
       selectedStageFilters = ['All'];
   }
 
-  function setShowcaseValuationDate(value: string) {
-    showcaseValuationDateOverride = value;
+  function setTemplateValuationDate(value: string) {
+    templateValuationDateOverride = value;
   }
 
   function setSingleAccountID(accountID: string) {
@@ -205,7 +205,7 @@
   <title>Ideas | FolioTrace</title>
 </svelte:head>
 
-<main class="control-showcase-page min-h-screen">
+<main class="template-page min-h-screen">
   <PageTitle
     bind:minimized={pageHeaderMinimized}
     kicker="System"
@@ -215,21 +215,21 @@
   >
     {#snippet filter()}
       <PageCard accent="gold" title="Filter Card Template">
-        <div class="showcase-control-grid">
-          <div class="create-ticket-field showcase-select-field">
+        <div class="template-control-grid">
+          <div class="create-ticket-field template-select-field">
             <span>Price Basis</span>
-            <ComplexSelect class="showcase-simple-select" compactBrand name="instrumentPriceBasis" options={instrumentPriceBasisOptions} placeholder="Select price basis" bind:value={instrumentPriceBasis} />
+            <ComplexSelect class="template-simple-select" compactBrand name="instrumentPriceBasis" options={instrumentPriceBasisOptions} placeholder="Select price basis" bind:value={instrumentPriceBasis} />
           </div>
-          <div class="create-ticket-field showcase-select-field">
+          <div class="create-ticket-field template-select-field">
             <span>Holding Basis</span>
-            <ComplexSelect class="showcase-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
+            <ComplexSelect class="template-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
           </div>
         </div>
       </PageCard>
     {/snippet}
   </PageTitle>
 
-  <section class="page-container page-section showcase-page-container showcase-page-body">
+  <section class="page-container page-section template-page-container template-page-body">
     {#if data.error}
       <p class="status-panel status-panel-warning">{data.error}</p>
     {/if}
@@ -239,7 +239,7 @@
     </PageCard>
 
     <PageCard title="Page Card Template">
-      <p class="showcase-template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
+      <p class="template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
     </PageCard>
 
     <PageCard title="Table Tools Container">
@@ -254,7 +254,7 @@
         onprint={() => showTableToolStatus('Print')}
       />
       <div class="overflow-x-auto">
-        <table class="showcase-template-table">
+        <table class="template-table">
           <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
           <tbody>
             {#each filteredTableTemplateRows as row (row.name)}
@@ -263,12 +263,12 @@
           </tbody>
         </table>
       </div>
-      <p class="showcase-table-tool-status" role="status">{tableToolStatus}</p>
+      <p class="template-table-tool-status" role="status">{tableToolStatus}</p>
     </PageCard>
 
     <PageCard title="Complex Selects">
-      <div class="showcase-control-grid">
-        <div class="create-ticket-field showcase-account-field">
+      <div class="template-control-grid">
+        <div class="create-ticket-field template-account-field">
           <span>Single Account</span>
           <AccountDropdown
             {accounts}
@@ -281,7 +281,7 @@
           />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>Multi Account</span>
           <AccountDropdown
             {accounts}
@@ -295,7 +295,7 @@
           />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>Single Holding</span>
           <HoldingDropdown
             accountID={singleAccountID}
@@ -310,7 +310,7 @@
           />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>Multi Holding</span>
           <HoldingDropdown
             accountID={singleAccountID}
@@ -326,7 +326,7 @@
           />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>Instrument</span>
           <ComplexSelect
             compactBrand
@@ -338,7 +338,7 @@
           />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>Currency</span>
           <ComplexSelect
             compactBrand
@@ -350,22 +350,22 @@
           />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>All Brokers</span>
           <BrokerDropdown {brokers} compactBrand name="brokerLEI" bind:selectedBrokerLEI />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>FIX Brokers</span>
           <BrokerDropdown {brokers} compactBrand method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>TradeFile Brokers</span>
           <BrokerDropdown {brokers} compactBrand method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
         </div>
 
-        <div class="create-ticket-field showcase-account-field">
+        <div class="create-ticket-field template-account-field">
           <span>Tickets</span>
           <TicketDropdown {instruments} {tickets} compactBrand name="ticketNumbers" bind:selectedTicketNumbers />
         </div>
@@ -373,40 +373,40 @@
     </PageCard>
 
     <PageCard title="Toggle Button Selects">
-      <div class="showcase-control-grid">
-        <div class="create-ticket-field showcase-toggle-field">
+      <div class="template-control-grid">
+        <div class="create-ticket-field template-toggle-field">
           <span>View</span>
           <PillGroup
-            ariaLabel="Showcase view mode"
+            ariaLabel="Template view mode"
             bind:value={displayMode}
-            class="showcase-mode-toggle"
+            class="template-mode-toggle"
             compact
-            name="showcaseViewMode"
+            name="templateViewMode"
             options={displayModeOptions}
           />
         </div>
 
-        <div class="create-ticket-field showcase-toggle-field">
+        <div class="create-ticket-field template-toggle-field">
           <span>Side</span>
           <PillGroup
-            ariaLabel="Showcase side filter"
+            ariaLabel="Template side filter"
             bind:value={selectedSideFilter}
-            class="showcase-filter-toggle"
+            class="template-filter-toggle"
             compact
-            name="showcaseSideFilter"
+            name="templateSideFilter"
             options={sideFilterOptions}
           />
         </div>
 
-        <div class="create-ticket-field showcase-toggle-field showcase-wide-field">
+        <div class="create-ticket-field template-toggle-field template-wide-field">
           <span>Status</span>
           <PillGroup
-            ariaLabel="Showcase status filters"
+            ariaLabel="Template status filters"
             bind:values={selectedStageFilters}
-            class="showcase-filter-toggle showcase-stage-toggle"
+            class="template-filter-toggle template-stage-toggle"
             compact
             mode="checkbox"
-            name="showcaseStageFilter"
+            name="templateStageFilter"
             onchange={handleStageFilterChange}
             options={stageFilterOptions}
           />
@@ -415,21 +415,21 @@
     </PageCard>
 
     <PageCard title="Dates">
-      <div class="showcase-control-grid">
-        <div class="create-ticket-field showcase-date-field">
+      <div class="template-control-grid">
+        <div class="create-ticket-field template-date-field">
           <span>Valuation Date</span>
-          <DateTimeInput fullWidth name="valuationDate" size="sm" step="1" bind:value={() => showcaseValuationDate, setShowcaseValuationDate} />
-          <span class="showcase-date-dev-value">Value: {showcaseValuationDate || '(empty)'}</span>
+          <DateTimeInput fullWidth name="valuationDate" size="sm" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
+          <span class="template-date-dev-value">Value: {templateValuationDate || '(empty)'}</span>
         </div>
       </div>
     </PageCard>
 
     <PageCard title="Numeric Inputs">
-      <div class="showcase-control-grid">
-        <div class="create-ticket-field showcase-number-field">
+      <div class="template-control-grid">
+        <div class="create-ticket-field template-number-field">
           <QuantityInput
             label="Quantity"
-            name="showcaseQuantity"
+            name="templateQuantity"
             policy={quantityPolicy}
             size="sm"
             bind:displayValue={quantityDisplayValue}
@@ -437,16 +437,16 @@
             bind:validationMessages={quantityValidationMessages}
             bind:value={quantityValue}
           />
-          <div class="showcase-input-dev-values">
+          <div class="template-input-dev-values">
             <span>Raw: {quantityValue || '(empty)'}</span>
             <span>Display: {quantityFormattedValue || quantityDisplayValue || '(empty)'}</span>
             <span>Decimals: {quantityPolicy.decimalPlaces}</span>
             <span>Format: {quantityPolicy.formatPattern} ({quantityPolicy.formatSource})</span>
-            <span class:showcase-valid-value={!quantityValidationMessages.length}>Validation: {quantityValidationText}</span>
+            <span class:template-valid-value={!quantityValidationMessages.length}>Validation: {quantityValidationText}</span>
           </div>
         </div>
 
-        <div class="create-ticket-field showcase-number-field">
+        <div class="create-ticket-field template-number-field">
           <span>Money Currency</span>
           <ComplexSelect
             compactBrand
@@ -459,7 +459,7 @@
           <MoneyInput
             currency={selectedPolicyCurrency}
             label="Money"
-            name="showcaseMoney"
+            name="templateMoney"
             policy={moneyPolicy}
             size="sm"
             bind:displayValue={moneyDisplayValue}
@@ -467,17 +467,17 @@
             bind:validationMessages={moneyValidationMessages}
             bind:value={moneyValue}
           />
-          <div class="showcase-input-dev-values">
+          <div class="template-input-dev-values">
             <span>Raw: {moneyValue || '(empty)'}</span>
             <span>Display: {moneyFormattedValue || moneyDisplayValue || '(empty)'}</span>
             <span>Decimals: {moneyPolicy.decimalPlaces}</span>
             <span>Format: {moneyPolicy.formatPattern} ({moneyPolicy.formatSource})</span>
-            <span class:showcase-valid-value={!moneyValidationMessages.length}>Validation: {moneyValidationText}</span>
+            <span class:template-valid-value={!moneyValidationMessages.length}>Validation: {moneyValidationText}</span>
           </div>
         </div>
 
         {#if inputPolicyError}
-          <p class="status-panel status-panel-warning showcase-wide-field">{inputPolicyError}</p>
+          <p class="status-panel status-panel-warning template-wide-field">{inputPolicyError}</p>
         {/if}
       </div>
     </PageCard>
@@ -485,44 +485,44 @@
 </main>
 
 <style>
-  .showcase-page-container {
+  .template-page-container {
     min-width: 0;
   }
 
-  .showcase-page-body {
+  .template-page-body {
     display: grid;
     gap: 0.75rem;
   }
 
-  :global(.showcase-page.showcase-page .create-ticket-field > span) {
+  :global(.template-page.template-page .create-ticket-field > span) {
     font-size: 0.625rem;
     letter-spacing: 0;
     line-height: 1.05;
   }
 
-  .showcase-control-grid {
+  .template-control-grid {
     display: grid;
     align-items: end;
     gap: 0.55rem 0.75rem;
     grid-template-columns: repeat(2, minmax(14rem, 1fr));
   }
 
-  :global(.showcase-page.showcase-page .create-ticket-field) {
+  :global(.template-page.template-page .create-ticket-field) {
     gap: 0.22rem;
   }
 
-  :global(.showcase-page.showcase-page .house-control),
-  :global(.showcase-page.showcase-page .complex-select-trigger),
-  :global(.showcase-page.showcase-page .account-combobox-trigger),
-  :global(.showcase-page.showcase-page .holding-combobox-trigger),
-  :global(.showcase-page.showcase-page .house-multiselect),
-  :global(.showcase-page.showcase-page .datetime-input-control-embedded),
-  :global(.showcase-page.showcase-page .table-filter input) {
+  :global(.template-page.template-page .house-control),
+  :global(.template-page.template-page .complex-select-trigger),
+  :global(.template-page.template-page .account-combobox-trigger),
+  :global(.template-page.template-page .holding-combobox-trigger),
+  :global(.template-page.template-page .house-multiselect),
+  :global(.template-page.template-page .datetime-input-control-embedded),
+  :global(.template-page.template-page .table-filter input) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
     background: var(--panel);
   }
 
-  :global(.showcase-page.showcase-page .house-multiselect > summary) {
+  :global(.template-page.template-page .house-multiselect > summary) {
     font-size: 0.75rem;
     font-weight: 700;
     line-height: 1.15;
@@ -530,19 +530,19 @@
     padding: 0.25rem 0.5rem;
   }
 
-  .showcase-account-field,
-  .showcase-date-field,
-  .showcase-number-field,
-  .showcase-select-field,
-  .showcase-toggle-field {
+  .template-account-field,
+  .template-date-field,
+  .template-number-field,
+  .template-select-field,
+  .template-toggle-field {
     min-width: 0;
   }
 
-  :global(.showcase-simple-select.complex-select) {
+  :global(.template-simple-select.complex-select) {
     width: min(100%, 11.5rem);
   }
 
-  .showcase-date-dev-value {
+  .template-date-dev-value {
     color: color-mix(in srgb, var(--muted) 82%, var(--panel));
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.625rem;
@@ -551,7 +551,7 @@
     overflow-wrap: anywhere;
   }
 
-  .showcase-input-dev-values {
+  .template-input-dev-values {
     color: color-mix(in srgb, var(--muted) 86%, var(--panel));
     display: grid;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -564,22 +564,22 @@
     overflow-wrap: anywhere;
   }
 
-  .showcase-number-field {
+  .template-number-field {
     align-self: start;
     display: grid;
     gap: 0.28rem;
   }
 
-  .showcase-valid-value {
+  .template-valid-value {
     color: color-mix(in srgb, var(--success) 72%, var(--ink));
   }
 
-  .showcase-wide-field {
+  .template-wide-field {
     grid-column: 1 / -1;
   }
 
-  :global(.showcase-mode-toggle.house-pill-group),
-  :global(.showcase-filter-toggle.house-pill-group) {
+  :global(.template-mode-toggle.house-pill-group),
+  :global(.template-filter-toggle.house-pill-group) {
     background: color-mix(in srgb, var(--accent-soft) 40%, var(--panel));
     border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
     display: grid;
@@ -588,23 +588,23 @@
     width: 100%;
   }
 
-  :global(.showcase-mode-toggle.house-pill-group) {
+  :global(.template-mode-toggle.house-pill-group) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: 11.25rem;
   }
 
-  :global(.showcase-filter-toggle.house-pill-group) {
+  :global(.template-filter-toggle.house-pill-group) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     max-width: 11.25rem;
   }
 
-  :global(.showcase-stage-toggle.house-pill-group) {
+  :global(.template-stage-toggle.house-pill-group) {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     max-width: 36.75rem;
   }
 
-  :global(.showcase-mode-toggle .house-pill span),
-  :global(.showcase-filter-toggle .house-pill span) {
+  :global(.template-mode-toggle .house-pill span),
+  :global(.template-filter-toggle .house-pill span) {
     align-items: center;
     display: flex;
     justify-content: center;
@@ -612,20 +612,20 @@
     width: 100%;
   }
 
-  :global(.showcase-stage-toggle .house-pill span) {
+  :global(.template-stage-toggle .house-pill span) {
     padding-inline: 0.4rem;
   }
 
-  :global(.showcase-mode-toggle .house-pill input:checked + span) {
+  :global(.template-mode-toggle .house-pill input:checked + span) {
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
-  :global(.showcase-filter-toggle .house-pill input:checked + span) {
+  :global(.template-filter-toggle .house-pill input:checked + span) {
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   @media (max-width: 760px) {
-    .showcase-control-grid {
+    .template-control-grid {
       grid-template-columns: 1fr;
     }
 
