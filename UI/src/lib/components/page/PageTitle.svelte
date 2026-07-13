@@ -23,9 +23,8 @@
 
 <section class="page-header page-title-template">
   <div class="page-container page-title-template-inner">
-    <p class="page-title-template-kicker">{kicker}</p>
-    <div class="page-title-template-title-row">
-      <h1>{title}</h1>
+    <div class="page-title-template-kicker-row">
+      <p class="page-title-template-kicker">{kicker}</p>
       <div class="page-title-template-actions">
         <button
           aria-label={minimized ? 'Maximise page header' : 'Minimise page header'}
@@ -45,6 +44,9 @@
           <BookmarkButton />
         {/if}
       </div>
+    </div>
+    <div class="page-title-template-title-row">
+      <h1>{title}</h1>
     </div>
     {#if !minimized}
       <div class="page-title-template-detail-row">
@@ -80,6 +82,7 @@
     text-transform: uppercase;
   }
 
+  .page-title-template-kicker-row,
   .page-title-template-title-row,
   .page-title-template-detail-row {
     display: flex;
