@@ -9,7 +9,14 @@
   import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
-  let { data, form, onsaved }: { data: PageData; form: ActionData | null; onsaved?: () => void } = $props();
+  interface Props {
+    data: PageData;
+    form: ActionData | null;
+    onmenuvisibilitychange?: (menuItemID: string, visible: boolean) => void;
+    onsaved?: () => void;
+  }
+
+  let { data, form, onmenuvisibilitychange, onsaved }: Props = $props();
 
   let submitting = $state(false);
   let visibleByID = $state<Record<string, boolean>>(createVisibleByID());
@@ -103,6 +110,7 @@
       ...visibleByID,
       [menuItemID]: visible
     };
+    onmenuvisibilitychange?.(menuItemID, visible);
   }
 
   function menuSignature() {

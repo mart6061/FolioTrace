@@ -155,6 +155,7 @@
   let selectedMenuItemID = $state(routeActiveItem()?.id ?? '');
   let meOpen = $state(false);
   let meCloseButton = $state<HTMLButtonElement>();
+  let menuVisibilityPreview = $state<Record<string, boolean>>({});
   const meData = $derived({
     apiBaseUrl: data.apiBaseUrl,
     apiVersion: data.apiVersion,
@@ -334,11 +335,20 @@
 
   function openMe() {
     closeMenus();
+    menuVisibilityPreview = {};
     meOpen = true;
   }
 
   function closeMe() {
+    menuVisibilityPreview = {};
     meOpen = false;
+  }
+
+  function previewMenuVisibility(menuItemID: string, visible: boolean) {
+    menuVisibilityPreview = {
+      ...menuVisibilityPreview,
+      [menuItemID]: visible
+    };
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
@@ -402,6 +412,9 @@
   }
 
   function isConfiguredMenuVisible(id: string) {
+    if (id in menuVisibilityPreview)
+      return menuVisibilityPreview[id];
+
     return menuVisibility.get(id) !== false;
   }
 
@@ -666,7 +679,7 @@
         <button bind:this={meCloseButton} aria-label="Close user preferences" class="me-drawer-close" onclick={closeMe} title="Close" type="button">X</button>
       </header>
       <div class="me-drawer-content">
-        <PreferencesPage data={meData} form={null} onsaved={closeMe} />
+        <PreferencesPage data={meData} form={null} onmenuvisibilitychange={previewMenuVisibility} onsaved={closeMe} />
       </div>
     </dialog>
   {/if}
