@@ -224,13 +224,20 @@
           {:else}
             <button
               aria-selected={isSelected(account.accountID)}
-              class={classNames('account-combobox-option', !account.active && 'account-combobox-option-alert', isSelected(account.accountID) && 'account-combobox-option-selected')}
+              class={classNames('account-combobox-option', 'account-combobox-option-check', !account.active && 'account-combobox-option-alert', isSelected(account.accountID) && 'account-combobox-option-selected')}
               onclick={() => chooseAccount(account.accountID)}
               role="option"
               type="button"
             >
-              <span>{account.name}</span>
-              <small>{accountMeta(account)}</small>
+              <span class="account-combobox-option-copy">
+                <span>{account.name}</span>
+                <small>{accountMeta(account)}</small>
+              </span>
+              <span aria-hidden="true" class="account-combobox-check-icon">
+                {#if isSelected(account.accountID)}
+                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                {/if}
+              </span>
             </button>
           {/if}
         {:else}

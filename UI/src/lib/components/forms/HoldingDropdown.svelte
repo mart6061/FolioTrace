@@ -239,13 +239,20 @@
           {:else}
             <button
               aria-selected={isSelected(holding.holdingID)}
-              class={classNames('holding-combobox-option', !holding.active && 'holding-combobox-option-alert', isSelected(holding.holdingID) && 'holding-combobox-option-selected')}
+              class={classNames('holding-combobox-option', 'holding-combobox-option-check', !holding.active && 'holding-combobox-option-alert', isSelected(holding.holdingID) && 'holding-combobox-option-selected')}
               onclick={() => chooseHolding(holding.holdingID)}
               role="option"
               type="button"
             >
-              <span>{holdingLabel(holding)}</span>
-              <small>{holdingMeta(holding)}</small>
+              <span class="holding-combobox-option-copy">
+                <span>{holdingLabel(holding)}</span>
+                <small>{holdingMeta(holding)}</small>
+              </span>
+              <span aria-hidden="true" class="holding-combobox-check-icon">
+                {#if isSelected(holding.holdingID)}
+                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                {/if}
+              </span>
             </button>
           {/if}
         {:else}
