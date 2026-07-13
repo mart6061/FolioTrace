@@ -666,7 +666,7 @@
         <button bind:this={meCloseButton} aria-label="Close user preferences" class="me-drawer-close" onclick={closeMe} title="Close" type="button">X</button>
       </header>
       <div class="me-drawer-content">
-        <PreferencesPage data={meData} form={null} />
+        <PreferencesPage data={meData} form={null} onsaved={closeMe} />
       </div>
     </dialog>
   {/if}

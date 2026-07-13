@@ -7,9 +7,9 @@
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
   import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption } from '$lib/types';
-  import type { SubmitFunction } from './$types';
+  import type { ActionData, PageData, SubmitFunction } from './$types';
 
-  let { data, form } = $props();
+  let { data, form, onsaved }: { data: PageData; form: ActionData | null; onsaved?: () => void } = $props();
 
   let submitting = $state(false);
   let visibleByID = $state<Record<string, boolean>>(createVisibleByID());
@@ -76,6 +76,7 @@
         originalHoldingDateBasis = holdingDateBasis;
         originalShowZeroBalances = showZeroBalances;
         originalBookmarks = cloneBookmarks(bookmarks);
+        onsaved?.();
       }
 
       submitting = false;
