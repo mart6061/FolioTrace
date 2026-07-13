@@ -242,7 +242,13 @@
       <p class="template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
     </PageCard>
 
-    <PageCard title="Table Tools Container">
+    <PageCard subtitle="Viewer-style header, reusable toolbar, and datatable." title="Data Table Card Template">
+      {#snippet actions()}
+        <div class="template-table-summary">
+          <strong>{filteredTableTemplateRows.length} rows</strong>
+          <span>as of now</span>
+        </div>
+      {/snippet}
       <TableTools
         bind:filterText={tableTemplateFilter}
         filterLabel="Filter template rows"
@@ -528,6 +534,49 @@
     line-height: 1.15;
     min-height: calc(var(--house-control-height) - 2px);
     padding: 0.25rem 0.5rem;
+  }
+
+  .template-copy,
+  .template-table-tool-status {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .template-table-summary {
+    display: grid;
+    gap: 0.15rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.25;
+    text-align: right;
+  }
+
+  .template-table-summary strong {
+    color: var(--ink);
+    font-size: 0.82rem;
+  }
+
+  .template-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--ink);
+    font-size: 0.8rem;
+    text-align: left;
+  }
+
+  .template-table th,
+  .template-table td {
+    border-bottom: 1px solid var(--line);
+    padding: 0.55rem 0.7rem;
+  }
+
+  .template-table th {
+    background: var(--panel-muted);
+    color: var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .template-account-field,

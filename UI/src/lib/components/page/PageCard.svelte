@@ -4,11 +4,13 @@
   let {
     accent = 'green',
     title = '',
+    subtitle = '',
     actions,
     children
   }: {
     accent?: 'gold' | 'green';
     title?: string;
+    subtitle?: string;
     actions?: Snippet;
     children: Snippet;
   } = $props();
@@ -17,7 +19,12 @@
 <section class:page-card-template-gold={accent === 'gold'} class="page-card-template">
   {#if title || actions}
     <header>
-      {#if title}<h2>{title}</h2>{/if}
+      {#if title || subtitle}
+        <div class="page-card-template-heading">
+          {#if title}<h2>{title}</h2>{/if}
+          {#if subtitle}<p>{subtitle}</p>{/if}
+        </div>
+      {/if}
       {#if actions}<div>{@render actions()}</div>{/if}
     </header>
   {/if}
@@ -55,6 +62,19 @@
     font-size: 1rem;
     font-weight: 700;
     line-height: normal;
+  }
+
+  .page-card-template-heading {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .page-card-template-heading p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.35;
   }
 
   .page-card-template-content {
