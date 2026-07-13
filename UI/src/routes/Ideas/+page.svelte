@@ -259,7 +259,7 @@
         onexportxlsx={() => showTableToolStatus('XLSX export')}
         onprint={() => showTableToolStatus('Print')}
       />
-      <div class="overflow-x-auto">
+      <div class="template-table-wrap overflow-x-auto">
         <table class="template-table">
           <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
           <tbody>
@@ -563,6 +563,10 @@
     color: var(--ink);
     font-size: 0.8rem;
     text-align: left;
+  }
+
+  .template-table-wrap {
+    margin-inline: -1rem;
   }
 
   .template-table th,
