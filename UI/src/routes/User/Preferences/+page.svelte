@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
+  import { applyAction, enhance } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
   import { formatBookmarkType, formatBookmarkUrl } from '$lib/bookmarks';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import { Toggle } from '$lib/components/forms';
@@ -19,6 +20,8 @@
   let { data, form, onmenuvisibilitychange, onsaved }: Props = $props();
 
   let submitting = $state(false);
+  let actionFeedback = $state<ActionData | null | undefined>(undefined);
+  const displayedForm = $derived(actionFeedback === undefined ? form : actionFeedback);
   let visibleByID = $state<Record<string, boolean>>(createVisibleByID());
   let originalVisibleByID = $state<Record<string, boolean>>(createVisibleByID());
   let startValuationDateOption = $state<UserValuationDateOption>(defaultStartValuationDateOption);
@@ -72,18 +75,33 @@
 
   const enhanceSavePreferences: SubmitFunction = () => {
     submitting = true;
+    actionFeedback = null;
 
-    return async ({ result, update }) => {
-      await update({ reset: false });
-
+    return async ({ result }) => {
       if (result.type === 'success') {
+        actionFeedback = (result.data ?? null) as ActionData | null;
         originalVisibleByID = { ...visibleByID };
         originalStartValuationDateOption = startValuationDateOption;
         originalEndValuationDateOption = endValuationDateOption;
         originalHoldingDateBasis = holdingDateBasis;
         originalShowZeroBalances = showZeroBalances;
         originalBookmarks = cloneBookmarks(bookmarks);
+        submitting = false;
         onsaved?.();
+        await invalidateAll();
+        return;
+      }
+
+      if (result.type === 'failure') {
+        actionFeedback = result.data as ActionData;
+      } else if (result.type === 'error') {
+        actionFeedback = {
+          intent: 'savePreferences',
+          message: result.error instanceof Error ? result.error.message : 'Unable to save preferences.',
+          status: 'failure'
+        } as ActionData;
+      } else {
+        await applyAction(result);
       }
 
       submitting = false;
@@ -231,9 +249,9 @@
           </div>
         {/if}
 
-        {#if form?.intent === 'savePreferences'}
-          <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']}>
-            {form.message}
+        {#if displayedForm?.intent === 'savePreferences'}
+          <div class={['status-panel mb-4', displayedForm.status === 'success' ? 'status-panel-success' : 'status-panel-error']}>
+            {displayedForm.message}
           </div>
         {/if}
 
