@@ -952,7 +952,11 @@
       candidate.tickets.some((tradeFileTicket) => tradeFileTicket.ticketNumber === ticket.ticketNumber)
     );
     const status = tradeFile?.status ?? ticketTradeFileStatus(ticket);
-    return status === 'InProgress' ? 'In progress' : status;
+    if (status === 'Acknowledged')
+      return 'Received';
+    if (status === 'InProgress')
+      return 'Received - processing';
+    return status;
   }
 
   function ticketTradeFileStatus(ticket: Ticket): TradeFileStatus | 'Pending' | '' {
