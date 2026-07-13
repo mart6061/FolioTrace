@@ -11,6 +11,7 @@
   import { applyDarkModePreference, readInitialDarkMode } from '$lib/themeMode';
   import '../app.css';
   import { onMount, tick } from 'svelte';
+  import { fade, fly } from 'svelte/transition';
   import PreferencesPage from './User/Preferences/+page.svelte';
 
   let { children, data } = $props();
@@ -655,8 +656,8 @@
   </div>
 
   {#if meOpen}
-    <button aria-label="Close user preferences" class="me-drawer-backdrop" onclick={closeMe} type="button"></button>
-    <dialog aria-labelledby="me-drawer-title" aria-modal="true" class="me-drawer" open>
+    <button aria-label="Close user preferences" class="me-drawer-backdrop" onclick={closeMe} transition:fade={{ duration: 160 }} type="button"></button>
+    <dialog aria-labelledby="me-drawer-title" aria-modal="true" class="me-drawer" open transition:fly={{ duration: 220, x: '100%' }}>
       <header class="me-drawer-header">
         <div>
           <p>USER</p>
