@@ -13,7 +13,8 @@ The solution is split into a few layers:
 - `Features` contains feature-organised domain code for countries, currencies, FX, FX rates, and users.
 - `Repository` owns persistence and event access.
 - `API` is the HTTP entry point.
-- `UIConsole` is currently a simple operational entry point for running initialization.
+- `UI` is the SvelteKit web application.
+- `FoleoTrader` hosts the trade execution adapter and simulator.
 - `Test` is present for automated tests.
 
 Feature folders keep related code together. For example, country and currency code is grouped into `Aggregates`, `Events`, `Requests`, and `Services` folders inside each feature.
@@ -74,7 +75,7 @@ The architecture is moving toward:
 2. Marten for persistence.
 3. In-memory event access for runtime simplicity and performance exploration.
 4. Feature services as the app-facing source for aggregates/entities.
-5. Console/API projects as thin entry points over the service layer.
+5. UI, API, and hosted adapter projects as thin entry points over the service layer.
 
 The application is still early, but the emerging design is a clean event-sourced core with explicit domain types and a pragmatic in-memory read path.
 
