@@ -98,6 +98,10 @@
     line-height: 1.08;
   }
 
+  .page-title-template-title-row {
+    margin-top: -0.4rem;
+  }
+
   .page-title-template-detail-row p {
     margin: 0;
     color: var(--muted);
