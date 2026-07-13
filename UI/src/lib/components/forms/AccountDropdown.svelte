@@ -209,28 +209,35 @@
       <div class="account-combobox-options">
         {#each filteredAccounts as account (account.accountID)}
           {#if multiple}
-            <label class={classNames('account-combobox-option', 'account-combobox-option-check', isSelected(account.accountID) && 'account-combobox-option-selected')}>
+            <label class={classNames('account-combobox-option', !account.active && 'account-combobox-option-alert', 'account-combobox-option-check', isSelected(account.accountID) && 'account-combobox-option-selected')}>
               <input checked={isSelected(account.accountID)} onchange={() => toggleAccount(account.accountID)} type="checkbox" value={account.accountID} />
+              <span class="account-combobox-option-copy">
+                <span>{account.name}</span>
+                <small>{accountMeta(account)}</small>
+              </span>
               <span aria-hidden="true" class="account-combobox-check-icon">
                 {#if isSelected(account.accountID)}
                   <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
                 {/if}
               </span>
-              <span>
-                <span>{account.name}</span>
-                <small>{accountMeta(account)}</small>
-              </span>
             </label>
           {:else}
             <button
               aria-selected={isSelected(account.accountID)}
-              class={classNames('account-combobox-option', isSelected(account.accountID) && 'account-combobox-option-selected')}
+              class={classNames('account-combobox-option', 'account-combobox-option-check', !account.active && 'account-combobox-option-alert', isSelected(account.accountID) && 'account-combobox-option-selected')}
               onclick={() => chooseAccount(account.accountID)}
               role="option"
               type="button"
             >
-              <span>{account.name}</span>
-              <small>{accountMeta(account)}</small>
+              <span class="account-combobox-option-copy">
+                <span>{account.name}</span>
+                <small>{accountMeta(account)}</small>
+              </span>
+              <span aria-hidden="true" class="account-combobox-check-icon">
+                {#if isSelected(account.accountID)}
+                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                {/if}
+              </span>
             </button>
           {/if}
         {:else}
@@ -394,6 +401,24 @@
     outline: none;
   }
 
+  .account-combobox-option-alert {
+    background: color-mix(in srgb, var(--warning-soft) 42%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 44%, var(--line));
+    color: var(--warning-text);
+  }
+
+  .account-combobox-option-alert:hover,
+  .account-combobox-option-alert:focus-visible {
+    background: color-mix(in srgb, var(--warning-soft) 78%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 68%, var(--line));
+  }
+
+  .account-combobox-option-alert.account-combobox-option-selected {
+    background: color-mix(in srgb, var(--danger-soft) 82%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 76%, var(--line));
+    color: var(--danger-text);
+  }
+
   .account-combobox-option span {
     font-size: 0.75rem;
     font-weight: 750;
@@ -410,15 +435,23 @@
     overflow-wrap: anywhere;
   }
 
+  .account-combobox-option-alert small {
+    color: var(--warning-strong);
+  }
+
+  .account-combobox-option-alert.account-combobox-option-selected small {
+    color: var(--danger-strong);
+  }
+
   .account-combobox-option-check {
     align-items: start;
-    grid-template-columns: 1.25rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 1.25rem;
     position: relative;
   }
 
   .account-combobox-option-check input {
     height: 1px;
-    left: 0.55rem;
+    right: 0.55rem;
     opacity: 0;
     pointer-events: none;
     position: absolute;
@@ -442,6 +475,14 @@
     width: 1.15rem;
   }
 
+  .account-combobox-option-alert .account-combobox-check-icon {
+    color: var(--warning-strong);
+  }
+
+  .account-combobox-option-alert.account-combobox-option-selected .account-combobox-check-icon {
+    color: var(--danger-strong);
+  }
+
   .account-combobox-check-icon svg {
     display: block;
     fill: none;
@@ -453,7 +494,7 @@
     width: 1rem;
   }
 
-  .account-combobox-option-check > span {
+  .account-combobox-option-copy {
     display: grid;
     gap: 0.05rem;
     min-width: 0;

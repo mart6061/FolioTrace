@@ -53,7 +53,7 @@
   <title>Viewer | FolioTrace</title>
 </svelte:head>
 
-<main class="viewer-page min-h-screen">
+<main class="viewer-page min-h-screen" style="--house-panel-top: var(--brand-green)">
   <section class="page-header">
     <div class="page-container">
       <div class="page-header-content">
@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <section class="section-band viewer-filter-card" aria-label="Viewer filters">
+      <section class="section-band viewer-filter-card" aria-label="Viewer filters" style="--house-panel-top: var(--brand-gold)">
         <div class="viewer-option-grid">
           {#each viewerOptions as option (option.key)}
             <a
@@ -133,13 +133,20 @@
     display: grid;
     gap: 0.75rem;
     border: 1px solid var(--line);
+    border-top: 3px solid var(--brand-gold);
     overflow: visible;
     position: relative;
     z-index: 20;
   }
 
   .viewer-filter-card:has(:global(.house-multiselect[open])) {
-    z-index: 320;
+    overflow: visible;
+    z-index: 400;
+  }
+
+  .viewer-page:has(:global(.house-multiselect[open])) > .page-header {
+    overflow: visible;
+    z-index: 400;
   }
 
   .viewer-page :global(.page-header) {
@@ -205,6 +212,19 @@
     padding-top: 0.25rem;
   }
 
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) {
+    position: relative;
+    z-index: 400;
+    overflow: visible;
+  }
+
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.viewer-embedded-page),
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.page-header),
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.page-container),
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.house-form) {
+    overflow: visible;
+  }
+
   .viewer-metric-shell {
     display: grid;
     gap: 1rem;
@@ -223,6 +243,7 @@
   .viewer-metric-card {
     min-height: 8rem;
     border: 1px solid var(--line);
+    border-top: 3px solid var(--brand-green);
     border-radius: var(--house-radius);
     background: var(--panel);
     box-shadow: var(--house-panel-shadow);
@@ -243,7 +264,14 @@
 
   :global(.viewer-embedded-page .page-header) {
     background: transparent;
+    border: 0;
+    box-shadow: none;
     padding: 0;
+  }
+
+  :global(.viewer-embedded-page .page-header::before),
+  :global(.viewer-embedded-page .page-header::after) {
+    display: none;
   }
 
   @media (max-width: 980px) {

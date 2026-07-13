@@ -110,6 +110,25 @@ public sealed class AccountBuilderTests
         Assert.Equal(3, finalAccounts.Items[1].DisplayOrder.Value);
     }
 
+    [Fact]
+    public void Accounts_AppliesIdentifierSetReplaceAndUnsetEvents()
+    {
+        var currencies = CreateCurrencies("GBP");
+        var accountID = AccountIDBuilder.Create();
+        var created = AccountCreatedEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, AuditDate, "Create account", accountID, "Account", "Account Formal", Alpha3Builder.Create("GBP"), true, currencies).Value!;
+        var first = AccountIdentifierSetEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), "Set ticker", accountID, new InstrumentIdentifier(InstrumentIdentifierType.Ticker, "FIRST")).Value!;
+        var replacement = AccountIdentifierSetEventBuilder.CreateSeed(Guid.CreateGuid7(), UserID, EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)), "Replace ticker", accountID, new InstrumentIdentifier(InstrumentIdentifierType.Ticker, "SECOND")).Value!;
+
+        var withIdentifier = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created, first, replacement]);
+
+        var identifier = Assert.Single(Assert.Single(withIdentifier.Items).Identifiers);
+        Assert.Equal("SECOND", identifier.Value);
+
+        var unset = AccountIdentifierUnsetEventBuilder.Create(new AccountIdentifierUnsetRequest(UserID, EventDate, "Unset ticker", accountID, InstrumentIdentifierType.Ticker)).Value!;
+        var withoutIdentifier = new Accounts(EventDate, AuditDateTimeBuilder.Create(DateTime.UtcNow), [created, first, replacement, unset]);
+        Assert.Empty(Assert.Single(withoutIdentifier.Items).Identifiers);
+    }
+
     private static readonly UserID UserID = new(Guid.Parse("2aaf4fa2-3d22-4420-90ac-03a028cebbeb"));
     private static readonly EventDateTime EventDate = EventDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-10));
     private static readonly AuditDateTime AuditDate = AuditDateTimeBuilder.Create(DateTime.UtcNow.AddMinutes(-9));

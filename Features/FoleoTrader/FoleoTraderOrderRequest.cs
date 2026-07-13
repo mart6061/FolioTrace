@@ -5,4 +5,5 @@ namespace FolioTrace.Aggregates;
 public sealed record FoleoTraderOrderRequest(
     UserID UserID,
     EventDateTime EventDateTime,
-    TicketNumber TicketNumber);
+    TicketNumber TicketNumber,
+    LegalEntityIdentifier BrokerLEI);

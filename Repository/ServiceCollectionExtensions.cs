@@ -33,13 +33,13 @@ public static class ServiceCollectionExtensions
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidFrom);
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidTo);
             options.Schema.For<FXRatePointReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
+            options.Schema.For<StoredFilePayload>();
         });
 
         services.AddSingleton<MartenEventRepository>();
-        services.AddScoped<IApiExchangeRepository, MartenApiExchangeRepository>();
+        services.AddScoped<IRequestTraceRepository, MartenRequestTraceRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
-        services.AddHostedService<InMemoryEventsRepositoryInitializer>();
         services.AddScoped<ISeedRepository, SeedRepository>();
 
         return services;

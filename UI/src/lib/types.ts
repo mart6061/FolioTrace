@@ -28,6 +28,7 @@ export type Account = {
   formalName: string;
   bookCurrency: string;
   bookCostBasis: ProfitLossMethod;
+  identifiers: InstrumentIdentifier[];
   active: boolean;
   displayOrder: number;
   valuationDateTime: string;
@@ -337,6 +338,20 @@ export type Currencies = {
   items: Currency[];
 };
 
+export type InputControlKind = 'Quantity' | 'Money';
+
+export type InputControlPolicy = {
+  controlKind: InputControlKind;
+  decimalPlaces: number;
+  minValue: number | null;
+  maxValue: number | null;
+  formatPattern: string;
+  formatSource: string;
+  allowNegative: boolean;
+  currency: string | null;
+  validationMessages: string[];
+};
+
 export type AssetAllocationNodeAccountSetting = {
   accountID: string;
   targetWeight: number | null;
@@ -446,6 +461,23 @@ export type ReportConfigs = {
   items: ReportConfig[];
 };
 
+export type TradeMethodKind = 'FIX' | 'Phone' | 'Fax' | 'TradeFile' | 'Manual';
+
+export type TradeMethod = {
+  $type: string;
+  type: TradeMethodKind;
+  enabled?: boolean;
+  host?: string;
+  port?: number;
+  senderCompID?: string;
+  targetCompID?: string;
+  heartbeatSeconds?: number;
+  fileNameTemplate?: string;
+  columns?: string[];
+  sendConfig?: unknown;
+  telephoneNumber?: string;
+};
+
 export type Broker = {
   name: string;
   lei: string;
@@ -453,7 +485,8 @@ export type Broker = {
   active: boolean;
   approvedDateTime: string;
   nextReview: string;
-  notes: string;
+    notes: string;
+    tradeMethods: TradeMethod[];
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -657,7 +690,13 @@ export type Ticket = {
   tradeCurrency: string;
   stage: TicketStage;
   proposalDecision: TicketDecision;
-  tradeDecision: TicketDecision;
+    tradeDecision: TicketDecision;
+    tradeExecutionStatus: 'Ready' | 'FIXRequested' | 'PendingTradeFile' | 'TradeFileRequested' | 'TradeFileCreated' | 'TradeFileSent' | 'TradeFileAcknowledged' | 'InProgress' | 'Failed' | 'Completed';
+    tradeExecutionMethod?: TradeMethodKind | null;
+    executionBrokerLEI?: string | null;
+    tradeFileID?: string | null;
+    tradeExecutionError: string;
+    isExecutionLocked: boolean;
   accountIDs: string[];
   proposalTargetPrice?: number | null;
   proposalAllocations: TicketProposalAllocation[];
@@ -683,6 +722,19 @@ export type Tickets = {
   lastEventID: string;
   lastAuditDateTime: string;
   items: Ticket[];
+};
+
+export type TradeFileStatus = 'Requested' | 'Created' | 'Sent' | 'Acknowledged' | 'InProgress' | 'Completed' | 'Failed';
+
+export type TradeFile = {
+  tradeFileID: string;
+  brokerLEI: string;
+  brokerName: string;
+  status: TradeFileStatus;
+  fileName: string;
+  error: string;
+  tickets: { ticketNumber: number; quantity: number; price: number; currency: string; isin: string; sedol: string }[];
+  confirmedTickets: number[];
 };
 
 export type FoleoTraderOrderStatus = 'Submitted' | 'PartiallyFilled' | 'Filled' | 'Rejected' | 'Failed';
@@ -794,6 +846,8 @@ export type AccountReferenceEvent = ReferenceEventBase & {
   bookCostBasis?: ProfitLossMethod;
   active?: boolean;
   displayOrder?: number;
+  identifier?: InstrumentIdentifier | null;
+  identifierType?: string | number;
 };
 
 export type HoldingReferenceEvent = ReferenceEventBase & {
@@ -878,6 +932,7 @@ export type MemoryDiagnostics = {
       recordedAtUtc: string;
     }[];
   };
+
   accountService?: {
     cacheEntryCount: number;
     accountCount: number;
@@ -980,7 +1035,7 @@ export type MemoryDiagnostics = {
   };
 };
 
-export type ApiHttpMessage = {
+export type TraceHttpMessage = {
   headers: Record<string, string[]>;
   body: string | null;
   contentType: string | null;
@@ -988,26 +1043,63 @@ export type ApiHttpMessage = {
   bodyTruncated: boolean;
 };
 
-export type ApiExchange = {
-  id: string;
+export type RequestTraceException = {
+  recordedAtUtc: string;
+  exceptionType: string | null;
+  exceptionMessage: string | null;
+  stackTrace: string | null;
+};
+
+export type TraceLogEntry = {
+  recordedAtUtc: string;
+  level: string;
+  category: string;
+  eventId: string | null;
+  message: string;
+  exceptionType: string | null;
+  exceptionMessage: string | null;
+  stackTrace: string | null;
+};
+
+export type RequestTrace = {
+  requestId: string;
+  source: string;
   startedAtUtc: string;
-  completedAtUtc: string;
-  durationMilliseconds: number;
+  completedAtUtc: string | null;
+  durationMilliseconds: number | null;
   method: string;
   path: string;
   queryString: string;
   statusCode: number | null;
-  exceptionType: string | null;
-  exceptionMessage: string | null;
-  request: ApiHttpMessage;
-  response: ApiHttpMessage;
+  hasResponse: boolean;
+  hasException: boolean;
+  logCount: number;
+  request: TraceHttpMessage | null;
+  response: TraceHttpMessage | null;
+  exception: RequestTraceException | null;
+  logs: TraceLogEntry[];
 };
 
-export type ApiExchangeSearchResponse = {
-  items: ApiExchange[];
+export type RequestTraceSettings = {
+  enabled: boolean;
+  captureApi: boolean;
+  captureUi: boolean;
+  captureBodies: boolean;
+  capture500StackTraces: boolean;
+  captureLogMessages: boolean;
+  minimumLogLevel: string;
+  maximumBodyCharacters: number;
+  capturedContentTypePrefixes: string[];
+  excludedPathPrefixes: string[];
+  redactedHeaders: string[];
+};
+
+export type RequestTraceSearchResponse = {
+  items: RequestTrace[];
   totalCount: number;
   page: number;
   pageSize: number;
+  settings: RequestTraceSettings;
 };
 
 export type FIXOperation = {
@@ -1052,7 +1144,8 @@ export type AggregateKind =
   | 'Instruments'
   | 'InstrumentValues'
   | 'ReportConfigs'
-  | 'Tickets'
+    | 'Tickets'
+    | 'TradeFiles'
   | 'Users'
   | 'UserBookmarks'
   | 'UserMenuPreferences'

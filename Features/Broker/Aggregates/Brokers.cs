@@ -86,6 +86,12 @@ public sealed record Brokers : IAggregate
             case BrokerNotesSetEvent notesSetEvent:
                 Apply(notesSetEvent);
                 break;
+            case BrokerTradeMethodSetEventBase tradeMethodSetEvent:
+                Apply(tradeMethodSetEvent);
+                break;
+            case BrokerTradeMethodUnsetEvent tradeMethodUnsetEvent:
+                Apply(tradeMethodUnsetEvent);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported broker event type '{brokerEvent.GetType().Name}'.");
         }
@@ -136,6 +142,20 @@ public sealed record Brokers : IAggregate
         var index = FindIndex(notesSetEvent.LEI);
         Items[index] = Items[index].Apply(notesSetEvent);
         UpdateProvenance(notesSetEvent);
+    }
+
+    public void Apply(BrokerTradeMethodSetEventBase setEvent)
+    {
+        var index = FindIndex(setEvent.LEI);
+        Items[index] = Items[index].Apply(setEvent);
+        UpdateProvenance(setEvent);
+    }
+
+    public void Apply(BrokerTradeMethodUnsetEvent unsetEvent)
+    {
+        var index = FindIndex(unsetEvent.LEI);
+        Items[index] = Items[index].Apply(unsetEvent);
+        UpdateProvenance(unsetEvent);
     }
 
     private int FindIndex(LegalEntityIdentifier lei)

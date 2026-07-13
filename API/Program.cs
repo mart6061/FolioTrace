@@ -1,6 +1,7 @@
 using API;
 using API.Auth;
 using API.FoleoTrader;
+using API.TradeFiles;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Logging;
 using Repository;
@@ -60,18 +61,30 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
 });
 builder.Services.AddSingleton<ApiVersionInfo>();
+builder.Services.Configure<ApiReadinessOptions>(builder.Configuration.GetSection(ApiReadinessOptions.SectionName));
+builder.Services.AddSingleton<ApiReadinessState>();
+builder.Services.AddHostedService<EventStoreStartupHostedService>();
 builder.Services.AddSingleton<BuildCoordinator>();
 builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
 builder.Services.AddSingleton<FoleoTraderOrderProcessor>();
 builder.Services.AddSingleton<FoleoTraderFIXOperationRecorder>();
 builder.Services.AddSingleton<FoleoTraderFixClient>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<FoleoTraderFixClient>());
+builder.Services.Configure<TradeFileOptions>(builder.Configuration.GetSection(TradeFileOptions.SectionName));
+builder.Services.AddSingleton<TradeFileWorkbookGenerator>();
+builder.Services.AddHttpClient<ITradeFileSender, FoleoTraderTradeFileSender>();
+builder.Services.AddSingleton<TradeFileWorkflowService>();
+builder.Services.AddHostedService<TradeFileProcessingHostedService>();
 builder.Services.AddSingleton(
     builder.Configuration
         .GetSection(AggregateMaintenanceOptions.SectionName)
         .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
+builder.Services.Configure<RequestTraceOptions>(builder.Configuration.GetSection(RequestTraceOptions.SectionName));
+builder.Services.AddSingleton<RequestTraceSettingsService>();
+builder.Services.AddSingleton<RequestTraceLogQueue>();
+builder.Services.AddHostedService<RequestTraceLogBackgroundService>();
 builder.Services.AddSingleton<IWorkOSAuthKitClient, WorkOSAuthKitClient>();
 builder.Services.AddSingleton<IWorkOSSsoClient>(sp => (IWorkOSSsoClient)sp.GetRequiredService<IWorkOSAuthKitClient>());
 builder.Services.AddSingleton<WorkOSAuthorizationStateService>();
@@ -94,9 +107,10 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseRequestTraceCapture();
 app.UseApiRequestLogging();
-app.UseApiExchangeCapture();
 app.UseApiUnhandledExceptionLogging();
+app.UseMiddleware<ApiReadinessMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

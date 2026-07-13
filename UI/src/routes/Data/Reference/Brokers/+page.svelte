@@ -194,7 +194,6 @@
             <th>Status</th>
             <th>Approved</th>
             <th>Next review</th>
-            <th>Notes</th>
             <th>Last audit</th>
           </tr>
         </thead>
@@ -207,7 +206,6 @@
               <td>${htmlValue(row.active)}</td>
               <td>${htmlValue(row.approvedDateTime)}</td>
               <td>${htmlValue(row.nextReview)}</td>
-              <td>${htmlValue(row.notes)}</td>
               <td>${htmlValue(row.lastAuditDateTime)}</td>
             </tr>
           `).join('')}
@@ -337,6 +335,17 @@
     return value.toLocaleString(undefined, { maximumFractionDigits: 8, minimumFractionDigits: 0 });
   }
 
+  function hasMeaningfulDate(value: string) {
+    if (!value) return false;
+
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime()) && date.getUTCFullYear() > 1;
+  }
+
+  function isPastReview(value: string) {
+    return hasMeaningfulDate(value) && new Date(value).getTime() < Date.now();
+  }
+
   function inputDateTime(value: string) {
     const date = new Date(value);
 
@@ -418,7 +427,7 @@
         </div>
       </div>
 
-      <div class="data-panel">
+      <div class="data-panel" style="--house-panel-top: var(--brand-green)">
         <div class="table-toolbar">
           <label class="table-filter">
             <span class="sr-only">Filter brokers</span>
@@ -460,13 +469,12 @@
                 <th class="min-w-28 px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('active')} type="button">Status{sortLabel('active')}</button>
                 </th>
-                <th class="min-w-44 px-3 py-2">
+                <th class="w-24 px-3 py-2 text-center">
                   <button class="table-sort-button" onclick={() => setSort('approved')} type="button">Approved{sortLabel('approved')}</button>
                 </th>
                 <th class="min-w-44 px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('nextReview')} type="button">Next review{sortLabel('nextReview')}</button>
                 </th>
-                <th class="min-w-56 px-3 py-2">Notes</th>
                 <th class="min-w-36 px-3 py-2">
                   <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">Last audit{sortLabel('lastAudit')}</button>
                 </th>
@@ -481,6 +489,10 @@
                       <label class="grid gap-1 text-xs font-medium text-slate-600">
                         <span>Broker</span>
                         <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={form?.intent === 'createBroker' ? formText('name') : ''} />
+                      </label>
+                      <label class="mt-2 grid gap-1 text-xs font-medium text-slate-600">
+                        <span>Notes</span>
+                        <input class="house-control house-control-sm house-control-full" name="notes" type="text" value={form?.intent === 'createBroker' ? formText('notes') : ''} />
                       </label>
                     </form>
                   </td>
@@ -519,12 +531,6 @@
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
-                      <span>Notes</span>
-                      <input class="house-control house-control-sm house-control-full" form="broker-create" name="notes" type="text" value={form?.intent === 'createBroker' ? formText('notes') : ''} />
-                    </label>
-                  </td>
-                  <td class="px-3 py-2">
-                    <label class="grid gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Event date</span>
                       <DateTimeInput size="sm" form="broker-create" name="eventDateTime" required step="1" value={form?.intent === 'createBroker' ? formText('eventDateTime', eventDateDefault) : eventDateDefault} />
                     </label>
@@ -550,6 +556,14 @@
                         <label class="grid gap-1 text-xs font-medium text-slate-600">
                           <span>Broker</span>
                           <input class="house-control house-control-sm house-control-full" name="name" required type="text" value={form?.lei === broker.lei ? formText('name', broker.name) : broker.name} />
+                        </label>
+                      </form>
+                      <form class="mt-2" id={`broker-notes-${broker.lei}`} action="?/setBrokerNotes" method="POST" use:enhance={enhanceBrokerAction('setBrokerNotes')}>
+                        <input name="lei" type="hidden" value={broker.lei} />
+                        <input name="eventDateTime" type="hidden" value={eventDateDefault} />
+                        <label class="grid gap-1 text-xs font-medium text-slate-600">
+                          <span>Notes</span>
+                          <input class="house-control house-control-sm house-control-full" name="notes" type="text" value={form?.lei === broker.lei ? formText('notes', broker.notes) : broker.notes} />
                         </label>
                       </form>
                     </td>
@@ -599,16 +613,6 @@
                       </form>
                     </td>
                     <td class="px-3 py-2">
-                      <form id={`broker-notes-${broker.lei}`} action="?/setBrokerNotes" method="POST" use:enhance={enhanceBrokerAction('setBrokerNotes')}>
-                        <input name="lei" type="hidden" value={broker.lei} />
-                        <input name="eventDateTime" type="hidden" value={eventDateDefault} />
-                        <label class="grid gap-1 text-xs font-medium text-slate-600">
-                          <span>Notes</span>
-                          <input class="house-control house-control-sm house-control-full" name="notes" type="text" value={form?.lei === broker.lei ? formText('notes', broker.notes) : broker.notes} />
-                        </label>
-                      </form>
-                    </td>
-                    <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`broker-edit-${broker.lei}`}>
                         <span>Event date</span>
                         <DateTimeInput size="sm" form={`broker-edit-${broker.lei}`} name="eventDateTime" required step="1" value={form?.lei === broker.lei ? formText('eventDateTime', eventDateDefault) : eventDateDefault} />
@@ -637,9 +641,18 @@
                         {broker.active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td class="px-3 py-2 text-slate-600">{formatTableDateTime(broker.approvedDateTime)}</td>
-                    <td class="px-3 py-2 text-slate-600">{formatTableDateTime(broker.nextReview)}</td>
-                    <td class="max-w-72 truncate px-3 py-2 text-slate-600" title={broker.notes}>{broker.notes}</td>
+                    <td class="px-3 py-2 text-center">
+                      {#if hasMeaningfulDate(broker.approvedDateTime)}
+                        <span aria-label="Approved" class="text-base font-bold text-emerald-700" title={formatTableDateTime(broker.approvedDateTime)}>✓</span>
+                      {/if}
+                    </td>
+                    <td class="px-3 py-2 text-slate-600">
+                      {#if isPastReview(broker.nextReview)}
+                        <span class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">{formatTableDateTime(broker.nextReview)}</span>
+                      {:else}
+                        {formatTableDateTime(broker.nextReview)}
+                      {/if}
+                    </td>
                     <td class="px-3 py-2 text-slate-600">{formatTableDateTime(broker.lastAuditDateTime)}</td>
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-2">
@@ -655,7 +668,7 @@
                   {#if openHistoryLei === broker.lei}
                     {@const history = historyByLei[broker.lei]}
                     <tr class="bg-slate-50/80">
-                      <td class="px-3 py-3" colspan="9">
+                      <td class="px-3 py-3" colspan="8">
                         <div>
                           {#if history?.loading}
                             <div class="text-sm text-slate-600">Loading history...</div>
@@ -676,7 +689,7 @@
                 {/if}
               {:else}
                 <tr>
-                  <td class="px-3 py-8 text-center text-sm text-slate-500" colspan="9">No brokers found.</td>
+                  <td class="px-3 py-8 text-center text-sm text-slate-500" colspan="8">No brokers found.</td>
                 </tr>
               {/each}
             </tbody>

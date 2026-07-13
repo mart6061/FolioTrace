@@ -1,4 +1,5 @@
 using FolioTrace.Common;
+using FolioTrace.Aggregates;
 using FolioTrace.Types;
 using Marten;
 
@@ -9,6 +10,7 @@ public sealed class MartenEventRepository(IDocumentStore store)
     public async Task ClearAsync(CancellationToken cancellationToken = default)
     {
         await store.Advanced.Clean.DeleteAllEventDataAsync(cancellationToken);
+        await store.Advanced.Clean.DeleteDocumentsByTypeAsync(typeof(StoredFilePayload), cancellationToken);
     }
 
     public async Task<IReadOnlyList<StoredEvent>> LoadAllAsync(CancellationToken cancellationToken = default)
@@ -75,5 +77,22 @@ public sealed class MartenEventRepository(IDocumentStore store)
 
         session.Events.Append(streamId, events.Cast<object>());
         await session.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> streams, StoredFilePayload? storedFile = null, CancellationToken cancellationToken = default)
+    {
+        await using var session = store.LightweightSession();
+        foreach (var stream in streams)
+            if (stream.Value.Count > 0)
+                session.Events.Append(stream.Key, stream.Value.Cast<object>());
+        if (storedFile is not null)
+            session.Store(storedFile);
+        await session.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<StoredFilePayload?> LoadStoredFileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await using var session = store.QuerySession();
+        return await session.LoadAsync<StoredFilePayload>(id, cancellationToken);
     }
 }

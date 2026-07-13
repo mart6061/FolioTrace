@@ -25,6 +25,8 @@ public sealed class AccountService(IEventRepository eventRepository) : IReferenc
     public int Invalidate(AccountModifiedEvent @event) => InvalidateFrom(@event.EventDateTime);
     public int Invalidate(AccountActiveSetEvent @event) => InvalidateFrom(@event.EventDateTime);
     public int Invalidate(AccountDisplayOrderSetEvent @event) => InvalidateFrom(@event.EventDateTime);
+    public int Invalidate(AccountIdentifierSetEvent @event) => InvalidateFrom(@event.EventDateTime);
+    public int Invalidate(AccountIdentifierUnsetEvent @event) => InvalidateFrom(@event.EventDateTime);
 
     public bool IsCached(EventDateTime valuationDate)
     {

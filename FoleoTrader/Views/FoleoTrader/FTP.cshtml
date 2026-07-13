@@ -1,0 +1,64 @@
+@model FoleoTraderFTPViewModel
+@{
+    ViewData["Title"] = "FTP";
+}
+
+@if (Model.Files.Count == 0)
+{
+    <p class="muted">No TradeFiles have been received by the FTP simulator.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Received UTC</th>
+                <th>File</th>
+                <th>Broker LEI</th>
+                <th>Size</th>
+                <th>Tickets</th>
+                <th>Progress</th>
+                <th>Next confirmation UTC</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var file in Model.Files)
+            {
+                <tr>
+                    <td>@file.ReceivedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td><code>@file.Request.FileName</code></td>
+                    <td><code>@file.Request.BrokerLEI</code></td>
+                    <td>@file.Request.Content.LongLength.ToString("N0") bytes</td>
+                    <td>
+                        <details>
+                            <summary>@file.Request.Tickets.Count ticket@(file.Request.Tickets.Count == 1 ? string.Empty : "s")</summary>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ticket</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ticket in file.Request.Tickets)
+                                    {
+                                        <tr>
+                                            <td>@ticket.TicketNumber</td>
+                                            <td>@ticket.Quantity</td>
+                                            <td>@ticket.Price</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </details>
+                    </td>
+                    <td>@file.ConfirmedTicketCount / @file.Request.Tickets.Count</td>
+                    <td>@(file.IsComplete ? "-" : file.NextConfirmationAtUtc.ToString("yyyy-MM-dd HH:mm:ss"))</td>
+                    <td><span class="status @(file.IsComplete ? "complete" : null)">@(file.IsComplete ? "Complete" : "Processing")</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

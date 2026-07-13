@@ -13,6 +13,11 @@ public sealed record Ticket : IModel
     public required TicketStage Stage { get; init; }
     public required TicketDecision ProposalDecision { get; init; }
     public required TicketDecision TradeDecision { get; init; }
+    public required TicketTradeExecutionStatus TradeExecutionStatus { get; init; }
+    public TradeMethodType? TradeExecutionMethod { get; init; }
+    public LegalEntityIdentifier? ExecutionBrokerLEI { get; init; }
+    public TradeFileID? TradeFileID { get; init; }
+    public string TradeExecutionError { get; init; } = string.Empty;
     public required List<AccountID> AccountIDs { get; init; } = [];
     public Price? ProposalTargetPrice { get; init; }
     public required List<TicketProposalAllocation> ProposalAllocations { get; init; } = [];
@@ -30,6 +35,12 @@ public sealed record Ticket : IModel
     public required EventID LastEventID { get; init; } = null!;
     public required LastAuditDateTime LastAuditDateTime { get; init; } = null!;
     public bool IsActive => Stage is not TicketStage.Completed and not TicketStage.Cancelled;
+    public bool IsExecutionLocked => TradeExecutionStatus is TicketTradeExecutionStatus.FIXRequested
+        or TicketTradeExecutionStatus.PendingTradeFile
+        or TicketTradeExecutionStatus.TradeFileRequested
+        or TicketTradeExecutionStatus.TradeFileCreated
+        or TicketTradeExecutionStatus.TradeFileSent
+        or TicketTradeExecutionStatus.TradeFileAcknowledged;
 
     [JsonConstructor]
     [SetsRequiredMembers]

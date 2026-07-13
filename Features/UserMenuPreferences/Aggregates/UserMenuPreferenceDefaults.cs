@@ -5,54 +5,61 @@ public static class UserMenuPreferenceDefaults
     public const string Bookmarks = "bookmarks";
     public const string Blotter = "blotter";
     public const string Viewer = "viewer";
-    public const string Asset = "asset";
-    public const string Report = "report";
     public const string Account = "account";
-    public const string Administration = "administration";
-    public const string System = "system";
-    public const string Data = "data";
-    public const string Value = "value";
-    public const string Reference = "reference";
-    public const string Configuration = "configuration";
+    public const string DataList = "data-list";
+    public const string DataListFX = "data-list-fx";
+    public const string DataListInstrument = "data-list-instrument";
+    public const string DataListISO = "data-list-iso";
+    public const string DataListHolding = "data-list-holding";
+    public const string DataListBroker = "data-list-broker";
     public const string ConfigurationAssetAllocation = "configuration-asset-allocation";
     public const string Tools = "tools";
     public const string ConfigurationAccountTools = "configuration-account-tools";
     public const string ConfigurationAssetAllocationTools = "configuration-asset-allocation-tools";
     public const string ConfigurationReportTools = "configuration-report-tools";
-    public const string Internals = "internals";
+    public const string Diagnostics = "diagnostics";
     public const string SystemLogs = "system-logs";
     public const string SystemFixTrace = "system-fix-trace";
     public const string SystemStats = "system-stats";
+    public const string Ideas = "ideas";
 
     public static readonly IReadOnlyList<string> ControlledMenuItemIDs =
     [
         Bookmarks,
         Blotter,
         Viewer,
-        Asset,
-        Report,
         Account,
-        Administration,
-        System,
-        Data,
-        Value,
-        Reference,
-        Configuration,
-        ConfigurationAssetAllocation,
+        DataList,
+        DataListFX,
+        DataListInstrument,
+        DataListISO,
+        DataListHolding,
+        DataListBroker,
         Tools,
         ConfigurationAccountTools,
+        ConfigurationAssetAllocation,
         ConfigurationAssetAllocationTools,
         ConfigurationReportTools,
-        Internals,
+        Diagnostics,
         SystemLogs,
         SystemFixTrace,
-        SystemStats
+        SystemStats,
+        Ideas
     ];
 
     private static readonly HashSet<string> ControlledMenuItemIDSet = ControlledMenuItemIDs.ToHashSet(StringComparer.Ordinal);
     private static readonly Dictionary<string, string> LegacyMenuItemIDs = new(StringComparer.Ordinal)
     {
-        ["value-valuations"] = Asset,
+        ["asset"] = Viewer,
+        ["report"] = Viewer,
+        ["administration"] = Tools,
+        ["system"] = Diagnostics,
+        ["data"] = DataList,
+        ["value"] = Viewer,
+        ["reference"] = DataList,
+        ["configuration"] = Tools,
+        ["internals"] = Diagnostics,
+        ["value-valuations"] = Viewer,
         ["reference-valuation-setting"] = ConfigurationAssetAllocationTools,
         ["configuration-valuation-setting"] = ConfigurationAssetAllocationTools
     };

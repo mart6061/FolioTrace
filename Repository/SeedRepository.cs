@@ -8,7 +8,7 @@ namespace Repository;
 
 public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository) : ISeedRepository
 {
-    private const int TotalBuildSteps = 16;
+    private const int TotalBuildSteps = 17;
     private const int SeedTransactionMonths = 12;
     private const int SeedStocksPerAccount = 3;
 
@@ -39,6 +39,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         await CreateCurrencySetupEvents(progress, cancellationToken);
         await CreateBrokerSetupEvents(progress, cancellationToken);
         await CreateAccountSetupEvents(progress, cancellationToken);
+        await CreateInputControlSettingsSetupEvents(progress, cancellationToken);
         await CreateValuationSettingSetupEvents(progress, cancellationToken);
         await CreateReportSetupEvents(progress, cancellationToken);
         await CreateFXSetupEvents(progress, cancellationToken);
@@ -206,7 +207,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     private async Task CreateBrokerSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
         var createdEvents = CreateInitialBrokerCreatedEvents();
-        var eventCount = createdEvents.Count;
+        var tradeMethodEvents = CreateInitialBrokerTradeMethodSetEvents();
+        var eventCount = createdEvents.Count + tradeMethodEvents.Count;
 
         progress("Brokers", $"Seeding {eventCount:N0} broker events.", 0, false);
 
@@ -214,6 +216,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             Constants.Initialisation.BrokersStreamId,
             createdEvents,
             cancellationToken);
+
+        await AppendEvents(Constants.Initialisation.BrokersStreamId, tradeMethodEvents, cancellationToken);
 
         progress("Brokers", $"Seeded {eventCount:N0} broker events.", eventCount, true);
     }
@@ -250,13 +254,15 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
     ];
 
     private static readonly string[] SeedInvestableCashCurrencies = ["GBP", "EUR", "USD", "JPY", "CHF"];
+    private static readonly string[] SeedAccountIdentifiers = ["GIA", "ISA", "SIPP", "USBRK", "EURBRK", "INCOME", "TREAS", "SWISS", "JAPAN", "MODEL"];
 
     private async Task CreateAccountSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
         var createdEvents = CreateInitialAccountCreatedEvents();
         var modifiedEvents = CreateInitialAccountModifiedEvents();
         var activeEvents = CreateInitialAccountActiveModifiedEvents();
-        var eventCount = createdEvents.Count + modifiedEvents.Count + activeEvents.Count;
+        var identifierEvents = CreateInitialAccountIdentifierSetEvents();
+        var eventCount = createdEvents.Count + modifiedEvents.Count + activeEvents.Count + identifierEvents.Count;
 
         progress("Accounts", $"Seeding {eventCount:N0} account events.", 0, false);
 
@@ -273,6 +279,11 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         await AppendEvents(
             Constants.Initialisation.AccountsStreamId,
             activeEvents,
+            cancellationToken);
+
+        await AppendEvents(
+            Constants.Initialisation.AccountsStreamId,
+            identifierEvents,
             cancellationToken);
 
         progress("Accounts", $"Seeded {eventCount:N0} account events.", eventCount, true);
@@ -292,6 +303,26 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 Alpha3Builder.Create(account.BookCurrency),
                 account.Active).Value!)
             .ToList();
+
+    public static IReadOnlyList<IBrokerEvent> CreateInitialBrokerTradeMethodSetEvents()
+    {
+        var methods = SeedBrokers.Select(broker => (broker.LEI, Method: (ITradeMethod)new ManualTradeMethod())).ToList();
+        methods.Add((SeedBrokers[0].LEI, new FIXTradeMethod("localhost", 9878, "FOLEOAPI", "FOLEOTRADER", 20)));
+        var tradeFileSendConfig = new FTPTradeMethodFileSendConfig("foleotrader", 21, "/incoming", "foliotrace", null);
+        methods.AddRange(SeedBrokers.Skip(1).Take(3).Select(broker => (broker.LEI, Method: (ITradeMethod)new TradeFileTradeMethod(
+            new FileNameTemplate("{brokername}{yyyymmddhhmmssnn}.xlsx"),
+            [TradeFileColumn.TicketID, TradeFileColumn.ISIN, TradeFileColumn.Sedol, TradeFileColumn.Quantity, TradeFileColumn.Price, TradeFileColumn.Currency],
+            tradeFileSendConfig))));
+
+        return methods.Select((item, index) => BrokerTradeMethodEventBuilder.SetSeed(
+            Guid.CreateGuid7(),
+            Constants.Initialisation.UserID,
+            EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(30 + index)),
+            AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(30 + index)),
+            Constants.Initialisation.Reason,
+            new LegalEntityIdentifier(item.LEI),
+            item.Method).Value!).ToList();
+    }
 
     public static IReadOnlyList<AccountModifiedEvent> CreateInitialAccountModifiedEvents()
     {
@@ -334,6 +365,57 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                 account.AccountID,
                 account.Item2).Value!)
             .ToList();
+    }
+
+    public static IReadOnlyList<AccountIdentifierSetEvent> CreateInitialAccountIdentifierSetEvents() =>
+        SeedAccounts.Select((account, index) => AccountIdentifierSetEventBuilder.CreateSeed(
+            Guid.CreateGuid7(),
+            Constants.Initialisation.UserID,
+            EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(50 + index)),
+            AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(50 + index)),
+            Constants.Initialisation.Reason,
+            account.AccountID,
+            new InstrumentIdentifier(InstrumentIdentifierType.Ticker, SeedAccountIdentifiers[index])).Value!).ToList();
+
+    private async Task CreateInputControlSettingsSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var createdEvents = CreateInitialInputControlSettingsCreatedEvents();
+        var eventCount = createdEvents.Count;
+
+        progress("Input policies", $"Seeding {eventCount:N0} input control setting events.", 0, false);
+
+        await StoreEvents<InputControlSettings, InputControlSettingsCreatedEvent>(
+            Constants.Initialisation.InputControlSettingsStreamId,
+            createdEvents,
+            cancellationToken);
+
+        progress("Input policies", $"Seeded {eventCount:N0} input control setting events.", eventCount, true);
+    }
+
+    public static IReadOnlyList<InputControlSettingsCreatedEvent> CreateInitialInputControlSettingsCreatedEvents()
+    {
+        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(44));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(44));
+        var usAccountID = SeedAccounts.Single(account => account.Name == "US Broker").AccountID;
+
+        var settings = new List<InputControlSettingDefinition>
+        {
+            new(InputControlKind.Quantity, InputControlSettingScope.Global, null, null, 4, 0.0001m, null, "#,##0.####", false),
+            new(InputControlKind.Money, InputControlSettingScope.Global, null, null, null, 0m, null, "#,##0.00##", false),
+            new(InputControlKind.Quantity, InputControlSettingScope.User, null, Constants.Initialisation.UserID, 6, null, null, "#,##0.######", null),
+            new(InputControlKind.Quantity, InputControlSettingScope.Account, usAccountID, null, 2, 1m, null, "#,##0.##", false)
+        };
+
+        return
+        [
+            InputControlSettingsCreatedEventBuilder.CreateSeed(
+                Guid.CreateGuid7(),
+                Constants.Initialisation.UserID,
+                eventDateTime,
+                auditDateTime,
+                Constants.Initialisation.Reason,
+                settings).Value!
+        ];
     }
 
     private async Task CreateValuationSettingSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
@@ -1382,9 +1464,12 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var currencyEvents = CreateInitialCurrencyCreatedEvents().Count
             + CreateInitialCurrencyModifiedEvents().Count;
         var brokerEvents = CreateInitialBrokerCreatedEvents().Count;
+        brokerEvents += CreateInitialBrokerTradeMethodSetEvents().Count;
         var accountEvents = CreateInitialAccountCreatedEvents().Count
             + CreateInitialAccountModifiedEvents().Count
-            + CreateInitialAccountActiveModifiedEvents().Count;
+            + CreateInitialAccountActiveModifiedEvents().Count
+            + CreateInitialAccountIdentifierSetEvents().Count;
+        var inputControlSettingEvents = CreateInitialInputControlSettingsCreatedEvents().Count;
         var valuationSettingEvents = CreateInitialAssetAllocationCreatedEvents().Count;
         var reportEvents = CreateInitialReportCreatedEvents().Count;
         var pairSeeds = SeedFXData.CreatePairSeeds();
@@ -1400,7 +1485,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var holdingEvents = holdingCreatedEvents.Count;
         var transactionEvents = CreateInitialTransactionEvents(instrumentSeeds, holdingCreatedEvents).Count;
 
-        return countryEvents + currencyEvents + brokerEvents + accountEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents;
+        return countryEvents + currencyEvents + brokerEvents + accountEvents + inputControlSettingEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents;
     }
 
     private sealed class SeedPositionState

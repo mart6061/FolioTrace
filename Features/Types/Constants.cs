@@ -38,6 +38,8 @@ public static class Constants
         public static readonly Guid TransactionsStreamId = Guid.Parse("9e6cc40d-df4f-4e6a-aa0e-d624635bcf68");
 
         public static readonly Guid TicketsStreamId = Guid.Parse("f389de8b-08e0-4e05-8b46-76f37f0dfb72");
+        public static readonly Guid TradeFilesStreamId = Guid.Parse("ec99041a-6b1c-4ed5-b291-539d0e421f65");
+        public static readonly Guid StoredFilesStreamId = Guid.Parse("5fc05bd2-3946-45c3-8706-ea5e109d24c7");
 
         public static readonly Guid UsersStreamId = Guid.Parse("02ff99c6-dfe9-4e61-aa02-bd1ca3a540a2");
 
@@ -52,6 +54,8 @@ public static class Constants
         public static readonly Guid ReportConfigsStreamId = Guid.Parse("d977f753-fae7-411a-938c-27c6a7d51769");
 
         public static readonly Guid UserBookmarksStreamId = Guid.Parse("4f8e4ab1-7cc9-43f8-b11b-ec8932f1b8b7");
+
+        public static readonly Guid InputControlSettingsStreamId = Guid.Parse("a6501be1-3d19-4765-b4ec-61bf3ec75c79");
 
         public static readonly EventID EmptyViewEventID = Guid.Parse("11111111-1111-4111-8111-111111111111");
 

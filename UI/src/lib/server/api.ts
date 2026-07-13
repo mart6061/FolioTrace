@@ -2,7 +2,6 @@ import { env } from '$env/dynamic/private';
 import type {
   Accounts,
   AccountReferenceEvent,
-  ApiExchangeSearchResponse,
   AssetAllocationMappings,
   Brokers,
   BrokerReferenceEvent,
@@ -19,6 +18,8 @@ import type {
   Holdings,
   HoldingPositions,
   HoldingKind,
+  InputControlKind,
+  InputControlPolicy,
   HoldingReferenceEvent,
   InstrumentLogo,
   InstrumentReferenceEvent,
@@ -47,6 +48,8 @@ import type {
   ProfitLossMethod,
   ReportConfigs,
   ReportNodeBase,
+  RequestTraceSearchResponse,
+  RequestTraceSettings,
   Valuations,
   ValuationSettings,
   ValuationSettingReferenceEvent
@@ -92,6 +95,16 @@ export type AccountDisplayOrderSetRequest = {
   accountID: string;
   displayOrder: number;
 };
+
+export type AccountIdentifierSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  accountID: string;
+  identifierType: InstrumentIdentifierSetRequest['identifierType'];
+  identifierValue: string;
+};
+
+export type AccountIdentifierUnsetRequest = Omit<AccountIdentifierSetRequest, 'identifierValue'>;
 
 export type HoldingCreatedRequest = {
   eventDateTime: string;
@@ -139,6 +152,16 @@ export type HoldingQueryOptions = {
   instrumentID?: string | null;
   holdingKind?: HoldingKind | null;
   includeInactive?: boolean;
+};
+
+export type InputPolicyQueryOptions = {
+  accountID?: string | null;
+  allowNegative?: boolean | null;
+  auditDateTime?: string | null;
+  controlKinds?: InputControlKind[];
+  currency?: string | null;
+  eventDateTime: string;
+  userID?: string | null;
 };
 
 export type CurrencyModifiedRequest = {
@@ -459,6 +482,7 @@ export type FoleoTraderOrderRequest = {
   userID: string;
   eventDateTime: string;
   ticketNumber: number;
+  brokerLEI: string;
 };
 
 export type FoleoTraderOrderSubmissionResponse = {
@@ -757,6 +781,31 @@ export async function getCurrencies(
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
   return (await response.json()) as Currencies;
+}
+
+export async function getInputPolicies(fetchApi: typeof fetch, options: InputPolicyQueryOptions) {
+  const url = new URL(`${getApiBaseUrl()}/InputPolicies/`);
+  url.searchParams.set('eventDateTime', options.eventDateTime);
+
+  if (options.auditDateTime)
+    url.searchParams.set('auditDateTime', options.auditDateTime);
+  if (options.accountID)
+    url.searchParams.set('accountID', options.accountID);
+  if (options.userID)
+    url.searchParams.set('userID', options.userID);
+  if (options.currency)
+    url.searchParams.set('currency', options.currency);
+  if (typeof options.allowNegative === 'boolean')
+    url.searchParams.set('allowNegative', String(options.allowNegative));
+  if (options.controlKinds?.length)
+    url.searchParams.set('controlKinds', options.controlKinds.join(','));
+
+  const response = await fetchApi(url);
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as InputControlPolicy[];
 }
 
 export async function getValuationSettings(
@@ -1253,7 +1302,7 @@ export async function postSystemClearCacheAndProjections(fetchApi: typeof fetch)
   };
 }
 
-export type ApiExchangeSearchRequest = {
+export type RequestTraceSearchRequest = {
   fromUtc?: string;
   toUtc?: string;
   method?: string;
@@ -1279,7 +1328,7 @@ export type FIXOperationSearchRequest = {
   pageSize?: string;
 };
 
-export async function getApiExchanges(fetchApi: typeof fetch, request: ApiExchangeSearchRequest) {
+export async function getRequestTraces(fetchApi: typeof fetch, request: RequestTraceSearchRequest) {
   const url = new URL(`${getApiBaseUrl()}/Diagnostics/RequestTrace`);
 
   for (const [key, value] of Object.entries(request)) {
@@ -1292,7 +1341,33 @@ export async function getApiExchanges(fetchApi: typeof fetch, request: ApiExchan
   if (!response.ok)
     throw new Error(`API returned ${response.status} ${response.statusText}`);
 
-  return (await response.json()) as ApiExchangeSearchResponse;
+  return (await response.json()) as RequestTraceSearchResponse;
+}
+
+export async function putRequestTraceSettings(fetchApi: typeof fetch, settings: RequestTraceSettings) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Diagnostics/RequestTrace/Settings`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(settings)
+  });
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as RequestTraceSettings;
+}
+
+export async function purgeRequestTraces(fetchApi: typeof fetch, confirmation: string, beforeUtc: string | null) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Diagnostics/RequestTrace/Purge`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ confirmation, beforeUtc: beforeUtc || null })
+  });
+
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+
+  return (await response.json()) as { deletedCount: number };
 }
 
 export async function getFIXOperations(fetchApi: typeof fetch, request: FIXOperationSearchRequest) {
@@ -1357,6 +1432,14 @@ export async function postAccountDisplayOrderSetEvent(
   userID: string
 ) {
   return postAccountEvent(fetchApi, 'AccountDisplayOrderSetEvent', request, userID);
+}
+
+export async function postAccountIdentifierSetEvent(fetchApi: typeof fetch, request: AccountIdentifierSetRequest, userID: string) {
+  return postAccountEvent(fetchApi, 'AccountIdentifierSetEvent', request, userID);
+}
+
+export async function postAccountIdentifierUnsetEvent(fetchApi: typeof fetch, request: AccountIdentifierUnsetRequest, userID: string) {
+  return postAccountEvent(fetchApi, 'AccountIdentifierUnsetEvent', request, userID);
 }
 
 export async function postHoldingCreatedEvent(
@@ -1839,10 +1922,11 @@ export async function postFoleoTraderOrder(fetchApi: typeof fetch, request: Fole
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      UserID: request.userID,
-      EventDateTime: request.eventDateTime,
-      TicketNumber: request.ticketNumber
-    })
+        UserID: request.userID,
+        EventDateTime: request.eventDateTime,
+        TicketNumber: request.ticketNumber,
+        BrokerLEI: request.brokerLEI
+      })
   });
 
   if (!response.ok) {
@@ -1851,6 +1935,59 @@ export async function postFoleoTraderOrder(fetchApi: typeof fetch, request: Fole
   }
 
   return (await response.json()) as FoleoTraderOrderSubmissionResponse;
+}
+
+export async function getActiveTradeFiles(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/TradeFiles/Active`);
+  if (!response.ok)
+    throw new Error(`API returned ${response.status} ${response.statusText}`);
+  return (await response.json()) as import('$lib/types').TradeFile[];
+}
+
+export async function postTradeFilePending(fetchApi: typeof fetch, request: {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  ticketNumber: number;
+  brokerLEI: string;
+}) {
+  return postTradeFileJson(fetchApi, '/TradeFiles/Pending', {
+    UserID: request.userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    TicketNumber: request.ticketNumber,
+    TradeMethodType: 'TradeFile',
+    BrokerLEI: request.brokerLEI
+  });
+}
+
+export async function postTradeFileRequest(fetchApi: typeof fetch, request: {
+  userID: string;
+  eventDateTime: string;
+  reason: string;
+  brokerLEI: string;
+  ticketNumbers: number[];
+}) {
+  return postTradeFileJson(fetchApi, '/TradeFiles/Requests', {
+    UserID: request.userID,
+    EventDateTime: request.eventDateTime,
+    Reason: request.reason,
+    BrokerLEI: request.brokerLEI,
+    TicketNumbers: request.ticketNumbers
+  });
+}
+
+async function postTradeFileJson(fetchApi: typeof fetch, path: string, body: unknown) {
+  const response = await fetchApi(`${getApiBaseUrl()}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+  return await response.json();
 }
 
 export async function postTicketTradeInstructionNotesSetEvent(fetchApi: typeof fetch, request: TicketTextSetRequest) {
@@ -2152,8 +2289,8 @@ async function postCountryEvent(
 
 async function postAccountEvent(
   fetchApi: typeof fetch,
-  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveSetEvent' | 'AccountDisplayOrderSetEvent',
-  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest | AccountDisplayOrderSetRequest,
+  eventType: 'AccountCreatedEvent' | 'AccountModifiedEvent' | 'AccountActiveSetEvent' | 'AccountDisplayOrderSetEvent' | 'AccountIdentifierSetEvent' | 'AccountIdentifierUnsetEvent',
+  request: AccountCreatedRequest | AccountModifiedRequest | AccountActiveModifiedRequest | AccountDisplayOrderSetRequest | AccountIdentifierSetRequest | AccountIdentifierUnsetRequest,
   userID: string
 ) {
   const body: Record<string, unknown> = {
@@ -2179,6 +2316,11 @@ async function postAccountEvent(
 
   if ('displayOrder' in request)
     body.DisplayOrder = request.displayOrder;
+
+  if ('identifierValue' in request)
+    body.Identifier = { Type: request.identifierType, Value: request.identifierValue };
+  else if ('identifierType' in request)
+    body.IdentifierType = request.identifierType;
 
   const response = await fetchApi(`${getApiBaseUrl()}/Events/Account/${eventType}`, {
     method: 'POST',

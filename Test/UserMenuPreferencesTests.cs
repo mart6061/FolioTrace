@@ -29,23 +29,24 @@ public sealed class UserMenuPreferencesTests
         Assert.All(result.Value!.Items, item => Assert.True(item.Visible));
         Assert.Equal(UserMenuPreferenceDefaults.ControlledMenuItemIDs.Count, result.Value.Items.Count);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Bookmarks);
-        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset);
-        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Report);
-        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Administration);
         Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Viewer);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.DataList);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.DataListFX);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Diagnostics);
+        Assert.Contains(result.Value.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Ideas);
     }
 
     [Fact]
-    public void Normalize_MapsLegacyValuationsMenuIDToAsset()
+    public void Normalize_MapsLegacyValuationsMenuIDToViewer()
     {
         var items = UserMenuPreferenceDefaults.CreateVisibleItems()
-            .Where(item => item.MenuItemID != UserMenuPreferenceDefaults.Asset)
+            .Where(item => item.MenuItemID != UserMenuPreferenceDefaults.Viewer)
             .Append(new UserMenuPreferenceItem("value-valuations", false))
             .ToList();
 
         var normalized = UserMenuPreferenceDefaults.Normalize(items);
 
-        Assert.Contains(normalized, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset && !item.Visible);
+        Assert.Contains(normalized, item => item.MenuItemID == UserMenuPreferenceDefaults.Viewer && !item.Visible);
         Assert.DoesNotContain(normalized, item => item.MenuItemID == "value-valuations");
     }
 
@@ -53,7 +54,7 @@ public sealed class UserMenuPreferencesTests
     public void CreatedBuilder_AcceptsLegacyValuationsMenuID()
     {
         var items = UserMenuPreferenceDefaults.CreateVisibleItems()
-            .Where(item => item.MenuItemID != UserMenuPreferenceDefaults.Asset)
+            .Where(item => item.MenuItemID != UserMenuPreferenceDefaults.Viewer)
             .Append(new UserMenuPreferenceItem("value-valuations", false))
             .ToList();
 
@@ -67,8 +68,22 @@ public sealed class UserMenuPreferencesTests
 
         Assert.True(result.IsValid);
         Assert.NotNull(result.Value);
-        Assert.Contains(result.Value!.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Asset && !item.Visible);
+        Assert.Contains(result.Value!.Items, item => item.MenuItemID == UserMenuPreferenceDefaults.Viewer && !item.Visible);
         Assert.DoesNotContain(result.Value.Items, item => item.MenuItemID == "value-valuations");
+    }
+
+    [Theory]
+    [InlineData("data", UserMenuPreferenceDefaults.DataList)]
+    [InlineData("reference", UserMenuPreferenceDefaults.DataList)]
+    [InlineData("configuration", UserMenuPreferenceDefaults.Tools)]
+    [InlineData("internals", UserMenuPreferenceDefaults.Diagnostics)]
+    [InlineData("asset", UserMenuPreferenceDefaults.Viewer)]
+    public void Normalize_MapsRetiredMenuIDs(string legacyID, string currentID)
+    {
+        var normalized = UserMenuPreferenceDefaults.Normalize([new UserMenuPreferenceItem(legacyID, false)]);
+
+        Assert.Contains(normalized, item => item.MenuItemID == currentID && !item.Visible);
+        Assert.DoesNotContain(normalized, item => item.MenuItemID == legacyID);
     }
 
     [Theory]
@@ -134,7 +149,7 @@ public sealed class UserMenuPreferencesTests
             "Create menu preferences",
             UserMenuPreferenceDefaults.CreateVisibleItems()).Value!;
         var modifiedItems = UserMenuPreferenceDefaults.CreateVisibleItems()
-            .Select(item => item.MenuItemID == UserMenuPreferenceDefaults.Data ? item with { Visible = false } : item)
+            .Select(item => item.MenuItemID == UserMenuPreferenceDefaults.DataList ? item with { Visible = false } : item)
             .ToList();
         var modified = UserMenuPreferencesModifiedEventBuilder.CreateSeed(
             Guid.CreateGuid7(),
@@ -148,8 +163,8 @@ public sealed class UserMenuPreferencesTests
         var beforeModification = await service.Get(UserID, EventDate, firstAudit);
         var afterModification = await service.Get(UserID, EventDate, secondAudit);
 
-        Assert.True(beforeModification.IsVisible(UserMenuPreferenceDefaults.Data));
-        Assert.False(afterModification.IsVisible(UserMenuPreferenceDefaults.Data));
+        Assert.True(beforeModification.IsVisible(UserMenuPreferenceDefaults.DataList));
+        Assert.False(afterModification.IsVisible(UserMenuPreferenceDefaults.DataList));
         Assert.True(afterModification.HasStoredPreferences);
     }
 

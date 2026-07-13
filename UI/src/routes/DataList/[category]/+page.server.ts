@@ -12,6 +12,8 @@ import type { Actions, PageServerLoad } from './$types';
 type DataListCard = {
   key: string;
   title: string;
+  heading: string;
+  kicker: string;
   standard?: string;
   description: string;
 };
@@ -28,11 +30,15 @@ const dataListPages: Record<string, DataListPageDefinition> = {
       {
         key: 'base',
         title: 'FX Base',
+        heading: 'FXs',
+        kicker: 'Value Data',
         description: 'Configure the base FXs that can be priced'
       },
       {
         key: 'value',
         title: 'FX Value',
+        heading: 'FX Rates',
+        kicker: 'Value Data',
         description: 'FX Pricing'
       }
     ]
@@ -43,11 +49,15 @@ const dataListPages: Record<string, DataListPageDefinition> = {
       {
         key: 'base',
         title: 'Instrument Base',
+        heading: 'Instruments',
+        kicker: 'Reference Data',
         description: 'Configure the base Instruments that can be priced'
       },
       {
         key: 'value',
         title: 'Instrument Value',
+        heading: 'Instrument Values',
+        kicker: 'Value Data',
         description: 'Instrument Pricing'
       }
     ]
@@ -58,18 +68,24 @@ const dataListPages: Record<string, DataListPageDefinition> = {
       {
         key: 'country',
         title: 'Country',
+        heading: 'Countries',
+        kicker: 'Reference Data',
         standard: 'ISO 3166',
         description: 'ISO country reference data'
       },
       {
         key: 'currency',
         title: 'Currency',
+        heading: 'Currencies',
+        kicker: 'Reference Data',
         standard: 'ISO 4217',
         description: 'ISO currency reference data'
       },
       {
         key: 'cfi',
         title: 'CFI',
+        heading: 'CFI',
+        kicker: 'Reference Data',
         standard: 'ISO 10962',
         description: 'Instrument classification reference data'
       }

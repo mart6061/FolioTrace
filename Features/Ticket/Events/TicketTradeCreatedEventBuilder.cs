@@ -5,10 +5,10 @@ namespace FolioTrace.Aggregates;
 
 public static partial class TicketEventBuilder
 {
-    public static Result<TicketTradeCreatedEvent> CreateTrade(TicketTradeRequest request, Tickets tickets, Holdings? holdings = null, Instruments? instruments = null) =>
+    public static Result<TicketTradeCreatedEvent> CreateTrade(TicketTradeRequest request, Tickets tickets, Holdings? holdings = null, Instruments? instruments = null, bool allowExecutionLocked = false) =>
         CreateResult(() =>
         {
-            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket);
+            var messages = ValidateTicketMutation(request.UserID, request.EventDateTime, request.Reason, request.TicketNumber, tickets, out var ticket, allowExecutionLocked);
             ValidateTradeEntry(ticket, messages, "created");
             ValidatePrice(request.TradedPrice, "TradedPrice", messages);
             ValidateTradeDates(request.TradeDateTime, request.SettlementDateTime, messages);

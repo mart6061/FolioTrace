@@ -791,7 +791,7 @@
       {/each}
 
       {#if displayMode === 'Aggregate'}
-        <section class="house-card grid gap-3">
+        <section class="house-card grid gap-3" style="border-top: 3px solid var(--brand-green)">
           <div class="house-card-header">
             <div>
               <h2 class="house-heading">Aggregate assets</h2>
@@ -921,7 +921,7 @@
         </section>
       {:else}
         {#each valuations.accounts as account (account.accountID)}
-          <section class="house-card grid gap-3">
+          <section class="house-card grid gap-3" style="border-top: 3px solid var(--brand-green)">
             <div class="house-card-header">
               <div>
                 <h2 class="house-heading">{account.accountName}</h2>
@@ -1372,8 +1372,8 @@
     display: grid;
     width: 100%;
     max-width: 11.25rem;
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
-    background: color-mix(in srgb, var(--accent-soft) 40%, var(--panel));
+    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
     gap: 0.125rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     flex-wrap: nowrap;

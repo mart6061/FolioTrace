@@ -11,6 +11,7 @@ namespace API.FoleoTrader;
 public sealed class FoleoTraderOrderProcessor(
     IEventRepository eventRepository,
     TicketService ticketService,
+    BrokerService brokerService,
     InstrumentService instrumentService,
     HoldingService holdingService,
     FoleoTraderOrderService foleoTraderOrderService,
@@ -26,11 +27,15 @@ public sealed class FoleoTraderOrderProcessor(
         var asAt = AuditDateTimeBuilder.Create();
         var tickets = await ticketService.Get(request.EventDateTime, asAt);
         var instruments = await instrumentService.Get(request.EventDateTime, asAt);
+        var brokers = await brokerService.Get(request.EventDateTime, asAt);
         var existingOrders = await foleoTraderOrderService.Get(request.EventDateTime, asAt);
         var validationErrors = ValidateOrder(request, tickets, instruments, existingOrders, out var ticket, out var instrument, out var securityID, out var securityIDSource, out var symbol);
+        var executionResult = TicketTradeExecutionEventBuilder.Request(new TicketTradeExecutionRequest(request.UserID, request.EventDateTime, $"Request FIX execution for ticket {request.TicketNumber.Value}", request.TicketNumber, TradeMethodType.FIX, request.BrokerLEI), tickets, brokers);
+        if (!executionResult.IsValid) validationErrors.AddRange(executionResult.ValidationErrors);
 
         if (validationErrors.Count > 0 || ticket is null || instrument is null)
             return Result<FoleoTraderOrderSubmittedEvent>.Invalid(validationErrors);
+        var fixMethod = brokers.Items.Single(item => item.LEI == request.BrokerLEI).TradeMethods.OfType<FIXTradeMethod>().Single();
 
         var proposalQuantity = ProposalQuantity(ticket);
         var proposalPrice = ticket.ProposalTargetPrice!;
@@ -42,6 +47,7 @@ public sealed class FoleoTraderOrderProcessor(
             AuditDateTimeBuilder.Create(),
             $"Send ticket {ticket.TicketNumber.Value} to FoleoTrader",
             ticket.TicketNumber,
+            request.BrokerLEI,
             clOrdID,
             ticket.Side,
             proposalQuantity,
@@ -51,8 +57,12 @@ public sealed class FoleoTraderOrderProcessor(
             securityIDSource,
             symbol);
 
-        await eventRepository.AppendAsync(Constants.Initialisation.FoleoTraderOrdersStreamId, submitted, cancellationToken);
-        cacheInvalidationService.Invalidate(submitted);
+        await eventRepository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>>
+        {
+            [Constants.Initialisation.FoleoTraderOrdersStreamId] = [submitted],
+            [Constants.Initialisation.TicketsStreamId] = [(IAuditEventBase)executionResult.Value!]
+        }, cancellationToken: cancellationToken);
+        cacheInvalidationService.Invalidate([submitted, (IAuditEventBase)executionResult.Value!]);
 
         try
         {
@@ -66,6 +76,7 @@ public sealed class FoleoTraderOrderProcessor(
                 securityID,
                 securityIDSource,
                 symbol),
+                fixMethod,
                 cancellationToken);
         }
         catch (Exception exception)
@@ -80,8 +91,9 @@ public sealed class FoleoTraderOrderProcessor(
                 clOrdID,
                 exception.Message);
 
-            await eventRepository.AppendAsync(Constants.Initialisation.FoleoTraderOrdersStreamId, failed, cancellationToken);
-            cacheInvalidationService.Invalidate(failed);
+            var ticketFailed = new TicketTradeExecutionFailedEvent(Guid.CreateGuid7(), request.UserID, request.EventDateTime, AuditDateTimeBuilder.Create(), $"FIX execution failed for ticket {ticket.TicketNumber.Value}", ticket.TicketNumber, TradeMethodType.FIX, request.BrokerLEI, null, exception.Message);
+            await eventRepository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>> { [Constants.Initialisation.FoleoTraderOrdersStreamId] = [failed], [Constants.Initialisation.TicketsStreamId] = [ticketFailed] }, cancellationToken: cancellationToken);
+            cacheInvalidationService.Invalidate([failed, ticketFailed]);
             logger.LogError(exception, "Failed to send FoleoTrader FIX order {ClOrdID}.", clOrdID);
 
             return Result<FoleoTraderOrderSubmittedEvent>.Invalid([exception.Message]);
@@ -148,6 +160,7 @@ public sealed class FoleoTraderOrderProcessor(
             }
 
             var fillID = Guid.CreateGuid7();
+            var brokerLEI = submittedOrder?.BrokerLEI ?? new LegalEntityIdentifier(options.BrokerLEI);
             var settlementAmount = report.GrossTradeAmt > 0m ? Round(report.GrossTradeAmt) : Round(report.LastQty * report.LastPx);
             var execution = new FoleoTraderExecutionReceivedEvent(
                 Guid.CreateGuid7(),
@@ -173,12 +186,13 @@ public sealed class FoleoTraderOrderProcessor(
                 $"FoleoTrader FIX fill {report.ExecID}",
                 ticketNumber,
                 fillID,
-                new LegalEntityIdentifier(options.BrokerLEI),
+                brokerLEI,
                 new Price(report.LastPx),
                 report.LastQty,
                 new TransactionLocalCost(settlementAmount),
                 $"FoleoTrader FIX ExecID {report.ExecID}"),
-                tickets);
+                tickets,
+                allowExecutionLocked: true);
 
             if (!fillResult.IsValid || fillResult.Value is null)
             {
@@ -186,14 +200,16 @@ public sealed class FoleoTraderOrderProcessor(
                 return;
             }
 
-            await eventRepository.AppendAsync(Constants.Initialisation.FoleoTraderOrdersStreamId, execution, cancellationToken);
-            if (tradeResult.TradeEvent is not null)
-                await eventRepository.AppendAsync(Constants.Initialisation.TicketsStreamId, tradeResult.TradeEvent, cancellationToken);
-            await eventRepository.AppendAsync(Constants.Initialisation.TicketsStreamId, fillResult.Value, cancellationToken);
+            var inProgress = new TicketTradeExecutionInProgressEvent(Guid.CreateGuid7(), Constants.Initialisation.UserID, eventDateTime, AuditDateTimeBuilder.Create(), $"FIX execution received for ticket {ticketNumber.Value}", ticketNumber, TradeMethodType.FIX, brokerLEI, null);
+            var ticketEvents = new List<IAuditEventBase>();
+            if (tradeResult.TradeEvent is not null) ticketEvents.Add(tradeResult.TradeEvent);
+            ticketEvents.Add(fillResult.Value);
+            ticketEvents.Add(inProgress);
+            await eventRepository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>> { [Constants.Initialisation.FoleoTraderOrdersStreamId] = [execution], [Constants.Initialisation.TicketsStreamId] = ticketEvents }, cancellationToken: cancellationToken);
 
             var invalidatedEvents = tradeResult.TradeEvent is null
-                ? [fillResult.Value, execution]
-                : new IEventBase[] { tradeResult.TradeEvent, fillResult.Value, execution };
+                ? [fillResult.Value, inProgress, execution]
+                : new IEventBase[] { tradeResult.TradeEvent, fillResult.Value, inProgress, execution };
             cacheInvalidationService.Invalidate(invalidatedEvents);
         }
         catch (Exception exception)
@@ -331,7 +347,7 @@ public sealed class FoleoTraderOrderProcessor(
 
         if (ticket.TradeAllocations.Count == 0)
         {
-            var createResult = TicketEventBuilder.CreateTrade(request, tickets, holdings, instruments);
+            var createResult = TicketEventBuilder.CreateTrade(request, tickets, holdings, instruments, allowExecutionLocked: true);
             if (createResult.IsValid && createResult.Value is not null)
                 return (createResult.Value, []);
 
@@ -339,7 +355,7 @@ public sealed class FoleoTraderOrderProcessor(
             return (null, createResult.ValidationErrors);
         }
 
-        var modifyResult = TicketEventBuilder.ModifyTrade(request, tickets, holdings, instruments);
+        var modifyResult = TicketEventBuilder.ModifyTrade(request, tickets, holdings, instruments, allowExecutionLocked: true);
         if (modifyResult.IsValid && modifyResult.Value is not null)
             return (modifyResult.Value, []);
 

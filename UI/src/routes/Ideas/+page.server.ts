@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getCurrencies, getHoldings, getInstruments } from '$lib/server/api';
+import { getAccounts, getBrokers, getCurrencies, getHoldingPositions, getHoldings, getInputPolicies, getInstruments, getTickets } from '$lib/server/api';
 import type { HoldingDateBasis, InstrumentPriceBasis } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -20,41 +20,60 @@ const instrumentPriceBasisOptions: EnumOption<InstrumentPriceBasis>[] = [
   { description: 'Net Asset Value', label: 'NAV', value: 'NAV' }
 ];
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
+  const { currentUser } = await parent();
 
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, currencies, holdings, instruments] = await Promise.all([
+    const [accounts, brokers, currencies, holdingPositions, holdings, inputPolicies, instruments, tickets] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
+      getBrokers(fetch, valuationDateTime, asAtDateTime),
       getCurrencies(fetch, valuationDateTime, asAtDateTime),
+      getHoldingPositions(fetch, valuationDateTime, asAtDateTime),
       getHoldings(fetch, valuationDateTime, asAtDateTime),
-      getInstruments(fetch, valuationDateTime, asAtDateTime)
+      getInputPolicies(fetch, {
+        auditDateTime: asAtDateTime,
+        controlKinds: ['Quantity', 'Money'],
+        currency: 'GBP',
+        eventDateTime: valuationDateTime,
+        userID: currentUser?.userID
+      }),
+      getInstruments(fetch, valuationDateTime, asAtDateTime),
+      getTickets(fetch, valuationDateTime, asAtDateTime, true)
     ]);
 
     return {
       accounts,
       auditDateTime,
+      brokers,
       currencies,
       error: '',
       holdingDateBasisOptions,
+      holdingPositions,
       holdings,
+      inputPolicies,
       instrumentPriceBasisOptions,
       instruments,
+      tickets,
       valuationDate
     };
   } catch (error) {
     return {
       accounts: null,
       auditDateTime,
+      brokers: null,
       currencies: null,
-      error: error instanceof Error ? error.message : 'Unable to load ideas.',
+      error: error instanceof Error ? error.message : 'Unable to load template page.',
       holdingDateBasisOptions,
+      holdingPositions: null,
       holdings: null,
+      inputPolicies: [],
       instrumentPriceBasisOptions,
       instruments: null,
+      tickets: null,
       valuationDate
     };
   }
