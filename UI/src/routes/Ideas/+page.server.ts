@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getBrokers, getCurrencies, getHoldings, getInputPolicies, getInstruments, getTickets } from '$lib/server/api';
+import { getAccounts, getBrokers, getCurrencies, getHoldingPositions, getHoldings, getInputPolicies, getInstruments, getTickets } from '$lib/server/api';
 import type { HoldingDateBasis, InstrumentPriceBasis } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -28,10 +28,11 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, brokers, currencies, holdings, inputPolicies, instruments, tickets] = await Promise.all([
+    const [accounts, brokers, currencies, holdingPositions, holdings, inputPolicies, instruments, tickets] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
       getBrokers(fetch, valuationDateTime, asAtDateTime),
       getCurrencies(fetch, valuationDateTime, asAtDateTime),
+      getHoldingPositions(fetch, valuationDateTime, asAtDateTime),
       getHoldings(fetch, valuationDateTime, asAtDateTime),
       getInputPolicies(fetch, {
         auditDateTime: asAtDateTime,
@@ -51,6 +52,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       currencies,
       error: '',
       holdingDateBasisOptions,
+      holdingPositions,
       holdings,
       inputPolicies,
       instrumentPriceBasisOptions,
@@ -66,6 +68,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       currencies: null,
       error: error instanceof Error ? error.message : 'Unable to load template page.',
       holdingDateBasisOptions,
+      holdingPositions: null,
       holdings: null,
       inputPolicies: [],
       instrumentPriceBasisOptions,

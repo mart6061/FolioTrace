@@ -32,14 +32,14 @@
   const selectedOption = $derived(options.find((option) => option.id === value) ?? null);
   const showFilter = $derived(options.length > 8);
   const filteredOptions = $derived(showFilter ? options.filter(optionMatchesFilter) : options);
-  const summary = $derived(selectedOption ? selectedOption.name : placeholder);
+  const summary = $derived(selectedOption ? selectedOption.summary ?? selectedOption.name : placeholder);
 
   function optionMatchesFilter(option: ComplexSelectOption) {
     const filter = filterText.trim().toLocaleLowerCase();
     if (!filter)
       return true;
 
-    return [option.name, option.meta ?? '', option.search ?? '', option.id]
+    return [option.name, option.badge ?? '', option.meta ?? '', option.search ?? '', option.id]
       .some((optionValue) => optionValue.toLocaleLowerCase().includes(filter));
   }
 
@@ -147,7 +147,12 @@
             type="button"
           >
             <span class="complex-select-option-copy">
-              <span>{option.name}</span>
+              <span class="complex-select-option-heading">
+                <span>{option.name}</span>
+                {#if option.badge}
+                  <small class:complex-select-option-badge-positive={option.badgeTone === 'positive'}>{option.badge}</small>
+                {/if}
+              </span>
               {#if option.meta}
                 <small>{option.meta}</small>
               {/if}
@@ -313,11 +318,35 @@
     min-width: 0;
   }
 
-  .complex-select-option-copy > span {
+  .complex-select-option-heading {
+    align-items: center;
+    display: flex;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .complex-select-option-heading > span {
     font-size: 0.75rem;
     font-weight: 750;
     line-height: 1.12;
     overflow-wrap: anywhere;
+  }
+
+  .complex-select-option-heading > small {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    flex: 0 0 auto;
+    font-size: 0.55rem;
+    font-weight: 750;
+    line-height: 1;
+    padding: 0.12rem 0.3rem;
+  }
+
+  .complex-select-option-heading > .complex-select-option-badge-positive {
+    background: color-mix(in srgb, var(--brand-green) 12%, var(--panel));
+    border-color: color-mix(in srgb, var(--brand-green) 48%, var(--line));
+    color: var(--brand-green);
   }
 
   .complex-select-check-icon {

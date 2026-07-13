@@ -30,6 +30,7 @@
   let selectedCurrencyCode = $state('');
   let selectedHoldingID = $state('');
   let selectedInstrumentID = $state('');
+  let selectedPositionInstrumentID = $state('');
   let selectedBrokerLEI = $state('');
   let selectedFIXBrokerLEI = $state('');
   let selectedTradeFileBrokerLEI = $state('');
@@ -44,6 +45,7 @@
   const brokers = $derived(data.brokers?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
   const holdings = $derived(data.holdings?.items ?? []);
+  const holdingPositions = $derived(data.holdingPositions?.items ?? []);
   const instruments = $derived(data.instruments?.items ?? []);
   const tickets = $derived(data.tickets?.items ?? []);
   const inputPolicies = $derived(refreshedInputPolicies ?? data.inputPolicies ?? []);
@@ -81,6 +83,30 @@
     }))
     .sort((left, right) => left.name.localeCompare(right.name)));
   const instrumentPlaceholder = $derived(instrumentOptions.length ? 'Select instrument' : 'No instruments available');
+  const instrumentQuantities = $derived(holdingPositions.reduce((quantities, position) => {
+    quantities.set(position.instrumentID, (quantities.get(position.instrumentID) ?? 0) + position.quantity);
+    return quantities;
+  }, new Map<string, number>()));
+  const positionInstrumentOptions = $derived<ComplexSelectOption[]>(instruments
+    .map((instrument) => {
+      const quantity = instrumentQuantities.get(instrument.instrumentID) ?? 0;
+      const held = quantity !== 0;
+      const formattedQuantity = held ? formatHeldQuantity(quantity) : '';
+
+      return {
+        badge: held ? 'Held' : undefined,
+        badgeTone: held ? ('positive' as const) : undefined,
+        id: instrument.instrumentID,
+        name: instrument.name,
+        meta: held
+          ? `${formattedQuantity} held - ${instrument.priceCurrency}`
+          : `${instrument.formalName} - ${instrument.priceCurrency}${instrument.active ? '' : ' - Inactive'}`,
+        search: `${instrument.instrumentID} ${instrument.name} ${instrument.formalName} ${instrument.priceCurrency} ${instrument.exchange} ${instrument.cfi}${held ? ` held ${formattedQuantity}` : ''}`,
+        summary: held ? `${instrument.name} - Held ${formattedQuantity}` : instrument.name,
+        tone: instrument.active ? undefined : ('alert' as const)
+      };
+    })
+    .sort((left, right) => left.name.localeCompare(right.name)));
   const templateValuationDate = $derived(templateValuationDateOverride ?? data.valuationDate);
   const moneyPolicy = $derived(
     inputPolicies.find((policy) => policy.controlKind === 'Money' && policy.currency === selectedPolicyCurrency) ?? fallbackPolicy('Money', selectedPolicyCurrency)
@@ -119,6 +145,12 @@
     { label: 'Cancelled', value: 'Cancelled' },
     { label: 'Estimated', value: 'Estimated' }
   ];
+
+  function formatHeldQuantity(value: number) {
+    return new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 8
+    }).format(value);
+  }
 
   function handleStageFilterChange(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
@@ -341,6 +373,18 @@
             options={instrumentOptions}
             placeholder={instrumentPlaceholder}
             bind:value={selectedInstrumentID}
+          />
+        </div>
+
+        <div class="create-ticket-field template-account-field">
+          <span>Instrument with Position</span>
+          <ComplexSelect
+            compactBrand
+            disabled={!positionInstrumentOptions.length}
+            name="positionInstrumentID"
+            options={positionInstrumentOptions}
+            placeholder={instrumentPlaceholder}
+            bind:value={selectedPositionInstrumentID}
           />
         </div>
 
