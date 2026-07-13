@@ -657,7 +657,7 @@
 
   {#if meOpen}
     <button aria-label="Close user preferences" class="me-drawer-backdrop" onclick={closeMe} transition:fade={{ duration: 160 }} type="button"></button>
-    <dialog aria-labelledby="me-drawer-title" aria-modal="true" class="me-drawer" open transition:fly={{ duration: 220, x: '100%' }}>
+    <dialog aria-labelledby="me-drawer-title" aria-modal="true" class="me-drawer" open transition:fly={{ duration: 220, x: '-100%' }}>
       <header class="me-drawer-header">
         <div>
           <p>USER</p>
@@ -686,7 +686,7 @@
     position: fixed;
     z-index: 1001;
     top: 0;
-    right: 0;
+    left: 0;
     display: grid;
     width: min(48rem, calc(100vw - 2rem));
     height: 100dvh;
@@ -694,9 +694,9 @@
     max-height: none;
     margin: 0;
     grid-template-rows: auto minmax(0, 1fr);
-    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
     background: #fff;
-    box-shadow: -20px 0 50px rgb(8 24 18 / 0.24);
+    box-shadow: 20px 0 50px rgb(8 24 18 / 0.24);
     color: var(--ink);
   }
 
