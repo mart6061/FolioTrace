@@ -5,6 +5,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import { Toggle } from '$lib/components/forms';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
   import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption } from '$lib/types';
@@ -244,15 +245,15 @@
         <h2 class="menu-preference-title">Menu Options</h2>
 
         {#if data.error}
-          <div class="status-panel status-panel-warning mb-4">
+          <Card class="mb-4" density="compact" intent="warning">
             {data.error}
-          </div>
+          </Card>
         {/if}
 
         {#if displayedForm?.intent === 'savePreferences'}
-          <div class={['status-panel mb-4', displayedForm.status === 'success' ? 'status-panel-success' : 'status-panel-error']}>
+          <Card class="mb-4" density="compact" intent={displayedForm.status === 'success' ? 'success' : 'error'}>
             {displayedForm.message}
-          </div>
+          </Card>
         {/if}
 
         <input type="hidden" name="hasStoredMenuPreferences" value={String(data.menuPreferences.hasStoredPreferences)} />

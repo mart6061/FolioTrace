@@ -3,6 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { BrokerDropdown, ComplexSelect, MultiSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
@@ -1170,7 +1171,7 @@
     />
 
     {#if data.error}
-      <div class="status-panel status-panel-error">{data.error}</div>
+      <Card density="compact" intent="error">{data.error}</Card>
     {/if}
 
     {#if form?.message && !formTicketNumber}

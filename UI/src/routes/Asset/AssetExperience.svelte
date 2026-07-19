@@ -3,6 +3,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { MultiSelect, PillGroup } from '$lib/components/forms';
   import { formatTableDateTime, toApiDateTime } from '$lib/dates';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
@@ -784,7 +785,7 @@
   <section class="page-container page-section grid gap-5">
 
     {#if data.error}
-      <div class="status-panel status-panel-error" role="status">{data.error}</div>
+      <Card density="compact" intent="error" role="status">{data.error}</Card>
     {:else if valuations}
       {#each valuationDependencyKinds as aggregateKind (aggregateKind)}
         <AggregateUpdateWatcher {aggregateKind} valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={valuations.lastEventID} />
@@ -1039,7 +1040,7 @@
                             {#if history?.loading}
                               <div class="text-sm text-slate-600">Loading history...</div>
                             {:else if history?.error}
-                              <div class="status-panel status-panel-error">{history.error}</div>
+                              <Card density="compact" intent="error">{history.error}</Card>
                             {:else}
                               <HistoryEventsCard
                                 eventDateTime={valuations.valuationDateTime ?? data.valuationDate}
@@ -1059,7 +1060,7 @@
                           {#if profitLoss?.loading}
                             <div class="text-sm text-slate-600">Loading Profit/Loss...</div>
                           {:else if profitLoss?.error}
-                            <div class="status-panel status-panel-error">{profitLoss.error}</div>
+                            <Card density="compact" intent="error">{profitLoss.error}</Card>
                           {:else if profitLoss?.details}
                             <section class="asset-pnl-card" aria-label={`Profit/Loss for ${itemDisplay.instrumentName}`}>
                               <header class="asset-pnl-header">
@@ -1075,7 +1076,7 @@
                               </header>
 
                               {#if profitLoss.details.summary && !profitLoss.details.summary.complete && profitLoss.details.summary.incompleteReason}
-                                <div class="status-panel status-panel-warning">{profitLoss.details.summary.incompleteReason}</div>
+                                <Card density="compact" intent="warning">{profitLoss.details.summary.incompleteReason}</Card>
                               {/if}
 
                               <div class="asset-pnl-table-wrap">

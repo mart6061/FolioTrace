@@ -1,6 +1,7 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDateTime } from '$lib/dates';
   import type { FIXOperation } from '$lib/types';
 
@@ -229,9 +230,9 @@
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="status-panel status-panel-error">
+      <Card density="compact" intent="error">
         {data.error}
-      </div>
+      </Card>
     {:else}
       <div class="data-summary">
         <div>

@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatTableDateTime } from '$lib/dates';
   import type { AggregateMaintenanceNotification, BuildProgressNotification } from '$lib/types';
   import { onMount } from 'svelte';
@@ -143,16 +144,16 @@
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="status-panel status-panel-error mb-4">
+      <Card class="mb-4" density="compact" intent="error">
         {data.error}
-      </div>
+      </Card>
     {/if}
 
     {#if data.memoryDiagnostics?.eventCache.unprocessedEventCount}
-      <div class="status-panel status-panel-error mb-4">
+      <Card class="mb-4" density="compact" intent="error">
         <strong>{formatCount(data.memoryDiagnostics.eventCache.unprocessedEventCount)} unprocessed events</strong>
         <span class="ml-2">Some stored events could not be loaded and were skipped. Review the diagnostics below.</span>
-      </div>
+      </Card>
     {/if}
 
     <div class="dashboard-sections">
