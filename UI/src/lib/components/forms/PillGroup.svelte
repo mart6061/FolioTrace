@@ -6,6 +6,7 @@
     ariaLabel: string;
     class?: string;
     compact?: boolean;
+    id?: string;
     mode?: 'radio' | 'checkbox';
     name: string;
     onchange?: (event: Event) => void;
@@ -18,6 +19,7 @@
     ariaLabel,
     class: className = '',
     compact = false,
+    id,
     mode = 'radio',
     name,
     onchange,
@@ -43,11 +45,12 @@
 </script>
 
 <div class={classNames('house-pill-group', compact && 'house-pill-group-compact', className)} role={mode === 'radio' ? 'radiogroup' : 'group'} aria-label={ariaLabel}>
-  {#each options as option (option.value)}
+  {#each options as option, index (option.value)}
     <label class={classNames('house-pill', option.tone && `house-pill-${option.tone}`)}>
       <input
         checked={isChecked(option.value)}
         disabled={option.disabled}
+        id={index === 0 ? id : undefined}
         {name}
         onchange={(event) => handleChange(option.value, event)}
         type={mode}

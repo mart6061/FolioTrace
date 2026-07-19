@@ -9,6 +9,7 @@
     fullWidth?: boolean;
     futureLimited?: boolean;
     invalid?: boolean;
+    id?: string;
     max?: string;
     min?: string;
     name?: string;
@@ -28,6 +29,7 @@
     fullWidth = false,
     futureLimited = false,
     invalid = false,
+    id,
     max,
     min,
     name,
@@ -129,6 +131,7 @@
   <input
     aria-invalid={invalid ? 'true' : undefined}
     class={inputClass}
+    {id}
     bind:value
     {disabled}
     {form}

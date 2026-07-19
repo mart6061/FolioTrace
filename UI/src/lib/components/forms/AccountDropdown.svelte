@@ -8,6 +8,7 @@
     class?: string;
     compactBrand?: boolean;
     disabled?: boolean;
+    id?: string;
     multiple?: boolean;
     name?: string;
     nameOnlySummary?: boolean;
@@ -21,6 +22,7 @@
     class: className = '',
     compactBrand = false,
     disabled = false,
+    id,
     multiple = false,
     name = '',
     nameOnlySummary = false,
@@ -48,6 +50,7 @@
   {compactBrand}
   confirmSelection={multiple}
   {disabled}
+  {id}
   emptyText="No accounts match the search"
   {multiple}
   {name}

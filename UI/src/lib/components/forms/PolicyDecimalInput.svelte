@@ -78,7 +78,7 @@
   }
 </script>
 
-<Field class={className} error={errorText} {label} {required}>
+<Field class={className} controlId={fieldID} error={errorText} {label} {required}>
   <TextInput
     aria-label={label}
     autocomplete="off"

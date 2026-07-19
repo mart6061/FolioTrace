@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Card, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, BrokerDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, BrokerDropdown, ComplexSelect, Field, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
@@ -248,14 +248,12 @@
     {#snippet filter()}
       <PageCard accent="gold" title="Filter Card Template">
         <div class="template-control-grid">
-          <div class="create-ticket-field template-select-field">
-            <span>Price Basis</span>
-            <ComplexSelect class="template-simple-select" compactBrand name="instrumentPriceBasis" options={instrumentPriceBasisOptions} placeholder="Select price basis" bind:value={instrumentPriceBasis} />
-          </div>
-          <div class="create-ticket-field template-select-field">
-            <span>Holding Basis</span>
-            <ComplexSelect class="template-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
-          </div>
+          <Field class="template-select-field" controlId="ideas-price-basis" label="Price Basis">
+            <ComplexSelect id="ideas-price-basis" class="template-simple-select" compactBrand name="instrumentPriceBasis" options={instrumentPriceBasisOptions} placeholder="Select price basis" bind:value={instrumentPriceBasis} />
+          </Field>
+          <Field class="template-select-field" controlId="ideas-holding-basis" label="Holding Basis">
+            <ComplexSelect id="ideas-holding-basis" class="template-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
+          </Field>
         </div>
       </PageCard>
     {/snippet}
@@ -306,55 +304,55 @@
 
     <PageCard title="Complex Selects">
       <div class="template-control-grid">
-        <div class="create-ticket-field template-account-field">
-          <span>Single Account</span>
+        <Field class="template-account-field" controlId="ideas-single-account" label="Single Account">
           <AccountDropdown
             {accounts}
             compactBrand
             disabled={!accounts.length}
+            id="ideas-single-account"
             name="singleAccountID"
             nameOnlySummary
             placeholder={dropdownPlaceholder}
             bind:selectedAccountID={() => singleAccountID, setSingleAccountID}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Multi Account</span>
+        <Field class="template-account-field" controlId="ideas-multi-account" label="Multi Account">
           <AccountDropdown
             {accounts}
             compactBrand
             disabled={!accounts.length}
+            id="ideas-multi-account"
             multiple
             name="multiAccountIDs"
             nameOnlySummary
             placeholder={dropdownPlaceholder}
             bind:selectedAccountIDs={multiAccountIDs}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Single Holding</span>
+        <Field class="template-account-field" controlId="ideas-single-holding" label="Single Holding">
           <HoldingDropdown
             accountID={singleAccountID}
             compactBrand
             disabled={!singleAccountID || !accountHoldings.length}
             {holdings}
+            id="ideas-single-holding"
             name="singleHoldingID"
             nameOnlySummary
             placeholder={holdingPlaceholder}
             showInstrumentID={false}
             bind:selectedHoldingID={selectedHoldingID}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Multi Holding</span>
+        <Field class="template-account-field" controlId="ideas-multi-holding" label="Multi Holding">
           <HoldingDropdown
             accountID={singleAccountID}
             compactBrand
             disabled={!singleAccountID || !accountHoldings.length}
             {holdings}
+            id="ideas-multi-holding"
             multiple
             name="multiHoldingIDs"
             nameOnlySummary
@@ -362,121 +360,116 @@
             showInstrumentID={false}
             bind:selectedHoldingIDs={multiHoldingIDs}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Instrument</span>
+        <Field class="template-account-field" controlId="ideas-instrument" label="Instrument">
           <ComplexSelect
             compactBrand
             disabled={!instrumentOptions.length}
+            id="ideas-instrument"
             name="instrumentID"
             options={instrumentOptions}
             placeholder={instrumentPlaceholder}
             bind:value={selectedInstrumentID}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Instrument with Position</span>
+        <Field class="template-account-field" controlId="ideas-position-instrument" label="Instrument with Position">
           <ComplexSelect
             compactBrand
             disabled={!positionInstrumentOptions.length}
+            id="ideas-position-instrument"
             name="positionInstrumentID"
             options={positionInstrumentOptions}
             placeholder={instrumentPlaceholder}
             bind:value={selectedPositionInstrumentID}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Currency</span>
+        <Field class="template-account-field" controlId="ideas-currency" label="Currency">
           <ComplexSelect
             compactBrand
             disabled={!currencyOptions.length}
+            id="ideas-currency"
             name="currency"
             options={currencyOptions}
             placeholder={currencyPlaceholder}
             bind:value={selectedCurrencyCode}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>All Brokers</span>
-          <BrokerDropdown {brokers} compactBrand name="brokerLEI" bind:selectedBrokerLEI />
-        </div>
+        <Field class="template-account-field" controlId="ideas-broker" label="All Brokers">
+          <BrokerDropdown {brokers} compactBrand id="ideas-broker" name="brokerLEI" bind:selectedBrokerLEI />
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>FIX Brokers</span>
-          <BrokerDropdown {brokers} compactBrand method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
-        </div>
+        <Field class="template-account-field" controlId="ideas-fix-broker" label="FIX Brokers">
+          <BrokerDropdown {brokers} compactBrand id="ideas-fix-broker" method="FIX" name="fixBrokerLEI" bind:selectedBrokerLEI={selectedFIXBrokerLEI} />
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>TradeFile Brokers</span>
-          <BrokerDropdown {brokers} compactBrand method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
-        </div>
+        <Field class="template-account-field" controlId="ideas-trade-file-broker" label="TradeFile Brokers">
+          <BrokerDropdown {brokers} compactBrand id="ideas-trade-file-broker" method="TradeFile" name="tradeFileBrokerLEI" bind:selectedBrokerLEI={selectedTradeFileBrokerLEI} />
+        </Field>
 
-        <div class="create-ticket-field template-account-field">
-          <span>Tickets</span>
-          <TicketDropdown {instruments} {tickets} compactBrand name="ticketNumbers" bind:selectedTicketNumbers />
-        </div>
+        <Field class="template-account-field" controlId="ideas-tickets" label="Tickets">
+          <TicketDropdown {instruments} {tickets} compactBrand id="ideas-tickets" name="ticketNumbers" bind:selectedTicketNumbers />
+        </Field>
       </div>
     </PageCard>
 
     <PageCard title="Toggle Button Selects">
       <div class="template-control-grid">
-        <div class="create-ticket-field template-toggle-field">
-          <span>View</span>
+        <Field class="template-toggle-field" controlId="ideas-view" label="View">
           <PillGroup
             ariaLabel="Template view mode"
             bind:value={displayMode}
             class="template-mode-toggle"
             compact
+            id="ideas-view"
             name="templateViewMode"
             options={displayModeOptions}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-toggle-field">
-          <span>Side</span>
+        <Field class="template-toggle-field" controlId="ideas-side" label="Side">
           <PillGroup
             ariaLabel="Template side filter"
             bind:value={selectedSideFilter}
             class="template-filter-toggle"
             compact
+            id="ideas-side"
             name="templateSideFilter"
             options={sideFilterOptions}
           />
-        </div>
+        </Field>
 
-        <div class="create-ticket-field template-toggle-field template-wide-field">
-          <span>Status</span>
+        <Field class="template-toggle-field template-wide-field" controlId="ideas-status" label="Status">
           <PillGroup
             ariaLabel="Template status filters"
             bind:values={selectedStageFilters}
             class="template-filter-toggle template-stage-toggle"
             compact
+            id="ideas-status"
             mode="checkbox"
             name="templateStageFilter"
             onchange={handleStageFilterChange}
             options={stageFilterOptions}
           />
-        </div>
+        </Field>
       </div>
     </PageCard>
 
     <PageCard title="Dates">
       <div class="template-control-grid">
-        <div class="create-ticket-field template-date-field">
-          <span>Valuation Date</span>
-          <DateTimeInput fullWidth name="valuationDate" size="sm" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
+        <Field class="template-date-field" controlId="ideas-valuation-date" label="Valuation Date">
+          <DateTimeInput id="ideas-valuation-date" fullWidth name="valuationDate" size="sm" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
           <span class="template-date-dev-value">Value: {templateValuationDate || '(empty)'}</span>
-        </div>
+        </Field>
       </div>
     </PageCard>
 
     <PageCard title="Numeric Inputs">
       <div class="template-control-grid">
-        <div class="create-ticket-field template-number-field">
+        <div class="template-number-field">
           <QuantityInput
             label="Quantity"
             name="templateQuantity"
@@ -496,16 +489,18 @@
           </div>
         </div>
 
-        <div class="create-ticket-field template-number-field">
-          <span>Money Currency</span>
-          <ComplexSelect
-            compactBrand
-            disabled={!currencyOptions.length}
-            name="moneyPolicyCurrency"
-            options={currencyOptions}
-            placeholder={currencyPlaceholder}
-            bind:value={selectedPolicyCurrency}
-          />
+        <div class="template-number-field">
+          <Field controlId="ideas-money-currency" label="Money Currency">
+            <ComplexSelect
+              compactBrand
+              disabled={!currencyOptions.length}
+              id="ideas-money-currency"
+              name="moneyPolicyCurrency"
+              options={currencyOptions}
+              placeholder={currencyPlaceholder}
+              bind:value={selectedPolicyCurrency}
+            />
+          </Field>
           <MoneyInput
             currency={selectedPolicyCurrency}
             label="Money"
@@ -544,21 +539,11 @@
     gap: 0.75rem;
   }
 
-  :global(.template-page.template-page .create-ticket-field > span) {
-    font-size: 0.625rem;
-    letter-spacing: 0;
-    line-height: 1.05;
-  }
-
   .template-control-grid {
     display: grid;
     align-items: end;
     gap: 0.55rem 0.75rem;
     grid-template-columns: repeat(2, minmax(14rem, 1fr));
-  }
-
-  :global(.template-page.template-page .create-ticket-field) {
-    gap: 0.22rem;
   }
 
   :global(.template-page.template-page .house-control),
@@ -615,11 +600,11 @@
     text-transform: uppercase;
   }
 
-  .template-account-field,
-  .template-date-field,
+  :global(.template-account-field),
+  :global(.template-date-field),
   .template-number-field,
-  .template-select-field,
-  .template-toggle-field {
+  :global(.template-select-field),
+  :global(.template-toggle-field) {
     min-width: 0;
   }
 
@@ -659,7 +644,7 @@
     color: color-mix(in srgb, var(--success) 72%, var(--ink));
   }
 
-  .template-wide-field {
+  :global(.template-wide-field) {
     grid-column: 1 / -1;
   }
 

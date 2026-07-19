@@ -4,7 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
-  import { BrokerDropdown, ComplexSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
+  import { BrokerDropdown, ComplexSelect, Field, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
   import type { Account, Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
@@ -1145,7 +1145,7 @@
               <span>Estimated</span>
             </label>
           </div>
-          <label class="create-ticket-field ticket-text-filter">
+          <Field class="ticket-text-filter">
             <input
               aria-label="Filter tickets"
               class="house-control house-control-md"
@@ -1153,7 +1153,7 @@
               placeholder="Filter tickets"
               type="search"
             />
-          </label>
+          </Field>
         </div>
       </section>
     </div>
@@ -1194,15 +1194,16 @@
             </label>
           </div>
         </fieldset>
-        <div class="create-ticket-field">
+        <Field controlId="create-ticket-instrument">
           <ComplexSelect
             compactBrand
+            id="create-ticket-instrument"
             name="instrumentID"
             options={createTicketInstrumentOptions}
             placeholder={createTicketInstrumentOptions.length ? 'Select instrument' : 'No instruments available'}
             bind:value={createTicketInstrument}
           />
-        </div>
+        </Field>
         <button class="commit-ticket-button" type="submit" disabled={!canCommitTicket}>
           Commit
         </button>
