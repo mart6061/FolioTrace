@@ -139,12 +139,14 @@
     z-index: 20;
   }
 
-  .viewer-filter-card:has(:global(.house-multiselect[open])) {
+  .viewer-filter-card:has(:global(.house-multiselect[open])),
+  .viewer-filter-card:has(:global(.complex-select-menu)) {
     overflow: visible;
     z-index: 400;
   }
 
-  .viewer-page:has(:global(.house-multiselect[open])) > .page-header {
+  .viewer-page:has(:global(.house-multiselect[open])) > .page-header,
+  .viewer-page:has(:global(.complex-select-menu)) > .page-header {
     overflow: visible;
     z-index: 400;
   }
@@ -212,7 +214,8 @@
     padding-top: 0.25rem;
   }
 
-  .viewer-selected-filter:has(:global(.house-multiselect[open])) {
+  .viewer-selected-filter:has(:global(.house-multiselect[open])),
+  .viewer-selected-filter:has(:global(.complex-select-menu)) {
     position: relative;
     z-index: 400;
     overflow: visible;
@@ -221,7 +224,11 @@
   .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.viewer-embedded-page),
   .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.page-header),
   .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.page-container),
-  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.house-form) {
+  .viewer-selected-filter:has(:global(.house-multiselect[open])) :global(.house-form),
+  .viewer-selected-filter:has(:global(.complex-select-menu)) :global(.viewer-embedded-page),
+  .viewer-selected-filter:has(:global(.complex-select-menu)) :global(.page-header),
+  .viewer-selected-filter:has(:global(.complex-select-menu)) :global(.page-container),
+  .viewer-selected-filter:has(:global(.complex-select-menu)) :global(.house-form) {
     overflow: visible;
   }
 

@@ -3985,7 +3985,8 @@ input[type='number']::-webkit-outer-spin-button {
   background: color-mix(in srgb, var(--panel-muted) 54%, var(--panel));
 }
 
-.account-add-form:has(.house-multiselect[open]) {
+.account-add-form:has(.house-multiselect[open]),
+.account-add-form:has(.complex-select-menu) {
   z-index: 80;
 }
 

@@ -562,22 +562,10 @@
   }
 
   :global(.template-page.template-page .house-control),
-  :global(.template-page.template-page .complex-select-trigger),
-  :global(.template-page.template-page .account-combobox-trigger),
-  :global(.template-page.template-page .holding-combobox-trigger),
-  :global(.template-page.template-page .house-multiselect),
   :global(.template-page.template-page .datetime-input-control-embedded),
   :global(.template-page.template-page .table-filter input) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
     background: var(--panel);
-  }
-
-  :global(.template-page.template-page .house-multiselect > summary) {
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.15;
-    min-height: calc(var(--house-control-height) - 2px);
-    padding: 0.25rem 0.5rem;
   }
 
   .template-copy,
