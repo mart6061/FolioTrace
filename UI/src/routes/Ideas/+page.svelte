@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
+  import { Card, MenuCardGroup, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { AccountDropdown, BrokerDropdown, ComplexSelect, Field, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
@@ -246,7 +246,7 @@
     details={`${summaryText} · as of now`}
   >
     {#snippet filter()}
-      <PageCard accent="gold" title="Filter Card Template">
+      <Card intent="filter" title="Filter Card Template">
         <div class="template-control-grid">
           <Field class="template-select-field" controlId="ideas-price-basis" label="Price Basis">
             <ComplexSelect id="ideas-price-basis" class="template-simple-select" compactBrand name="instrumentPriceBasis" options={instrumentPriceBasisOptions} placeholder="Select price basis" bind:value={instrumentPriceBasis} />
@@ -255,7 +255,7 @@
             <ComplexSelect id="ideas-holding-basis" class="template-simple-select" compactBrand name="holdingDateBasis" options={holdingDateBasisOptions} placeholder="Select holding basis" bind:value={holdingDateBasis} />
           </Field>
         </div>
-      </PageCard>
+      </Card>
     {/snippet}
   </PageTitle>
 
@@ -264,15 +264,15 @@
       <Card density="compact" intent="warning">{data.error}</Card>
     {/if}
 
-    <PageCard accent="gold" title="Filter Card Template with Menu Card Group">
+    <Card intent="filter" title="Filter Card Template with Menu Card Group">
       <MenuCardGroup bind:selected={selectedTemplateCard} items={templateMenuCards} />
-    </PageCard>
+    </Card>
 
-    <PageCard title="Page Card Template">
+    <Card title="Page Card Template">
       <p class="template-copy">Use this green-accented component for content in the page body. It accepts a title, optional actions, and arbitrary content.</p>
-    </PageCard>
+    </Card>
 
-    <PageCard subtitle="Viewer-style header, reusable toolbar, and datatable." title="Data Table Card Template">
+    <Card subtitle="Viewer-style header, reusable toolbar, and datatable." title="Data Table Card Template">
       {#snippet actions()}
         <div class="template-table-summary">
           <strong>{filteredTableTemplateRows.length} rows</strong>
@@ -300,9 +300,9 @@
         </table>
       </div>
       <p class="template-table-tool-status" role="status">{tableToolStatus}</p>
-    </PageCard>
+    </Card>
 
-    <PageCard title="Complex Selects">
+    <Card title="Complex Selects">
       <div class="template-control-grid">
         <Field class="template-account-field" controlId="ideas-single-account" label="Single Account">
           <AccountDropdown
@@ -414,9 +414,9 @@
           <TicketDropdown {instruments} {tickets} compactBrand id="ideas-tickets" name="ticketNumbers" bind:selectedTicketNumbers />
         </Field>
       </div>
-    </PageCard>
+    </Card>
 
-    <PageCard title="Toggle Button Selects">
+    <Card title="Toggle Button Selects">
       <div class="template-control-grid">
         <Field class="template-toggle-field" controlId="ideas-view" label="View">
           <PillGroup
@@ -456,18 +456,18 @@
           />
         </Field>
       </div>
-    </PageCard>
+    </Card>
 
-    <PageCard title="Dates">
+    <Card title="Dates">
       <div class="template-control-grid">
         <Field class="template-date-field" controlId="ideas-valuation-date" label="Valuation Date">
           <DateTimeInput id="ideas-valuation-date" fullWidth name="valuationDate" size="sm" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
           <span class="template-date-dev-value">Value: {templateValuationDate || '(empty)'}</span>
         </Field>
       </div>
-    </PageCard>
+    </Card>
 
-    <PageCard title="Numeric Inputs">
+    <Card title="Numeric Inputs">
       <div class="template-control-grid">
         <div class="template-number-field">
           <QuantityInput
@@ -525,7 +525,7 @@
           <Card class="template-wide-field" density="compact" intent="warning">{inputPolicyError}</Card>
         {/if}
       </div>
-    </PageCard>
+    </Card>
   </section>
 </main>
 
