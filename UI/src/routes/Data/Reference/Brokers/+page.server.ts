@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { getFormString } from '$lib/server/forms';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
@@ -335,11 +336,6 @@ function validateLei(lei: string) {
     return 'LEI must be 20 uppercase letters or digits.';
 
   return '';
-}
-
-function getFormString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function getFormBoolean(formData: FormData, key: string) {

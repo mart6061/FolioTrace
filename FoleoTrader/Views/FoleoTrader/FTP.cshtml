@@ -29,7 +29,7 @@ else
                     <td>@file.ReceivedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td><code>@file.Request.FileName</code></td>
                     <td><code>@file.Request.BrokerLEI</code></td>
-                    <td>@file.Request.Content.LongLength.ToString("N0") bytes</td>
+                    <td>@file.Request.ContentLength.ToString("N0") bytes</td>
                     <td>
                         <details>
                             <summary>@file.Request.Tickets.Count ticket@(file.Request.Tickets.Count == 1 ? string.Empty : "s")</summary>

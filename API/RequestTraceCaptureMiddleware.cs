@@ -7,9 +7,10 @@ namespace API;
 public sealed class RequestTraceCaptureMiddleware(
     RequestDelegate next,
     ILogger<RequestTraceCaptureMiddleware> logger,
-    RequestTraceSettingsService settingsService)
+    RequestTraceSettingsService settingsService,
+    RequestTraceLogQueue queue)
 {
-    public async Task InvokeAsync(HttpContext context, IRequestTraceRepository repository)
+    public async Task InvokeAsync(HttpContext context)
     {
         var settings = await settingsService.GetAsync(context.RequestAborted);
 
@@ -25,8 +26,7 @@ public sealed class RequestTraceCaptureMiddleware(
         var originalResponseBody = context.Response.Body;
         var requestBody = await CaptureRequestBodyAsync(context.Request, settings);
 
-        await AppendAsync(
-            repository,
+        Enqueue(
             new RequestTraceEvent
             {
                 RequestId = requestId,
@@ -47,8 +47,13 @@ public sealed class RequestTraceCaptureMiddleware(
                 }
             });
 
-        await using var responseBody = new MemoryStream();
-        context.Response.Body = responseBody;
+        var captureResponseBody = settings.CaptureBodies &&
+            context.GetEndpoint()?.Metadata.GetMetadata<DisableRequestTraceBodyCaptureAttribute>() is null;
+        var responseBody = captureResponseBody
+            ? new ForwardingCaptureStream(originalResponseBody, settings.MaximumBodyCharacters * 4)
+            : null;
+        if (responseBody is not null)
+            context.Response.Body = responseBody;
 
         using var _ = RequestTraceLogContext.Begin(requestId, RequestTraceSources.Api);
 
@@ -60,14 +65,11 @@ public sealed class RequestTraceCaptureMiddleware(
         {
             stopwatch.Stop();
             var completedAtUtc = DateTime.UtcNow;
-            var responseMessage = await CaptureResponseBodyAsync(context.Response, responseBody, settings);
-
-            responseBody.Position = 0;
-            await responseBody.CopyToAsync(originalResponseBody, context.RequestAborted);
+            var responseMessage = CaptureResponseBody(context.Response, responseBody, settings);
             context.Response.Body = originalResponseBody;
+            responseBody?.Dispose();
 
-            await AppendAsync(
-                repository,
+            Enqueue(
                 new RequestTraceEvent
                 {
                     RequestId = requestId,
@@ -96,16 +98,10 @@ public sealed class RequestTraceCaptureMiddleware(
         return requestId;
     }
 
-    private async Task AppendAsync(IRequestTraceRepository repository, RequestTraceEvent traceEvent)
+    private void Enqueue(RequestTraceEvent traceEvent)
     {
-        try
-        {
-            await repository.AppendAsync(traceEvent, CancellationToken.None);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Failed to persist request trace {Kind} event for {Method} {Path}.", traceEvent.Kind, traceEvent.Method, traceEvent.Path);
-        }
+        if (!queue.TryEnqueue(traceEvent))
+            logger.LogWarning("Request trace queue rejected {Kind} event for {Method} {Path}.", traceEvent.Kind, traceEvent.Method, traceEvent.Path);
     }
 
     private static bool ShouldCapture(HttpContext context, RequestTraceSettings settings)
@@ -135,16 +131,15 @@ public sealed class RequestTraceCaptureMiddleware(
         return TrimBody(body, settings);
     }
 
-    private static async Task<TraceHttpMessage> CaptureResponseBodyAsync(HttpResponse response, MemoryStream responseBody, RequestTraceSettings settings)
+    private static TraceHttpMessage CaptureResponseBody(HttpResponse response, ForwardingCaptureStream? responseBody, RequestTraceSettings settings)
     {
-        responseBody.Position = 0;
-        var contentLength = responseBody.Length;
+        var contentLength = responseBody?.TotalBytes ?? response.ContentLength ?? 0;
         CapturedBody capturedBody;
 
-        if (settings.CaptureBodies && ShouldCaptureBody(response.ContentType, settings) && contentLength > 0)
+        if (responseBody is not null && ShouldCaptureBody(response.ContentType, settings) && contentLength > 0)
         {
-            using var reader = new StreamReader(responseBody, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
-            capturedBody = TrimBody(await reader.ReadToEndAsync(), settings);
+            var body = Encoding.UTF8.GetString(responseBody.CapturedBytes.Span);
+            capturedBody = TrimBody(body, settings) with { Truncated = responseBody.IsTruncated || body.Length > settings.MaximumBodyCharacters };
         }
         else
         {

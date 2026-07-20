@@ -7,11 +7,11 @@ using QuickFix.Transport;
 namespace FoleoTrader;
 
 public sealed class FoleoTraderFixAcceptorHostedService(
-    IOptions<FoleoTraderOptions> options,
+    IOptions<FoleoTraderAcceptorOptions> options,
     FoleoTraderFixApplication application,
     ILogger<FoleoTraderFixAcceptorHostedService> logger) : IHostedService, IDisposable
 {
-    private readonly FoleoTraderOptions options = options.Value;
+    private readonly FoleoTraderAcceptorOptions options = options.Value;
     private ThreadedSocketAcceptor? acceptor;
 
     public Task StartAsync(CancellationToken cancellationToken)

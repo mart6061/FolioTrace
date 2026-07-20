@@ -50,10 +50,9 @@ public sealed class AccountService(IEventRepository eventRepository, int cacheCa
     public async Task<Accounts> Get(EventDateTime valuationDate)
     {
         var cacheKey = AccountCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.AccountsStreamId, valuationDate.Value);
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
@@ -95,7 +94,7 @@ public sealed class AccountService(IEventRepository eventRepository, int cacheCa
         lock (cacheLock)
         {
             var removedCount = 0;
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => !cacheKey.AsAtDateTime.HasValue && cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
             {
                 if (cache.Remove(cacheKey))
                     removedCount++;

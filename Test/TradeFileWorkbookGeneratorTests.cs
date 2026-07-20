@@ -8,7 +8,7 @@ namespace Test;
 public sealed class TradeFileWorkbookGeneratorTests
 {
     [Fact]
-    public void GeneratesDeterministicFilenameAndConfiguredColumns()
+    public async Task GeneratesDeterministicFilenameAndConfiguredColumns()
     {
         var generatedAt = new DateTime(2026, 7, 10, 12, 34, 56, 780, DateTimeKind.Utc);
         var request = new TradeFileRequestedEvent(
@@ -19,10 +19,14 @@ public sealed class TradeFileWorkbookGeneratorTests
             new FTPTradeMethodFileSendConfig("localhost", 21, "/incoming", "user", null),
             [new(new TicketNumber(42), "GB0002634946", "0263494", 100m, new Price(12.34m), new Alpha3("GBP"))]);
 
-        var result = new TradeFileWorkbookGenerator().Generate(request, generatedAt);
+        await using var output = new MemoryStream();
+        var result = await new TradeFileWorkbookGenerator().GenerateAsync(request, generatedAt, output);
 
         Assert.Equal("NorthBridge-2026071012345678.xlsx", result.FileName);
-        using var archive = new ZipArchive(new MemoryStream(result.Content), ZipArchiveMode.Read);
+        Assert.Equal(output.Length, result.ContentLength);
+        Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(output.ToArray())), result.SHA256);
+        output.Position = 0;
+        using var archive = new ZipArchive(output, ZipArchiveMode.Read, leaveOpen: true);
         var sheet = archive.GetEntry("xl/worksheets/sheet1.xml");
         Assert.NotNull(sheet);
         using var reader = new StreamReader(sheet!.Open());
@@ -35,7 +39,7 @@ public sealed class TradeFileWorkbookGeneratorTests
     }
 
     [Fact]
-    public void GeneratesBlankCellsWhenISINAndSedolAreUnavailable()
+    public async Task GeneratesBlankCellsWhenISINAndSedolAreUnavailable()
     {
         var generatedAt = new DateTime(2026, 7, 10, 12, 34, 56, DateTimeKind.Utc);
         var request = new TradeFileRequestedEvent(
@@ -46,9 +50,11 @@ public sealed class TradeFileWorkbookGeneratorTests
             new FTPTradeMethodFileSendConfig("localhost", 21, "/incoming", "user", null),
             [new(new TicketNumber(42), string.Empty, string.Empty, 100m, new Price(12.34m), new Alpha3("GBP"))]);
 
-        var result = new TradeFileWorkbookGenerator().Generate(request, generatedAt);
+        await using var output = new MemoryStream();
+        await new TradeFileWorkbookGenerator().GenerateAsync(request, generatedAt, output);
 
-        using var archive = new ZipArchive(new MemoryStream(result.Content), ZipArchiveMode.Read);
+        output.Position = 0;
+        using var archive = new ZipArchive(output, ZipArchiveMode.Read, leaveOpen: true);
         var sheet = archive.GetEntry("xl/worksheets/sheet1.xml");
         Assert.NotNull(sheet);
         using var reader = new StreamReader(sheet!.Open());

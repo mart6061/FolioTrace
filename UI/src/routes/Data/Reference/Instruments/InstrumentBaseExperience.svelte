@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type { InstrumentReferenceEvent } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -21,6 +22,7 @@
   const shellClass = $derived(renderMode === 'full' ? 'min-h-screen' : `data-list-embedded-page data-list-embedded-${renderMode}`);
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   let filterText = $state('');
+  let debouncedFilterText = $state('');
   let addingInstrument = $state(false);
   let editingInstrumentID = $state('');
   let submittingIdentifierKey = $state('');
@@ -32,9 +34,18 @@
   const identifierTypeOptions = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'];
 
   const asOfSummary = $derived(data.auditDateTime && data.instruments ? formatDisplayDateTime(data.instruments.asOfDateTime) : 'now');
+  $effect(() => {
+    const value = filterText;
+    const timeout = setTimeout(() => {
+      debouncedFilterText = value;
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  });
+
   const rows = $derived(
     (data.instruments?.items ?? []).filter((instrument) => {
-      const filter = filterText.trim().toLocaleLowerCase();
+      const filter = debouncedFilterText.trim().toLocaleLowerCase();
       if (!filter)
         return true;
 
@@ -140,24 +151,6 @@
       priceCurrency: instrument.priceCurrency,
       ticker: ticker(instrument)
     }));
-  }
-
-  function downloadFile(fileName: string, content: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function csvValue(value: string) {
-    return `"${value.replaceAll('"', '""')}"`;
-  }
-
-  function htmlValue(value: string) {
-    return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
   }
 
   function exportJson() {

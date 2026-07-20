@@ -44,7 +44,32 @@ public sealed class UserService(IEventRepository eventRepository, int cacheCapac
         {
             var removedCount = cache.Count;
             cache.Clear();
+            currentUserCache.Clear();
             return removedCount;
+        }
+    }
+
+    public async Task<User?> FindCurrentAsync(UserID userID, CancellationToken cancellationToken = default)
+    {
+        if (userID is null)
+            throw new ArgumentNullException(nameof(userID));
+
+        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.UsersStreamId, cancellationToken)
+            ?? Constants.Initialisation.EmptyViewEventID;
+
+        lock (cacheLock)
+        {
+            if (currentUserCache.TryGetValue(userID, out var cached) && cached.UsersStreamLastEventID == lastEventID)
+                return cached.User;
+        }
+
+        var events = await eventRepository.LoadStreamAsync<IUserEvent>(Constants.Initialisation.UsersStreamId, cancellationToken);
+        var user = new Users(ReferenceDataCurrent.EndOfToday(), events.ToList()).Find(userID);
+
+        lock (cacheLock)
+        {
+            currentUserCache[userID] = new CurrentUserCacheEntry(lastEventID, user);
+            return user;
         }
     }
 
@@ -54,11 +79,10 @@ public sealed class UserService(IEventRepository eventRepository, int cacheCapac
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = UserCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.UsersStreamId, valuationDate.Value);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
@@ -103,16 +127,20 @@ public sealed class UserService(IEventRepository eventRepository, int cacheCapac
         public static UserCacheKey ForAsAt(EventDateTime valuationDate, AuditDateTime asAt) => new(valuationDate.Value, asAt.Value);
     }
 
+    private sealed record CurrentUserCacheEntry(EventID UsersStreamLastEventID, User? User);
+
     private int InvalidateFrom(EventDateTime eventDateTime)
     {
         lock (cacheLock)
         {
             var removedCount = 0;
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => !cacheKey.AsAtDateTime.HasValue && cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
             {
                 if (cache.Remove(cacheKey))
                     removedCount++;
             }
+
+            currentUserCache.Clear();
 
             return removedCount;
         }

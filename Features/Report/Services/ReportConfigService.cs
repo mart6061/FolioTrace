@@ -56,11 +56,10 @@ public sealed class ReportConfigService(IEventRepository eventRepository, int ca
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = ReportConfigCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.ReportConfigsStreamId);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == lastEventID)
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 

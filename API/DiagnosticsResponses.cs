@@ -78,7 +78,12 @@ public sealed record RequestTraceSearchResponse(
     int TotalCount,
     int Page,
     int PageSize,
-    RequestTraceSettingsResponse Settings);
+    RequestTraceSettingsResponse Settings,
+    RequestTraceQueueDiagnosticsResponse Queue);
+
+public sealed record RequestTraceQueueDiagnosticsResponse(
+    int Capacity,
+    long DroppedEventCount);
 
 public sealed record RequestTraceResponse(
     Guid RequestId,

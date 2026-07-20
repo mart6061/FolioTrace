@@ -3,6 +3,7 @@ using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Repository;
 
@@ -36,8 +37,12 @@ public static class ServiceCollectionExtensions
             options.Schema.For<StoredFilePayload>();
         });
 
+        services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+        services.AddSingleton<PostgreSQLStoredFileRepository>();
+        services.AddSingleton<IStoredFileRepository>(provider => provider.GetRequiredService<PostgreSQLStoredFileRepository>());
         services.AddSingleton<MartenEventRepository>();
         services.AddScoped<IRequestTraceRepository, MartenRequestTraceRepository>();
+        services.AddScoped<IFoleoTraderFixOperationRepository, MartenFoleoTraderFixOperationRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
         services.AddScoped<ISeedRepository, SeedRepository>();

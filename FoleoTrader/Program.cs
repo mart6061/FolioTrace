@@ -1,9 +1,10 @@
 using FoleoTrader;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
+builder.Services.Configure<FoleoTraderAcceptorOptions>(builder.Configuration.GetSection(FoleoTraderAcceptorOptions.SectionName));
 builder.Services.AddSingleton<FoleoTraderMessageMonitor>();
 builder.Services.AddSingleton<FoleoTraderFixApplication>();
 builder.Services.AddHostedService<FoleoTraderFixAcceptorHostedService>();
@@ -24,11 +25,16 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-app.MapPost("/trade-files", async (FolioTrace.Aggregates.TradeFileDeliveryRequest request, TradeFileSimulator simulator, CancellationToken cancellationToken) =>
+app.MapPost("/trade-files", async (HttpRequest request, TradeFileSimulator simulator, CancellationToken cancellationToken) =>
 {
-    await simulator.ReceiveAsync(request, cancellationToken);
+    var form = await request.ReadFormAsync(cancellationToken);
+    var metadata = JsonSerializer.Deserialize<FolioTrace.Aggregates.TradeFileDeliveryMetadata>(form["metadata"].ToString())
+        ?? throw new BadHttpRequestException("TradeFile metadata is required.");
+    if (form.Files.GetFile("file") is null)
+        throw new BadHttpRequestException("TradeFile content is required.");
+    await simulator.ReceiveAsync(metadata, cancellationToken);
     return Results.Accepted();
-});
+}).DisableAntiforgery();
 
 app.MapControllerRoute(
     name: "default",
