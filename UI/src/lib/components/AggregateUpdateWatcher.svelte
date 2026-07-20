@@ -35,7 +35,7 @@
   onMount(() => {
     const source = new EventSource('/API/Notifications/Aggregates');
     const pollTimer = window.setInterval(() => {
-      if (!autoReload || pollIntervalMs <= 0)
+      if (document.hidden || !autoReload || pollIntervalMs <= 0)
         return;
 
       const now = Date.now();
