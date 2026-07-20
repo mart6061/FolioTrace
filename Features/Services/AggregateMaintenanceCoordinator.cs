@@ -121,6 +121,12 @@ public sealed class AggregateMaintenanceCoordinator(
                 await WarmAggregate("InstrumentValues", valuationDate, instrumentValueService.IsCached, instrumentValueService.Get, result);
                 await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.EventDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
                 await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.SettlementDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
+
+                if (IsSnapshotEligible(valuationDate))
+                {
+                    await SnapshotHoldingPositions(valuationDate, HoldingDateBasis.EventDateTime, result);
+                    await SnapshotHoldingPositions(valuationDate, HoldingDateBasis.SettlementDateTime, result);
+                }
             }
 
             SetCompleted(runID, trigger, startedAtUtc, result);
@@ -207,6 +213,28 @@ public sealed class AggregateMaintenanceCoordinator(
         {
             result.FailedAggregates++;
             result.Errors.Add($"{aggregateKind} {valuationDate.Value:O} {holdingDateBasis}: {exception.Message}");
+        }
+    }
+
+    private bool IsSnapshotEligible(EventDateTime valuationDate) =>
+        (DateTime.Now.Date - valuationDate.Value.Date).TotalDays >= options.SnapshotEligibleAfterDays;
+
+    /// <summary>
+    /// Persists a snapshot for a boundary that has aged into the warm/cold tier (Aggregate-Snapshot-Scaling-
+    /// Plan.md 3.2). Fetches through holdingPositionService.Get rather than building directly - the preceding
+    /// WarmAggregate call means this is normally a cheap in-memory cache hit, not a rebuild.
+    /// </summary>
+    private async Task SnapshotHoldingPositions(EventDateTime valuationDate, HoldingDateBasis holdingDateBasis, AggregateMaintenanceRunResult result)
+    {
+        try
+        {
+            var positions = await holdingPositionService.Get(valuationDate, holdingDateBasis);
+            await holdingPositionService.PersistSnapshotAsync(positions);
+        }
+        catch (Exception exception)
+        {
+            result.FailedAggregates++;
+            result.Errors.Add($"HoldingPositions snapshot {valuationDate.Value:O} {holdingDateBasis}: {exception.Message}");
         }
     }
 
