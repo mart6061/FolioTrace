@@ -9,7 +9,7 @@ public sealed class TradeFileSimulator(IHttpClientFactory httpClientFactory, Tim
     private readonly ConcurrentDictionary<Guid, ReceivedTradeFile> files = [];
     public IReadOnlyCollection<ReceivedTradeFile> Files => files.Values.ToList();
 
-    public async Task ReceiveAsync(TradeFileDeliveryRequest request, CancellationToken cancellationToken)
+    public async Task ReceiveAsync(TradeFileDeliveryMetadata request, CancellationToken cancellationToken)
     {
         var receivedAt = timeProvider.GetUtcNow().UtcDateTime;
         var file = new ReceivedTradeFile(request, receivedAt, receivedAt.AddSeconds(30));
@@ -41,9 +41,9 @@ public sealed class TradeFileSimulator(IHttpClientFactory httpClientFactory, Tim
     }
 }
 
-public sealed class ReceivedTradeFile(TradeFileDeliveryRequest request, DateTime receivedAtUtc, DateTime nextConfirmationAtUtc)
+public sealed class ReceivedTradeFile(TradeFileDeliveryMetadata request, DateTime receivedAtUtc, DateTime nextConfirmationAtUtc)
 {
-    public TradeFileDeliveryRequest Request { get; } = request;
+    public TradeFileDeliveryMetadata Request { get; } = request;
     public DateTime ReceivedAtUtc { get; } = receivedAtUtc;
     public DateTime NextConfirmationAtUtc { get; set; } = nextConfirmationAtUtc;
     public int ConfirmedTicketCount { get; set; }

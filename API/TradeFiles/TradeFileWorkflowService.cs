@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
@@ -12,6 +11,7 @@ namespace API.TradeFiles;
 
 public sealed class TradeFileWorkflowService(
     IEventRepository repository,
+    IStoredFileRepository storedFileRepository,
     TicketService ticketService,
     BrokerService brokerService,
     InstrumentService instrumentService,
@@ -108,27 +108,42 @@ public sealed class TradeFileWorkflowService(
     private async Task<TradeFile> CreateAsync(TradeFile tradeFile, CancellationToken cancellationToken)
     {
         var requested = await RequestedEventAsync(tradeFile.TradeFileID, cancellationToken);
-        var (fileName, content) = workbookGenerator.Generate(requested, DateTime.UtcNow);
-        var storedFileID = new StoredFileID(Guid.CreateGuid7());
-        var sha = Convert.ToHexString(SHA256.HashData(content));
-        var audit = AuditDateTimeBuilder.Create();
-        var storedEvent = new StoredFileCreatedEvent(new(Guid.CreateGuid7()), requested.UserID, requested.EventDateTime, audit, "Create TradeFile payload", storedFileID, fileName, SpreadsheetMediaType, content.LongLength, sha);
-        var created = new TradeFileCreatedEvent(new(Guid.CreateGuid7()), requested.UserID, requested.EventDateTime, audit, "Create TradeFile", tradeFile.TradeFileID, storedFileID, fileName, SpreadsheetMediaType, content.LongLength, sha);
-        var ticketEvents = tradeFile.Tickets.Select(ticket => (IAuditEventBase)new TicketTradeFileCreatedEvent(new(Guid.CreateGuid7()), requested.UserID, requested.EventDateTime, audit, "Create TradeFile", ticket.TicketNumber, tradeFile.BrokerLEI, tradeFile.TradeFileID)).ToList();
-        await repository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>>
+        var temporaryPath = Path.Combine(Path.GetTempPath(), $"foliotrace-trade-file-{Guid.CreateGuid7():N}.xlsx");
+        try
         {
-            [Constants.Initialisation.StoredFilesStreamId] = [storedEvent],
-            [Constants.Initialisation.TradeFilesStreamId] = [created],
-            [Constants.Initialisation.TicketsStreamId] = ticketEvents
-        }, new StoredFilePayload(storedFileID.Value, fileName, SpreadsheetMediaType, sha, content), cancellationToken);
-        cacheInvalidationService.Invalidate([storedEvent, created, .. ticketEvents]);
-        return tradeFile with { Status = TradeFileStatus.Created, StoredFileID = storedFileID, FileName = fileName };
+            await using var content = new FileStream(
+                temporaryPath,
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.None,
+                64 * 1024,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var generated = await workbookGenerator.GenerateAsync(requested, DateTime.UtcNow, content, cancellationToken);
+            var storedFileID = new StoredFileID(Guid.CreateGuid7());
+            var audit = AuditDateTimeBuilder.Create();
+            var storedEvent = new StoredFileCreatedEvent(new(Guid.CreateGuid7()), requested.UserID, requested.EventDateTime, audit, "Create TradeFile payload", storedFileID, generated.FileName, SpreadsheetMediaType, generated.ContentLength, generated.SHA256);
+            var created = new TradeFileCreatedEvent(new(Guid.CreateGuid7()), requested.UserID, requested.EventDateTime, audit, "Create TradeFile", tradeFile.TradeFileID, storedFileID, generated.FileName, SpreadsheetMediaType, generated.ContentLength, generated.SHA256);
+            var ticketEvents = tradeFile.Tickets.Select(ticket => (IAuditEventBase)new TicketTradeFileCreatedEvent(new(Guid.CreateGuid7()), requested.UserID, requested.EventDateTime, audit, "Create TradeFile", ticket.TicketNumber, tradeFile.BrokerLEI, tradeFile.TradeFileID)).ToList();
+            await repository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>>
+            {
+                [Constants.Initialisation.StoredFilesStreamId] = [storedEvent],
+                [Constants.Initialisation.TradeFilesStreamId] = [created],
+                [Constants.Initialisation.TicketsStreamId] = ticketEvents
+            }, new StoredFileWrite(storedFileID.Value, generated.FileName, SpreadsheetMediaType, generated.ContentLength, generated.SHA256, content), cancellationToken);
+            cacheInvalidationService.Invalidate([storedEvent, created, .. ticketEvents]);
+            return tradeFile with { Status = TradeFileStatus.Created, StoredFileID = storedFileID, FileName = generated.FileName };
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+                File.Delete(temporaryPath);
+        }
     }
 
     private async Task SendAsync(TradeFile tradeFile, CancellationToken cancellationToken)
     {
         if (tradeFile.StoredFileID is null) throw new InvalidOperationException("The TradeFile has no stored payload.");
-        var payload = await repository.LoadStoredFileAsync(tradeFile.StoredFileID.Value, cancellationToken)
+        await using var payload = await storedFileRepository.OpenReadAsync(tradeFile.StoredFileID.Value, cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("The TradeFile payload was not found.");
         var sender = senders.SingleOrDefault(item => item.Supports(tradeFile.SendConfig))
             ?? throw new InvalidOperationException($"No sender supports {tradeFile.SendConfig.GetType().Name}.");
@@ -146,8 +161,9 @@ public sealed class TradeFileWorkflowService(
         await sender.SendAsync(new TradeFileDeliveryRequest(
             tradeFile.TradeFileID.Value,
             tradeFile.BrokerLEI.Value,
-            payload.FileName,
-            payload.MediaType,
+            payload.Metadata.FileName,
+            payload.Metadata.MediaType,
+            payload.Metadata.ContentLength,
             payload.Content,
             $"{callbackBase}/Acknowledgements",
             $"{callbackBase}/Confirmations",
