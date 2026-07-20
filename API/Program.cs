@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Logging;
 using Repository;
 using Services;
+using WorkOS;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -51,6 +52,15 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton(provider =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<WorkOSAuthOptions>>().Value;
+    return new WorkOSClient(new WorkOSOptions
+    {
+        ApiKey = options.ApiKey,
+        ClientId = options.ClientId
+    });
+});
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v0", new()
