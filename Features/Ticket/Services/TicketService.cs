@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class TicketService(IEventRepository eventRepository)
+public sealed class TicketService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<TicketCacheKey, Tickets> cache = [];
+    private readonly BoundedLruCache<TicketCacheKey, Tickets> cache = new(cacheCapacity);
 
     public TicketServiceDiagnostics GetDiagnostics()
     {

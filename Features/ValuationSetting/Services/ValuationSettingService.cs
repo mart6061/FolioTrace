@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class ValuationSettingService(IEventRepository eventRepository) : IReferenceDataService<ValuationSettings, ValuationSettingServiceDiagnostics>
+public sealed class ValuationSettingService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<ValuationSettings, ValuationSettingServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<ValuationSettingCacheKey, ValuationSettings> cache = [];
+    private readonly BoundedLruCache<ValuationSettingCacheKey, ValuationSettings> cache = new(cacheCapacity);
 
     public Task<ValuationSettings> Current => Get(ReferenceDataCurrent.EndOfToday());
 

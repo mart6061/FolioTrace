@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class InstrumentService(IEventRepository eventRepository) : IReferenceDataService<Instruments, InstrumentServiceDiagnostics>
+public sealed class InstrumentService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<Instruments, InstrumentServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<InstrumentCacheKey, Instruments> cache = [];
+    private readonly BoundedLruCache<InstrumentCacheKey, Instruments> cache = new(cacheCapacity);
 
     public Task<Instruments> Current => Get(ReferenceDataCurrent.EndOfToday());
 

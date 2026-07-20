@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class FXService(IEventRepository eventRepository) : IReferenceDataService<FXs, FXServiceDiagnostics>
+public sealed class FXService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<FXs, FXServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<FXCacheKey, FXs> cache = [];
+    private readonly BoundedLruCache<FXCacheKey, FXs> cache = new(cacheCapacity);
 
     public Task<FXs> Current => Get(ReferenceDataCurrent.EndOfToday());
 

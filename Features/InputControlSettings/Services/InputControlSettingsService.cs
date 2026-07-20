@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class InputControlSettingsService(IEventRepository eventRepository)
+public sealed class InputControlSettingsService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<InputControlSettingsCacheKey, InputControlSettings> cache = [];
+    private readonly BoundedLruCache<InputControlSettingsCacheKey, InputControlSettings> cache = new(cacheCapacity);
 
     public InputControlSettingsServiceDiagnostics GetDiagnostics()
     {

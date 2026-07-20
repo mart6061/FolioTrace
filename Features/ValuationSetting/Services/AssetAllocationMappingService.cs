@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class AssetAllocationMappingService(IEventRepository eventRepository)
+public sealed class AssetAllocationMappingService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<AssetAllocationMappingCacheKey, AssetAllocationMappings> cache = [];
+    private readonly BoundedLruCache<AssetAllocationMappingCacheKey, AssetAllocationMappings> cache = new(cacheCapacity);
 
     public int Invalidate(IValuationSettingEvent @event) => InvalidateAll();
 

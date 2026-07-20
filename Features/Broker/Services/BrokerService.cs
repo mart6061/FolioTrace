@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class BrokerService(IEventRepository eventRepository) : IReferenceDataService<Brokers, BrokerServiceDiagnostics>
+public sealed class BrokerService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<Brokers, BrokerServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<BrokerCacheKey, Brokers> cache = [];
+    private readonly BoundedLruCache<BrokerCacheKey, Brokers> cache = new(cacheCapacity);
 
     public Task<Brokers> Current => Get(ReferenceDataCurrent.EndOfToday());
 

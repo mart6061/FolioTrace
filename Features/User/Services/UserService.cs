@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class UserService(IEventRepository eventRepository)
+public sealed class UserService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<UserCacheKey, Users> cache = [];
+    private readonly BoundedLruCache<UserCacheKey, Users> cache = new(cacheCapacity);
 
     public UserServiceDiagnostics GetDiagnostics()
     {

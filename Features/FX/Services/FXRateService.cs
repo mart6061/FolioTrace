@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadModelRepository readModelRepository)
+public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadModelRepository readModelRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<FXRateCacheKey, FXRates> cache = [];
+    private readonly BoundedLruCache<FXRateCacheKey, FXRates> cache = new(cacheCapacity);
 
     public FXRateServiceDiagnostics GetDiagnostics()
     {

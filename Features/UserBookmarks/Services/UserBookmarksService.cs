@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class UserBookmarksService(IEventRepository eventRepository)
+public sealed class UserBookmarksService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<UserBookmarksCacheKey, UserBookmarks> cache = [];
+    private readonly BoundedLruCache<UserBookmarksCacheKey, UserBookmarks> cache = new(cacheCapacity);
 
     public UserBookmarksServiceDiagnostics GetDiagnostics()
     {

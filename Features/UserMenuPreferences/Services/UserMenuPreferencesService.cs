@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class UserMenuPreferencesService(IEventRepository eventRepository)
+public sealed class UserMenuPreferencesService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<UserMenuPreferencesCacheKey, UserMenuPreferences> cache = [];
+    private readonly BoundedLruCache<UserMenuPreferencesCacheKey, UserMenuPreferences> cache = new(cacheCapacity);
 
     public UserMenuPreferencesServiceDiagnostics GetDiagnostics()
     {
