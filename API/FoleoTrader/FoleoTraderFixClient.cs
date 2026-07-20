@@ -10,7 +10,7 @@ namespace API.FoleoTrader;
 
 public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHostedService, IDisposable
 {
-    private readonly FoleoTraderOptions options;
+    private readonly FoleoTraderConnectionOptions options;
     private readonly FoleoTraderOrderProcessor processor;
     private readonly FoleoTraderFIXOperationRecorder operationRecorder;
     private readonly ApiReadinessState readinessState;
@@ -25,7 +25,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private Timer? idleTimer;
     private FIXTradeMethod? activeMethod;
 
-    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ApiReadinessState readinessState, FixStartupHealthState startupHealthState, ILogger<FoleoTraderFixClient> logger)
+    public FoleoTraderFixClient(IOptions<FoleoTraderConnectionOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ApiReadinessState readinessState, FixStartupHealthState startupHealthState, ILogger<FoleoTraderFixClient> logger)
     {
         this.options = options.Value;
         this.processor = processor;

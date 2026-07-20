@@ -16,10 +16,10 @@ public sealed class FoleoTraderOrderProcessor(
     HoldingService holdingService,
     FoleoTraderOrderService foleoTraderOrderService,
     AggregateCacheInvalidationService cacheInvalidationService,
-    IOptions<FoleoTraderOptions> options,
+    IOptions<FoleoTraderConnectionOptions> options,
     ILogger<FoleoTraderOrderProcessor> logger)
 {
-    private readonly FoleoTraderOptions options = options.Value;
+    private readonly FoleoTraderConnectionOptions options = options.Value;
 
     public async Task<Result<FoleoTraderOrderSubmittedEvent>> SubmitOrderAsync(FoleoTraderOrderRequest request, FoleoTraderFixClient fixClient, CancellationToken cancellationToken)
     {

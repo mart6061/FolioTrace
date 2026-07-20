@@ -4,7 +4,7 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
+builder.Services.Configure<FoleoTraderAcceptorOptions>(builder.Configuration.GetSection(FoleoTraderAcceptorOptions.SectionName));
 builder.Services.AddSingleton<FoleoTraderMessageMonitor>();
 builder.Services.AddSingleton<FoleoTraderFixApplication>();
 builder.Services.AddHostedService<FoleoTraderFixAcceptorHostedService>();
