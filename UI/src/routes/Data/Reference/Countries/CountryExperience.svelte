@@ -29,6 +29,7 @@
   let sortKey = $state<SortKey>('country');
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
+  let debouncedFilterText = $state('');
   let addingCountry = $state(false);
   let editingAlpha2 = $state('');
   let submittingAlpha2 = $state('');
@@ -37,9 +38,18 @@
   let historyByAlpha2 = $state<Record<string, { events: CountryReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
 
+  $effect(() => {
+    const value = filterText;
+    const timeout = setTimeout(() => {
+      debouncedFilterText = value;
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  });
+
   const filteredCountries = $derived(
     (data.countries?.items ?? []).filter((country) => {
-      const filter = filterText.trim().toLocaleLowerCase();
+      const filter = debouncedFilterText.trim().toLocaleLowerCase();
 
       if (!filter)
         return true;

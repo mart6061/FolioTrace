@@ -26,6 +26,7 @@
   let sortKey = $state<SortKey>('currency');
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
+  let debouncedFilterText = $state('');
   let addingCurrency = $state(false);
   let editingCode = $state('');
   let submittingCode = $state('');
@@ -37,9 +38,18 @@
   const currencyCount = $derived(data.currencies?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.currencies ? formatDisplayDateTime(data.currencies.asOfDateTime) : 'now');
 
+  $effect(() => {
+    const value = filterText;
+    const timeout = setTimeout(() => {
+      debouncedFilterText = value;
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  });
+
   const filteredCurrencies = $derived(
     (data.currencies?.items ?? []).filter((currency) => {
-      const filter = filterText.trim().toLocaleLowerCase();
+      const filter = debouncedFilterText.trim().toLocaleLowerCase();
 
       if (!filter)
         return true;

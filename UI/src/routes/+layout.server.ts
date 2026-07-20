@@ -8,7 +8,10 @@ import { getApiBaseUrl, getSystemVersion, getUserBookmarks, getUserMenuPreferenc
 import { getUiVersion } from '$lib/server/version';
 import type { LayoutServerLoad } from './$types';
 
+const apiVersionTtlMs = 5 * 60 * 1000;
+
 let cachedApiVersion: string | null = null;
+let cachedApiVersionAt = 0;
 let apiVersionRequest: Promise<string> | null = null;
 
 export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
@@ -66,11 +69,12 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
 };
 
 async function getApiVersion(fetchApi: typeof fetch) {
-  if (cachedApiVersion)
+  if (cachedApiVersion && Date.now() - cachedApiVersionAt < apiVersionTtlMs)
     return cachedApiVersion;
 
   apiVersionRequest ??= getSystemVersion(fetchApi).then((systemVersion) => {
     cachedApiVersion = systemVersion.apiVersion;
+    cachedApiVersionAt = Date.now();
     return cachedApiVersion;
   }).finally(() => {
     apiVersionRequest = null;

@@ -21,6 +21,7 @@
   const shellClass = $derived(renderMode === 'full' ? 'min-h-screen' : `data-list-embedded-page data-list-embedded-${renderMode}`);
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   let filterText = $state('');
+  let debouncedFilterText = $state('');
   let addingInstrument = $state(false);
   let editingInstrumentID = $state('');
   let submittingIdentifierKey = $state('');
@@ -32,9 +33,18 @@
   const identifierTypeOptions = ['Ticker', 'Sedol', 'ISIN', 'CUSIP', 'FIGI', 'RIC'];
 
   const asOfSummary = $derived(data.auditDateTime && data.instruments ? formatDisplayDateTime(data.instruments.asOfDateTime) : 'now');
+  $effect(() => {
+    const value = filterText;
+    const timeout = setTimeout(() => {
+      debouncedFilterText = value;
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  });
+
   const rows = $derived(
     (data.instruments?.items ?? []).filter((instrument) => {
-      const filter = filterText.trim().toLocaleLowerCase();
+      const filter = debouncedFilterText.trim().toLocaleLowerCase();
       if (!filter)
         return true;
 
