@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { getFormString } from '$lib/server/forms';
 import type { PageServerLoad, Actions } from './$types';
 import {
   getAccounts,
@@ -225,11 +226,6 @@ function sortAccounts(accounts: Account[]) {
 
 function sortValuationSettings(settings: ValuationSetting[]) {
   return [...settings].sort((left, right) => left.name.localeCompare(right.name));
-}
-
-function getFormString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function getFormStrings(formData: FormData, key: string) {

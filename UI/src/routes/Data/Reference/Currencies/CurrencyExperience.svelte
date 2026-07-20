@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type { CurrencyReferenceEvent } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -26,6 +27,7 @@
   let sortKey = $state<SortKey>('currency');
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
+  let debouncedFilterText = $state('');
   let addingCurrency = $state(false);
   let editingCode = $state('');
   let submittingCode = $state('');
@@ -37,9 +39,18 @@
   const currencyCount = $derived(data.currencies?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.currencies ? formatDisplayDateTime(data.currencies.asOfDateTime) : 'now');
 
+  $effect(() => {
+    const value = filterText;
+    const timeout = setTimeout(() => {
+      debouncedFilterText = value;
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  });
+
   const filteredCurrencies = $derived(
     (data.currencies?.items ?? []).filter((currency) => {
-      const filter = filterText.trim().toLocaleLowerCase();
+      const filter = debouncedFilterText.trim().toLocaleLowerCase();
 
       if (!filter)
         return true;
@@ -114,31 +125,6 @@
       lastAuditDateTime: currency.lastAuditDateTime,
       numericCode: currency.numericCode.toString().padStart(3, '0')
     }));
-  }
-
-  function downloadFile(fileName: string, content: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = fileName;
-    link.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  function csvValue(value: string) {
-    return `"${value.replaceAll('"', '""')}"`;
-  }
-
-  function htmlValue(value: string) {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
   }
 
   function exportJson() {

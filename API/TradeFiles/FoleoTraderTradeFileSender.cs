@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FolioTrace.Aggregates;
 using Microsoft.Extensions.Options;
@@ -10,7 +11,26 @@ public sealed class FoleoTraderTradeFileSender(HttpClient httpClient, IOptions<T
 
     public async Task SendAsync(TradeFileDeliveryRequest request, CancellationToken cancellationToken)
     {
-        using var response = await httpClient.PostAsJsonAsync(options.Value.FoleoTraderReceiverUrl, request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await using (request)
+        using (var form = new MultipartFormDataContent())
+        {
+            var metadata = new TradeFileDeliveryMetadata(
+                request.TradeFileID,
+                request.BrokerLEI,
+                request.FileName,
+                request.MediaType,
+                request.ContentLength,
+                request.AcknowledgementUrl,
+                request.ConfirmationUrl,
+                request.Tickets,
+                request.CallbackSecret);
+            form.Add(JsonContent.Create(metadata), "metadata");
+            var file = new StreamContent(request.Content);
+            file.Headers.ContentType = MediaTypeHeaderValue.Parse(request.MediaType);
+            form.Add(file, "file", request.FileName);
+
+            using var response = await httpClient.PostAsync(options.Value.FoleoTraderReceiverUrl, form, cancellationToken);
+            response.EnsureSuccessStatusCode();
+        }
     }
 }

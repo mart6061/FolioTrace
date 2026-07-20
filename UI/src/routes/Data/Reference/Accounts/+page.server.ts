@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { getFormString } from '$lib/server/forms';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
@@ -893,11 +894,6 @@ function formatAmount(value: number) {
     maximumFractionDigits: 8,
     minimumFractionDigits: 0
   });
-}
-
-function getFormString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function nextWorkingDayForInput(value: string) {

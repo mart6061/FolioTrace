@@ -1,3 +1,4 @@
+using API.Auth;
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
@@ -101,6 +102,49 @@ public sealed class UserServiceTests
         Assert.Equal(2, service.GetDiagnostics().CacheEntryCount);
     }
 
+    [Fact]
+    public async Task FindCurrentAsync_CachesByLatestUsersStreamEventAndRefreshesAfterAppend()
+    {
+        var created = CreateUserCreated("Original", EventDate, FirstAudit);
+        var repository = new FakeEventRepository(created);
+        var service = new UserService(repository);
+
+        var first = await service.FindCurrentAsync(UserID);
+        var cached = await service.FindCurrentAsync(UserID);
+
+        Assert.Equal("Original", first?.DisplayName);
+        Assert.Same(first, cached);
+        Assert.Equal(1, repository.LoadStreamCallCount);
+
+        repository.Append(CreateUserModified("Renamed", EventDate, SecondAudit));
+        var refreshed = await service.FindCurrentAsync(UserID);
+
+        Assert.Equal("Renamed", refreshed?.DisplayName);
+        Assert.Equal(2, repository.LoadStreamCallCount);
+    }
+
+    [Fact]
+    public async Task EnsureUserAsync_SerializesConcurrentCreationForTheSameUser()
+    {
+        var repository = new FakeEventRepository();
+        var userService = new UserService(repository);
+        var identityService = new FolioTraceUserIdentityService(
+            repository,
+            userService,
+            @event =>
+            {
+                if (@event is IUserEvent userEvent)
+                    userService.Invalidate(userEvent);
+            });
+        var identity = new FolioTraceUserIdentity(UserID.Value, "user_123", "person@example.com", "Person", "org_123");
+
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => identityService.EnsureUserAsync(identity, CancellationToken.None)));
+
+        Assert.Equal(1, repository.Count<UserCreatedEvent>());
+        Assert.Equal(1, repository.Count<UserMenuPreferencesCreatedEvent>());
+        Assert.Equal(1, repository.Count<UserValuationPreferencesCreatedEvent>());
+    }
+
     private static UserCreatedEvent CreateUserCreated(string displayName, EventDateTime eventDateTime, AuditDateTime auditDateTime) =>
         UserCreatedEventBuilder.CreateSeed(
             new EventID(Guid.CreateGuid7()),
@@ -142,6 +186,10 @@ public sealed class UserServiceTests
     private sealed class FakeEventRepository(params IEventBase[] events) : IEventRepository
     {
         private readonly List<IAuditEventBase> events = [.. events];
+        private readonly object syncRoot = new();
+        private int loadStreamCallCount;
+
+        public int LoadStreamCallCount => Volatile.Read(ref loadStreamCallCount);
 
         public EventRepositoryCacheDiagnostics GetCacheDiagnostics() => new(true, 1, events.Count, 0, 0, []);
 
@@ -157,7 +205,7 @@ public sealed class UserServiceTests
             Task.FromResult(events.OfType<T>().SingleOrDefault(@event => @event.EventID == eventId));
 
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<EventID?>(events.LastOrDefault()?.EventID);
+            Task.FromResult(GetLastEventID());
 
         public Task<EventID?> GetLastEventIDAsync(Guid streamId, DateTime valuationDateTime, DateTime? asOfDateTime = null, CancellationToken cancellationToken = default) =>
             Task.FromResult<EventID?>(events
@@ -173,7 +221,7 @@ public sealed class UserServiceTests
 
         public Task<IReadOnlyList<TEvent>> LoadStreamAsync<TEvent>(Guid streamId, CancellationToken cancellationToken = default)
             where TEvent : class, IAuditEventBase =>
-            Task.FromResult<IReadOnlyList<TEvent>>(events.OfType<TEvent>().ToList());
+            Task.FromResult<IReadOnlyList<TEvent>>(LoadEvents<TEvent>());
 
         public Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
             where TAggregate : class
@@ -185,7 +233,8 @@ public sealed class UserServiceTests
 
         public Task AppendAsync<T>(Guid streamId, T @event, CancellationToken cancellationToken = default) where T : class, IAuditEventBase
         {
-            events.Add(@event);
+            lock (syncRoot)
+                events.Add(@event);
             return Task.CompletedTask;
         }
 
@@ -195,6 +244,29 @@ public sealed class UserServiceTests
             return Task.CompletedTask;
         }
 
-        public void Append(IEventBase @event) => events.Add(@event);
+        public void Append(IEventBase @event)
+        {
+            lock (syncRoot)
+                events.Add(@event);
+        }
+
+        public int Count<TEvent>() where TEvent : class, IAuditEventBase
+        {
+            lock (syncRoot)
+                return events.OfType<TEvent>().Count();
+        }
+
+        private EventID? GetLastEventID()
+        {
+            lock (syncRoot)
+                return events.LastOrDefault()?.EventID;
+        }
+
+        private IReadOnlyList<TEvent> LoadEvents<TEvent>() where TEvent : class, IAuditEventBase
+        {
+            Interlocked.Increment(ref loadStreamCallCount);
+            lock (syncRoot)
+                return events.OfType<TEvent>().ToList();
+        }
     }
 }

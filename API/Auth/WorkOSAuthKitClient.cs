@@ -28,21 +28,15 @@ public interface IWorkOSAuthKitClient
 /// <summary>
 /// WorkOS AuthKit client using the official WorkOS.net SDK.
 /// </summary>
-public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
+public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient
 {
     private readonly WorkOSAuthOptions _options;
+    private readonly WorkOSClient client;
 
-    public WorkOSAuthKitClient(IOptions<WorkOSAuthOptions> options)
+    public WorkOSAuthKitClient(IOptions<WorkOSAuthOptions> options, WorkOSClient client)
     {
         _options = options.Value;
-
-        // Configure the global WorkOS client with API key and Client ID
-        var client = new WorkOSClient(new WorkOSOptions
-        {
-            ApiKey = _options.ApiKey,
-            ClientId = _options.ClientId
-        });
-        WorkOSConfiguration.WorkOSClient = client;
+        this.client = client;
     }
 
     public string GetAuthorizationUrl(string state)
@@ -51,7 +45,7 @@ public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
             throw new InvalidOperationException("WorkOS AuthKit is not configured.");
 
         // Use the SDK's UserManagement to generate AuthKit authorization URL
-        return WorkOSConfiguration.WorkOSClient.UserManagement.GetAuthorizationUrl(
+        return client.UserManagement.GetAuthorizationUrl(
             new UserManagementGetAuthorizationUrlOptions
             {
                 RedirectUri = _options.RedirectUri,
@@ -66,7 +60,7 @@ public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
         if (!_options.IsConfigured)
             throw new InvalidOperationException("WorkOS AuthKit is not configured.");
 
-        return WorkOSConfiguration.WorkOSClient.UserManagement.GetLogoutUrl(
+        return client.UserManagement.GetLogoutUrl(
             new UserManagementGetLogoutUrlOptions
             {
                 SessionId = sessionId,
@@ -91,7 +85,7 @@ public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
             throw new InvalidOperationException("WorkOS AuthKit is not configured.");
 
         // Exchange authorization code for user profile using the SDK
-        var authResponse = await WorkOSConfiguration.WorkOSClient.UserManagement
+        var authResponse = await client.UserManagement
             .AuthenticateWithCodeAsync(new AuthenticateWithCodeOptions
             {
                 Code = code
@@ -138,5 +132,3 @@ public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
     }
 }
 
-// Keep legacy interface as alias for backwards compatibility
-public interface IWorkOSSsoClient : IWorkOSAuthKitClient { }

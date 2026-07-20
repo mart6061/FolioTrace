@@ -12,7 +12,7 @@ public sealed class FoleoTraderMessageMonitor
     private readonly ConcurrentQueue<FoleoTraderMessageEntry> entries = new();
     private readonly string monitorPath;
 
-    public FoleoTraderMessageMonitor(IOptions<FoleoTraderOptions> options)
+    public FoleoTraderMessageMonitor(IOptions<FoleoTraderAcceptorOptions> options)
     {
         monitorPath = options.Value.MonitorPath;
         var directory = Path.GetDirectoryName(monitorPath);

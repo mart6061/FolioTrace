@@ -22,6 +22,8 @@ public sealed class RequestTraceOptions
 
     public int MaximumBodyCharacters { get; init; } = 32_000;
 
+    public int QueueCapacity { get; init; } = 4_096;
+
     public string[] CapturedContentTypePrefixes { get; init; } =
     [
         "application/json",

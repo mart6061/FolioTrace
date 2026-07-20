@@ -1,6 +1,6 @@
 using FolioTrace.Aggregates;
 
-namespace API.FoleoTrader;
+namespace FolioTrace.Aggregates;
 
 public static class FoleoTraderFillAllocator
 {

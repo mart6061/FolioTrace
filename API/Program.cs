@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Logging;
 using Repository;
 using Services;
+using WorkOS;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -51,6 +52,15 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton(provider =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<WorkOSAuthOptions>>().Value;
+    return new WorkOSClient(new WorkOSOptions
+    {
+        ApiKey = options.ApiKey,
+        ClientId = options.ClientId
+    });
+});
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v0", new()
@@ -66,7 +76,7 @@ builder.Services.AddSingleton<ApiReadinessState>();
 builder.Services.AddSingleton<FixStartupHealthState>();
 builder.Services.AddHostedService<EventStoreStartupHostedService>();
 builder.Services.AddSingleton<BuildCoordinator>();
-builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
+builder.Services.Configure<FoleoTraderConnectionOptions>(builder.Configuration.GetSection(FoleoTraderConnectionOptions.SectionName));
 builder.Services.AddSingleton<FoleoTraderOrderProcessor>();
 builder.Services.AddSingleton<FoleoTraderFIXOperationRecorder>();
 builder.Services.AddSingleton<FoleoTraderFixClient>();
@@ -87,13 +97,14 @@ builder.Services.AddSingleton<RequestTraceSettingsService>();
 builder.Services.AddSingleton<RequestTraceLogQueue>();
 builder.Services.AddHostedService<RequestTraceLogBackgroundService>();
 builder.Services.AddSingleton<IWorkOSAuthKitClient, WorkOSAuthKitClient>();
-builder.Services.AddSingleton<IWorkOSSsoClient>(sp => (IWorkOSSsoClient)sp.GetRequiredService<IWorkOSAuthKitClient>());
 builder.Services.AddSingleton<WorkOSAuthorizationStateService>();
 builder.Services.AddSingleton<FolioTraceUserIdentityService>();
 builder.AddApiObservability();
 builder.Services.AddHostedService<AggregateMaintenanceHostedService>();
 
 var app = builder.Build();
+
+AggregateCacheInvalidatorCompletenessCheck.Validate(app.Services);
 
 app.UsePathBase("/API");
 

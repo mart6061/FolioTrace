@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type { CountryReferenceEvent } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -29,6 +30,7 @@
   let sortKey = $state<SortKey>('country');
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
+  let debouncedFilterText = $state('');
   let addingCountry = $state(false);
   let editingAlpha2 = $state('');
   let submittingAlpha2 = $state('');
@@ -37,9 +39,18 @@
   let historyByAlpha2 = $state<Record<string, { events: CountryReferenceEvent[]; error: string; loading: boolean }>>({});
   let loadedHistoryContextKey = $state('');
 
+  $effect(() => {
+    const value = filterText;
+    const timeout = setTimeout(() => {
+      debouncedFilterText = value;
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  });
+
   const filteredCountries = $derived(
     (data.countries?.items ?? []).filter((country) => {
-      const filter = filterText.trim().toLocaleLowerCase();
+      const filter = debouncedFilterText.trim().toLocaleLowerCase();
 
       if (!filter)
         return true;
@@ -114,31 +125,6 @@
       numeric: country.numeric.toString().padStart(3, '0'),
       lastAuditDateTime: country.lastAuditDateTime
     }));
-  }
-
-  function downloadFile(fileName: string, content: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = fileName;
-    link.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  function csvValue(value: string) {
-    return `"${value.replaceAll('"', '""')}"`;
-  }
-
-  function htmlValue(value: string) {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
   }
 
   function exportJson() {

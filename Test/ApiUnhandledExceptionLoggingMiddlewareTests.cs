@@ -33,11 +33,14 @@ public sealed class ApiUnhandledExceptionLoggingMiddlewareTests
                 new TestWebHostEnvironment { ContentRootPath = contentRoot },
                 NullLogger<ApiUnhandledExceptionLoggingMiddleware>.Instance,
                 new ApiUnhandledExceptionLoggingOptions());
+            var queue = new RequestTraceLogQueue(
+                Options.Create(new RequestTraceOptions { QueueCapacity = 16 }),
+                NullLogger<RequestTraceLogQueue>.Instance);
             var context = new DefaultHttpContext();
             context.Response.Body = new MemoryStream();
             context.Request.Path = "/failure";
 
-            await middleware.InvokeAsync(context, repository, settings);
+            await middleware.InvokeAsync(context, queue, settings);
 
             Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
             Assert.Equal("application/problem+json", context.Response.ContentType);

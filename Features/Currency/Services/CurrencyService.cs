@@ -58,11 +58,10 @@ public sealed class CurrencyService(IEventRepository eventRepository, int cacheC
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = CurrencyCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.CurrenciesStreamId, valuationDate.Value);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
@@ -120,7 +119,7 @@ public sealed class CurrencyService(IEventRepository eventRepository, int cacheC
         {
             var removedCount = 0;
 
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => !cacheKey.AsAtDateTime.HasValue && cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
             {
                 if (cache.Remove(cacheKey))
                     removedCount++;

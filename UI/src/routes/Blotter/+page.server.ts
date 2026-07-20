@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { requireCurrentUser } from '$lib/server/auth';
+import { getFormString } from '$lib/server/forms';
 import {
   getAccounts,
   getActiveTradeFiles,
@@ -1054,11 +1055,6 @@ function formatValidationNumber(value: number) {
     return '0';
 
   return value.toLocaleString(undefined, { maximumFractionDigits: 8 });
-}
-
-function getFormString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function getFormStrings(formData: FormData, key: string) {

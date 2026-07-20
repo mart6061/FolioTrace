@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates';
+import { getFormString } from '$lib/server/forms';
 import type { PageServerLoad, Actions } from './$types';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
@@ -171,11 +172,6 @@ export const actions: Actions = {
     }
   }
 };
-
-function getFormString(formData: FormData, name: string) {
-  const value = formData.get(name);
-  return typeof value === 'string' ? value.trim() : '';
-}
 
 function parseBookmarks(value: string) {
   if (!value)
