@@ -9,6 +9,7 @@ public sealed class UserService(IEventRepository eventRepository, int cacheCapac
 {
     private readonly Lock cacheLock = new();
     private readonly BoundedLruCache<UserCacheKey, Users> cache = new(cacheCapacity);
+    private readonly Dictionary<UserID, CurrentUserCacheEntry> currentUserCache = [];
 
     public UserServiceDiagnostics GetDiagnostics()
     {
