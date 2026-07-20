@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class HoldingService(IEventRepository eventRepository)
+public sealed class HoldingService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<HoldingCacheKey, Holdings> cache = [];
+    private readonly BoundedLruCache<HoldingCacheKey, Holdings> cache = new(cacheCapacity);
 
     public HoldingServiceDiagnostics GetDiagnostics()
     {

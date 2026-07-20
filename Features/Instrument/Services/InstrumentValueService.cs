@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class InstrumentValueService(IEventRepository eventRepository)
+public sealed class InstrumentValueService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<InstrumentValueCacheKey, InstrumentValues> cache = [];
+    private readonly BoundedLruCache<InstrumentValueCacheKey, InstrumentValues> cache = new(cacheCapacity);
 
     public InstrumentValueServiceDiagnostics GetDiagnostics()
     {

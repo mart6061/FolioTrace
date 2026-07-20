@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class AccountService(IEventRepository eventRepository) : IReferenceDataService<Accounts, AccountServiceDiagnostics>
+public sealed class AccountService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<Accounts, AccountServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<AccountCacheKey, Accounts> cache = [];
+    private readonly BoundedLruCache<AccountCacheKey, Accounts> cache = new(cacheCapacity);
 
     public Task<Accounts> Current => Get(ReferenceDataCurrent.EndOfToday());
 

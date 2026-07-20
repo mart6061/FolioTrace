@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class UserValuationPreferencesService(IEventRepository eventRepository)
+public sealed class UserValuationPreferencesService(IEventRepository eventRepository, int cacheCapacity = 500)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<UserValuationPreferencesCacheKey, UserValuationPreferences> cache = [];
+    private readonly BoundedLruCache<UserValuationPreferencesCacheKey, UserValuationPreferences> cache = new(cacheCapacity);
 
     public UserValuationPreferencesServiceDiagnostics GetDiagnostics()
     {

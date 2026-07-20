@@ -5,10 +5,10 @@ using Repository;
 
 namespace Services;
 
-public sealed class CurrencyService(IEventRepository eventRepository) : IReferenceDataService<Currencies, CurrencyServiceDiagnostics>
+public sealed class CurrencyService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<Currencies, CurrencyServiceDiagnostics>
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<CurrencyCacheKey, Currencies> cache = [];
+    private readonly BoundedLruCache<CurrencyCacheKey, Currencies> cache = new(cacheCapacity);
 
     public Task<Currencies> Current => Get(ReferenceDataCurrent.EndOfToday());
 

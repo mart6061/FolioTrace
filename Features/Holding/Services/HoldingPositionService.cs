@@ -10,10 +10,11 @@ public sealed class HoldingPositionService(
     IEventRepository eventRepository,
     HoldingService holdingService,
     AccountService accountService,
-    InstrumentService instrumentService)
+    InstrumentService instrumentService,
+    int cacheCapacity = 2000)
 {
     private readonly Lock cacheLock = new();
-    private readonly Dictionary<HoldingPositionCacheKey, HoldingPositions> cache = [];
+    private readonly BoundedLruCache<HoldingPositionCacheKey, HoldingPositions> cache = new(cacheCapacity);
 
     public HoldingPositionServiceDiagnostics GetDiagnostics()
     {
