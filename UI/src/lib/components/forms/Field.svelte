@@ -5,6 +5,8 @@
   type Props = {
     children?: Snippet;
     class?: string;
+    controlId?: string;
+    dense?: boolean;
     error?: string;
     help?: string;
     inline?: boolean;
@@ -15,6 +17,8 @@
   let {
     children,
     class: className = '',
+    controlId,
+    dense = false,
     error,
     help,
     inline = false,
@@ -23,19 +27,35 @@
   }: Props = $props();
 </script>
 
-<label class={classNames('house-field', inline && 'house-field-inline', className)}>
-  {#if label}
-    <span class="house-field-label">
-      {label}
-      {#if required}
-        <span aria-hidden="true" class="house-field-required">*</span>
-      {/if}
-    </span>
+{#snippet fieldLabel()}
+  {label}
+  {#if required}
+    <span aria-hidden="true" class="house-field-required">*</span>
   {/if}
-  {@render children?.()}
-  {#if error}
-    <span class="house-field-message house-field-error">{error}</span>
-  {:else if help}
-    <span class="house-field-message">{help}</span>
-  {/if}
-</label>
+{/snippet}
+
+{#if controlId}
+  <div class={classNames('house-field', dense && 'house-field-dense', inline && 'house-field-inline', className)}>
+    {#if label}
+      <label class="house-field-label" for={controlId}>{@render fieldLabel()}</label>
+    {/if}
+    {@render children?.()}
+    {#if error}
+      <span class="house-field-message house-field-error">{error}</span>
+    {:else if help}
+      <span class="house-field-message">{help}</span>
+    {/if}
+  </div>
+{:else}
+  <label class={classNames('house-field', dense && 'house-field-dense', inline && 'house-field-inline', className)}>
+    {#if label}
+      <span class="house-field-label">{@render fieldLabel()}</span>
+    {/if}
+    {@render children?.()}
+    {#if error}
+      <span class="house-field-message house-field-error">{error}</span>
+    {:else if help}
+      <span class="house-field-message">{help}</span>
+    {/if}
+  </label>
+{/if}

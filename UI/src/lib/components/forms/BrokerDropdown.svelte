@@ -8,6 +8,7 @@
     class?: string;
     compactBrand?: boolean;
     disabled?: boolean;
+    id?: string;
     method?: 'FIX' | 'TradeFile';
     name?: string;
     placeholder?: string;
@@ -19,6 +20,7 @@
     class: className = '',
     compactBrand = false,
     disabled = false,
+    id,
     method,
     name = '',
     placeholder = 'Select broker',
@@ -48,6 +50,7 @@
   class={className}
   {compactBrand}
   {disabled}
+  {id}
   {name}
   {options}
   placeholder={options.length ? placeholder : 'No ' + (method ?? '') + ' brokers available'}
