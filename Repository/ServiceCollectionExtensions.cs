@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<MartenEventRepository>();
         services.AddScoped<IRequestTraceRepository, MartenRequestTraceRepository>();
+        services.AddScoped<IFoleoTraderFixOperationRepository, MartenFoleoTraderFixOperationRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
         services.AddScoped<ISeedRepository, SeedRepository>();

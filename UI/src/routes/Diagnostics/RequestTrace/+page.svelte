@@ -15,6 +15,7 @@
   const totalCount = $derived(data.traces?.totalCount ?? 0);
   const page = $derived(data.traces?.page ?? 1);
   const pageSize = $derived(data.traces?.pageSize ?? 50);
+  const queue = $derived(data.traces?.queue ?? { capacity: 0, droppedEventCount: 0 });
   const totalPages = $derived(Math.max(1, Math.ceil(totalCount / pageSize)));
 
   function toggleExpanded(id: string) {
@@ -371,6 +372,7 @@
           requests
         </div>
         <div>Page {page} of {totalPages}</div>
+        <div>Queue {queue.droppedEventCount} dropped / {queue.capacity} capacity</div>
       </div>
 
       <div class="data-panel">

@@ -1100,6 +1100,10 @@ export type RequestTraceSearchResponse = {
   page: number;
   pageSize: number;
   settings: RequestTraceSettings;
+  queue: {
+    capacity: number;
+    droppedEventCount: number;
+  };
 };
 
 export type FIXOperation = {
