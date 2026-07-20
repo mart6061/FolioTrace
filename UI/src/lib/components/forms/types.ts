@@ -1,7 +1,10 @@
-export type ComplexSelectOption = {
+export type SelectValue = string | number;
+
+export type ComplexSelectOption<T extends SelectValue = string> = {
   badge?: string;
   badgeTone?: 'default' | 'positive';
-  id: string;
+  disabled?: boolean;
+  id: T;
   name: string;
   meta?: string;
   search?: string;

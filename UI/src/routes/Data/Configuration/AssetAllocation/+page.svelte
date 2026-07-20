@@ -3,7 +3,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
-  import { MultiSelect } from '$lib/components/forms';
+  import { ComplexSelect, type ComplexSelectOption } from '$lib/components/forms';
   import AssetAllocationMappingEditor from './AssetAllocationMappingEditor.svelte';
 
   let { data, form } = $props();
@@ -15,6 +15,10 @@
   const selectedValuationSettingID = $derived(validSelectedValuationSettingID());
   const selectedControlSetting = $derived(data.valuationSettings.find((setting) => setting.assetAllocationID === selectedValuationSettingID) ?? null);
   const accountOptions = $derived(accountsForSetting(selectedValuationSettingID));
+  const accountSelectOptions = $derived<ComplexSelectOption[]>(accountOptions.map((account) => ({
+    id: account.accountID,
+    name: account.name
+  })));
   const selectedAccountIDs = $derived(validSelectedAccountIDs());
   const selectedAccounts = $derived(accountOptions.filter((account) => selectedAccountIDs.includes(account.accountID)));
   const selectedAccountSummary = $derived(accountSummary());
@@ -42,10 +46,9 @@
     selectedAccountIDOverrides = accountsForSetting(value).map((account) => account.accountID);
   }
 
-  function toggleAccount(accountID: string, checked: boolean) {
-    selectedAccountIDOverrides = checked
-      ? [...new Set([...selectedAccountIDs, accountID])]
-      : selectedAccountIDs.filter((selectedAccountID) => selectedAccountID !== accountID);
+  function changeAccounts(selection: string | string[] | undefined) {
+    if (Array.isArray(selection))
+      selectedAccountIDOverrides = selection;
   }
 
   function validSelectedAccountIDs() {
@@ -116,24 +119,22 @@
 
         <div class="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Account
-          <MultiSelect bind:open={accountDropdownOpen} summary={selectedAccountSummary}>
-            {#if selectedControlSetting && accountOptions.length}
-              {#each accountOptions as account (account.accountID)}
-                <label class="house-checkbox-option">
-                  <input
-                    checked={selectedAccountIDs.includes(account.accountID)}
-                    name="accountIDs"
-                    onchange={(event) => toggleAccount(account.accountID, event.currentTarget.checked)}
-                    type="checkbox"
-                    value={account.accountID}
-                  />
-                  <span class="truncate">{account.name}</span>
-                </label>
-              {/each}
-            {:else}
-              <div class="px-2 py-1.5 font-normal text-slate-500">No accounts are assigned to this config.</div>
-            {/if}
-          </MultiSelect>
+          <ComplexSelect
+            ariaLabel="Accounts"
+            bind:open={accountDropdownOpen}
+            disabled={!selectedControlSetting || !accountOptions.length}
+            emptyText="No accounts are assigned to this config."
+            multiple
+            name="accountIDs"
+            onchange={changeAccounts}
+            options={accountSelectOptions}
+            placeholder="No accounts are assigned to this config."
+            searchPlaceholder="Search accounts"
+            showClear={false}
+            showSelectAll={false}
+            summary={selectedAccountSummary}
+            values={selectedAccountIDs}
+          />
         </div>
 
         <button class="house-button house-button-primary house-button-md" disabled={!selectedValuationSettingID || !selectedAccountIDs.length} type="submit">Apply</button>

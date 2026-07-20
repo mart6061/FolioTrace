@@ -1,8 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { tick } from 'svelte';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
-  import { MultiSelect, Toggle } from '$lib/components/forms';
+  import { ComplexSelect, Toggle, type ComplexSelectOption } from '$lib/components/forms';
   import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportProfitLossMethod, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -58,6 +59,10 @@
   const reportConfigs = $derived(data.reportConfigs?.items ?? []);
   const assetAllocations = $derived(data.valuationSettings?.items ?? []);
   const selectedAccountIDs = $derived((data.selectedAccountIDs ?? []) as string[]);
+  const accountOptions = $derived<ComplexSelectOption[]>(accounts.map((account) => ({
+    id: account.accountID,
+    name: account.name
+  })));
 
   let editingReportID = $state('');
   let draftName = $state('');
@@ -97,6 +102,13 @@
   function submitFilterChange(event: Event) {
     const input = event.currentTarget;
     input instanceof HTMLInputElement && input.form?.requestSubmit();
+  }
+
+  async function submitAccountFilter(_selection: string | string[] | undefined, event: Event) {
+    await tick();
+    const control = event.currentTarget;
+    if (control instanceof HTMLButtonElement)
+      control.form?.requestSubmit();
   }
 
   function normalizeReportNodes(nodes: ReportNodeBase[]) {
@@ -505,14 +517,19 @@
       <form class="report-tools-filter" method="GET">
         <label class="field report-account-filter">
           <span>Accounts</span>
-          <MultiSelect bind:open={accountDropdownOpen} summary={selectedAccountIDs.length === accounts.length ? 'All accounts' : `${selectedAccountIDs.length} selected`}>
-            {#each accounts as account (account.accountID)}
-              <label class="house-checkbox-option">
-                <input name="accountID" type="checkbox" value={account.accountID} checked={selectedAccountIDs.includes(account.accountID)} onchange={submitFilterChange} />
-                <span>{account.name}</span>
-              </label>
-            {/each}
-          </MultiSelect>
+          <ComplexSelect
+            ariaLabel="Accounts"
+            bind:open={accountDropdownOpen}
+            multiple
+            name="accountID"
+            onchange={submitAccountFilter}
+            options={accountOptions}
+            searchPlaceholder="Search accounts"
+            showClear={false}
+            showSelectAll={false}
+            summary={selectedAccountIDs.length === accounts.length ? 'All accounts' : `${selectedAccountIDs.length} selected`}
+            values={selectedAccountIDs}
+          />
         </label>
         <Toggle checked={data.showAll} class="toggle-row report-show-all-toggle" label="Show All" name="showAll" onchange={submitFilterChange} value="true" />
       </form>

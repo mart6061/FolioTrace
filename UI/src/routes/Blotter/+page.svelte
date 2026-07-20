@@ -4,10 +4,10 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
-  import { BrokerDropdown, ComplexSelect, MultiSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
+  import { BrokerDropdown, ComplexSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
-  import type { Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
+  import type { Account, Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   type TicketEditContext = 'Proposal' | 'Trade';
@@ -285,19 +285,18 @@
     return activeAccounts.filter((account) => !selected.has(account.accountID));
   }
 
-  function handleAccountAddToggle(event: Event, ticketNumber: number) {
-    const details = event.currentTarget;
-    if (!(details instanceof HTMLDetailsElement))
-      return;
-
-    if (details.open)
-      openAccountAddTicketNumber = ticketNumber;
-    else if (openAccountAddTicketNumber === ticketNumber)
-      openAccountAddTicketNumber = 0;
+  function accountAddOptions(accounts: Account[]): ComplexSelectOption[] {
+    return accounts.map((account) => ({
+      id: account.accountID,
+      name: account.name,
+      meta: account.bookCurrency
+    }));
   }
 
-  function closeAccountAdd(ticketNumber: number) {
-    if (openAccountAddTicketNumber === ticketNumber)
+  function handleAccountAddOpenChange(open: boolean, ticketNumber: number) {
+    if (open)
+      openAccountAddTicketNumber = ticketNumber;
+    else if (openAccountAddTicketNumber === ticketNumber)
       openAccountAddTicketNumber = 0;
   }
 
@@ -1552,24 +1551,26 @@
                 <h2>Accounts</h2>
                 {#if canEditProposalTerms(ticket)}
                   {@const accountsAvailableForAdd = availableAccounts(ticket)}
+                  {@const accountOptionsForAdd = accountAddOptions(accountsAvailableForAdd)}
                   <form class="account-add-form" method="POST" action="?/addAccount" use:enhance={enhanceAction(`add-account-${ticket.ticketNumber}`)}>
                     <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                     <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                    <MultiSelect
+                    <ComplexSelect
+                      ariaLabel="Accounts available to add"
                       class="ticket-account-add-select"
-                      close={() => closeAccountAdd(ticket.ticketNumber)}
                       disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}
+                      emptyText="No accounts available"
+                      multiple
+                      name="accountIDs"
                       open={openAccountAddTicketNumber === ticket.ticketNumber}
-                      ontoggle={(event) => handleAccountAddToggle(event, ticket.ticketNumber)}
+                      onopenchange={(open) => handleAccountAddOpenChange(open, ticket.ticketNumber)}
+                      options={accountOptionsForAdd}
+                      placeholder="No accounts available"
+                      searchPlaceholder="Search accounts"
+                      showClear={false}
+                      showSelectAll={false}
                       summary={accountsAvailableForAdd.length === 0 ? 'No accounts available' : 'Add accounts'}
-                    >
-                      {#each accountsAvailableForAdd as account (account.accountID)}
-                        <label class="house-checkbox-option">
-                          <input name="accountIDs" type="checkbox" value={account.accountID} disabled={!proposalInputActive} />
-                          <span>{account.name} {account.bookCurrency}</span>
-                        </label>
-                      {/each}
-                    </MultiSelect>
+                    />
                     <button class="house-button house-button-secondary house-button-md account-add-button" type="submit" disabled={!proposalInputActive || accountsAvailableForAdd.length === 0}>Add</button>
                   </form>
                 {/if}
