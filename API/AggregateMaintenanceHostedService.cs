@@ -11,7 +11,16 @@ public sealed class AggregateMaintenanceHostedService(
     {
         await readinessState.WaitUntilReadyAsync(stoppingToken);
 
-        if (!options.Enabled || options.PeriodicDelay <= TimeSpan.Zero)
+        if (!options.Enabled)
+            return;
+
+        // Runs once immediately, before the periodic timer's first tick, so a fresh process doesn't serve
+        // PeriodicDelay's worth of cold rebuilds after every restart. For HoldingPositions specifically, this
+        // is what makes the warm loop pull from persisted snapshots on startup (Aggregate-Snapshot-Scaling-
+        // Plan.md 3.5) instead of only ever seeding the cache after the first periodic run.
+        await coordinator.RunAsync("Startup", stoppingToken);
+
+        if (options.PeriodicDelay <= TimeSpan.Zero)
             return;
 
         using var timer = new PeriodicTimer(options.PeriodicDelay);
