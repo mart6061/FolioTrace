@@ -14,22 +14,7 @@ internal static class UserValuationPreferencesEventValidation
         UserValuationDateOption endValuationDateOption,
         HoldingDateBasis holdingDateBasis)
     {
-        var messages = new List<string>();
-
-        if (eventID is null)
-            messages.Add("EventID is required.");
-
-        if (userID is null)
-            messages.Add("UserID is required.");
-
-        if (eventDateTime is null)
-            messages.Add("EventDateTime is required.");
-
-        if (auditDateTime is null)
-            messages.Add("AuditDateTime is required.");
-
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
+        var messages = EventFieldValidation.CommonFieldMessages(eventID, userID, eventDateTime, auditDateTime, reason);
 
         if (!Enum.IsDefined(startValuationDateOption))
             messages.Add($"StartValuationDateOption '{startValuationDateOption}' is not supported.");

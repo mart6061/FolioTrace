@@ -7,15 +7,7 @@ internal static class AssetAllocationEventValidation
     public static List<string> ValidateBase(EventID? eventId, UserID? userId, AuditDateTime? auditDateTime, AssetAllocationID? assetAllocationID)
     {
         var messages = new List<string>();
-
-        if (eventId is null)
-            messages.Add("EventID is required.");
-
-        if (userId is null)
-            messages.Add("UserID is required.");
-
-        if (auditDateTime is null)
-            messages.Add("AuditDateTime is required.");
+        EventFieldValidation.AddAuditFieldMessages(messages, eventId, userId, auditDateTime);
 
         if (assetAllocationID is null)
             messages.Add("AssetAllocationID is required.");

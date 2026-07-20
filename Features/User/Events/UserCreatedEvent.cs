@@ -39,22 +39,7 @@ public sealed record UserCreatedEvent : EventBase, IUserEvent
 
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, string? displayName, UserDisplayPreferences? displayPreferences, UserProfileValuationPreferences? valuationPreferences)
     {
-        var messages = new List<string>();
-
-        if (eventId is null)
-            messages.Add("EventID is required.");
-
-        if (userId is null)
-            messages.Add("UserID is required.");
-
-        if (eventDateTime is null)
-            messages.Add("EventDateTime is required.");
-
-        if (auditDateTime is null)
-            messages.Add("AuditDateTime is required.");
-
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
+        var messages = EventFieldValidation.CommonFieldMessages(eventId, userId, eventDateTime, auditDateTime, reason);
 
         if (string.IsNullOrWhiteSpace(displayName))
             messages.Add("DisplayName is required.");

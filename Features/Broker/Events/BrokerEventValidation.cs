@@ -6,22 +6,7 @@ internal static class BrokerEventValidation
 {
     public static List<string> ValidateBase(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, LegalEntityIdentifier? lei)
     {
-        var messages = new List<string>();
-
-        if (eventId is null)
-            messages.Add("EventID is required.");
-
-        if (userId is null)
-            messages.Add("UserID is required.");
-
-        if (eventDateTime is null)
-            messages.Add("EventDateTime is required.");
-
-        if (auditDateTime is null)
-            messages.Add("AuditDateTime is required.");
-
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
+        var messages = EventFieldValidation.CommonFieldMessages(eventId, userId, eventDateTime, auditDateTime, reason);
 
         if (lei is null)
             messages.Add("LEI is required.");
