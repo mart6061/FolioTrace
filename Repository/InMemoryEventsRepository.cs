@@ -227,20 +227,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             if (isLoaded)
                 return;
 
-            IReadOnlyList<StoredEvent> storedEvents;
-            try
-            {
-                storedEvents = await durableRepository.LoadAllAsync(cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                storedEvents = [];
-
-                lock (sync)
-                {
-                    RecordUnprocessedEvent(null, null, "Unknown", $"Unable to load stored events: {exception.Message}");
-                }
-            }
+            var storedEvents = await durableRepository.LoadAllAsync(cancellationToken);
 
             lock (sync)
             {
