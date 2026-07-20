@@ -198,7 +198,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
     }
 
-    public async Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> workflowStreams, StoredFilePayload? storedFile = null, CancellationToken cancellationToken = default)
+    public async Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> workflowStreams, StoredFileWrite? storedFile = null, CancellationToken cancellationToken = default)
     {
         await EnsureLoadedAsync(cancellationToken);
         await writeLock.WaitAsync(cancellationToken);
@@ -212,9 +212,6 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         }
         finally { writeLock.Release(); }
     }
-
-    public Task<StoredFilePayload?> LoadStoredFileAsync(Guid id, CancellationToken cancellationToken = default) =>
-        durableRepository.LoadStoredFileAsync(id, cancellationToken);
 
     private async Task EnsureLoadedAsync(CancellationToken cancellationToken)
     {

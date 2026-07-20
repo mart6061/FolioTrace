@@ -1,9 +1,13 @@
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace API.Auth;
 
 public sealed class UserConsistencyEndpointFilter : IEndpointFilter
 {
+    private static readonly ConcurrentDictionary<Type, UserIDAccessor> UserIDAccessors = new();
+
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var currentUser = AuthEndpointRegistration.CurrentUserFromPrincipal(context.HttpContext.User);
@@ -37,11 +41,11 @@ public sealed class UserConsistencyEndpointFilter : IEndpointFilter
 
     private static bool ArgumentUserMatches(object argument, Guid currentUserID)
     {
-        var property = argument.GetType().GetProperty("UserID", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-        if (property is null)
+        var accessor = UserIDAccessors.GetOrAdd(argument.GetType(), CreateUserIDAccessor);
+        if (!accessor.Exists)
             return true;
 
-        var value = property.GetValue(argument);
+        var value = accessor.Getter!(argument);
         return value switch
         {
             null => true,
@@ -51,4 +55,18 @@ public sealed class UserConsistencyEndpointFilter : IEndpointFilter
             _ => false
         };
     }
+
+    private static UserIDAccessor CreateUserIDAccessor(Type argumentType)
+    {
+        var property = argumentType.GetProperty("UserID", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        if (property is null || property.GetMethod is null)
+            return new UserIDAccessor(false, null);
+
+        var argument = Expression.Parameter(typeof(object), "argument");
+        var value = Expression.Property(Expression.Convert(argument, argumentType), property);
+        var getter = Expression.Lambda<Func<object, object?>>(Expression.Convert(value, typeof(object)), argument).Compile();
+        return new UserIDAccessor(true, getter);
+    }
+
+    private sealed record UserIDAccessor(bool Exists, Func<object, object?>? Getter);
 }

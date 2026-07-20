@@ -31,9 +31,6 @@ public interface IEventRepository
 
     Task AppendAsync(Guid streamId, IEnumerable<IAuditEventBase> events, CancellationToken cancellationToken = default);
 
-    Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> streams, StoredFilePayload? storedFile = null, CancellationToken cancellationToken = default) =>
+    Task AppendWorkflowAsync(IReadOnlyDictionary<Guid, IReadOnlyList<IAuditEventBase>> streams, StoredFileWrite? storedFile = null, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException("Atomic workflow writes are not supported by this repository.");
-
-    Task<StoredFilePayload?> LoadStoredFileAsync(Guid id, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException("Stored files are not supported by this repository.");
 }

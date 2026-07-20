@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using FolioTrace;
@@ -9,11 +10,31 @@ using Services;
 
 namespace API.Auth;
 
-public sealed class FolioTraceUserIdentityService(
-    IEventRepository eventRepository,
-    AggregateCacheInvalidationService cacheInvalidationService)
+public sealed class FolioTraceUserIdentityService
 {
     private const string UserIDNamespace = "FolioTrace.WorkOS.EmailUserID.v1:";
+    private readonly IEventRepository eventRepository;
+    private readonly UserService userService;
+    private readonly Action<IAuditEventBase> invalidate;
+    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> userCreationLocks = new();
+
+    public FolioTraceUserIdentityService(
+        IEventRepository eventRepository,
+        AggregateCacheInvalidationService cacheInvalidationService,
+        UserService userService)
+        : this(eventRepository, userService, @event => cacheInvalidationService.Invalidate(@event))
+    {
+    }
+
+    internal FolioTraceUserIdentityService(
+        IEventRepository eventRepository,
+        UserService userService,
+        Action<IAuditEventBase> invalidate)
+    {
+        this.eventRepository = eventRepository;
+        this.userService = userService;
+        this.invalidate = invalidate;
+    }
 
     public FolioTraceUserIdentity CreateIdentity(WorkOSProfile profile)
     {
@@ -48,38 +69,48 @@ public sealed class FolioTraceUserIdentityService(
     public async Task EnsureUserAsync(FolioTraceUserIdentity identity, CancellationToken cancellationToken)
     {
         var userID = new UserID(identity.UserID);
-        var userEvents = await eventRepository.LoadStreamAsync<IUserEvent>(Constants.Initialisation.UsersStreamId, cancellationToken);
-
-        if (userEvents.OfType<UserCreatedEvent>().Any(@event => @event.UserID == userID))
+        if (await userService.FindCurrentAsync(userID, cancellationToken) is not null)
             return;
 
-        var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow);
-        var userResult = UserCreatedEventBuilder.Create(
-            userID,
-            eventDateTime,
-            "Create WorkOS user",
-            identity.DisplayName,
-            new UserDisplayPreferences(false, false),
-            new UserProfileValuationPreferences(eventDateTime, true, true));
+        var creationLock = userCreationLocks.GetOrAdd(identity.UserID, static _ => new SemaphoreSlim(1, 1));
+        await creationLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (await userService.FindCurrentAsync(userID, cancellationToken) is not null)
+                return;
 
-        if (!userResult.IsValid || userResult.Value is null)
-            throw new InvalidOperationException($"Unable to create user: {string.Join("; ", userResult.ValidationErrors)}");
+            var eventDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow);
+            var userResult = UserCreatedEventBuilder.Create(
+                userID,
+                eventDateTime,
+                "Create WorkOS user",
+                identity.DisplayName,
+                new UserDisplayPreferences(false, false),
+                new UserProfileValuationPreferences(eventDateTime, true, true));
 
-        var menuPreferencesResult = UserMenuPreferencesCreatedEventBuilder.CreateDefault(userResult.Value);
-        var valuationPreferencesResult = UserValuationPreferencesCreatedEventBuilder.CreateDefault(userResult.Value);
+            if (!userResult.IsValid || userResult.Value is null)
+                throw new InvalidOperationException($"Unable to create user: {string.Join("; ", userResult.ValidationErrors)}");
 
-        if (!menuPreferencesResult.IsValid || menuPreferencesResult.Value is null)
-            throw new InvalidOperationException($"Unable to create default menu preferences: {string.Join("; ", menuPreferencesResult.ValidationErrors)}");
+            var menuPreferencesResult = UserMenuPreferencesCreatedEventBuilder.CreateDefault(userResult.Value);
+            var valuationPreferencesResult = UserValuationPreferencesCreatedEventBuilder.CreateDefault(userResult.Value);
 
-        if (!valuationPreferencesResult.IsValid || valuationPreferencesResult.Value is null)
-            throw new InvalidOperationException($"Unable to create default valuation preferences: {string.Join("; ", valuationPreferencesResult.ValidationErrors)}");
+            if (!menuPreferencesResult.IsValid || menuPreferencesResult.Value is null)
+                throw new InvalidOperationException($"Unable to create default menu preferences: {string.Join("; ", menuPreferencesResult.ValidationErrors)}");
 
-        await eventRepository.AppendAsync(Constants.Initialisation.UsersStreamId, userResult.Value, cancellationToken);
-        await eventRepository.AppendAsync(Constants.Initialisation.UserMenuPreferencesStreamId, menuPreferencesResult.Value, cancellationToken);
-        await eventRepository.AppendAsync(Constants.Initialisation.UserValuationPreferencesStreamId, valuationPreferencesResult.Value, cancellationToken);
-        cacheInvalidationService.Invalidate(userResult.Value);
-        cacheInvalidationService.Invalidate(menuPreferencesResult.Value);
-        cacheInvalidationService.Invalidate(valuationPreferencesResult.Value);
+            if (!valuationPreferencesResult.IsValid || valuationPreferencesResult.Value is null)
+                throw new InvalidOperationException($"Unable to create default valuation preferences: {string.Join("; ", valuationPreferencesResult.ValidationErrors)}");
+
+            await eventRepository.AppendAsync(Constants.Initialisation.UsersStreamId, userResult.Value, cancellationToken);
+            await eventRepository.AppendAsync(Constants.Initialisation.UserMenuPreferencesStreamId, menuPreferencesResult.Value, cancellationToken);
+            await eventRepository.AppendAsync(Constants.Initialisation.UserValuationPreferencesStreamId, valuationPreferencesResult.Value, cancellationToken);
+            invalidate(userResult.Value);
+            invalidate(menuPreferencesResult.Value);
+            invalidate(valuationPreferencesResult.Value);
+        }
+        finally
+        {
+            creationLock.Release();
+        }
     }
 
     public async Task RecordSignInAsync(FolioTraceUserIdentity identity, CancellationToken cancellationToken)
@@ -93,7 +124,7 @@ public sealed class FolioTraceUserIdentityService(
             throw new InvalidOperationException($"Unable to record sign in: {string.Join("; ", result.ValidationErrors)}");
 
         await eventRepository.AppendAsync(Constants.Initialisation.UsersStreamId, result.Value, cancellationToken);
-        cacheInvalidationService.Invalidate(result.Value);
+        invalidate(result.Value);
     }
 
     public async Task RecordSignOutAsync(Guid userID, CancellationToken cancellationToken)
@@ -107,7 +138,7 @@ public sealed class FolioTraceUserIdentityService(
             throw new InvalidOperationException($"Unable to record sign out: {string.Join("; ", result.ValidationErrors)}");
 
         await eventRepository.AppendAsync(Constants.Initialisation.UsersStreamId, result.Value, cancellationToken);
-        cacheInvalidationService.Invalidate(result.Value);
+        invalidate(result.Value);
     }
 
     public static Guid DeriveUserIDFromEmail(string email)

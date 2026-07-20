@@ -1,6 +1,6 @@
 namespace API.FoleoTrader;
 
-public sealed class FoleoTraderOptions
+public sealed class FoleoTraderConnectionOptions
 {
     public const string SectionName = "FoleoTrader";
 

@@ -58,8 +58,12 @@ public static class TradeFileEndpointRegistration
         {
             if (request.TradeMethodType != TradeMethodType.TradeFile)
                 return Results.BadRequest(new { error = "TradeFile method is required." });
-            var tickets = await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create());
-            var brokers = await brokerService.Get(request.EventDateTime, AuditDateTimeBuilder.Create());
+            var asAt = AuditDateTimeBuilder.Create();
+            var ticketsTask = ticketService.Get(request.EventDateTime, asAt);
+            var brokersTask = brokerService.Get(request.EventDateTime, asAt);
+            await Task.WhenAll(ticketsTask, brokersTask);
+            var tickets = await ticketsTask;
+            var brokers = await brokersTask;
             var result = TicketTradeExecutionEventBuilder.Request(request, tickets, brokers);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
@@ -67,14 +71,13 @@ public static class TradeFileEndpointRegistration
             cacheInvalidationService.Invalidate(result.Value);
             return Results.Ok(new { EventID = result.Value.EventID.Value });
         });
-        group.MapGet("/{tradeFileID:guid}/File", async (Guid tradeFileID, TradeFileService service, IEventRepository repository, CancellationToken cancellationToken) =>
+        group.MapGet("/{tradeFileID:guid}/File", async (Guid tradeFileID, TradeFileService service, IStoredFileRepository storedFileRepository, CancellationToken cancellationToken) =>
         {
             var aggregate = await service.Get(ReferenceDataCurrent.EndOfToday(), AuditDateTimeBuilder.Create(), cancellationToken);
             var tradeFile = aggregate.Find(new TradeFileID(tradeFileID));
             if (tradeFile?.StoredFileID is null) return Results.NotFound();
-            var payload = await repository.LoadStoredFileAsync(tradeFile.StoredFileID.Value, cancellationToken);
-            return payload is null ? Results.NotFound() : Results.File(payload.Content, payload.MediaType, payload.FileName, enableRangeProcessing: false);
-        });
+            return (IResult)new StoredFileHttpResult(tradeFile.StoredFileID.Value, storedFileRepository);
+        }).WithMetadata(new DisableRequestTraceBodyCaptureAttribute());
         return api;
     }
 
