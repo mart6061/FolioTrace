@@ -56,11 +56,10 @@ public sealed class InstrumentService(IEventRepository eventRepository) : IRefer
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = InstrumentCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.InstrumentsStreamId, valuationDate.Value);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
@@ -111,7 +110,7 @@ public sealed class InstrumentService(IEventRepository eventRepository) : IRefer
         lock (cacheLock)
         {
             var removedCount = 0;
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => !cacheKey.AsAtDateTime.HasValue && cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
             {
                 if (cache.Remove(cacheKey))
                     removedCount++;

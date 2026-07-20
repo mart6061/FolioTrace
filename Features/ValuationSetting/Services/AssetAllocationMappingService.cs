@@ -30,11 +30,10 @@ public sealed class AssetAllocationMappingService(IEventRepository eventReposito
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = AssetAllocationMappingCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.AssetAllocationMappingsStreamId, valuationDate.Value);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
@@ -85,7 +84,7 @@ public sealed class AssetAllocationMappingService(IEventRepository eventReposito
         lock (cacheLock)
         {
             var removedCount = 0;
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => !cacheKey.AsAtDateTime.HasValue && cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
             {
                 if (cache.Remove(cacheKey))
                     removedCount++;
