@@ -1,6 +1,9 @@
+using System.Security.Cryptography;
+using System.Text;
 using FolioTrace.Aggregates;
 using FolioTrace;
 using FolioTrace.Types;
+using Microsoft.Extensions.Options;
 using Repository;
 using Services;
 
@@ -10,12 +13,30 @@ public static class TradeFileEndpointRegistration
 {
     public static RouteGroupBuilder MapTradeFileCallbackEndpoints(this RouteGroupBuilder api)
     {
-        var callbacks = api.MapGroup("/TradeFiles").WithTags("TradeFiles");
-        callbacks.MapPost("/Acknowledgements", async (TradeFileReceivedConfirm confirmation, TradeFileWorkflowService workflow, CancellationToken cancellationToken) =>
-            await Execute(() => workflow.AcknowledgeAsync(confirmation, cancellationToken)));
-        callbacks.MapPost("/Confirmations", async (TradeFileTradeConfirm confirmation, TradeFileWorkflowService workflow, CancellationToken cancellationToken) =>
-            await Execute(() => workflow.ConfirmAsync(confirmation, cancellationToken)));
+        var callbacks = api.MapGroup("/TradeFiles").WithTags("TradeFiles").AllowAnonymous();
+        callbacks.MapPost("/Acknowledgements", async (HttpContext context, TradeFileReceivedConfirm confirmation, TradeFileWorkflowService workflow, IOptions<TradeFileOptions> options, CancellationToken cancellationToken) =>
+            !IsAuthorizedCallback(context, options.Value)
+                ? Results.Unauthorized()
+                : await Execute(() => workflow.AcknowledgeAsync(confirmation, cancellationToken)));
+        callbacks.MapPost("/Confirmations", async (HttpContext context, TradeFileTradeConfirm confirmation, TradeFileWorkflowService workflow, IOptions<TradeFileOptions> options, CancellationToken cancellationToken) =>
+            !IsAuthorizedCallback(context, options.Value)
+                ? Results.Unauthorized()
+                : await Execute(() => workflow.ConfirmAsync(confirmation, cancellationToken)));
         return api;
+    }
+
+    private static bool IsAuthorizedCallback(HttpContext context, TradeFileOptions options)
+    {
+        if (string.IsNullOrEmpty(options.CallbackSecret))
+            return true;
+
+        var provided = context.Request.Headers[TradeFileOptions.CallbackSecretHeaderName].ToString();
+        if (string.IsNullOrEmpty(provided))
+            return false;
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(provided),
+            Encoding.UTF8.GetBytes(options.CallbackSecret));
     }
 
     public static RouteGroupBuilder MapTradeFileEndpoints(this RouteGroupBuilder api)
