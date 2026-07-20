@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { getFormString } from '$lib/server/forms';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
@@ -235,11 +236,6 @@ export const actions: Actions = {
     }
   }
 };
-
-function getFormString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === 'string' ? value.trim() : '';
-}
 
 function getFormStrings(formData: FormData, key: string) {
   return formData
