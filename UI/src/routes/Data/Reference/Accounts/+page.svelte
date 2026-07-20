@@ -6,6 +6,7 @@
   import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, ProfitLossMethod, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
@@ -317,31 +318,6 @@
       status: account.active ? 'Active' : 'Inactive',
       lastAuditDateTime: account.lastAuditDateTime
     }));
-  }
-
-  function downloadFile(fileName: string, content: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = fileName;
-    link.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  function csvValue(value: string) {
-    return `"${value.replaceAll('"', '""')}"`;
-  }
-
-  function htmlValue(value: string) {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
   }
 
   function exportJson() {

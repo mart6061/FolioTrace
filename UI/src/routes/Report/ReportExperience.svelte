@@ -3,6 +3,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { MultiSelect } from '$lib/components/forms';
   import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
+  import { downloadFile, htmlValue } from '$lib/export';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
   import { tick } from 'svelte';
   import type {
@@ -250,18 +251,6 @@
     };
   }
 
-  function downloadFile(fileName: string, content: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = fileName;
-    link.click();
-
-    URL.revokeObjectURL(url);
-  }
-
   function reportFileName(extension: string) {
     const name = data.reportDocument?.name ?? 'report';
     const slug = name
@@ -271,15 +260,6 @@
       .replace(/^-+|-+$/g, '') || 'report';
 
     return `${slug}.${extension}`;
-  }
-
-  function htmlValue(value: string) {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
   }
 
   function formatNumber(value: number, maximumFractionDigits = 2) {
