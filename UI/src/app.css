@@ -13,6 +13,7 @@
   --muted: #59675f;
   --line: #cad7ce;
   --accent: #0e745f;
+  --brand-green: var(--accent);
   --accent-strong: #075440;
   --accent-soft: #d8efe7;
   --event: #255fc7;
@@ -69,6 +70,7 @@
   --muted: #9dafaa;
   --line: #30453c;
   --accent: #4fd1b3;
+  --brand-green: var(--accent);
   --accent-strong: #7ee3cb;
   --accent-soft: rgb(79 209 179 / 0.14);
   --event: #7aa7ff;
