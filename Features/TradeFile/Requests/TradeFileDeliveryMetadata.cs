@@ -8,4 +8,5 @@ public sealed record TradeFileDeliveryMetadata(
     long ContentLength,
     string AcknowledgementUrl,
     string ConfirmationUrl,
-    List<TradeFileDeliveryTicket> Tickets);
+    List<TradeFileDeliveryTicket> Tickets,
+    string? CallbackSecret = null);

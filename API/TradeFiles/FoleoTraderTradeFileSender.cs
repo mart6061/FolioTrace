@@ -22,7 +22,8 @@ public sealed class FoleoTraderTradeFileSender(HttpClient httpClient, IOptions<T
                 request.ContentLength,
                 request.AcknowledgementUrl,
                 request.ConfirmationUrl,
-                request.Tickets);
+                request.Tickets,
+                request.CallbackSecret);
             form.Add(JsonContent.Create(metadata), "metadata");
             var file = new StreamContent(request.Content);
             file.Headers.ContentType = MediaTypeHeaderValue.Parse(request.MediaType);
