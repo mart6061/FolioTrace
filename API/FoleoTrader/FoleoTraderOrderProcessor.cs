@@ -19,7 +19,6 @@ public sealed class FoleoTraderOrderProcessor(
     IOptions<FoleoTraderOptions> options,
     ILogger<FoleoTraderOrderProcessor> logger)
 {
-    private const int DecimalScale = 8;
     private readonly FoleoTraderOptions options = options.Value;
 
     public async Task<Result<FoleoTraderOrderSubmittedEvent>> SubmitOrderAsync(FoleoTraderOrderRequest request, FoleoTraderFixClient fixClient, CancellationToken cancellationToken)
@@ -34,15 +33,17 @@ public sealed class FoleoTraderOrderProcessor(
         var instruments = await instrumentsTask;
         var brokers = await brokersTask;
         var existingOrders = await existingOrdersTask;
-        var validationErrors = ValidateOrder(request, tickets, instruments, existingOrders, out var ticket, out var instrument, out var securityID, out var securityIDSource, out var symbol);
+        var validation = foleoTraderOrderService.ValidateOrder(request, tickets, instruments, existingOrders);
+        var validationErrors = validation.ValidationErrors.ToList();
         var executionResult = TicketTradeExecutionEventBuilder.Request(new TicketTradeExecutionRequest(request.UserID, request.EventDateTime, $"Request FIX execution for ticket {request.TicketNumber.Value}", request.TicketNumber, TradeMethodType.FIX, request.BrokerLEI), tickets, brokers);
         if (!executionResult.IsValid) validationErrors.AddRange(executionResult.ValidationErrors);
 
-        if (validationErrors.Count > 0 || ticket is null || instrument is null)
+        if (validationErrors.Count > 0 || validation.Ticket is null || validation.Instrument is null)
             return Result<FoleoTraderOrderSubmittedEvent>.Invalid(validationErrors);
+        var ticket = validation.Ticket;
         var fixMethod = brokers.Items.Single(item => item.LEI == request.BrokerLEI).TradeMethods.OfType<FIXTradeMethod>().Single();
 
-        var proposalQuantity = ProposalQuantity(ticket);
+        var proposalQuantity = FoleoTraderOrderService.ProposalQuantity(ticket);
         var proposalPrice = ticket.ProposalTargetPrice!;
         var clOrdID = $"FT-{ticket.TicketNumber.Value}-{Guid.CreateGuid7():N}";
         var submitted = new FoleoTraderOrderSubmittedEvent(
@@ -58,9 +59,9 @@ public sealed class FoleoTraderOrderProcessor(
             proposalQuantity,
             proposalPrice,
             ticket.TradeCurrency,
-            securityID,
-            securityIDSource,
-            symbol);
+            validation.SecurityID,
+            validation.SecurityIDSource,
+            validation.Symbol);
 
         await eventRepository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>>
         {
@@ -78,9 +79,9 @@ public sealed class FoleoTraderOrderProcessor(
                 proposalQuantity,
                 proposalPrice.Amount,
                 ticket.TradeCurrency.Value,
-                securityID,
-                securityIDSource,
-                symbol),
+                validation.SecurityID,
+                validation.SecurityIDSource,
+                validation.Symbol),
                 fixMethod,
                 cancellationToken);
         }
@@ -188,7 +189,7 @@ public sealed class FoleoTraderOrderProcessor(
                 report.LeavesQty,
                 report.OrdStatus);
 
-            var tradeResult = CreateProratedTradeEvent(report, ticketNumber, eventDateTime, ticket, tickets, holdings, instruments, settlementAmount);
+            var tradeResult = foleoTraderOrderService.CreateProratedTradeEvent(report.ExecID, report.LastQty, ticketNumber, eventDateTime, ticket, tickets, holdings, instruments, settlementAmount);
             var fillResult = TicketEventBuilder.AddFill(new TicketTradeFillRequest(
                 Constants.Initialisation.UserID,
                 eventDateTime,
@@ -208,6 +209,9 @@ public sealed class FoleoTraderOrderProcessor(
                 logger.LogWarning("Rejected FoleoTrader fill {ExecID}: {ValidationErrors}.", report.ExecID, string.Join(" ", fillResult.ValidationErrors));
                 return;
             }
+
+            if (tradeResult.ValidationErrors.Count > 0)
+                logger.LogWarning("Rejected FoleoTrader trade allocation {ExecID}: {ValidationErrors}.", report.ExecID, string.Join(" ", tradeResult.ValidationErrors));
 
             var inProgress = new TicketTradeExecutionInProgressEvent(Guid.CreateGuid7(), Constants.Initialisation.UserID, eventDateTime, AuditDateTimeBuilder.Create(), $"FIX execution received for ticket {ticketNumber.Value}", ticketNumber, TradeMethodType.FIX, brokerLEI, null);
             var ticketEvents = new List<IAuditEventBase>();
@@ -252,159 +256,6 @@ public sealed class FoleoTraderOrderProcessor(
         }
     }
 
-    private static List<string> ValidateOrder(
-        FoleoTraderOrderRequest request,
-        Tickets tickets,
-        Instruments instruments,
-        FoleoTraderOrders existingOrders,
-        out Ticket? ticket,
-        out Instrument? instrument,
-        out string securityID,
-        out string securityIDSource,
-        out string symbol)
-    {
-        var messages = new List<string>();
-        ticket = tickets.Find(request.TicketNumber);
-        instrument = null;
-        securityID = string.Empty;
-        securityIDSource = string.Empty;
-        symbol = string.Empty;
-
-        if (ticket is null)
-        {
-            messages.Add($"No matching ticket found for TicketNumber '{request.TicketNumber.Value}'.");
-            return messages;
-        }
-
-        var ticketInstrumentID = ticket.InstrumentID;
-        instrument = instruments.Items.FirstOrDefault(item => item.InstrumentID == ticketInstrumentID);
-        if (instrument is null)
-            messages.Add($"No matching instrument found for InstrumentID '{ticket.InstrumentID.Value}'.");
-        else if (!instrument.CFI.IsEquity && !instrument.CFI.IsDebt)
-            messages.Add("FoleoTrader only supports equity and fixed interest instruments.");
-
-        if (ticket.Stage != TicketStage.Trade)
-            messages.Add("Ticket must be in Trade stage.");
-        if (ticket.ProposalDecision != TicketDecision.Approved || ticket.TradeDecision != TicketDecision.InProgress)
-            messages.Add("Ticket must be approved for proposal and in progress for trade.");
-        if (ticket.TradePrice is not null || ticket.TradeAllocations.Count > 0 || ticket.Fills.Count > 0)
-            messages.Add("FoleoTrader can only be sent before trade fields or fills have been saved.");
-        if (ticket.ProposalTargetPrice is null || ProposalQuantity(ticket) <= 0)
-            messages.Add("Proposal price and quantity are required.");
-        else if (!FoleoTraderFillAllocator.IsWholeQuantity(ProposalQuantity(ticket)))
-            messages.Add("FoleoTrader order quantity must be a positive whole number.");
-        if (existingOrders.Find(ticket.TicketNumber) is not null)
-            messages.Add("Ticket has already been sent to FoleoTrader.");
-
-        if (instrument is not null)
-        {
-            var isin = instrument.Identifiers.FirstOrDefault(identifier => identifier.Type == InstrumentIdentifierType.ISIN)?.Value;
-            var ticker = instrument.Identifiers.FirstOrDefault(identifier => identifier.Type == InstrumentIdentifierType.Ticker)?.Value;
-            securityID = !string.IsNullOrWhiteSpace(isin) ? isin : ticker ?? string.Empty;
-            securityIDSource = !string.IsNullOrWhiteSpace(isin) ? "4" : "8";
-            symbol = ticker ?? instrument.Name;
-
-            if (string.IsNullOrWhiteSpace(securityID))
-                messages.Add("Instrument needs an ISIN or ticker identifier before sending to FoleoTrader.");
-        }
-
-        return messages;
-    }
-
-    private (ITicket? TradeEvent, IReadOnlyList<string> ValidationErrors) CreateProratedTradeEvent(
-        FoleoTraderExecutionReport report,
-        TicketNumber ticketNumber,
-        EventDateTime eventDateTime,
-        Ticket ticket,
-        Tickets tickets,
-        Holdings holdings,
-        Instruments instruments,
-        decimal fillSettlementAmount)
-    {
-        var proposalTotal = ProposalQuantity(ticket);
-        if (proposalTotal <= 0m)
-            return (null, ["Proposal allocations are required before FoleoTrader fills can update trade allocations."]);
-
-        var totalQuantity = Round(ticket.Fills.Sum(fill => fill.Quantity) + report.LastQty);
-        var totalSettlementAmount = Round(ticket.Fills.Sum(fill => fill.SettlementAmount.Value) + fillSettlementAmount);
-        if (totalQuantity <= 0m || totalSettlementAmount <= 0m)
-            return (null, ["FoleoTrader fill totals must be greater than zero."]);
-
-        if (!FoleoTraderFillAllocator.IsWholeQuantity(totalQuantity))
-            return (null, ["FoleoTrader fill total quantity must be a positive whole number."]);
-
-        var quantities = FoleoTraderFillAllocator.ProrateWholeQuantity(totalQuantity, ticket.ProposalAllocations);
-        var settlementAmounts = FoleoTraderFillAllocator.ProrateAmountByQuantities(totalSettlementAmount, quantities, DecimalScale);
-        var allocations = ticket.ProposalAllocations
-            .Select((allocation, index) => new TicketTradeAllocation(
-                allocation.AccountID,
-                quantities[index],
-                settlementAmounts[index],
-                ResolveCashHoldingID(allocation.AccountID, ticket, holdings, instruments)))
-            .Where(allocation => allocation.Quantity > 0m)
-            .ToList();
-
-        var request = new TicketTradeRequest(
-            Constants.Initialisation.UserID,
-            eventDateTime,
-            $"FoleoTrader FIX trade allocation {report.ExecID}",
-            ticketNumber,
-            new Price(Round(totalSettlementAmount / totalQuantity)),
-            eventDateTime,
-            NextWorkingDaySettlement(eventDateTime),
-            allocations);
-
-        if (ticket.TradeAllocations.Count == 0)
-        {
-            var createResult = TicketEventBuilder.CreateTrade(request, tickets, holdings, instruments, allowExecutionLocked: true);
-            if (createResult.IsValid && createResult.Value is not null)
-                return (createResult.Value, []);
-
-            logger.LogWarning("Rejected FoleoTrader trade allocation {ExecID}: {ValidationErrors}.", report.ExecID, string.Join(" ", createResult.ValidationErrors));
-            return (null, createResult.ValidationErrors);
-        }
-
-        var modifyResult = TicketEventBuilder.ModifyTrade(request, tickets, holdings, instruments, allowExecutionLocked: true);
-        if (modifyResult.IsValid && modifyResult.Value is not null)
-            return (modifyResult.Value, []);
-
-        logger.LogWarning("Rejected FoleoTrader trade allocation {ExecID}: {ValidationErrors}.", report.ExecID, string.Join(" ", modifyResult.ValidationErrors));
-        return (null, modifyResult.ValidationErrors);
-    }
-
-    private static HoldingID? ResolveCashHoldingID(AccountID accountID, Ticket ticket, Holdings holdings, Instruments instruments)
-    {
-        var existingCashHoldingID = ticket.TradeAllocations
-            .FirstOrDefault(allocation => allocation.AccountID == accountID)
-            ?.CashHoldingID;
-        var cashInvestableKind = HoldingKindRuntime.GetKindName<HoldingCashInvestable>();
-        var eligibleHoldings = holdings.Items
-            .Where(holding =>
-                holding.AccountID == accountID &&
-                holding.Active &&
-                holding.GetHoldingKindName() == cashInvestableKind &&
-                instruments.Items.Any(instrument => instrument.InstrumentID == holding.InstrumentID && instrument.PriceCurrency == ticket.TradeCurrency))
-            .ToList();
-
-        if (existingCashHoldingID is not null && eligibleHoldings.Any(holding => holding.HoldingID == existingCashHoldingID))
-            return existingCashHoldingID;
-
-        return eligibleHoldings.FirstOrDefault(holding => holding.Default)?.HoldingID
-            ?? (eligibleHoldings.Count == 1 ? eligibleHoldings[0].HoldingID : null);
-    }
-
-    private static SettlementDateTime NextWorkingDaySettlement(EventDateTime tradeDateTime)
-    {
-        var next = tradeDateTime.Value.Date.AddDays(1);
-        while (next.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-            next = next.AddDays(1);
-
-        return SettlementDateTimeBuilder.Create(DateTime.SpecifyKind(next, tradeDateTime.Value.Kind));
-    }
-
     private static decimal Round(decimal value) =>
-        decimal.Round(value, DecimalScale, MidpointRounding.AwayFromZero);
-
-    private static decimal ProposalQuantity(Ticket ticket) =>
-        ticket.ProposalAllocations.Sum(allocation => allocation.Quantity);
+        decimal.Round(value, 8, MidpointRounding.AwayFromZero);
 }
