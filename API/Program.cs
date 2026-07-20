@@ -63,6 +63,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddSingleton<ApiVersionInfo>();
 builder.Services.Configure<ApiReadinessOptions>(builder.Configuration.GetSection(ApiReadinessOptions.SectionName));
 builder.Services.AddSingleton<ApiReadinessState>();
+builder.Services.AddSingleton<FixStartupHealthState>();
 builder.Services.AddHostedService<EventStoreStartupHostedService>();
 builder.Services.AddSingleton<BuildCoordinator>();
 builder.Services.Configure<FoleoTraderOptions>(builder.Configuration.GetSection(FoleoTraderOptions.SectionName));
@@ -104,12 +105,12 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("v0/swagger.json", "FolioTrace API v0");
         options.RoutePrefix = "swagger";
     });
-    app.UseHttpsRedirection();
 }
 
+app.UseHttpsRedirection();
+app.UseApiUnhandledExceptionLogging();
 app.UseRequestTraceCapture();
 app.UseApiRequestLogging();
-app.UseApiUnhandledExceptionLogging();
 app.UseMiddleware<ApiReadinessMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
