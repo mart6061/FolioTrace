@@ -23,9 +23,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await accountService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await accountService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => accountService.Get(valuationDate),
+                asAt => accountService.Get(valuationDate, asAt)));
         });
     }
 
@@ -37,9 +37,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await brokerService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await brokerService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => brokerService.Get(valuationDate),
+                asAt => brokerService.Get(valuationDate, asAt)));
         });
     }
 
@@ -50,9 +50,9 @@ public static partial class ApiEndpointRegistration
         holdings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? holdingID, Guid? accountID, Guid? instrumentID, string? holdingKind, bool? includeInactive, HoldingService holdingService) =>
         {
             var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
-            var aggregate = auditDateTime.HasValue
-                ? await holdingService.Get(valuationDateTime, AuditDateTimeBuilder.Create(auditDateTime.Value))
-                : await holdingService.Get(valuationDateTime);
+            var aggregate = await GetAsAt(auditDateTime,
+                () => holdingService.Get(valuationDateTime),
+                asAt => holdingService.Get(valuationDateTime, asAt));
 
             var items = aggregate.Items
                 .Where(holding => includeInactive == true || holding.Active)
@@ -69,9 +69,7 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDateTime = EventDateTimeBuilder.Create(eventDateTime);
             var basis = holdingDateBasis ?? HoldingDateBasis.EventDateTime;
-            var asAt = auditDateTime.HasValue
-                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
-                : AuditDateTimeBuilder.Create();
+            var asAt = GetAsAt(auditDateTime);
             var filter = new HoldingPositionFilter(
                 holdingID.HasValue ? HoldingIDBuilder.Create(holdingID.Value) : null,
                 accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null,
@@ -97,9 +95,7 @@ public static partial class ApiEndpointRegistration
             ValuationService valuationService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var asAt = auditDateTime.HasValue
-                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
-                : AuditDateTimeBuilder.Create();
+            var asAt = GetAsAt(auditDateTime);
             var currency = Alpha3Builder.Create(string.IsNullOrWhiteSpace(valuationCurrency) ? "GBP" : valuationCurrency);
             var account = accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null;
 
@@ -153,9 +149,7 @@ public static partial class ApiEndpointRegistration
             ProfitLossService profitLossService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var asAt = auditDateTime.HasValue
-                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
-                : AuditDateTimeBuilder.Create();
+            var asAt = GetAsAt(auditDateTime);
             var account = accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null;
 
             return Results.Ok(await profitLossService.Get(
@@ -175,9 +169,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await valuationSettingService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await valuationSettingService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => valuationSettingService.Get(valuationDate),
+                asAt => valuationSettingService.Get(valuationDate, asAt)));
         });
     }
 
@@ -188,9 +182,7 @@ public static partial class ApiEndpointRegistration
         mappings.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, Guid? assetAllocationID, Guid? accountID, Guid? holdingID, AssetAllocationMappingService assetAllocationMappingService, HoldingService holdingService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var asAt = auditDateTime.HasValue
-                ? AuditDateTimeBuilder.Create(auditDateTime.Value)
-                : AuditDateTimeBuilder.Create();
+            var asAt = GetAsAt(auditDateTime);
             var aggregate = await assetAllocationMappingService.Get(valuationDate, asAt);
 
             var items = aggregate.Items
@@ -222,9 +214,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await reportConfigService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await reportConfigService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => reportConfigService.Get(valuationDate),
+                asAt => reportConfigService.Get(valuationDate, asAt)));
         });
     }
 
@@ -236,9 +228,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await countryService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await countryService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => countryService.Get(valuationDate),
+                asAt => countryService.Get(valuationDate, asAt)));
         });
     }
 
@@ -250,9 +242,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await currencyService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await currencyService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => currencyService.Get(valuationDate),
+                asAt => currencyService.Get(valuationDate, asAt)));
         });
     }
 
@@ -264,9 +256,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await fxService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await fxService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => fxService.Get(valuationDate),
+                asAt => fxService.Get(valuationDate, asAt)));
         });
     }
 
@@ -278,9 +270,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await fxRateService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await fxRateService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => fxRateService.Get(valuationDate),
+                asAt => fxRateService.Get(valuationDate, asAt)));
         });
     }
 
@@ -292,9 +284,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await foleoTraderOrderService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value), cancellationToken))
-                : Results.Ok(await foleoTraderOrderService.Get(valuationDate, cancellationToken));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => foleoTraderOrderService.Get(valuationDate, cancellationToken),
+                asAt => foleoTraderOrderService.Get(valuationDate, asAt, cancellationToken)));
         });
 
         foleoTrader.MapPost("/Orders", async (FoleoTraderOrderRequest request, FoleoTraderOrderProcessor processor, FoleoTraderFixClient fixClient, CancellationToken cancellationToken) =>
@@ -319,9 +311,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await instrumentService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await instrumentService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => instrumentService.Get(valuationDate),
+                asAt => instrumentService.Get(valuationDate, asAt)));
         });
     }
 
@@ -333,9 +325,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await instrumentValueService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await instrumentValueService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => instrumentValueService.Get(valuationDate),
+                asAt => instrumentValueService.Get(valuationDate, asAt)));
         });
     }
 
@@ -346,9 +338,9 @@ public static partial class ApiEndpointRegistration
         tickets.MapGet("/", async (DateTime eventDateTime, DateTime? auditDateTime, bool? includeClosed, TicketService ticketService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var aggregate = auditDateTime.HasValue
-                ? await ticketService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value))
-                : await ticketService.Get(valuationDate);
+            var aggregate = await GetAsAt(auditDateTime,
+                () => ticketService.Get(valuationDate),
+                asAt => ticketService.Get(valuationDate, asAt));
 
             var items = includeClosed == true
                 ? aggregate.Items
@@ -360,17 +352,15 @@ public static partial class ApiEndpointRegistration
         tickets.MapGet("/Details", async (DateTime eventDateTime, DateTime? auditDateTime, bool? includeClosed, TicketService ticketService, InstrumentService instrumentService, AccountService accountService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var auditDate = auditDateTime.HasValue ? AuditDateTimeBuilder.Create(auditDateTime.Value) : null;
-
-            var ticketAggregate = auditDate is null
-                ? await ticketService.Get(valuationDate)
-                : await ticketService.Get(valuationDate, auditDate);
-            var instruments = auditDate is null
-                ? await instrumentService.Get(valuationDate)
-                : await instrumentService.Get(valuationDate, auditDate);
-            var accounts = auditDate is null
-                ? await accountService.Get(valuationDate)
-                : await accountService.Get(valuationDate, auditDate);
+            var ticketAggregate = await GetAsAt(auditDateTime,
+                () => ticketService.Get(valuationDate),
+                asAt => ticketService.Get(valuationDate, asAt));
+            var instruments = await GetAsAt(auditDateTime,
+                () => instrumentService.Get(valuationDate),
+                asAt => instrumentService.Get(valuationDate, asAt));
+            var accounts = await GetAsAt(auditDateTime,
+                () => accountService.Get(valuationDate),
+                asAt => accountService.Get(valuationDate, asAt));
 
             return Results.Ok(new TicketDetails(ticketAggregate, instruments, accounts, includeClosed == true));
         });
@@ -387,9 +377,9 @@ public static partial class ApiEndpointRegistration
         tickets.MapGet("/{ticketNumber:int}", async (int ticketNumber, DateTime eventDateTime, DateTime? auditDateTime, TicketService ticketService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var aggregate = auditDateTime.HasValue
-                ? await ticketService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value))
-                : await ticketService.Get(valuationDate);
+            var aggregate = await GetAsAt(auditDateTime,
+                () => ticketService.Get(valuationDate),
+                asAt => ticketService.Get(valuationDate, asAt));
             var ticket = aggregate.Find(new TicketNumber(ticketNumber));
 
             return ticket is null
@@ -412,9 +402,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await userService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await userService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => userService.Get(valuationDate),
+                asAt => userService.Get(valuationDate, asAt)));
         };
 
         users.MapGet("", getUsers).ExcludeFromDescription();
@@ -423,9 +413,9 @@ public static partial class ApiEndpointRegistration
         users.MapGet("/{userID:guid}", async (Guid userID, DateTime eventDateTime, DateTime? auditDateTime, UserService userService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var aggregate = auditDateTime.HasValue
-                ? await userService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value))
-                : await userService.Get(valuationDate);
+            var aggregate = await GetAsAt(auditDateTime,
+                () => userService.Get(valuationDate),
+                asAt => userService.Get(valuationDate, asAt));
             var user = aggregate.Find(new UserID(userID));
 
             return user is null
@@ -443,9 +433,9 @@ public static partial class ApiEndpointRegistration
             var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await userMenuPreferencesService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await userMenuPreferencesService.Get(resolvedUserID, valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => userMenuPreferencesService.Get(resolvedUserID, valuationDate),
+                asAt => userMenuPreferencesService.Get(resolvedUserID, valuationDate, asAt)));
         });
     }
 
@@ -458,9 +448,9 @@ public static partial class ApiEndpointRegistration
             var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await userValuationPreferencesService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await userValuationPreferencesService.Get(resolvedUserID, valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => userValuationPreferencesService.Get(resolvedUserID, valuationDate),
+                asAt => userValuationPreferencesService.Get(resolvedUserID, valuationDate, asAt)));
         });
     }
 
@@ -473,9 +463,9 @@ public static partial class ApiEndpointRegistration
             var resolvedUserID = new UserID(userID ?? Constants.Initialisation.UserID.Value);
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await userBookmarksService.Get(resolvedUserID, valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => userBookmarksService.Get(resolvedUserID, valuationDate),
+                asAt => userBookmarksService.Get(resolvedUserID, valuationDate, asAt)));
         });
     }
 
@@ -487,9 +477,9 @@ public static partial class ApiEndpointRegistration
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
 
-            return auditDateTime.HasValue
-                ? Results.Ok(await inputControlSettingsService.Get(valuationDate, AuditDateTimeBuilder.Create(auditDateTime.Value)))
-                : Results.Ok(await inputControlSettingsService.Get(valuationDate));
+            return Results.Ok(await GetAsAt(auditDateTime,
+                () => inputControlSettingsService.Get(valuationDate),
+                asAt => inputControlSettingsService.Get(valuationDate, asAt)));
         });
     }
 
@@ -523,5 +513,18 @@ public static partial class ApiEndpointRegistration
             return Results.Ok(await inputPolicyService.Resolve(request));
         });
     }
+
+    private static AuditDateTime GetAsAt(DateTime? auditDateTime) =>
+        auditDateTime.HasValue
+            ? AuditDateTimeBuilder.Create(auditDateTime.Value)
+            : AuditDateTimeBuilder.Create();
+
+    private static Task<T> GetAsAt<T>(
+        DateTime? auditDateTime,
+        Func<Task<T>> current,
+        Func<AuditDateTime, Task<T>> historical) =>
+        auditDateTime.HasValue
+            ? historical(AuditDateTimeBuilder.Create(auditDateTime.Value))
+            : current();
 
 }
