@@ -1,7 +1,7 @@
 import { redirect, type Handle, type HandleFetch } from '@sveltejs/kit';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { getApiBaseUrl } from '$lib/server/api';
-import type { CurrentUser } from '$lib/authTypes';
+import { isCurrentUser, type CurrentUser } from '$lib/authTypes';
 
 const apiBaseUrl = getApiBaseUrl();
 const requestIdHeader = 'X-FolioTrace-Request-Id';
@@ -131,7 +131,11 @@ async function getCurrentUser(fetchApi: typeof fetch, cookie: string | null) {
   if (!response.ok)
     throw new ApiSessionError(response.status, `API session check returned ${response.status} ${response.statusText}`);
 
-  return (await response.json()) as CurrentUser;
+  const body: unknown = await response.json();
+  if (!isCurrentUser(body))
+    throw new ApiSessionError(502, 'API session response did not match the expected shape.');
+
+  return body;
 }
 
 function getSsoUrl(url: URL) {
