@@ -1,13 +1,15 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Auth;
 
 public sealed class WorkOSAuthorizationStateService(
     IDataProtectionProvider dataProtectionProvider,
-    IOptions<WorkOSAuthOptions> options)
+    IOptions<WorkOSAuthOptions> options,
+    ILogger<WorkOSAuthorizationStateService> logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IDataProtector protector = dataProtectionProvider.CreateProtector("FolioTrace.WorkOS.AuthorizationState.v1");
@@ -53,8 +55,9 @@ public sealed class WorkOSAuthorizationStateService(
             var authorizationState = JsonSerializer.Deserialize<WorkOSAuthorizationState>(json, JsonOptions);
             return authorizationState?.State == returnedState ? authorizationState : null;
         }
-        catch
+        catch (Exception exception) when (exception is CryptographicException or JsonException)
         {
+            logger.LogDebug(exception, "Discarding WorkOS authorization state cookie that could not be unprotected or deserialized.");
             return null;
         }
     }

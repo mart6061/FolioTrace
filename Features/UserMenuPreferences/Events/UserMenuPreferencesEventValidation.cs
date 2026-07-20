@@ -6,22 +6,7 @@ internal static class UserMenuPreferencesEventValidation
 {
     public static IReadOnlyList<string> Validate(EventID? eventID, UserID? userID, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, IReadOnlyList<UserMenuPreferenceItem>? items)
     {
-        var messages = new List<string>();
-
-        if (eventID is null)
-            messages.Add("EventID is required.");
-
-        if (userID is null)
-            messages.Add("UserID is required.");
-
-        if (eventDateTime is null)
-            messages.Add("EventDateTime is required.");
-
-        if (auditDateTime is null)
-            messages.Add("AuditDateTime is required.");
-
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
+        var messages = EventFieldValidation.CommonFieldMessages(eventID, userID, eventDateTime, auditDateTime, reason);
 
         ValidateItems(messages, items);
 

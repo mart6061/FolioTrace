@@ -167,7 +167,8 @@ public sealed class TradeFileWorkflowService(
             payload.Content,
             $"{callbackBase}/Acknowledgements",
             $"{callbackBase}/Confirmations",
-            tradeFile.Tickets.Select(item => new TradeFileDeliveryTicket(item.TicketNumber.Value, item.Quantity, item.Price.Amount)).ToList()), cancellationToken);
+            tradeFile.Tickets.Select(item => new TradeFileDeliveryTicket(item.TicketNumber.Value, item.Quantity, item.Price.Amount)).ToList(),
+            string.IsNullOrEmpty(options.Value.CallbackSecret) ? null : options.Value.CallbackSecret), cancellationToken);
     }
 
     public async Task AcknowledgeAsync(TradeFileReceivedConfirm confirmation, CancellationToken cancellationToken)

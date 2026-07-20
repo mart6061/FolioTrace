@@ -86,7 +86,7 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
         {
             return await readModelRepository.LoadAsync(valuationDate);
         }
-        catch
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             return null;
         }

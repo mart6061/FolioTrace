@@ -15,8 +15,7 @@ public sealed class TradeFileSimulator(IHttpClientFactory httpClientFactory, Tim
         var file = new ReceivedTradeFile(request, receivedAt, receivedAt.AddSeconds(30));
         if (!files.TryAdd(request.TradeFileID, file)) return;
         var acknowledgement = new TradeFileReceivedConfirm(Guid.NewGuid(), request.TradeFileID, request.BrokerLEI, receivedAt);
-        using var response = await httpClientFactory.CreateClient().PostAsJsonAsync(request.AcknowledgementUrl, acknowledgement, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await PostCallbackAsync(request.AcknowledgementUrl, acknowledgement, request.CallbackSecret, cancellationToken);
     }
 
     public IReadOnlyList<ReceivedTradeFile> Due() =>
@@ -31,13 +30,25 @@ public sealed class TradeFileSimulator(IHttpClientFactory httpClientFactory, Tim
         }
         var factor = ticket.TicketNumber % 2 == 0 ? 1.01m : 0.99m;
         var confirmation = new TradeFileTradeConfirm(Guid.NewGuid(), file.Request.TradeFileID, ticket.TicketNumber, ticket.Quantity, decimal.Round(ticket.Price * factor, 8), timeProvider.GetUtcNow().UtcDateTime);
-        using var response = await httpClientFactory.CreateClient().PostAsJsonAsync(file.Request.ConfirmationUrl, confirmation, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await PostCallbackAsync(file.Request.ConfirmationUrl, confirmation, file.Request.CallbackSecret, cancellationToken);
         lock (file)
         {
             file.ConfirmedTicketCount++;
             file.NextConfirmationAtUtc = timeProvider.GetUtcNow().UtcDateTime.AddSeconds(30);
         }
+    }
+
+    private async Task PostCallbackAsync<T>(string url, T payload, string? callbackSecret, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(payload)
+        };
+        if (!string.IsNullOrEmpty(callbackSecret))
+            request.Headers.TryAddWithoutValidation("X-FolioTrace-Callback-Secret", callbackSecret);
+
+        using var response = await httpClientFactory.CreateClient().SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }
 

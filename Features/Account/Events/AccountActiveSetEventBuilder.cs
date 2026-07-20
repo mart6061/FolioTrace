@@ -23,12 +23,7 @@ public static class AccountActiveSetEventBuilder
 
     public static Result<AccountActiveSetEvent> CreateSeed(EventID eventId, UserID userId, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, AccountID accountID, Active active, Accounts? accounts = null)
     {
-        var validationErrors = new List<string>();
-        if (eventId is null) validationErrors.Add("EventID is required.");
-        if (userId is null) validationErrors.Add("UserID is required.");
-        if (eventDateTime is null) validationErrors.Add("EventDateTime is required.");
-        if (auditDateTime is null) validationErrors.Add("AuditDateTime is required.");
-        if (string.IsNullOrWhiteSpace(reason)) validationErrors.Add("Reason is required.");
+        var validationErrors = EventFieldValidation.CommonFieldMessages(eventId, userId, eventDateTime, auditDateTime, reason);
         if (accountID is null) validationErrors.Add("AccountID is required.");
         AccountEventValidation.ValidateModifiedAccount(validationErrors, accountID, null, accounts);
 

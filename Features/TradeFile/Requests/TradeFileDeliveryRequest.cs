@@ -8,7 +8,8 @@ public sealed record TradeFileDeliveryRequest(
     Stream Content,
     string AcknowledgementUrl,
     string ConfirmationUrl,
-    List<TradeFileDeliveryTicket> Tickets) : IAsyncDisposable
+    List<TradeFileDeliveryTicket> Tickets,
+    string? CallbackSecret = null) : IAsyncDisposable
 {
     public ValueTask DisposeAsync() => Content.DisposeAsync();
 }
