@@ -35,22 +35,7 @@ public sealed record CountryFlagModifiedEvent : EventBase, ICountryEvent
 
     public static IReadOnlyList<string> Validate(EventID? eventId, UserID? userId, EventDateTime? eventDateTime, AuditDateTime? auditDateTime, string? reason, Alpha2? alpha2, CountryFlag? flag)
     {
-        var messages = new List<string>();
-
-        if (eventId is null)
-            messages.Add("EventID is required.");
-
-        if (userId is null)
-            messages.Add("UserID is required.");
-
-        if (eventDateTime is null)
-            messages.Add("EventDateTime is required.");
-
-        if (auditDateTime is null)
-            messages.Add("AuditDateTime is required.");
-
-        if (string.IsNullOrWhiteSpace(reason))
-            messages.Add("Reason is required.");
+        var messages = EventFieldValidation.CommonFieldMessages(eventId, userId, eventDateTime, auditDateTime, reason);
 
         if (alpha2 is null)
             messages.Add("Alpha2 is required.");
