@@ -104,6 +104,8 @@ builder.Services.AddHostedService<AggregateMaintenanceHostedService>();
 
 var app = builder.Build();
 
+AggregateCacheInvalidatorCompletenessCheck.Validate(app.Services);
+
 app.UsePathBase("/API");
 
 if (app.Environment.IsDevelopment())

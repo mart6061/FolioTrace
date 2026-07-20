@@ -59,6 +59,57 @@ public sealed class CountryServiceCacheInvalidationTests
         Assert.Equal(2, service.GetDiagnostics().CacheEntryCount);
     }
 
+    [Fact]
+    public async Task Invalidate_DoesNotEvictFixedAsAtEntries()
+    {
+        var created = CountryCreatedEventBuilder.CreateSeed(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Constants.Initialisation.UserID,
+            new EventDateTime(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            new AuditDateTime(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            "Setup",
+            "AA",
+            "AAA",
+            1,
+            "Alpha").Value!;
+
+        var modified = CountryModifiedEventBuilder.CreateSeed(
+            Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Constants.Initialisation.UserID,
+            new EventDateTime(new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc)),
+            new AuditDateTime(new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc)),
+            "Rename",
+            "AA",
+            "AAA",
+            1,
+            "Alpha renamed").Value!;
+
+        var repository = new FakeEventRepository(created);
+        var service = new CountryService(repository);
+        var valuationDate = new EventDateTime(new DateTime(2025, 6, 2, 0, 0, 0, DateTimeKind.Utc));
+        var fixedAsAt = new AuditDateTime(new DateTime(2025, 3, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        var current = await service.Get(valuationDate);
+        var fixedAsAtView = await service.Get(valuationDate, fixedAsAt);
+
+        Assert.Equal("Alpha", current.Items.Single().Name);
+        Assert.Equal("Alpha", fixedAsAtView.Items.Single().Name);
+        Assert.Equal(2, service.GetDiagnostics().CacheEntryCount);
+
+        repository.Append(modified);
+
+        var removedCount = service.Invalidate(modified);
+
+        Assert.Equal(1, removedCount);
+        Assert.Equal(1, service.GetDiagnostics().CacheEntryCount);
+
+        current = await service.Get(valuationDate);
+        fixedAsAtView = await service.Get(valuationDate, fixedAsAt);
+
+        Assert.Equal("Alpha renamed", current.Items.Single().Name);
+        Assert.Equal("Alpha", fixedAsAtView.Items.Single().Name);
+    }
+
     private sealed class FakeEventRepository(params IEventBase[] events) : IEventRepository
     {
         private readonly List<IAuditEventBase> events = [.. events];

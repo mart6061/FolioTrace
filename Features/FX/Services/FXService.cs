@@ -58,11 +58,10 @@ public sealed class FXService(IEventRepository eventRepository) : IReferenceData
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = FXCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.FXsStreamId, valuationDate.Value);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == (lastEventID ?? Constants.Initialisation.EmptyViewEventID))
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
@@ -117,7 +116,7 @@ public sealed class FXService(IEventRepository eventRepository) : IReferenceData
         {
             var removedCount = 0;
 
-            foreach (var cacheKey in cache.Keys.Where(cacheKey => cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
+            foreach (var cacheKey in cache.Keys.Where(cacheKey => !cacheKey.AsAtDateTime.HasValue && cacheKey.ValuationDateTime >= eventDateTime.Value).ToList())
             {
                 if (cache.Remove(cacheKey))
                     removedCount++;

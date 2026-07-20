@@ -56,11 +56,10 @@ public sealed class ValuationSettingService(IEventRepository eventRepository) : 
             throw new ArgumentNullException(nameof(valuationDate));
 
         var cacheKey = ValuationSettingCacheKey.ForAllAuditHistory(valuationDate);
-        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.ValuationSettingsStreamId);
 
         lock (cacheLock)
         {
-            if (cache.TryGetValue(cacheKey, out var cached) && cached.LastEventID == lastEventID)
+            if (cache.TryGetValue(cacheKey, out var cached))
                 return cached;
         }
 
