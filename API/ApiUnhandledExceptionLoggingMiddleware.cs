@@ -13,7 +13,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
 {
     public async Task InvokeAsync(
         HttpContext context,
-        IRequestTraceRepository requestTraceRepository,
+        RequestTraceLogQueue requestTraceQueue,
         RequestTraceSettingsService requestTraceSettingsService)
     {
         try
@@ -24,7 +24,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
         {
             var errorId = Guid.CreateGuid7();
             await WriteExceptionLogAsync(context, exception, errorId);
-            await WriteTraceExceptionAsync(context, exception, requestTraceRepository, requestTraceSettingsService);
+            await WriteTraceExceptionAsync(context, exception, requestTraceQueue, requestTraceSettingsService);
             var statusCode = exception switch
             {
                 BadHttpRequestException badRequestException => badRequestException.StatusCode,
@@ -61,7 +61,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
     private async Task WriteTraceExceptionAsync(
         HttpContext context,
         Exception exception,
-        IRequestTraceRepository requestTraceRepository,
+        RequestTraceLogQueue requestTraceQueue,
         RequestTraceSettingsService requestTraceSettingsService)
     {
         try
@@ -74,7 +74,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
                 requestIdValue is not Guid requestId)
                 return;
 
-            await requestTraceRepository.AppendAsync(
+            requestTraceQueue.TryEnqueue(
                 new RequestTraceEvent
                 {
                     RequestId = requestId,
@@ -88,8 +88,7 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
                     ExceptionType = exception.GetType().FullName,
                     ExceptionMessage = exception.Message,
                     StackTrace = settings.Capture500StackTraces ? exception.ToString() : null
-                },
-                CancellationToken.None);
+                });
         }
         catch (Exception traceException)
         {

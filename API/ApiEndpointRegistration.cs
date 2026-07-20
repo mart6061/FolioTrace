@@ -331,6 +331,7 @@ public static class ApiEndpointRegistration
             int? page,
             int? pageSize,
             IRequestTraceRepository repository,
+            RequestTraceLogQueue queue,
             RequestTraceSettingsService settingsService,
             CancellationToken cancellationToken) =>
         {
@@ -356,7 +357,8 @@ public static class ApiEndpointRegistration
                     result.TotalCount,
                     result.Page,
                     result.PageSize,
-                    ToResponse(settings)));
+                    ToResponse(settings),
+                    new RequestTraceQueueDiagnosticsResponse(queue.Capacity, queue.DroppedEventCount)));
             }
             catch (Exception exception) when (IsRequestTraceStoreUnavailable(exception))
             {
@@ -394,7 +396,7 @@ public static class ApiEndpointRegistration
 
         diagnostics.MapPost("/RequestTrace/Events", async (
             RequestTraceEventIngestRequest request,
-            IRequestTraceRepository repository,
+            RequestTraceLogQueue queue,
             RequestTraceSettingsService settingsService,
             CancellationToken cancellationToken) =>
         {
@@ -402,7 +404,7 @@ public static class ApiEndpointRegistration
             if (!settings.Enabled || !settings.CaptureUi)
                 return Results.Accepted();
 
-            await repository.AppendAsync(ToTraceEvent(request), cancellationToken);
+            queue.TryEnqueue(ToTraceEvent(request));
             return Results.Accepted();
         });
 
@@ -435,34 +437,26 @@ public static class ApiEndpointRegistration
             string? text,
             int? page,
             int? pageSize,
-            IEventRepository eventRepository,
+            IFoleoTraderFixOperationRepository repository,
             CancellationToken cancellationToken) =>
         {
-            var normalizedPage = Math.Max(1, page ?? 1);
-            var normalizedPageSize = Math.Clamp(pageSize ?? 50, 1, 200);
-            var events = await eventRepository.LoadStreamAsync<FoleoTraderFIXOperationRecordedEvent>(Constants.Initialisation.FoleoTraderFIXOperationsStreamId, cancellationToken);
-            var filtered = events
-                .Where(@event => !fromUtc.HasValue || @event.AuditDateTime.Value >= fromUtc.Value)
-                .Where(@event => !toUtc.HasValue || @event.AuditDateTime.Value <= toUtc.Value)
-                .Where(@event => Matches(@event.Direction, direction))
-                .Where(@event => Matches(@event.Channel, channel))
-                .Where(@event => Matches(@event.MsgType, msgType))
-                .Where(@event => Contains(@event.ClOrdID, clOrdID))
-                .Where(@event => Contains(@event.ExecID, execID))
-                .Where(@event => MatchesFIXText(@event, text))
-                .OrderByDescending(@event => @event.AuditDateTime.Value)
-                .ThenByDescending(@event => @event.EventID.Value)
-                .ToList();
+            var result = await repository.SearchAsync(new FoleoTraderFixOperationSearchCriteria(
+                fromUtc,
+                toUtc,
+                direction,
+                channel,
+                msgType,
+                clOrdID,
+                execID,
+                text,
+                page ?? 1,
+                pageSize ?? 50), cancellationToken);
 
             return Results.Ok(new FIXOperationSearchResponse(
-                filtered
-                    .Skip((normalizedPage - 1) * normalizedPageSize)
-                    .Take(normalizedPageSize)
-                    .Select(ToResponse)
-                    .ToList(),
-                filtered.Count,
-                normalizedPage,
-                normalizedPageSize));
+                result.Items.Select(ToResponse).ToList(),
+                result.TotalCount,
+                result.Page,
+                result.PageSize));
         });
     }
 
@@ -2773,30 +2767,6 @@ public static class ApiEndpointRegistration
             @event.ExecID,
             @event.RawMessage,
             @event.RawMessage.Replace('\u0001', '|'));
-
-    private static bool Matches(string value, string? filter) =>
-        string.IsNullOrWhiteSpace(filter) || string.Equals(value, filter, StringComparison.OrdinalIgnoreCase);
-
-    private static bool Contains(string value, string? filter) =>
-        string.IsNullOrWhiteSpace(filter) || value.Contains(filter, StringComparison.OrdinalIgnoreCase);
-
-    private static bool MatchesFIXText(FoleoTraderFIXOperationRecordedEvent @event, string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return true;
-
-        return Contains(@event.RawMessage, text) ||
-            Contains(@event.RawMessage.Replace('\u0001', '|'), text) ||
-            Contains(@event.SessionID, text) ||
-            Contains(@event.Direction, text) ||
-            Contains(@event.Channel, text) ||
-            Contains(@event.MsgType, text) ||
-            Contains(FIXMessageName(@event.MsgType), text) ||
-            Contains(@event.SenderCompID, text) ||
-            Contains(@event.TargetCompID, text) ||
-            Contains(@event.ClOrdID, text) ||
-            Contains(@event.ExecID, text);
-    }
 
     private static string FIXMessageName(string msgType) =>
         msgType switch

@@ -53,7 +53,7 @@ public static class TradeFileEndpointRegistration
             if (tradeFile?.StoredFileID is null) return Results.NotFound();
             var payload = await repository.LoadStoredFileAsync(tradeFile.StoredFileID.Value, cancellationToken);
             return payload is null ? Results.NotFound() : Results.File(payload.Content, payload.MediaType, payload.FileName, enableRangeProcessing: false);
-        });
+        }).WithMetadata(new DisableRequestTraceBodyCaptureAttribute());
         return api;
     }
 
