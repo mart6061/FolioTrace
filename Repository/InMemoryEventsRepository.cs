@@ -83,23 +83,26 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
 
         lock (sync)
         {
-            if (!streams.TryGetValue(streamId, out var events))
+            if (!streams.TryGetValue(streamId, out var events) || events.Count == 0)
                 return null;
 
-            IAuditEventBase? latest = null;
-            foreach (var @event in events)
-            {
-                if (@event is IEventBase timedEvent && timedEvent.EventDateTime.Value > valuationDateTime)
-                    continue;
+            // Streams are maintained pre-sorted by (EventDateTime, AuditDateTime, EventID) - see AddEvent - so
+            // the events with EventDateTime <= valuationDateTime form a prefix, found here in O(log n). Events
+            // without an EventDateTime (IAuditEventBase but not IEventBase) always satisfy this check, matching
+            // the previous linear scan's behaviour; in practice a given stream's events are homogeneous, so this
+            // only matters defensively.
+            var upperBound = UpperBoundByEventDateTime(events, valuationDateTime);
 
+            for (var index = upperBound - 1; index >= 0; index--)
+            {
+                var @event = events[index];
                 if (asOfDateTime.HasValue && @event.AuditDateTime.Value > asOfDateTime.Value)
                     continue;
 
-                if (latest is null || CompareEventOrder(@event, latest) > 0)
-                    latest = @event;
+                return @event.EventID;
             }
 
-            return latest?.EventID;
+            return null;
         }
     }
 
@@ -274,8 +277,48 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
             streams.Add(streamId, events);
         }
 
-        events.Add(@event);
+        // Streams are kept sorted by (EventDateTime, AuditDateTime, EventID) - the same order aggregate
+        // constructors already sort into - so backdated corrections (a new event with an EventDateTime earlier
+        // than already-appended events) insert into the middle rather than always appending at the end.
+        var insertionIndex = FindInsertionIndex(events, @event);
+        events.Insert(insertionIndex, @event);
         eventsById[@event.EventID.Value] = @event;
+    }
+
+    private static int FindInsertionIndex(List<IAuditEventBase> events, IAuditEventBase @event)
+    {
+        var low = 0;
+        var high = events.Count;
+
+        while (low < high)
+        {
+            var mid = low + (high - low) / 2;
+            if (CompareEventOrder(events[mid], @event) <= 0)
+                low = mid + 1;
+            else
+                high = mid;
+        }
+
+        return low;
+    }
+
+    private static int UpperBoundByEventDateTime(List<IAuditEventBase> events, DateTime valuationDateTime)
+    {
+        var low = 0;
+        var high = events.Count;
+
+        while (low < high)
+        {
+            var mid = low + (high - low) / 2;
+            var withinRange = events[mid] is not IEventBase timedEvent || timedEvent.EventDateTime.Value <= valuationDateTime;
+
+            if (withinRange)
+                low = mid + 1;
+            else
+                high = mid;
+        }
+
+        return low;
     }
 
     private void RecordUnprocessedEvent(Guid? streamId, Guid? eventId, string eventType, string reason)
