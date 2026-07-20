@@ -575,6 +575,17 @@ export function getApiBaseUrl() {
   return (env.API_BASE_URL || fallbackApiBaseUrl).replace(/\/$/, '');
 }
 
+async function apiFetch<T>(fetchApi: typeof fetch, url: string | URL, init?: RequestInit): Promise<T> {
+  const response = await fetchApi(url, init);
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new ApiError(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`, response.status);
+  }
+
+  return (await response.json()) as T;
+}
+
 export async function getCountries(
   fetchApi: typeof fetch,
   eventDateTime: string,
@@ -586,12 +597,7 @@ export async function getCountries(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Countries;
+  return apiFetch<Countries>(fetchApi, url);
 }
 
 export async function getAccounts(
@@ -605,12 +611,7 @@ export async function getAccounts(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Accounts;
+  return apiFetch<Accounts>(fetchApi, url);
 }
 
 export async function getHoldings(
@@ -673,12 +674,7 @@ export async function getHoldingPositions(
   if (includeZero)
     url.searchParams.set('includeZero', 'true');
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as HoldingPositions;
+  return apiFetch<HoldingPositions>(fetchApi, url);
 }
 
 export async function getAssetAllocationMappings(
@@ -700,12 +696,7 @@ export async function getAssetAllocationMappings(
   if (accountID)
     url.searchParams.set('accountID', accountID);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as AssetAllocationMappings;
+  return apiFetch<AssetAllocationMappings>(fetchApi, url);
 }
 
 export async function getValuations(
@@ -729,12 +720,7 @@ export async function getValuations(
   if (accountID)
     url.searchParams.set('accountID', accountID);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Valuations;
+  return apiFetch<Valuations>(fetchApi, url);
 }
 
 export async function getProfitLosses(
@@ -756,12 +742,7 @@ export async function getProfitLosses(
   if (accountID)
     url.searchParams.set('accountID', accountID);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as ProfitLosses;
+  return apiFetch<ProfitLosses>(fetchApi, url);
 }
 
 export async function getCurrencies(
@@ -775,12 +756,7 @@ export async function getCurrencies(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Currencies;
+  return apiFetch<Currencies>(fetchApi, url);
 }
 
 export async function getInputPolicies(fetchApi: typeof fetch, options: InputPolicyQueryOptions) {
@@ -800,12 +776,7 @@ export async function getInputPolicies(fetchApi: typeof fetch, options: InputPol
   if (options.controlKinds?.length)
     url.searchParams.set('controlKinds', options.controlKinds.join(','));
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as InputControlPolicy[];
+  return apiFetch<InputControlPolicy[]>(fetchApi, url);
 }
 
 export async function getValuationSettings(
@@ -819,12 +790,7 @@ export async function getValuationSettings(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as ValuationSettings;
+  return apiFetch<ValuationSettings>(fetchApi, url);
 }
 
 export async function getReportConfigs(
@@ -838,12 +804,7 @@ export async function getReportConfigs(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as ReportConfigs;
+  return apiFetch<ReportConfigs>(fetchApi, url);
 }
 
 export async function getBrokers(
@@ -857,12 +818,7 @@ export async function getBrokers(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Brokers;
+  return apiFetch<Brokers>(fetchApi, url);
 }
 
 type EventQueryFilters = Record<string, string | number | null | undefined>;
@@ -884,57 +840,27 @@ function createApiUrl(path: string, filters?: EventQueryFilters) {
 }
 
 export async function getCountryEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/Country/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as CountryReferenceEvent[];
+  return apiFetch<CountryReferenceEvent[]>(fetchApi, createApiUrl('/Events/Country/', filters));
 }
 
 export async function getCurrencyEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/Currency/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as CurrencyReferenceEvent[];
+  return apiFetch<CurrencyReferenceEvent[]>(fetchApi, createApiUrl('/Events/Currency/', filters));
 }
 
 export async function getValuationSettingEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/ValuationSetting/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as ValuationSettingReferenceEvent[];
+  return apiFetch<ValuationSettingReferenceEvent[]>(fetchApi, createApiUrl('/Events/ValuationSetting/', filters));
 }
 
 export async function getBrokerEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/Broker/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as BrokerReferenceEvent[];
+  return apiFetch<BrokerReferenceEvent[]>(fetchApi, createApiUrl('/Events/Broker/', filters));
 }
 
 export async function getAccountEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/Account/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as AccountReferenceEvent[];
+  return apiFetch<AccountReferenceEvent[]>(fetchApi, createApiUrl('/Events/Account/', filters));
 }
 
 export async function getHoldingEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/Holding/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as HoldingReferenceEvent[];
+  return apiFetch<HoldingReferenceEvent[]>(fetchApi, createApiUrl('/Events/Holding/', filters));
 }
 
 export async function getTransactionEvents(fetchApi: typeof fetch, filters?: string | EventQueryFilters) {
@@ -963,45 +889,25 @@ export async function getTransactionEvents(fetchApi: typeof fetch, filters?: str
 }
 
 export async function getInstrumentEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/Instrument/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as InstrumentReferenceEvent[];
+  return apiFetch<InstrumentReferenceEvent[]>(fetchApi, createApiUrl('/Events/Instrument/', filters));
 }
 
 export async function getInstrumentPriceEvents(fetchApi: typeof fetch, filters?: string | EventQueryFilters) {
   const normalizedFilters = typeof filters === 'string' ? { instrumentID: filters } : filters;
   const url = createApiUrl('/Events/InstrumentPrice/', normalizedFilters);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as InstrumentValueHistoryEvent[];
+  return apiFetch<InstrumentValueHistoryEvent[]>(fetchApi, url);
 }
 
 export async function getInstrumentIncomeEvents(fetchApi: typeof fetch, filters?: string | EventQueryFilters) {
   const normalizedFilters = typeof filters === 'string' ? { instrumentID: filters } : filters;
   const url = createApiUrl('/Events/InstrumentIncome/', normalizedFilters);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as InstrumentValueHistoryEvent[];
+  return apiFetch<InstrumentValueHistoryEvent[]>(fetchApi, url);
 }
 
 export async function getFXRateEvents(fetchApi: typeof fetch, filters?: EventQueryFilters) {
-  const response = await fetchApi(createApiUrl('/Events/FXRate/', filters));
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as FXRateHistoryEvent[];
+  return apiFetch<FXRateHistoryEvent[]>(fetchApi, createApiUrl('/Events/FXRate/', filters));
 }
 
 export async function getFXs(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -1011,12 +917,7 @@ export async function getFXs(fetchApi: typeof fetch, eventDateTime: string, audi
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as FXs;
+  return apiFetch<FXs>(fetchApi, url);
 }
 
 export async function getFXRates(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -1026,12 +927,7 @@ export async function getFXRates(fetchApi: typeof fetch, eventDateTime: string, 
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as FXRates;
+  return apiFetch<FXRates>(fetchApi, url);
 }
 
 export async function getInstruments(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -1041,12 +937,7 @@ export async function getInstruments(fetchApi: typeof fetch, eventDateTime: stri
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Instruments;
+  return apiFetch<Instruments>(fetchApi, url);
 }
 
 export async function getInstrumentValues(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -1056,12 +947,7 @@ export async function getInstrumentValues(fetchApi: typeof fetch, eventDateTime:
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as InstrumentValues;
+  return apiFetch<InstrumentValues>(fetchApi, url);
 }
 
 export async function getTickets(
@@ -1077,12 +963,7 @@ export async function getTickets(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Tickets;
+  return apiFetch<Tickets>(fetchApi, url);
 }
 
 export async function getFoleoTraderOrders(
@@ -1096,12 +977,7 @@ export async function getFoleoTraderOrders(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as FoleoTraderOrders;
+  return apiFetch<FoleoTraderOrders>(fetchApi, url);
 }
 
 export async function getTicketDetails(
@@ -1117,21 +993,11 @@ export async function getTicketDetails(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as TicketDetails;
+  return apiFetch<TicketDetails>(fetchApi, url);
 }
 
 export async function getTicketStageOptions(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Tickets/Stages`);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as TicketStageOption[];
+  return apiFetch<TicketStageOption[]>(fetchApi, `${getApiBaseUrl()}/Tickets/Stages`);
 }
 
 export async function getUsers(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
@@ -1141,12 +1007,7 @@ export async function getUsers(fetchApi: typeof fetch, eventDateTime: string, au
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as Users;
+  return apiFetch<Users>(fetchApi, url);
 }
 
 export async function getUserMenuPreferences(
@@ -1162,12 +1023,7 @@ export async function getUserMenuPreferences(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as UserMenuPreferences;
+  return apiFetch<UserMenuPreferences>(fetchApi, url);
 }
 
 export async function getUserValuationPreferences(
@@ -1183,12 +1039,7 @@ export async function getUserValuationPreferences(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as UserValuationPreferences;
+  return apiFetch<UserValuationPreferences>(fetchApi, url);
 }
 
 export async function getUserBookmarks(
@@ -1204,12 +1055,7 @@ export async function getUserBookmarks(
   if (auditDateTime)
     url.searchParams.set('auditDateTime', auditDateTime);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as UserBookmarks;
+  return apiFetch<UserBookmarks>(fetchApi, url);
 }
 
 export async function getUserEvents(fetchApi: typeof fetch, userID?: string) {
@@ -1218,42 +1064,22 @@ export async function getUserEvents(fetchApi: typeof fetch, userID?: string) {
   if (userID)
     url.searchParams.set('userID', userID);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as UserReferenceEvent[];
+  return apiFetch<UserReferenceEvent[]>(fetchApi, url);
 }
 
 export async function getTicketEvents(fetchApi: typeof fetch, filters?: number | EventQueryFilters) {
   const normalizedFilters = typeof filters === 'number' ? { ticketNumber: filters } : filters;
   const url = createApiUrl('/Events/Ticket/', normalizedFilters);
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as TicketReferenceEvent[];
+  return apiFetch<TicketReferenceEvent[]>(fetchApi, url);
 }
 
 export async function getMemoryDiagnostics(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/Diagnostics/Memory`);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as MemoryDiagnostics;
+  return apiFetch<MemoryDiagnostics>(fetchApi, `${getApiBaseUrl()}/Diagnostics/Memory`);
 }
 
 export async function getSystemVersion(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/System/Version`);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as { apiVersion: string };
+  return apiFetch<{ apiVersion: string }>(fetchApi, `${getApiBaseUrl()}/System/Version`);
 }
 
 export async function postSystemBuild(fetchApi: typeof fetch) {
@@ -1336,12 +1162,7 @@ export async function getRequestTraces(fetchApi: typeof fetch, request: RequestT
       url.searchParams.set(key, value);
   }
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as RequestTraceSearchResponse;
+  return apiFetch<RequestTraceSearchResponse>(fetchApi, url);
 }
 
 export async function putRequestTraceSettings(fetchApi: typeof fetch, settings: RequestTraceSettings) {
@@ -1378,12 +1199,7 @@ export async function getFIXOperations(fetchApi: typeof fetch, request: FIXOpera
       url.searchParams.set(key, value);
   }
 
-  const response = await fetchApi(url);
-
-  if (!response.ok)
-    throw new Error(`API returned ${response.status} ${response.statusText}`);
-
-  return (await response.json()) as FIXOperationSearchResponse;
+  return apiFetch<FIXOperationSearchResponse>(fetchApi, url);
 }
 
 export async function postCountryCreatedEvent(
