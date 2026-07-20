@@ -171,7 +171,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         var holdingService = new HoldingService(eventRepository);
         var instrumentService = new InstrumentService(eventRepository);
         var instrumentValueService = new InstrumentValueService(eventRepository);
-        var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService);
+        var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, new FakeAggregateSnapshotRepository());
 
         return new AggregateMaintenanceCoordinator(
             options,
