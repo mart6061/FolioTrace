@@ -14,6 +14,7 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private readonly FoleoTraderOrderProcessor processor;
     private readonly FoleoTraderFIXOperationRecorder operationRecorder;
     private readonly ApiReadinessState readinessState;
+    private readonly FixStartupHealthState startupHealthState;
     private readonly ILogger<FoleoTraderFixClient> logger;
     private readonly object syncRoot = new();
     private SocketInitiator? initiator;
@@ -24,12 +25,13 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
     private Timer? idleTimer;
     private FIXTradeMethod? activeMethod;
 
-    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ApiReadinessState readinessState, ILogger<FoleoTraderFixClient> logger)
+    public FoleoTraderFixClient(IOptions<FoleoTraderOptions> options, FoleoTraderOrderProcessor processor, FoleoTraderFIXOperationRecorder operationRecorder, ApiReadinessState readinessState, FixStartupHealthState startupHealthState, ILogger<FoleoTraderFixClient> logger)
     {
         this.options = options.Value;
         this.processor = processor;
         this.operationRecorder = operationRecorder;
         this.readinessState = readinessState;
+        this.startupHealthState = startupHealthState;
         this.logger = logger;
     }
 
@@ -41,9 +43,34 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
 
     private async Task StartWhenReadyAsync(CancellationToken cancellationToken)
     {
-        await readinessState.WaitUntilReadyAsync(cancellationToken);
-        idleTimer = new Timer(_ => StopIfIdle(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
-        await ReplayStoredExecutionReportsAsync(cancellationToken);
+        await RunStartupAsync(async token =>
+        {
+            await readinessState.WaitUntilReadyAsync(token);
+            idleTimer = new Timer(_ => StopIfIdle(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+            await ReplayStoredExecutionReportsAsync(token);
+        }, startupHealthState, logger, cancellationToken);
+    }
+
+    internal static async Task RunStartupAsync(
+        Func<CancellationToken, Task> startup,
+        FixStartupHealthState healthState,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await startup(cancellationToken);
+            healthState.MarkReady();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Normal hosted-service shutdown.
+        }
+        catch (Exception exception)
+        {
+            healthState.MarkFailed(exception);
+            logger.LogCritical(exception, "FoleoTrader FIX startup or stored execution-report replay failed.");
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

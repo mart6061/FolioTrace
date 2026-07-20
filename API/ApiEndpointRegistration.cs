@@ -633,13 +633,27 @@ public static class ApiEndpointRegistration
     {
         var system = api.MapGroup("/System").WithTags("System").AllowAnonymous();
 
-        system.MapGet("/Health", (ApiReadinessState readinessState) => Results.Ok(new
+        system.MapGet("/Health", (ApiReadinessState readinessState, FixStartupHealthState fixHealthState) =>
         {
-            Ready = readinessState.Ready,
-            Status = readinessState.Ready ? "Ready" : "Starting",
-            Service = "FolioTrace API",
-            CheckedAtUtc = DateTime.UtcNow
-        }));
+            var fix = fixHealthState.Snapshot;
+            var status = !readinessState.Ready || fix.Status == FixStartupStatus.Starting
+                ? "Starting"
+                : fix.Status == FixStartupStatus.Failed ? "Degraded" : "Ready";
+
+            return Results.Ok(new
+            {
+                Ready = readinessState.Ready,
+                Status = status,
+                Service = "FolioTrace API",
+                Fix = new
+                {
+                    Status = fix.Status.ToString(),
+                    fix.FailureMessage,
+                    fix.FailedAtUtc
+                },
+                CheckedAtUtc = DateTime.UtcNow
+            });
+        });
     }
 
     private static void MapProfitLossEndpoints(this RouteGroupBuilder api)
