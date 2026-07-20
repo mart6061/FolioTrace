@@ -56,6 +56,25 @@ public sealed class InMemoryEventsRepositoryOrderingTests
         Assert.Equal(3, UpperBound(events, new DateTime(2025, 12, 31, 0, 0, 0, DateTimeKind.Utc)));
     }
 
+    [Fact]
+    public void FindInsertionIndex_OfAnAlreadyPresentEvent_ReturnsTheIndexRightAfterIt()
+    {
+        // LoadStreamAfterAsync relies on this: FindInsertionIndex(events, boundary), where boundary is itself
+        // already a member of events, must land exactly one past boundary's own position - not before it, not
+        // further along past a later event.
+        var events = new List<IAuditEventBase>();
+        var first = CreatedAt(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), "11111111-1111-1111-1111-111111111111");
+        var second = CreatedAt(new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc), "22222222-2222-2222-2222-222222222222");
+        var third = CreatedAt(new DateTime(2025, 3, 1, 0, 0, 0, DateTimeKind.Utc), "33333333-3333-3333-3333-333333333333");
+        Insert(events, first);
+        Insert(events, second);
+        Insert(events, third);
+
+        Assert.Equal(1, FindInsertionIndex(events, first));
+        Assert.Equal(2, FindInsertionIndex(events, second));
+        Assert.Equal(3, FindInsertionIndex(events, third));
+    }
+
     private static void AssertOrdered(List<IAuditEventBase> events)
     {
         for (var index = 1; index < events.Count; index++)
@@ -78,9 +97,12 @@ public sealed class InMemoryEventsRepositoryOrderingTests
 
     private static void Insert(List<IAuditEventBase> events, IAuditEventBase @event)
     {
-        var index = (int)FindInsertionIndexMethod.Invoke(null, [events, @event])!;
+        var index = FindInsertionIndex(events, @event);
         events.Insert(index, @event);
     }
+
+    private static int FindInsertionIndex(List<IAuditEventBase> events, IAuditEventBase @event) =>
+        (int)FindInsertionIndexMethod.Invoke(null, [events, @event])!;
 
     private static int UpperBound(List<IAuditEventBase> events, DateTime valuationDateTime) =>
         (int)UpperBoundMethod.Invoke(null, [events, valuationDateTime])!;
