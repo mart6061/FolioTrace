@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, ProfitLossMethod, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -1235,12 +1236,12 @@
     </div>
 
     {#if data.error}
-      <div class="status-panel status-panel-error">
+      <Card density="compact" intent="error">
         {data.error}
-      </div>
+      </Card>
     {:else if data.accounts}
       {#if form?.message}
-        <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']} role="status">
+        <Card class="mb-4" density="compact" intent={form.status === 'success' ? 'success' : 'error'} role="status">
           {form.message}
           {#if form.status === 'success' && form.eventID}
             <span class="ml-2 text-emerald-700">Event {form.eventID}</span>
@@ -1248,7 +1249,7 @@
           {#if form.status === 'success' && form.eventIDs?.length}
             <span class="ml-2 text-emerald-700">Events {form.eventIDs.join(', ')}</span>
           {/if}
-        </div>
+        </Card>
       {/if}
 
       <AggregateUpdateWatcher aggregateKind="Accounts" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.accounts.lastEventID} />
@@ -1758,7 +1759,7 @@
                                             {#if history?.loading}
                                               <div class="text-sm text-slate-600">Loading history...</div>
                                             {:else if history?.error}
-                                              <div class="status-panel status-panel-error">{history.error}</div>
+                                              <Card density="compact" intent="error">{history.error}</Card>
                                             {:else}
                                               <HistoryEventsCard
                                                 eventDateTime={data.valuationDate}
@@ -2227,7 +2228,7 @@
                           {#if history?.loading}
                             <div class="text-sm text-slate-600">Loading history...</div>
                           {:else if history?.error}
-                            <div class="status-panel status-panel-error">{history.error}</div>
+                            <Card density="compact" intent="error">{history.error}</Card>
                           {:else}
                             <HistoryEventsCard
                               eventDateTime={data.valuationDate}

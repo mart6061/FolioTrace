@@ -1503,48 +1503,6 @@ button.h-10 {
   color: var(--warning-text);
 }
 
-.rounded-md.border.border-red-200.bg-red-50,
-.rounded.border.border-red-200.bg-red-50,
-.rounded-md.border.border-red-300.bg-red-50 {
-  border-color: var(--danger) !important;
-  border-top: 3px solid var(--danger) !important;
-  border-radius: var(--house-radius) !important;
-  background: var(--danger-soft) !important;
-  color: var(--danger-text) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--danger) 10%, transparent);
-}
-
-.rounded-md.border.border-amber-200.bg-amber-50,
-.rounded-md.border.border-amber-300.bg-amber-50,
-.rounded-md.border.border-amber-200.bg-amber-100 {
-  border-color: var(--warning) !important;
-  border-top: 3px solid var(--warning) !important;
-  border-radius: var(--house-radius) !important;
-  background: var(--warning-soft) !important;
-  color: var(--warning-text) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--warning) 10%, transparent);
-}
-
-.rounded-md.border.border-emerald-200.bg-emerald-50 {
-  border-color: var(--success) !important;
-  border-top: 3px solid var(--success) !important;
-  border-radius: var(--house-radius) !important;
-  background: var(--success-soft) !important;
-  color: var(--success-text) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--success) 10%, transparent);
-}
-
-.rounded-md.border.border-slate-200.bg-white,
-.rounded-md.border.border-slate-200.bg-white\/70,
-.rounded-md.border.border-slate-200.bg-white\/80 {
-  border-color: var(--line) !important;
-  border-top: 3px solid var(--house-panel-top) !important;
-  border-radius: var(--house-radius) !important;
-  background:
-    linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--panel-muted) 28%, var(--panel))) !important;
-  box-shadow: var(--house-panel-shadow) !important;
-}
-
 .table-sort-button {
   display: inline-flex;
   align-items: center;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { MultiSelect } from '$lib/components/forms';
   import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
@@ -794,7 +795,7 @@
         </fieldset>
 
         {#if selectedAccountID && !data.reportConfigs.length}
-          <div class="status-panel status-panel-warning report-filter-status">No active report configs match the selected account and valuation date.</div>
+          <Card class="report-filter-status" density="compact" intent="warning">No active report configs match the selected account and valuation date.</Card>
         {/if}
       </div>
     </form>
@@ -802,7 +803,7 @@
 
     {#if renderMode !== 'filter'}
     {#if data.error}
-      <div class="status-panel status-panel-error" role="status">{data.error}</div>
+      <Card density="compact" intent="error" role="status">{data.error}</Card>
     {/if}
 
     {#if data.reportDocument}
@@ -1250,7 +1251,7 @@
     padding: 0.55rem;
   }
 
-  .report-filter-status {
+  :global(.report-filter-status) {
     align-self: end;
     margin-top: 0;
   }

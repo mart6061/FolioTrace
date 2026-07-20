@@ -2,6 +2,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { MultiSelect } from '$lib/components/forms';
   import AssetAllocationMappingEditor from './AssetAllocationMappingEditor.svelte';
 
@@ -140,7 +141,7 @@
     </form>
 
     {#if data.error}
-      <div class="status-panel status-panel-error" role="status">{data.error}</div>
+      <Card density="compact" intent="error" role="status">{data.error}</Card>
     {/if}
 
     {#if form?.message}

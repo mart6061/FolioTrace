@@ -3,6 +3,7 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput } from '$lib/dates';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -203,15 +204,15 @@
     </datalist>
 
     {#if data.error}
-      <div class="status-panel status-panel-error">{data.error}</div>
+      <Card density="compact" intent="error">{data.error}</Card>
     {:else if data.fxs}
       {#if form?.message}
-        <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']} role="status">
+        <Card class="mb-4" density="compact" intent={form.status === 'success' ? 'success' : 'error'} role="status">
           {form.message}
           {#if form.status === 'success' && form.eventID}
             <span class="ml-2 text-emerald-700">Event {form.eventID}</span>
           {/if}
-        </div>
+        </Card>
       {/if}
 
       <AggregateUpdateWatcher aggregateKind="FXs" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.fxs.lastEventID} />
