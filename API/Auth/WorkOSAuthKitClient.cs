@@ -28,7 +28,7 @@ public interface IWorkOSAuthKitClient
 /// <summary>
 /// WorkOS AuthKit client using the official WorkOS.net SDK.
 /// </summary>
-public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
+public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient
 {
     private readonly WorkOSAuthOptions _options;
     private readonly WorkOSClient client;
@@ -132,5 +132,3 @@ public sealed class WorkOSAuthKitClient : IWorkOSAuthKitClient, IWorkOSSsoClient
     }
 }
 
-// Keep legacy interface as alias for backwards compatibility
-public interface IWorkOSSsoClient : IWorkOSAuthKitClient { }
