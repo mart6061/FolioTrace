@@ -1,6 +1,7 @@
 using API.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using WorkOS;
 
 public sealed class AuthTests
 {
@@ -101,7 +102,8 @@ public sealed class AuthTests
                 ApiKey = "sk_test_123",
                 RedirectUri = "https://localhost:7058/API/Auth/Callback",
                 OrganizationIds = ["org_123"]
-            }));
+            }),
+            CreateWorkOSClient());
 
         var authorizationUrl = client.GetAuthorizationUrl("state_123");
         var query = ParseQueryString(new Uri(authorizationUrl).Query);
@@ -121,7 +123,8 @@ public sealed class AuthTests
                 ClientId = "client_123",
                 ApiKey = "sk_test_123",
                 RedirectUri = "https://localhost:7058/API/Auth/Callback"
-            }));
+            }),
+            CreateWorkOSClient());
 
         var logoutUrl = client.GetLogoutUrl("session_123", "https://localhost:5173/");
         var query = ParseQueryString(new Uri(logoutUrl).Query);
@@ -175,6 +178,9 @@ public sealed class AuthTests
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');
+
+    private static WorkOSClient CreateWorkOSClient() =>
+        new(new WorkOSOptions { ApiKey = "sk_test_123", ClientId = "client_123" });
 
     private sealed record TestUserRequest(Guid UserID);
 

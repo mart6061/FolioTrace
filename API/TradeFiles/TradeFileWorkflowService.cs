@@ -33,9 +33,13 @@ public sealed class TradeFileWorkflowService(
             throw new ArgumentException("A ticket may only be included once.");
 
         var asOf = AuditDateTimeBuilder.Create();
-        var tickets = await ticketService.Get(request.EventDateTime, asOf);
-        var brokers = await brokerService.Get(request.EventDateTime, asOf);
-        var instruments = await instrumentService.Get(request.EventDateTime, asOf);
+        var ticketsTask = ticketService.Get(request.EventDateTime, asOf);
+        var brokersTask = brokerService.Get(request.EventDateTime, asOf);
+        var instrumentsTask = instrumentService.Get(request.EventDateTime, asOf);
+        await Task.WhenAll(ticketsTask, brokersTask, instrumentsTask);
+        var tickets = await ticketsTask;
+        var brokers = await brokersTask;
+        var instruments = await instrumentsTask;
         var broker = brokers.Items.SingleOrDefault(item => item.LEI == request.BrokerLEI && item.Active)
             ?? throw new ArgumentException("The selected broker was not found or is inactive.");
         var method = broker.TradeMethods.OfType<TradeFileTradeMethod>().SingleOrDefault()
@@ -193,10 +197,14 @@ public sealed class TradeFileWorkflowService(
         var eventDate = EffectiveEventDate(requested.EventDateTime, confirmation.ConfirmedAtUtc);
         var audit = AuditDateTimeBuilder.Create();
         var asOf = AuditDateTimeBuilder.Create();
-        var tickets = await ticketService.Get(eventDate, asOf);
+        var ticketsTask = ticketService.Get(eventDate, asOf);
+        var holdingsTask = holdingService.Get(eventDate, asOf);
+        var instrumentsTask = instrumentService.Get(eventDate, asOf);
+        await Task.WhenAll(ticketsTask, holdingsTask, instrumentsTask);
+        var tickets = await ticketsTask;
+        var holdings = await holdingsTask;
+        var instruments = await instrumentsTask;
         var ticket = tickets.Find(ticketNumber) ?? throw new ArgumentException("Ticket was not found.");
-        var holdings = await holdingService.Get(eventDate, asOf);
-        var instruments = await instrumentService.Get(eventDate, asOf);
         var tradeEvent = CreateTradeEvent(ticket, tickets, holdings, instruments, confirmation.Quantity, confirmation.Price, eventDate, requested.UserID, confirmation.ConfirmationID);
         var settlementAmount = decimal.Round(confirmation.Quantity * confirmation.Price, 8, MidpointRounding.AwayFromZero);
         var fillResult = TicketEventBuilder.AddFill(new TicketTradeFillRequest(

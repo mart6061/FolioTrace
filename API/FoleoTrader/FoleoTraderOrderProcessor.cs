@@ -25,10 +25,15 @@ public sealed class FoleoTraderOrderProcessor(
     public async Task<Result<FoleoTraderOrderSubmittedEvent>> SubmitOrderAsync(FoleoTraderOrderRequest request, FoleoTraderFixClient fixClient, CancellationToken cancellationToken)
     {
         var asAt = AuditDateTimeBuilder.Create();
-        var tickets = await ticketService.Get(request.EventDateTime, asAt);
-        var instruments = await instrumentService.Get(request.EventDateTime, asAt);
-        var brokers = await brokerService.Get(request.EventDateTime, asAt);
-        var existingOrders = await foleoTraderOrderService.Get(request.EventDateTime, asAt);
+        var ticketsTask = ticketService.Get(request.EventDateTime, asAt);
+        var instrumentsTask = instrumentService.Get(request.EventDateTime, asAt);
+        var brokersTask = brokerService.Get(request.EventDateTime, asAt);
+        var existingOrdersTask = foleoTraderOrderService.Get(request.EventDateTime, asAt);
+        await Task.WhenAll(ticketsTask, instrumentsTask, brokersTask, existingOrdersTask);
+        var tickets = await ticketsTask;
+        var instruments = await instrumentsTask;
+        var brokers = await brokersTask;
+        var existingOrders = await existingOrdersTask;
         var validationErrors = ValidateOrder(request, tickets, instruments, existingOrders, out var ticket, out var instrument, out var securityID, out var securityIDSource, out var symbol);
         var executionResult = TicketTradeExecutionEventBuilder.Request(new TicketTradeExecutionRequest(request.UserID, request.EventDateTime, $"Request FIX execution for ticket {request.TicketNumber.Value}", request.TicketNumber, TradeMethodType.FIX, request.BrokerLEI), tickets, brokers);
         if (!executionResult.IsValid) validationErrors.AddRange(executionResult.ValidationErrors);
@@ -149,9 +154,13 @@ public sealed class FoleoTraderOrderProcessor(
             }
 
             var asAt = AuditDateTimeBuilder.Create();
-            var tickets = await ticketService.Get(eventDateTime, asAt);
-            var holdings = await holdingService.Get(eventDateTime, asAt);
-            var instruments = await instrumentService.Get(eventDateTime, asAt);
+            var ticketsTask = ticketService.Get(eventDateTime, asAt);
+            var holdingsTask = holdingService.Get(eventDateTime, asAt);
+            var instrumentsTask = instrumentService.Get(eventDateTime, asAt);
+            await Task.WhenAll(ticketsTask, holdingsTask, instrumentsTask);
+            var tickets = await ticketsTask;
+            var holdings = await holdingsTask;
+            var instruments = await instrumentsTask;
             var ticket = tickets.Find(ticketNumber);
             if (ticket is null)
             {

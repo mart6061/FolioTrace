@@ -9,6 +9,7 @@ public sealed class UserService(IEventRepository eventRepository)
 {
     private readonly Lock cacheLock = new();
     private readonly Dictionary<UserCacheKey, Users> cache = [];
+    private readonly Dictionary<UserID, CurrentUserCacheEntry> currentUserCache = [];
 
     public UserServiceDiagnostics GetDiagnostics()
     {
@@ -44,7 +45,32 @@ public sealed class UserService(IEventRepository eventRepository)
         {
             var removedCount = cache.Count;
             cache.Clear();
+            currentUserCache.Clear();
             return removedCount;
+        }
+    }
+
+    public async Task<User?> FindCurrentAsync(UserID userID, CancellationToken cancellationToken = default)
+    {
+        if (userID is null)
+            throw new ArgumentNullException(nameof(userID));
+
+        var lastEventID = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.UsersStreamId, cancellationToken)
+            ?? Constants.Initialisation.EmptyViewEventID;
+
+        lock (cacheLock)
+        {
+            if (currentUserCache.TryGetValue(userID, out var cached) && cached.UsersStreamLastEventID == lastEventID)
+                return cached.User;
+        }
+
+        var events = await eventRepository.LoadStreamAsync<IUserEvent>(Constants.Initialisation.UsersStreamId, cancellationToken);
+        var user = new Users(ReferenceDataCurrent.EndOfToday(), events.ToList()).Find(userID);
+
+        lock (cacheLock)
+        {
+            currentUserCache[userID] = new CurrentUserCacheEntry(lastEventID, user);
+            return user;
         }
     }
 
@@ -103,6 +129,8 @@ public sealed class UserService(IEventRepository eventRepository)
         public static UserCacheKey ForAsAt(EventDateTime valuationDate, AuditDateTime asAt) => new(valuationDate.Value, asAt.Value);
     }
 
+    private sealed record CurrentUserCacheEntry(EventID UsersStreamLastEventID, User? User);
+
     private int InvalidateFrom(EventDateTime eventDateTime)
     {
         lock (cacheLock)
@@ -113,6 +141,8 @@ public sealed class UserService(IEventRepository eventRepository)
                 if (cache.Remove(cacheKey))
                     removedCount++;
             }
+
+            currentUserCache.Clear();
 
             return removedCount;
         }

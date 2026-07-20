@@ -37,8 +37,12 @@ public static class TradeFileEndpointRegistration
         {
             if (request.TradeMethodType != TradeMethodType.TradeFile)
                 return Results.BadRequest(new { error = "TradeFile method is required." });
-            var tickets = await ticketService.Get(request.EventDateTime, AuditDateTimeBuilder.Create());
-            var brokers = await brokerService.Get(request.EventDateTime, AuditDateTimeBuilder.Create());
+            var asAt = AuditDateTimeBuilder.Create();
+            var ticketsTask = ticketService.Get(request.EventDateTime, asAt);
+            var brokersTask = brokerService.Get(request.EventDateTime, asAt);
+            await Task.WhenAll(ticketsTask, brokersTask);
+            var tickets = await ticketsTask;
+            var brokers = await brokersTask;
             var result = TicketTradeExecutionEventBuilder.Request(request, tickets, brokers);
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
