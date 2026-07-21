@@ -8,9 +8,10 @@ namespace Repository;
 
 public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository) : ISeedRepository
 {
-    private const int TotalBuildSteps = 17;
-    private const int SeedTransactionMonths = 12;
+    private const int TotalBuildSteps = 18;
+    private const int SeedTransactionMonths = 60;
     private const int SeedStocksPerAccount = 3;
+    private const int SeedTicketsPerSideAndStage = 5;
 
     public async Task Build(CancellationToken cancellationToken = default)
     {
@@ -46,6 +47,7 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         await CreateInstrumentSetupEvents(progress, cancellationToken);
         await CreateHoldingSetupEvents(progress, cancellationToken);
         await CreateTransactionSetupEvents(progress, cancellationToken);
+        await CreateTicketSetupEvents(progress, cancellationToken);
     }
 
     private async Task CreateCountrySetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
@@ -843,6 +845,282 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         progress("Transactions", $"Seeded {transactionEvents.Count:N0} transaction events.", 0, true);
     }
 
+    private async Task CreateTicketSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var seed = CreateSeedTickets();
+        var eventCount = seed.TicketEvents.Count + seed.HoldingEvents.Count + seed.TransactionEvents.Count;
+
+        progress("Tickets", $"Seeding {eventCount:N0} ticket events.", 0, false);
+
+        await AppendEventsInBatches(Constants.Initialisation.TicketsStreamId, seed.TicketEvents, cancellationToken);
+
+        if (seed.HoldingEvents.Count > 0)
+            await AppendEvents(Constants.Initialisation.HoldingsStreamId, seed.HoldingEvents, cancellationToken);
+
+        if (seed.TransactionEvents.Count > 0)
+            await AppendEventsInBatches(Constants.Initialisation.TransactionsStreamId, seed.TransactionEvents, cancellationToken);
+
+        progress("Tickets", $"Seeded {eventCount:N0} ticket events.", eventCount, true);
+    }
+
+    public static IReadOnlyList<ITicket> CreateInitialTicketEvents() => CreateSeedTickets().TicketEvents;
+
+    private static SeedTicketResult CreateSeedTickets()
+    {
+        var instrumentSeeds = SeedInstrumentData.CreateInstrumentSeeds();
+        return CreateSeedTickets(
+            instrumentSeeds,
+            CreateInitialAccountCreatedEvents(),
+            CreateInitialInstrumentCreatedEvents(instrumentSeeds),
+            CreateInitialHoldingCreatedEvents(instrumentSeeds));
+    }
+
+    private static SeedTicketResult CreateSeedTickets(
+        IReadOnlyList<InstrumentSeed> instrumentSeeds,
+        IReadOnlyList<AccountCreatedEvent> accountEvents,
+        IReadOnlyList<InstrumentCreatedEvent> instrumentEvents,
+        IReadOnlyList<HoldingCreatedEvent> holdingEvents)
+    {
+        var valuationDateTime = EventDateTimeBuilder.Create(DateTime.UtcNow);
+        var accounts = new Accounts(valuationDateTime, accountEvents.Cast<IAccountEvent>().ToList());
+        var instruments = new Instruments(valuationDateTime, instrumentEvents.Cast<IInstrumentEvent>().ToList());
+        var holdingEventList = holdingEvents.Cast<IHoldingEvent>().ToList();
+        var holdings = new Holdings(valuationDateTime, AuditDateTimeBuilder.Create(), holdingEventList);
+        var fxPairSeeds = SeedFXData.CreatePairSeeds();
+        var brokerLEI = new LegalEntityIdentifier(SeedBrokers[1].LEI);
+
+        var stages = new[]
+        {
+            SeedTicketStage.ProposalInProgress,
+            SeedTicketStage.ProposalPendingApproval,
+            SeedTicketStage.TradeReady,
+            SeedTicketStage.TradeInProgress,
+            SeedTicketStage.TradePendingApproval,
+            SeedTicketStage.Completed
+        };
+
+        var ticketEvents = new List<ITicket>();
+        var createdHoldingEvents = new List<HoldingCreatedEvent>();
+        var transactionEvents = new List<ITransactionEvent>();
+        var ticketNumberValue = 1;
+        var slot = 0;
+        var ticketStart = DateTime.UtcNow.Date.AddDays(-45).AddHours(9);
+
+        foreach (var stage in stages)
+        {
+            foreach (var side in new[] { TicketSide.Buy, TicketSide.Sell })
+            {
+                for (var index = 0; index < SeedTicketsPerSideAndStage; index++)
+                {
+                    var accountIndex = (ticketNumberValue - 1) % SeedAccounts.Length;
+                    var account = SeedAccounts[accountIndex];
+                    // Only trade instruments the account already holds so sells never exceed a real position
+                    // ("you can't sell what you don't have") and buys reuse the existing asset holding.
+                    var equities = SelectSeedEquitiesForAccount(instrumentSeeds, accountIndex);
+                    var equity = equities[(ticketNumberValue - 1) % equities.Count];
+                    var ticketNumber = new TicketNumber(ticketNumberValue);
+                    var baseTime = ticketStart.AddHours(2 * slot++);
+
+                    var ticket = BuildSeedTicket(
+                        stage,
+                        side,
+                        ticketNumber,
+                        account,
+                        equity,
+                        brokerLEI,
+                        baseTime,
+                        valuationDateTime,
+                        accounts,
+                        instruments,
+                        holdings,
+                        holdingEventList,
+                        fxPairSeeds);
+
+                    ticketEvents.AddRange(ticket.TicketEvents);
+
+                    if (ticket.HoldingEvents.Count > 0)
+                    {
+                        createdHoldingEvents.AddRange(ticket.HoldingEvents);
+                        holdingEventList = [.. holdingEventList, .. ticket.HoldingEvents.Cast<IHoldingEvent>()];
+                        holdings = new Holdings(valuationDateTime, AuditDateTimeBuilder.Create(), holdingEventList);
+                    }
+
+                    transactionEvents.AddRange(ticket.TransactionEvents);
+                    ticketNumberValue++;
+                }
+            }
+        }
+
+        return new SeedTicketResult(ticketEvents, createdHoldingEvents, transactionEvents);
+    }
+
+    private static SeedTicketResult BuildSeedTicket(
+        SeedTicketStage stage,
+        TicketSide side,
+        TicketNumber ticketNumber,
+        (AccountID AccountID, string Name, string FormalName, string BookCurrency, bool Active) account,
+        InstrumentSeed equity,
+        LegalEntityIdentifier brokerLEI,
+        DateTime baseTime,
+        EventDateTime valuationDateTime,
+        Accounts accounts,
+        Instruments instruments,
+        Holdings holdings,
+        IReadOnlyList<IHoldingEvent> holdingEventList,
+        IReadOnlyList<FXPairSeed> fxPairSeeds)
+    {
+        var userID = Constants.Initialisation.UserID;
+        var random = CreateSeedTicketRandom(ticketNumber.Value);
+        var tradeCurrency = Alpha3Builder.Create(equity.Currency);
+        var bookCurrency = Alpha3Builder.Create(account.BookCurrency);
+        var price = new Price(equity.BasePrice);
+        var quantity = side == TicketSide.Buy ? 10m : 1m;
+        var settlementAmount = RoundMoney(quantity * equity.BasePrice);
+        var reason = $"Seed {side} ticket {ticketNumber.Value}";
+        var events = new List<ITicket>();
+
+        var created = UnwrapSeedTicket(
+            TicketEventBuilder.Create(
+                new TicketCreatedRequest(userID, EventDateTimeBuilder.Create(baseTime), reason, side, equity.InstrumentID),
+                ticketNumber,
+                instruments),
+            ticketNumber,
+            "create");
+        events.Add(created);
+
+        var accountAdded = UnwrapSeedTicket(
+            TicketEventBuilder.AddAccount(
+                new TicketAccountRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(1)), reason, ticketNumber, account.AccountID),
+                new Tickets(valuationDateTime, events.ToList()),
+                accounts),
+            ticketNumber,
+            "add account");
+        events.Add(accountAdded);
+
+        var proposal = UnwrapSeedTicket(
+            TicketEventBuilder.CreateProposal(
+                new TicketProposalRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(2)), reason, ticketNumber, price, null, [new TicketProposalAllocation(account.AccountID, quantity)]),
+                new Tickets(valuationDateTime, events.ToList())),
+            ticketNumber,
+            "create proposal");
+        events.Add(proposal);
+
+        if (stage == SeedTicketStage.ProposalInProgress)
+            return new SeedTicketResult(events, [], []);
+
+        var proposalRequested = UnwrapSeedTicket(
+            TicketEventBuilder.RequestProposalDecision(
+                new TicketApprovalRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(3)), reason, ticketNumber),
+                new Tickets(valuationDateTime, events.ToList())),
+            ticketNumber,
+            "request proposal decision");
+        events.Add(proposalRequested);
+
+        if (stage == SeedTicketStage.ProposalPendingApproval)
+            return new SeedTicketResult(events, [], []);
+
+        var proposalApproved = UnwrapSeedTicket(
+            TicketEventBuilder.ApproveProposal(
+                new TicketApprovalRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(4)), reason, ticketNumber),
+                new Tickets(valuationDateTime, events.ToList())),
+            ticketNumber,
+            "approve proposal");
+        events.Add(proposalApproved);
+
+        if (stage == SeedTicketStage.TradeReady)
+            return new SeedTicketResult(events, [], []);
+
+        var cashHolding = holdings.Items.Single(holding =>
+            holding.AccountID == account.AccountID &&
+            holding.GetHoldingKindName() == HoldingKindRuntime.GetKindName<HoldingCashInvestable>() &&
+            holding.Name == $"Investable {equity.Currency}");
+        var baseBookCost = ResolveSeedBookCost(settlementAmount, tradeCurrency, bookCurrency, fxPairSeeds, reason).BookCost.Value;
+        var bookCostOverride = RoundMoney(baseBookCost * CreateSeedBookCostFactor(random));
+        var tradeDateTime = EventDateTimeBuilder.Create(baseTime.AddMinutes(5));
+        var settlementDateTime = SettlementDateTimeBuilder.Create(baseTime.Date.AddDays(2));
+        var tradeAllocation = new TicketTradeAllocation(account.AccountID, quantity, settlementAmount, cashHolding.HoldingID, bookCostOverride);
+
+        var trade = UnwrapSeedTicket(
+            TicketEventBuilder.CreateTrade(
+                new TicketTradeRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(5)), reason, ticketNumber, price, tradeDateTime, settlementDateTime, [tradeAllocation]),
+                new Tickets(valuationDateTime, events.ToList()),
+                holdings,
+                instruments),
+            ticketNumber,
+            "create trade");
+        events.Add(trade);
+
+        var fill = UnwrapSeedTicket(
+            TicketEventBuilder.AddFill(
+                new TicketTradeFillRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(6)), reason, ticketNumber, Guid.CreateGuid7(), brokerLEI, price, quantity, new TransactionLocalCost(settlementAmount), "Seed fill"),
+                new Tickets(valuationDateTime, events.ToList())),
+            ticketNumber,
+            "add fill");
+        events.Add(fill);
+
+        if (stage == SeedTicketStage.TradeInProgress)
+            return new SeedTicketResult(events, [], []);
+
+        var tradeRequested = UnwrapSeedTicket(
+            TicketEventBuilder.RequestTradeDecision(
+                new TicketApprovalRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(7)), reason, ticketNumber),
+                new Tickets(valuationDateTime, events.ToList())),
+            ticketNumber,
+            "request trade decision");
+        events.Add(tradeRequested);
+
+        if (stage == SeedTicketStage.TradePendingApproval)
+            return new SeedTicketResult(events, [], []);
+
+        var approvalResult = TicketEventBuilder.ApproveTradeWithTransactions(
+            new TicketTradeApprovalRequest(userID, EventDateTimeBuilder.Create(baseTime.AddMinutes(8)), reason, ticketNumber),
+            new Tickets(valuationDateTime, events.ToList()),
+            accounts,
+            instruments,
+            holdingEventList,
+            fxRates: null);
+
+        if (!approvalResult.IsValid || approvalResult.Value is null)
+            throw new InvalidOperationException($"Unable to create seed ticket {ticketNumber.Value} at 'approve trade': {string.Join("; ", approvalResult.ValidationErrors)}");
+
+        events.Add(approvalResult.Value.ApprovalEvent);
+
+        return new SeedTicketResult(
+            events,
+            approvalResult.Value.HoldingEvents.Cast<HoldingCreatedEvent>().ToList(),
+            approvalResult.Value.TransactionEvents.Cast<ITransactionEvent>().ToList());
+    }
+
+    private static TEvent UnwrapSeedTicket<TEvent>(Result<TEvent> result, TicketNumber ticketNumber, string step)
+        where TEvent : class
+    {
+        if (result.IsValid && result.Value is not null)
+            return result.Value;
+
+        throw new InvalidOperationException($"Unable to create seed ticket {ticketNumber.Value} at '{step}': {string.Join("; ", result.ValidationErrors)}");
+    }
+
+    private static Random CreateSeedTicketRandom(int ticketNumber)
+    {
+        var bytes = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes($"seed-tickets-{ticketNumber}"));
+        return new Random(BitConverter.ToInt32(bytes, 0) & int.MaxValue);
+    }
+
+    private enum SeedTicketStage
+    {
+        ProposalInProgress,
+        ProposalPendingApproval,
+        TradeReady,
+        TradeInProgress,
+        TradePendingApproval,
+        Completed
+    }
+
+    private sealed record SeedTicketResult(
+        IReadOnlyList<ITicket> TicketEvents,
+        IReadOnlyList<HoldingCreatedEvent> HoldingEvents,
+        IReadOnlyList<ITransactionEvent> TransactionEvents);
+
     public static IReadOnlyList<ITransactionEvent> CreateInitialTransactionEvents()
     {
         var instrumentSeeds = SeedInstrumentData.CreateInstrumentSeeds();
@@ -858,8 +1136,8 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             holdingEvents.Cast<IHoldingEvent>().ToList());
         var events = new List<ITransactionEvent>();
         var fxPairSeeds = SeedFXData.CreatePairSeeds();
-        var startDate = DateTime.UtcNow.Date.AddYears(-1);
-        var endDate = startDate.AddYears(1);
+        var startDate = DateTime.UtcNow.Date.AddYears(-5);
+        var endDate = startDate.AddYears(5);
 
         foreach (var account in SeedAccounts)
         {
@@ -919,7 +1197,6 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                         var localCost = RoundMoney(inflowAmount * 0.10m);
                         var localCostCurrency = Alpha3Builder.Create(equity.Seed.Currency);
                         var bookCurrency = Alpha3Builder.Create(account.BookCurrency);
-                        var resolvedBookCost = ResolveSeedBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, $"Seed weekly InSpecie in {equity.Seed.Ticker}");
                         var quantity = RoundQuantity(localCost / equity.Seed.BasePrice);
                         if (quantity <= 0m || localCost <= 0m)
                             continue;
@@ -927,6 +1204,11 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                         var assetHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingPositionAsset), $"Asset {equity.Seed.Ticker}");
                         var inSpecieInHolding = FindSeedHolding(holdings, account.AccountID, equity.Seed.InstrumentID, typeof(HoldingNominalInSpecieIn), $"InSpecie In {equity.Seed.Ticker}");
                         var positionState = positionStates[equity.Seed.InstrumentID];
+
+                        // Nudge the recorded cost basis a little off the transaction-time value so seeded
+                        // positions carry unrealised P&L rather than sitting exactly at cost.
+                        var bookCostFactor = CreateSeedBookCostFactor(random);
+                        var variedBookCost = ResolveSeedBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, $"Seed weekly InSpecie in {equity.Seed.Ticker}", bookCostFactor);
 
                         events.AddRange(CreateSeedTransactionSet(
                             holdings,
@@ -939,10 +1221,11 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
                             bookCurrency,
                             fxPairSeeds,
                             weekDate.AddHours(10 + equity.Index),
-                            $"Seed weekly InSpecie in {equity.Seed.Ticker}"));
+                            $"Seed weekly InSpecie in {equity.Seed.Ticker}",
+                            bookCostFactor));
 
                         positionState.Quantity += quantity;
-                        positionState.BookCost += resolvedBookCost.BookCost.Value;
+                        positionState.BookCost += variedBookCost.BookCost.Value;
                     }
                 }
 
@@ -995,9 +1278,10 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         Alpha3 bookCurrency,
         IReadOnlyList<FXPairSeed> fxPairSeeds,
         DateTime eventDateTime,
-        string reason)
+        string reason,
+        decimal bookCostFactor = 1m)
     {
-        var bookCost = ResolveSeedBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, reason);
+        var bookCost = ResolveSeedBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, reason, bookCostFactor);
         var request = new TransactionSetRequest(
             Constants.Initialisation.UserID,
             EventDateTimeBuilder.Create(eventDateTime),
@@ -1013,11 +1297,26 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         throw new InvalidOperationException($"Unable to create seed transaction '{reason}': {string.Join("; ", result.ValidationErrors)}");
     }
 
-    private static ResolvedSeedBookCost ResolveSeedBookCost(decimal localCost, Alpha3 localCostCurrency, Alpha3 bookCurrency, IReadOnlyList<FXPairSeed> fxPairSeeds, string reason)
+    private static ResolvedSeedBookCost ResolveSeedBookCost(decimal localCost, Alpha3 localCostCurrency, Alpha3 bookCurrency, IReadOnlyList<FXPairSeed> fxPairSeeds, string reason, decimal bookCostFactor = 1m)
     {
-        if (localCostCurrency == bookCurrency)
-            return new ResolvedSeedBookCost(new TransactionBookCost(localCost), BookCostSource.SameCurrency, false);
+        var resolved = localCostCurrency == bookCurrency
+            ? new ResolvedSeedBookCost(new TransactionBookCost(localCost), BookCostSource.SameCurrency, false)
+            : ResolveSeedFxBookCost(localCost, localCostCurrency, bookCurrency, fxPairSeeds, reason);
 
+        if (bookCostFactor == 1m)
+            return resolved;
+
+        // A deliberate deviation from the transaction-time cost basis; record it as a manual book cost.
+        return resolved with
+        {
+            BookCost = new TransactionBookCost(RoundMoney(resolved.BookCost.Value * bookCostFactor)),
+            Source = BookCostSource.ManualOverride,
+            Estimated = false
+        };
+    }
+
+    private static ResolvedSeedBookCost ResolveSeedFxBookCost(decimal localCost, Alpha3 localCostCurrency, Alpha3 bookCurrency, IReadOnlyList<FXPairSeed> fxPairSeeds, string reason)
+    {
         var pair = fxPairSeeds.FirstOrDefault(seed =>
             seed.Pair.BaseCurrency == localCostCurrency &&
             seed.Pair.QuoteCurrency == bookCurrency);
@@ -1030,6 +1329,9 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
             BookCostSource.FxEstimate,
             true);
     }
+
+    private static decimal CreateSeedBookCostFactor(Random random) =>
+        Math.Round(0.95m + ((decimal)random.NextDouble() * 0.10m), 4, MidpointRounding.AwayFromZero);
 
     private static decimal ResolveSeedLocalCost(decimal bookCost, Alpha3 localCostCurrency, Alpha3 bookCurrency, IReadOnlyList<FXPairSeed> fxPairSeeds, string reason)
     {
@@ -1484,8 +1786,10 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
         var holdingCreatedEvents = CreateInitialHoldingCreatedEvents(instrumentSeeds);
         var holdingEvents = holdingCreatedEvents.Count;
         var transactionEvents = CreateInitialTransactionEvents(instrumentSeeds, holdingCreatedEvents).Count;
+        var ticketSeed = CreateSeedTickets(instrumentSeeds, CreateInitialAccountCreatedEvents(), CreateInitialInstrumentCreatedEvents(instrumentSeeds), holdingCreatedEvents);
+        var ticketEvents = ticketSeed.TicketEvents.Count + ticketSeed.HoldingEvents.Count + ticketSeed.TransactionEvents.Count;
 
-        return countryEvents + currencyEvents + brokerEvents + accountEvents + inputControlSettingEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents;
+        return countryEvents + currencyEvents + brokerEvents + accountEvents + inputControlSettingEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents + ticketEvents;
     }
 
     private sealed class SeedPositionState
