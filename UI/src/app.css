@@ -44,7 +44,13 @@
   --house-filter-top: color-mix(in srgb, var(--brand-gold) 78%, var(--line));
   --house-data-top: color-mix(in srgb, var(--brand-green) 78%, var(--line));
   --house-panel-shadow: 0 14px 32px var(--surface-shadow);
-  --house-control-height: 2rem;
+  --control-h-sm: 1.75rem;
+  --control-h-md: 2rem;
+  --control-pad-x-sm: 0.5rem;
+  --control-pad-x-md: 0.625rem;
+  --control-font-sm: 0.75rem;
+  --control-font-md: 0.875rem;
+  --house-control-height: var(--control-h-md);
   --house-label-size: 0.75rem;
   --house-datetime-width: 16.25rem;
   --house-datetime-input-column: 10.75rem;
@@ -1497,48 +1503,6 @@ button.h-10 {
   color: var(--warning-text);
 }
 
-.rounded-md.border.border-red-200.bg-red-50,
-.rounded.border.border-red-200.bg-red-50,
-.rounded-md.border.border-red-300.bg-red-50 {
-  border-color: var(--danger) !important;
-  border-top: 3px solid var(--danger) !important;
-  border-radius: var(--house-radius) !important;
-  background: var(--danger-soft) !important;
-  color: var(--danger-text) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--danger) 10%, transparent);
-}
-
-.rounded-md.border.border-amber-200.bg-amber-50,
-.rounded-md.border.border-amber-300.bg-amber-50,
-.rounded-md.border.border-amber-200.bg-amber-100 {
-  border-color: var(--warning) !important;
-  border-top: 3px solid var(--warning) !important;
-  border-radius: var(--house-radius) !important;
-  background: var(--warning-soft) !important;
-  color: var(--warning-text) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--warning) 10%, transparent);
-}
-
-.rounded-md.border.border-emerald-200.bg-emerald-50 {
-  border-color: var(--success) !important;
-  border-top: 3px solid var(--success) !important;
-  border-radius: var(--house-radius) !important;
-  background: var(--success-soft) !important;
-  color: var(--success-text) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--success) 10%, transparent);
-}
-
-.rounded-md.border.border-slate-200.bg-white,
-.rounded-md.border.border-slate-200.bg-white\/70,
-.rounded-md.border.border-slate-200.bg-white\/80 {
-  border-color: var(--line) !important;
-  border-top: 3px solid var(--house-panel-top) !important;
-  border-radius: var(--house-radius) !important;
-  background:
-    linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--panel-muted) 28%, var(--panel))) !important;
-  box-shadow: var(--house-panel-shadow) !important;
-}
-
 .table-sort-button {
   display: inline-flex;
   align-items: center;
@@ -1758,37 +1722,37 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 
 .datetime-input-control-embedded.datetime-input-control-compact {
   --datetime-shortcut-button-size: 1.25rem;
-  height: 1.75rem;
+  height: var(--control-h-sm);
   width: var(--house-datetime-compact-width);
   min-width: var(--house-datetime-compact-width);
-  min-height: 1.75rem;
+  min-height: var(--control-h-sm);
   grid-template-columns: minmax(var(--house-datetime-compact-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded:has(input.h-8) {
   --datetime-shortcut-button-size: 1.25rem;
-  height: 2rem;
+  height: var(--control-h-sm);
   width: var(--house-datetime-sm-width);
   min-width: var(--house-datetime-sm-width);
-  min-height: 2rem;
+  min-height: var(--control-h-sm);
   grid-template-columns: minmax(var(--house-datetime-sm-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded.datetime-input-control-sm {
   --datetime-shortcut-button-size: 1.25rem;
-  height: 2rem;
+  height: var(--control-h-sm);
   width: var(--house-datetime-sm-width);
   min-width: var(--house-datetime-sm-width);
-  min-height: 2rem;
+  min-height: var(--control-h-sm);
   grid-template-columns: minmax(var(--house-datetime-sm-input-column), 1fr) auto;
 }
 
 .datetime-input-control-embedded:has(input.h-9) {
   --datetime-shortcut-button-size: 1.375rem;
-  height: 2.25rem;
+  height: var(--control-h-md);
   width: var(--house-datetime-width);
   min-width: var(--house-datetime-width);
-  min-height: 2.25rem;
+  min-height: var(--control-h-md);
   grid-template-columns: minmax(var(--house-datetime-input-column), 1fr) auto;
 }
 
@@ -2087,9 +2051,9 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
   border-radius: var(--house-radius-sm);
   background: var(--panel);
   color: var(--ink);
-  font-size: 0.875rem;
+  font-size: var(--control-font-md);
   outline: none;
-  padding: 0.375rem 0.625rem;
+  padding: 0.375rem var(--control-pad-x-md);
 }
 
 .toolbar input:focus,
@@ -2108,19 +2072,21 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
 }
 
 .house-control-sm {
-  min-height: 2rem;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
+  min-height: var(--control-h-sm);
+  font-size: var(--control-font-sm);
+  padding: 0.25rem var(--control-pad-x-sm);
 }
 
 .house-control-md {
-  min-height: var(--house-control-height);
+  min-height: var(--control-h-md);
+  font-size: var(--control-font-md);
+  padding-inline: var(--control-pad-x-md);
 }
 
 .house-control-compact {
-  min-height: 1.75rem;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.45rem;
+  min-height: var(--control-h-sm);
+  font-size: var(--control-font-sm);
+  padding: 0.25rem var(--control-pad-x-sm);
 }
 
 .house-control-invalid {
@@ -3383,15 +3349,15 @@ tbody tr {
 }
 
 .house-button-sm {
-  min-height: 1.75rem;
-  font-size: 0.75rem;
-  padding: 0 0.625rem;
+  min-height: var(--control-h-sm);
+  font-size: var(--control-font-sm);
+  padding: 0 var(--control-pad-x-md);
 }
 
 .house-button-compact {
-  min-height: 1.75rem;
-  font-size: 0.75rem;
-  padding: 0 0.625rem;
+  min-height: var(--control-h-sm);
+  font-size: var(--control-font-sm);
+  padding: 0 var(--control-pad-x-md);
 }
 
 .house-button-full {
@@ -3723,7 +3689,7 @@ fieldset.field legend {
 }
 
 .house-pill span {
-  height: calc(var(--house-control-height) - 0.375rem);
+  height: calc(var(--control-h-md) - 0.2rem);
   border-radius: calc(var(--house-radius-sm) - 2px);
 }
 
@@ -4019,7 +3985,8 @@ input[type='number']::-webkit-outer-spin-button {
   background: color-mix(in srgb, var(--panel-muted) 54%, var(--panel));
 }
 
-.account-add-form:has(.house-multiselect[open]) {
+.account-add-form:has(.house-multiselect[open]),
+.account-add-form:has(.complex-select-menu) {
   z-index: 80;
 }
 

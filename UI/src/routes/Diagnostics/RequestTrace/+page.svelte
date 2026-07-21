@@ -1,6 +1,7 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDateTime } from '$lib/dates';
   import type { RequestTrace, TraceHttpMessage } from '$lib/types';
 
@@ -356,14 +357,14 @@
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="status-panel status-panel-error">
+      <Card density="compact" intent="error">
         {data.error}
-      </div>
+      </Card>
     {:else}
       {#if form?.message}
-        <div class={form.status === 'success' ? 'status-panel status-panel-success' : 'status-panel status-panel-error'}>
+        <Card density="compact" intent={form.status === 'success' ? 'success' : 'error'}>
           {form.message}
-        </div>
+        </Card>
       {/if}
 
       <div class="data-summary">
@@ -482,7 +483,7 @@
           {/each}
         </div>
       {:else}
-        <div class="status-panel">No logs have been captured for this request.</div>
+        <Card density="compact" intent="data">No logs have been captured for this request.</Card>
       {/if}
     </section>
 
@@ -496,7 +497,7 @@
       {:else if trace.exception?.exceptionMessage}
         <pre class="trace-stack-body">{trace.exception.exceptionType}: {trace.exception.exceptionMessage}</pre>
       {:else}
-        <div class="status-panel">No exception has been captured for this request.</div>
+        <Card density="compact" intent="data">No exception has been captured for this request.</Card>
       {/if}
     </section>
   </div>

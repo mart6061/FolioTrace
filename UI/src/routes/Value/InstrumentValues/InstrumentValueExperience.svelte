@@ -4,6 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type {
@@ -415,10 +416,10 @@
   {#if showBody}
   <section class="page-container page-section">
     {#if data.error}
-      <div class="status-panel status-panel-error">{data.error}</div>
+      <Card density="compact" intent="error">{data.error}</Card>
     {:else if data.instrumentValues}
       {#if form?.message}
-        <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']} role="status">{form.message}</div>
+        <Card class="mb-4" density="compact" intent={form.status === 'success' ? 'success' : 'error'} role="status">{form.message}</Card>
       {/if}
 
       <AggregateUpdateWatcher aggregateKind="InstrumentValues" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.instrumentValues.lastEventID} />
@@ -568,7 +569,7 @@
                                   {#if history?.loading}
                                     <div class="text-sm text-slate-600">Loading history...</div>
                                   {:else if history?.error}
-                                    <div class="status-panel status-panel-error">{history.error}</div>
+                                    <Card density="compact" intent="error">{history.error}</Card>
                                   {:else}
                                     <HistoryEventsCard
                                       eventDateTime={data.instrumentValues.valuationDateTime ?? data.valuationDate}

@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
   import type { ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -338,17 +339,17 @@
 
   <section class="page-container page-section">
     {#if data.error}
-      <div class="status-panel status-panel-error">
+      <Card density="compact" intent="error">
         {data.error}
-      </div>
+      </Card>
     {:else if data.valuationSettings}
       {#if form?.message}
-        <div class={['status-panel mb-4', form.status === 'success' ? 'status-panel-success' : 'status-panel-error']} role="status">
+        <Card class="mb-4" density="compact" intent={form.status === 'success' ? 'success' : 'error'} role="status">
           {form.message}
           {#if form.status === 'success' && form.eventID}
             <span class="ml-2 text-emerald-700">Event {form.eventID}</span>
           {/if}
-        </div>
+        </Card>
       {/if}
 
       <AggregateUpdateWatcher aggregateKind="ValuationSettings" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.valuationSettings.lastEventID} />
@@ -547,7 +548,7 @@
                         {#if history?.loading}
                           <div class="text-sm text-slate-600">Loading history...</div>
                         {:else if history?.error}
-                          <div class="status-panel status-panel-error">{history.error}</div>
+                          <Card density="compact" intent="error">{history.error}</Card>
                         {:else}
                           <HistoryEventsCard
                             eventDateTime={data.valuationDate}

@@ -3,7 +3,8 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
-  import { MultiSelect, PillGroup } from '$lib/components/forms';
+  import Card from '$lib/components/page/Card.svelte';
+  import { ComplexSelect, PillGroup, type ComplexSelectOption } from '$lib/components/forms';
   import { formatTableDateTime, toApiDateTime } from '$lib/dates';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
   import { SvelteMap } from 'svelte/reactivity';
@@ -99,7 +100,6 @@
   let openHistoryHoldingID = $state('');
   let openProfitLossHoldingID = $state('');
   let accountDropdownOpen = $state(false);
-  let accountFilterText = $state('');
   let accountSelectionDirty = $state(false);
   let selectedAccountIDOverrides = $state<string[] | null>(null);
   let displayMode: 'Discrete' | 'Aggregate' = $derived(data.assetViewMode);
@@ -110,9 +110,15 @@
   const valuations = $derived(data.valuations);
   const accounts = $derived(data.accounts?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
-  const filteredAccounts = $derived(accounts.filter((account) => accountMatchesFilter(accountFilterText, account)));
   const selectedAccountIDs = $derived(validSelectedAccountIDs());
   const selectedAccountSummary = $derived(accountSummary());
+  const accountOptions = $derived<ComplexSelectOption[]>(accounts.map((account) => ({
+    id: account.accountID,
+    name: account.name,
+    meta: `${account.formalName} - ${account.bookCurrency} - ${account.active ? 'Active' : 'Inactive'}`,
+    search: `${account.name} ${account.formalName} ${account.bookCurrency} ${account.active ? 'active' : 'inactive'}`,
+    tone: account.active ? undefined : 'alert'
+  })));
   const selectedBookCurrencies = $derived(selectedBookCurrencyList());
   const aggregateRows = $derived.by(() => valuations ? aggregateAssetRows(valuations.accounts) : []);
   const aggregateBookCostUnavailable = $derived(displayMode === 'Aggregate' && selectedBookCurrencies.length > 1);
@@ -200,16 +206,6 @@
     return currency.alphabeticCode;
   }
 
-  function accountMatchesFilter(filterText: string, account: Account) {
-    const filter = filterText.trim().toLocaleLowerCase();
-
-    if (!filter)
-      return true;
-
-    return [account.name, account.formalName, account.bookCurrency, account.active ? 'active' : 'inactive']
-      .some((value) => value.toLocaleLowerCase().includes(filter));
-  }
-
   function accountSummary() {
     if (selectedAccountIDs.length === accounts.length)
       return 'All accounts';
@@ -257,19 +253,6 @@
       form.requestSubmit();
   }
 
-  function closeAccountDropdown() {
-    accountDropdownOpen = false;
-    accountFilterText = '';
-    commitAccountSelection();
-  }
-
-  function handleAccountDropdownToggle(event: Event) {
-    const details = event.currentTarget;
-
-    if (details instanceof HTMLDetailsElement && !details.open)
-      closeAccountDropdown();
-  }
-
   function commitAccountSelection() {
     if (!accountSelectionDirty)
       return;
@@ -284,20 +267,9 @@
     syncCurrencyForSelection(event, nextSelectedAccountIDs);
   }
 
-  function toggleAccountSelection(accountID: string, checked: boolean, event: Event) {
-    if (!checked && selectedAccountIDs.length === 1 && selectedAccountIDs.includes(accountID))
-      return;
-
-    const nextSelectedAccountIDs = checked
-      ? [...new Set([...selectedAccountIDs, accountID])]
-      : selectedAccountIDs.filter((selectedAccountID) => selectedAccountID !== accountID);
-
-    updateAccountSelection(nextSelectedAccountIDs, event);
-  }
-
-  function selectAllAccounts(event: Event) {
-    const nextSelectedAccountIDs = accounts.map((account) => account.accountID);
-    updateAccountSelection(nextSelectedAccountIDs, event);
+  function changeAccountSelection(selection: string | string[] | undefined, event: Event) {
+    if (Array.isArray(selection))
+      updateAccountSelection(selection, event);
   }
 
   function syncCurrencyForSelection(event: Event, nextSelectedAccountIDs = selectedAccountIDs) {
@@ -689,45 +661,24 @@
 
         <div class="asset-filter-field asset-filter-account grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Account
-          <MultiSelect
+          <ComplexSelect
+            ariaLabel="Accounts"
             bind:open={accountDropdownOpen}
             class="asset-account-select"
-            close={closeAccountDropdown}
-            ontoggle={handleAccountDropdownToggle}
+            confirmSelection
+            emptyText="No accounts match"
+            minimumSelections={1}
+            multiple
+            name="accountID"
+            onchange={changeAccountSelection}
+            onclose={commitAccountSelection}
+            options={accountOptions}
+            placeholder="No accounts selected"
+            searchPlaceholder="Search accounts"
+            showClear={false}
             summary={selectedAccountSummary}
-          >
-            <div class="asset-account-filter-row">
-              <input
-                bind:value={accountFilterText}
-                class="house-control house-control-md house-control-full"
-                placeholder="Search accounts"
-                type="search"
-              />
-              <button class="house-button house-button-secondary house-button-sm" onclick={selectAllAccounts} type="button">All</button>
-            </div>
-            <div class="asset-account-options">
-              {#each filteredAccounts as account (account.accountID)}
-                <label class="house-checkbox-option asset-account-option">
-                  <input
-                    checked={selectedAccountIDs.includes(account.accountID)}
-                    name="accountID"
-                    onchange={(event) => toggleAccountSelection(account.accountID, event.currentTarget.checked, event)}
-                    type="checkbox"
-                    value={account.accountID}
-                  />
-                  <span>
-                    <strong>{account.name}</strong>
-                    <small>{account.formalName} - {account.bookCurrency} - {account.active ? 'Active' : 'Inactive'}</small>
-                  </span>
-                </label>
-              {:else}
-                <div class="asset-account-empty">No accounts match</div>
-              {/each}
-            </div>
-            <div class="asset-account-action-row">
-              <button class="house-button house-button-primary house-button-sm" onclick={closeAccountDropdown} type="button">OK</button>
-            </div>
-          </MultiSelect>
+            values={selectedAccountIDs}
+          />
         </div>
 
         <div class="asset-filter-field asset-filter-view grid min-w-0 gap-1 text-sm font-medium text-slate-700">
@@ -784,7 +735,7 @@
   <section class="page-container page-section grid gap-5">
 
     {#if data.error}
-      <div class="status-panel status-panel-error" role="status">{data.error}</div>
+      <Card density="compact" intent="error" role="status">{data.error}</Card>
     {:else if valuations}
       {#each valuationDependencyKinds as aggregateKind (aggregateKind)}
         <AggregateUpdateWatcher {aggregateKind} valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={valuations.lastEventID} />
@@ -1039,7 +990,7 @@
                             {#if history?.loading}
                               <div class="text-sm text-slate-600">Loading history...</div>
                             {:else if history?.error}
-                              <div class="status-panel status-panel-error">{history.error}</div>
+                              <Card density="compact" intent="error">{history.error}</Card>
                             {:else}
                               <HistoryEventsCard
                                 eventDateTime={valuations.valuationDateTime ?? data.valuationDate}
@@ -1059,7 +1010,7 @@
                           {#if profitLoss?.loading}
                             <div class="text-sm text-slate-600">Loading Profit/Loss...</div>
                           {:else if profitLoss?.error}
-                            <div class="status-panel status-panel-error">{profitLoss.error}</div>
+                            <Card density="compact" intent="error">{profitLoss.error}</Card>
                           {:else if profitLoss?.details}
                             <section class="asset-pnl-card" aria-label={`Profit/Loss for ${itemDisplay.instrumentName}`}>
                               <header class="asset-pnl-header">
@@ -1075,7 +1026,7 @@
                               </header>
 
                               {#if profitLoss.details.summary && !profitLoss.details.summary.complete && profitLoss.details.summary.incompleteReason}
-                                <div class="status-panel status-panel-warning">{profitLoss.details.summary.incompleteReason}</div>
+                                <Card density="compact" intent="warning">{profitLoss.details.summary.incompleteReason}</Card>
                               {/if}
 
                               <div class="asset-pnl-table-wrap">
@@ -1264,108 +1215,24 @@
     align-items: end;
   }
 
-  :global(.page-header:has(.asset-account-select.house-multiselect[open])) {
+  :global(.page-header:has(.asset-account-select .complex-select-menu)) {
     z-index: 90;
     overflow: visible;
   }
 
-  :global(.asset-account-select.house-multiselect[open]),
-  :global(.asset-account-select.house-multiselect[open] .house-multiselect-options) {
+  :global(.asset-account-select:has(.complex-select-menu)),
+  :global(.asset-account-select .complex-select-menu) {
     z-index: 120;
   }
 
-  :global(.asset-account-select.house-multiselect .house-multiselect-options) {
+  :global(.asset-account-select .complex-select-menu) {
     width: min(32rem, calc(100vw - 2rem));
     max-height: clamp(18rem, calc(100vh - 8rem), 26rem);
     overflow: hidden;
   }
 
-  .asset-account-filter-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem;
-    align-items: center;
-    margin-bottom: 0.45rem;
-  }
-
-  .asset-account-options {
-    display: grid;
-    gap: 0.2rem;
-    min-height: 0;
-    max-height: clamp(10rem, calc(100vh - 17rem), 18rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-right: 0.15rem;
-  }
-
-  .asset-account-action-row {
-    display: flex;
-    justify-content: flex-end;
-    border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
-    margin-top: 0.55rem;
-    padding-top: 0.55rem;
-  }
-
-  .asset-account-option {
+  :global(.asset-account-select .complex-select-option) {
     min-width: 20rem;
-  }
-
-  .asset-filter-viewer-form .asset-account-option {
-    position: relative;
-    grid-template-columns: minmax(0, 1fr);
-    border: 1px solid transparent;
-    padding: 0.5rem 0.6rem;
-    transition:
-      background-color 0.14s ease,
-      border-color 0.14s ease,
-      box-shadow 0.14s ease;
-  }
-
-  .asset-filter-viewer-form .asset-account-option input[type='checkbox'] {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .asset-filter-viewer-form .asset-account-option:has(input[type='checkbox']:checked) {
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
-    background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
-  }
-
-  .asset-filter-viewer-form .asset-account-option:has(input[type='checkbox']:checked) strong {
-    color: var(--accent-strong);
-  }
-
-  .asset-account-option span {
-    display: grid;
-    gap: 0.04rem;
-  }
-
-  .asset-account-option strong,
-  .asset-account-option small {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .asset-account-option small {
-    color: color-mix(in srgb, var(--muted) 78%, var(--panel));
-    font-size: 0.675rem;
-    font-weight: 440;
-    line-height: 1.15;
-  }
-
-  .asset-account-empty {
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 560;
-    padding: 0.55rem;
   }
 
   :global(.asset-mode-toggle.house-pill-group) {
@@ -1710,7 +1577,7 @@
       flex-basis: 100%;
     }
 
-    .asset-account-option {
+    :global(.asset-account-select .complex-select-option) {
       min-width: 16rem;
     }
   }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
+  import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
   import type { Instrument } from '$lib/types';
 
@@ -74,7 +75,7 @@
 {#if showBody}
   <section class="page-container page-section data-list-embedded-page data-list-embedded-body">
     {#if data.error}
-      <div class="status-panel status-panel-error">{data.error}</div>
+      <Card density="compact" intent="error">{data.error}</Card>
     {:else if data.instruments}
       <AggregateUpdateWatcher aggregateKind="Instruments" valuationDate={data.valuationDate} auditDateTime={data.auditDateTime} lastEventID={data.instruments.lastEventID} />
 

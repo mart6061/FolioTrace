@@ -1,7 +1,8 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { MultiSelect } from '$lib/components/forms';
+  import Card from '$lib/components/page/Card.svelte';
+  import { ComplexSelect, type ComplexSelectOption } from '$lib/components/forms';
   import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
   import { downloadFile, htmlValue } from '$lib/export';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
@@ -209,8 +210,6 @@
   let reportDropdownOpen = $state(false);
   let accountSelectionDirty = $state(false);
   let reportSelectionDirty = $state(false);
-  let accountFilterText = $state('');
-  let reportFilterText = $state('');
   // svelte-ignore state_referenced_locally
   let valuationStartDate = $state(data.valuationStartDate);
   // svelte-ignore state_referenced_locally
@@ -223,10 +222,19 @@
   let selectedInstrumentPriceBasis = $state(data.instrumentPriceBasis);
   // svelte-ignore state_referenced_locally
   let selectedHoldingDateBasis = $state(data.holdingDateBasis);
-  const filteredAccounts = $derived(data.accounts.filter((account) => accountMatchesFilter(accountFilterText, account)));
-  const filteredReports = $derived(data.reportConfigs.filter((reportConfig) => reportMatchesFilter(reportFilterText, reportConfig)));
   const selectedAccount = $derived(data.accounts.find((account) => account.accountID === selectedAccountID) ?? null);
   const selectedReportConfig = $derived(data.reportConfigs.find((reportConfig) => reportConfig.reportID === selectedReportID) ?? null);
+  const accountOptions = $derived<ComplexSelectOption[]>(data.accounts.map((account) => ({
+    id: account.accountID,
+    name: account.name,
+    meta: `${account.formalName} - ${account.bookCurrency}`,
+    search: `${account.name} ${account.formalName} ${account.bookCurrency}`
+  })));
+  const reportOptions = $derived<ComplexSelectOption[]>(data.reportConfigs.map((reportConfig) => ({
+    id: reportConfig.reportID,
+    name: reportConfig.name,
+    meta: `${reportConfig.nodes.length} ${reportConfig.nodes.length === 1 ? 'section' : 'sections'}`
+  })));
   const selectedAccountSummary = $derived(selectedAccount ? selectedAccount.name : (data.accounts.length ? 'Select account' : 'No active accounts'));
   const reportDropdownDisabled = $derived(accountSelectionDirty || !selectedAccountID || !data.reportConfigs.length);
   const selectedReportSummary = $derived(accountSelectionDirty
@@ -340,23 +348,6 @@
     submitFilterChange();
   }
 
-  function accountMatchesFilter(filterText: string, account: Account) {
-    const filter = filterText.trim().toLocaleLowerCase();
-    if (!filter)
-      return true;
-
-    return [account.name, account.formalName, account.bookCurrency]
-      .some((value) => value.toLocaleLowerCase().includes(filter));
-  }
-
-  function reportMatchesFilter(filterText: string, reportConfig: ReportConfig) {
-    const filter = filterText.trim().toLocaleLowerCase();
-    if (!filter)
-      return true;
-
-    return reportConfig.name.toLocaleLowerCase().includes(filter);
-  }
-
   async function submitFilterChange() {
     await tick();
     filterForm?.requestSubmit();
@@ -364,28 +355,12 @@
 
   function closeAccountDropdown() {
     accountDropdownOpen = false;
-    accountFilterText = '';
     commitAccountSelection();
   }
 
   function closeReportDropdown() {
     reportDropdownOpen = false;
-    reportFilterText = '';
     commitReportSelection();
-  }
-
-  function handleAccountDropdownToggle(event: Event) {
-    const details = event.currentTarget;
-
-    if (details instanceof HTMLDetailsElement && !details.open)
-      closeAccountDropdown();
-  }
-
-  function handleReportDropdownToggle(event: Event) {
-    const details = event.currentTarget;
-
-    if (details instanceof HTMLDetailsElement && !details.open)
-      closeReportDropdown();
   }
 
   function commitAccountSelection() {
@@ -405,18 +380,22 @@
     submitFilterChange();
   }
 
-  function chooseAccount(accountID: string) {
-    selectedAccountID = accountID;
-    selectedReportID = accountID === data.accountID ? data.reportID : '';
+  function chooseAccount(selection: string | string[] | undefined) {
+    if (typeof selection !== 'string')
+      return;
+
+    selectedAccountID = selection;
+    selectedReportID = selection === data.accountID ? data.reportID : '';
     accountSelectionDirty = selectedAccountID !== data.accountID;
     reportSelectionDirty = false;
-    closeAccountDropdown();
   }
 
-  function chooseReport(reportID: string) {
-    selectedReportID = reportID;
+  function chooseReport(selection: string | string[] | undefined) {
+    if (typeof selection !== 'string')
+      return;
+
+    selectedReportID = selection;
     reportSelectionDirty = selectedReportID !== data.reportID;
-    closeReportDropdown();
   }
 
   function valuationColumnValue(row: ReportValuationRow, column: ReportValuationColumn, currency: string) {
@@ -671,80 +650,38 @@
 
         <div class="report-filter-title report-filter-dropdown-field report-filter-account grid min-w-0 gap-1">
           Account
-          <MultiSelect
+          <ComplexSelect
+            ariaLabel="Accounts"
             bind:open={accountDropdownOpen}
             class={['report-filter-select', data.accounts.length && !selectedAccountID && 'report-filter-select-invalid'].filter(Boolean).join(' ')}
-            close={closeAccountDropdown}
             disabled={!data.accounts.length}
-            ontoggle={handleAccountDropdownToggle}
+            emptyText="No accounts match"
+            onchange={chooseAccount}
+            onclose={closeAccountDropdown}
+            options={accountOptions}
+            placeholder="No active accounts"
+            searchPlaceholder="Search accounts"
             summary={selectedAccountSummary}
-          >
-            <input
-              bind:value={accountFilterText}
-              class="house-control house-control-md house-control-full"
-              placeholder="Search accounts"
-              type="search"
-            />
-            <div class="report-filter-options">
-              {#each filteredAccounts as account (account.accountID)}
-                <button
-                  aria-selected={account.accountID === selectedAccountID}
-                  class:report-filter-option-selected={account.accountID === selectedAccountID}
-                  class="report-filter-option"
-                  onclick={() => chooseAccount(account.accountID)}
-                  role="option"
-                  type="button"
-                >
-                  <span>{account.name}</span>
-                  <small>{account.formalName} - {account.bookCurrency}</small>
-                </button>
-              {:else}
-                <div class="report-filter-empty">No accounts match</div>
-              {/each}
-            </div>
-            <div class="report-filter-action-row">
-              <button class="house-button house-button-primary house-button-sm" onclick={closeAccountDropdown} type="button">OK</button>
-            </div>
-          </MultiSelect>
+            bind:value={selectedAccountID}
+          />
         </div>
 
         <div class="report-filter-title report-filter-dropdown-field report-filter-report grid min-w-0 gap-1">
           Report
-          <MultiSelect
+          <ComplexSelect
+            ariaLabel="Reports"
             bind:open={reportDropdownOpen}
             class={['report-filter-select', selectedAccountID && !selectedReportID && data.reportConfigs.length && 'report-filter-select-invalid'].filter(Boolean).join(' ')}
-            close={closeReportDropdown}
             disabled={reportDropdownDisabled}
-            ontoggle={handleReportDropdownToggle}
+            emptyText="No reports match"
+            onchange={chooseReport}
+            onclose={closeReportDropdown}
+            options={reportOptions}
+            placeholder="No matching reports"
+            searchPlaceholder="Search reports"
             summary={selectedReportSummary}
-          >
-            <input
-              bind:value={reportFilterText}
-              class="house-control house-control-md house-control-full"
-              placeholder="Search reports"
-              type="search"
-            />
-            <div class="report-filter-options">
-              {#each filteredReports as reportConfig (reportConfig.reportID)}
-                <button
-                  aria-selected={reportConfig.reportID === selectedReportID}
-                  class:report-filter-option-selected={reportConfig.reportID === selectedReportID}
-                  class="report-filter-option"
-                  onclick={() => chooseReport(reportConfig.reportID)}
-                  role="option"
-                  type="button"
-                >
-                  <span>{reportConfig.name}</span>
-                  <small>{reportConfig.nodes.length} {reportConfig.nodes.length === 1 ? 'section' : 'sections'}</small>
-                </button>
-              {:else}
-                <div class="report-filter-empty">No reports match</div>
-              {/each}
-            </div>
-            <div class="report-filter-action-row">
-              <button class="house-button house-button-primary house-button-sm" onclick={closeReportDropdown} type="button">OK</button>
-            </div>
-          </MultiSelect>
+            bind:value={selectedReportID}
+          />
         </div>
       </div>
 
@@ -774,7 +711,7 @@
         </fieldset>
 
         {#if selectedAccountID && !data.reportConfigs.length}
-          <div class="status-panel status-panel-warning report-filter-status">No active report configs match the selected account and valuation date.</div>
+          <Card class="report-filter-status" density="compact" intent="warning">No active report configs match the selected account and valuation date.</Card>
         {/if}
       </div>
     </form>
@@ -782,7 +719,7 @@
 
     {#if renderMode !== 'filter'}
     {#if data.error}
-      <div class="status-panel status-panel-error" role="status">{data.error}</div>
+      <Card density="compact" intent="error" role="status">{data.error}</Card>
     {/if}
 
     {#if data.reportDocument}
@@ -1122,115 +1059,34 @@
     z-index: 1;
   }
 
-  .report-filter-dropdown-field:has(:global(.house-multiselect[open])) {
+  .report-filter-dropdown-field:has(:global(.complex-select-menu)) {
     z-index: 140;
   }
 
-  :global(.report-filter-select.house-multiselect[open]),
-  :global(.report-filter-select.house-multiselect[open] .house-multiselect-options) {
+  :global(.report-filter-select:has(.complex-select-menu)),
+  :global(.report-filter-select .complex-select-menu) {
     z-index: 320;
   }
 
-  :global(.report-filter-select.house-multiselect .house-multiselect-options) {
+  :global(.report-filter-select .complex-select-menu) {
     width: min(28rem, calc(100vw - 2rem));
     max-height: clamp(18rem, calc(100vh - 8rem), 26rem);
     overflow: hidden;
   }
 
-  :global(.report-filter-select.house-multiselect > summary) {
-    justify-content: space-between;
-    text-align: left;
+  :global(.report-filter-select-invalid .complex-select-trigger) {
+    border-color: color-mix(in srgb, var(--danger) 72%, var(--line));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent);
   }
 
-  :global(.report-filter-select.house-multiselect > summary > span) {
-    flex: 1 1 auto;
-    min-width: 0;
-    text-align: left;
-  }
-
-  :global(.report-filter-select-invalid.house-multiselect) {
-    border-color: color-mix(in srgb, #dc2626 72%, var(--line));
-    box-shadow: 0 0 0 3px color-mix(in srgb, #dc2626 16%, transparent);
-  }
-
-  :global(.report-filter-select-invalid.house-multiselect[open]) {
-    border-color: color-mix(in srgb, #dc2626 68%, var(--accent));
+  :global(.report-filter-select-invalid .complex-select-trigger[aria-expanded='true']) {
+    border-color: color-mix(in srgb, var(--danger) 68%, var(--accent));
     box-shadow:
-      0 0 0 3px color-mix(in srgb, #dc2626 18%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent),
       0 0.75rem 1.5rem color-mix(in srgb, var(--surface-shadow) 82%, transparent);
   }
 
-  .report-filter-options {
-    display: grid;
-    gap: 0.25rem;
-    min-height: 0;
-    min-width: min(22rem, calc(100vw - 3rem));
-    max-height: clamp(10rem, calc(100vh - 17rem), 18rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-right: 0.15rem;
-  }
-
-  .report-filter-action-row {
-    display: flex;
-    justify-content: flex-end;
-    border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
-    margin-top: 0.55rem;
-    padding-top: 0.55rem;
-  }
-
-  .report-filter-option {
-    border: 1px solid transparent;
-    border-radius: calc(var(--house-radius-sm) - 2px);
-    background: transparent;
-    color: var(--ink);
-    cursor: pointer;
-    display: grid;
-    gap: 0.04rem;
-    min-width: 0;
-    padding: 0.42rem 0.55rem;
-    text-align: left;
-  }
-
-  .report-filter-option:hover,
-  .report-filter-option:focus-visible,
-  .report-filter-option-selected {
-    border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
-    background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel));
-    outline: none;
-  }
-
-  .report-filter-option span,
-  .report-filter-option small {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .report-filter-option span {
-    color: var(--ink);
-    font-size: 0.82rem;
-    font-weight: 680;
-  }
-
-  .report-filter-option-selected span {
-    color: var(--ink);
-  }
-
-  .report-filter-option small,
-  .report-filter-empty {
-    color: color-mix(in srgb, var(--muted) 78%, var(--panel));
-    font-size: 0.675rem;
-    font-weight: 440;
-    line-height: 1.15;
-  }
-
-  .report-filter-empty {
-    padding: 0.55rem;
-  }
-
-  .report-filter-status {
+  :global(.report-filter-status) {
     align-self: end;
     margin-top: 0;
   }

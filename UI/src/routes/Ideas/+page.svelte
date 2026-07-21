@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
+  import { Card, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { AccountDropdown, BrokerDropdown, ComplexSelect, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, TicketDropdown, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
@@ -263,7 +263,7 @@
 
   <section class="page-container page-section template-page-container template-page-body">
     {#if data.error}
-      <p class="status-panel status-panel-warning">{data.error}</p>
+      <Card density="compact" intent="warning">{data.error}</Card>
     {/if}
 
     <PageCard accent="gold" title="Filter Card Template with Menu Card Group">
@@ -527,7 +527,7 @@
         </div>
 
         {#if inputPolicyError}
-          <p class="status-panel status-panel-warning template-wide-field">{inputPolicyError}</p>
+          <Card class="template-wide-field" density="compact" intent="warning">{inputPolicyError}</Card>
         {/if}
       </div>
     </PageCard>
@@ -562,22 +562,10 @@
   }
 
   :global(.template-page.template-page .house-control),
-  :global(.template-page.template-page .complex-select-trigger),
-  :global(.template-page.template-page .account-combobox-trigger),
-  :global(.template-page.template-page .holding-combobox-trigger),
-  :global(.template-page.template-page .house-multiselect),
   :global(.template-page.template-page .datetime-input-control-embedded),
   :global(.template-page.template-page .table-filter input) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
     background: var(--panel);
-  }
-
-  :global(.template-page.template-page .house-multiselect > summary) {
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.15;
-    min-height: calc(var(--house-control-height) - 2px);
-    padding: 0.25rem 0.5rem;
   }
 
   .template-copy,
