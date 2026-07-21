@@ -202,9 +202,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         };
 
         var eventRepository = new TestEventRepository();
-        var seedRepository = new SeedRepository(
-            eventRepository,
-            new NullFXRateReadModelRepository());
+        var seedRepository = new SeedRepository(eventRepository);
         await seedRepository.Build();
 
         var snapshotRepository = new FakeAggregateSnapshotRepository();
@@ -213,7 +211,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
         var brokerService = new BrokerService(eventRepository);
         var currencyService = new CurrencyService(eventRepository);
         var fxService = new FXService(eventRepository, snapshotRepository: snapshotRepository);
-        var fxRateService = new FXRateService(eventRepository, new NullFXRateReadModelRepository(), snapshotRepository: snapshotRepository, fxService: fxService);
+        var fxRateService = new FXRateService(eventRepository, snapshotRepository: snapshotRepository, fxService: fxService);
         var holdingService = new HoldingService(eventRepository);
         var instrumentService = new InstrumentService(eventRepository, snapshotRepository: snapshotRepository);
         var instrumentValueService = new InstrumentValueService(eventRepository, snapshotRepository: snapshotRepository, instrumentService: instrumentService);
@@ -345,18 +343,4 @@ public sealed class AggregateMaintenanceCoordinatorTests
             return left.EventID.Value.CompareTo(right.EventID.Value);
         }
     }
-
-    private sealed class NullFXRateReadModelRepository : FolioTrace.Aggregates.IFXRateReadModelRepository
-    {
-        public Task<FolioTrace.Aggregates.FXRates?> LoadAsync(EventDateTime valuationDateTime, CancellationToken cancellationToken = default) =>
-            Task.FromResult<FolioTrace.Aggregates.FXRates?>(null);
-
-        public Task RebuildAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task RebuildPairAsync(FolioTrace.Aggregates.CurrencyPair pair, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
-
-        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
-
 }

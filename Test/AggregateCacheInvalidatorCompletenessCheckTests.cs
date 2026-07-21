@@ -14,7 +14,6 @@ public sealed class AggregateCacheInvalidatorCompletenessCheckTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IEventRepository>(new FakeEventRepository());
-        services.AddSingleton<IFXRateReadModelRepository>(new FakeFXRateReadModelRepository());
         services.AddSingleton<IAggregateSnapshotRepository>(new FakeAggregateSnapshotRepository());
         services.AddFolioTraceServices();
         var provider = services.BuildServiceProvider();
@@ -84,15 +83,4 @@ public sealed class AggregateCacheInvalidatorCompletenessCheckTests
             Task.CompletedTask;
     }
 
-    private sealed class FakeFXRateReadModelRepository : IFXRateReadModelRepository
-    {
-        public Task<FXRates?> LoadAsync(EventDateTime valuationDateTime, CancellationToken cancellationToken = default) =>
-            Task.FromResult<FXRates?>(null);
-
-        public Task RebuildAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task RebuildPairAsync(CurrencyPair pair, CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
 }

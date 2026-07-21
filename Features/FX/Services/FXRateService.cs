@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace Services;
 
-public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadModelRepository readModelRepository, int cacheCapacity = 500, IAggregateSnapshotRepository? snapshotRepository = null, FXService? fxService = null)
+public sealed class FXRateService(IEventRepository eventRepository, int cacheCapacity = 500, IAggregateSnapshotRepository? snapshotRepository = null, FXService? fxService = null)
 {
     private const string AggregateKind = "FXRates";
     private readonly Lock cacheLock = new();
@@ -67,7 +67,7 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
                 return cached;
         }
 
-        var current = await TryBuildFromSnapshotAsync(valuationDate) ?? await TryLoadReadModelAsync(valuationDate);
+        var current = await TryBuildFromSnapshotAsync(valuationDate);
         if (current is null)
         {
             var fxEvents = await eventRepository.LoadStreamAsync<IFXEvent>(Constants.Initialisation.FXsStreamId);
@@ -120,18 +120,6 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
             current.Apply(@event, fxs);
         current.Apply(fxs);
         return current;
-    }
-
-    private async Task<FXRates?> TryLoadReadModelAsync(EventDateTime valuationDate)
-    {
-        try
-        {
-            return await readModelRepository.LoadAsync(valuationDate);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            return null;
-        }
     }
 
     public async Task<FXRates> Get(EventDateTime valuationDate, AuditDateTime asAt)

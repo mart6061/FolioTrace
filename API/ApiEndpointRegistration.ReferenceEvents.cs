@@ -498,25 +498,23 @@ public static partial class ApiEndpointRegistration
                 : Results.NotFound();
         });
 
-        fxEvents.MapPost($"/{nameof(FXCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IFXRateReadModelRepository fxRateReadModelRepository, FXCreatedRequest request, CancellationToken cancellationToken) =>
+        fxEvents.MapPost($"/{nameof(FXCreatedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, FXCreatedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.FXsStreamId,
                 FXEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
                 () => FXCreatedEventBuilder.Create(request),
-                cancellationToken,
-                (_, token) => fxRateReadModelRepository.ClearAsync(token)));
+                cancellationToken));
 
-        fxEvents.MapPost($"/{nameof(FXActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IFXRateReadModelRepository fxRateReadModelRepository, FXActiveModifiedRequest request, CancellationToken cancellationToken) =>
+        fxEvents.MapPost($"/{nameof(FXActiveModifiedEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, FXActiveModifiedRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.FXsStreamId,
                 FXEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
                 () => FXActiveModifiedEventBuilder.Create(request),
-                cancellationToken,
-                (_, token) => fxRateReadModelRepository.ClearAsync(token)));
+                cancellationToken));
     }
 
     private static void MapFXRateEventEndpoints(this RouteGroupBuilder api)
@@ -543,15 +541,14 @@ public static partial class ApiEndpointRegistration
                 : Results.NotFound();
         });
 
-        fxRateEvents.MapPost($"/{nameof(FXRateSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, IFXRateReadModelRepository fxRateReadModelRepository, FXRateSetRequest request, CancellationToken cancellationToken) =>
+        fxRateEvents.MapPost($"/{nameof(FXRateSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, FXRateSetRequest request, CancellationToken cancellationToken) =>
             await EventEndpointFactory.CreateAndAppend(
                 Constants.Initialisation.FXRatesStreamId,
                 FXRateEventsRoute,
                 eventRepository,
                 cacheInvalidationService,
                 () => FXRateSetEventBuilder.Create(request),
-                cancellationToken,
-                (_, token) => fxRateReadModelRepository.ClearAsync(token)));
+                cancellationToken));
     }
 
     private static void MapHoldingEventEndpoints(this RouteGroupBuilder api)
