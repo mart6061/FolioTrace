@@ -1285,7 +1285,7 @@
   }
   :global(.asset-basis-toggle.house-pill-group) {
     display: grid;
-    width: 100%;
+    width: fit-content;
     border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
     background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
     gap: 0.125rem;

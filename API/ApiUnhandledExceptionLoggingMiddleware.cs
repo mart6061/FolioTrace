@@ -78,7 +78,9 @@ public sealed class ApiUnhandledExceptionLoggingMiddleware(
                 new RequestTraceEvent
                 {
                     RequestId = requestId,
-                    Source = RequestTraceSources.Api,
+                    ParentRequestId = Guid.TryParse(context.Request.Headers[RequestTraceConstants.ParentRequestIdHeader].FirstOrDefault(), out var parentRequestId)
+                        ? parentRequestId
+                        : null,
                     Kind = RequestTraceEventKinds.Exception,
                     RecordedAtUtc = DateTime.UtcNow,
                     Method = context.Request.Method,

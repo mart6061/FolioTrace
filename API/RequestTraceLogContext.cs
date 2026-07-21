@@ -1,8 +1,6 @@
-using Repository;
-
 namespace API;
 
-public sealed record RequestTraceLogScope(Guid RequestId, string Source);
+public sealed record RequestTraceLogScope(Guid RequestId);
 
 public static class RequestTraceLogContext
 {
@@ -10,10 +8,10 @@ public static class RequestTraceLogContext
 
     public static RequestTraceLogScope? Current => CurrentScope.Value;
 
-    public static IDisposable Begin(Guid requestId, string source)
+    public static IDisposable Begin(Guid requestId)
     {
         var previous = CurrentScope.Value;
-        CurrentScope.Value = new RequestTraceLogScope(requestId, source);
+        CurrentScope.Value = new RequestTraceLogScope(requestId);
 
         return new Scope(() => CurrentScope.Value = previous);
     }

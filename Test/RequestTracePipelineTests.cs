@@ -1,10 +1,14 @@
 using System.Text;
 using API;
+using Marten;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using Repository;
+using System.Reflection;
 
 namespace Test;
 
@@ -27,6 +31,69 @@ public sealed class RequestTracePipelineTests
         Assert.True(queue.TryDequeue(out var dequeuedThird));
         Assert.Equal(second.RequestId, dequeuedSecond?.RequestId);
         Assert.Equal(third.RequestId, dequeuedThird?.RequestId);
+        Assert.Equal(2, queue.BatchSize);
+    }
+
+    [Fact]
+    public void RepositoryConfiguration_IncludesRequestTraceDuplicatedFieldIndexes()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:FolioTrace"] = "Host=localhost;Database=foliotrace_schema_test;Username=test;Password=test"
+            })
+            .Build();
+        var services = new ServiceCollection();
+        services.AddFolioTraceRepository(configuration);
+        using var provider = services.BuildServiceProvider();
+        using var store = provider.GetRequiredService<IDocumentStore>();
+        var dataSource = provider.GetRequiredService<NpgsqlDataSource>();
+
+        var script = store.Storage.ToDatabaseScript();
+        var connectionString = new NpgsqlConnectionStringBuilder(dataSource.ConnectionString);
+
+        Assert.Contains("mt_doc_requesttraceevent", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Matches(@"(?is)create index[^;]+recorded_at_utc", script);
+        Assert.Matches(@"(?is)create index[^;]+request_id", script);
+        Assert.DoesNotMatch(@"(?is)create index[^;]+source", script);
+        Assert.Equal(900, connectionString.CommandTimeout);
+    }
+
+    [Fact]
+    public void LegacyUiCleanup_DeletesOnlyUiTraceDocumentsRegardlessOfJsonCasing()
+    {
+        var field = typeof(MartenRequestTraceRepository).GetField(
+            "PurgeLegacyUiEventsSql",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        var sql = Assert.IsType<string>(field?.GetRawConstantValue());
+
+        Assert.Contains("data ->> 'Source'", sql, StringComparison.Ordinal);
+        Assert.Contains("data ->> 'source'", sql, StringComparison.Ordinal);
+        Assert.Contains("= 'UI'", sql, StringComparison.Ordinal);
+        Assert.DoesNotContain("= 'API'", sql, StringComparison.Ordinal);
+        Assert.Null(typeof(RequestTraceEvent).GetProperty("Source"));
+    }
+
+    [Fact]
+    public async Task StoredSettings_AlwaysRetainRequiredNoiseExclusions()
+    {
+        var repository = new StubRequestTraceRepository
+        {
+            StoredSettings = new RequestTraceSettings { ExcludedPathPrefixes = ["/custom"] }
+        };
+        var services = new ServiceCollection()
+            .AddSingleton<IRequestTraceRepository>(repository)
+            .BuildServiceProvider();
+        var settingsService = new RequestTraceSettingsService(
+            services.GetRequiredService<IServiceScopeFactory>(),
+            Options.Create(new RequestTraceOptions()),
+            NullLogger<RequestTraceSettingsService>.Instance);
+
+        var settings = await settingsService.GetAsync();
+
+        Assert.Contains("/custom", settings.ExcludedPathPrefixes);
+        Assert.Contains("/Auth/Session", settings.ExcludedPathPrefixes);
+        Assert.Contains("/Diagnostics/RequestTrace", settings.ExcludedPathPrefixes);
     }
 
     [Fact]
@@ -58,8 +125,10 @@ public sealed class RequestTracePipelineTests
         var queue = CreateQueue(8);
         var context = new DefaultHttpContext();
         var destination = new MemoryStream();
+        var parentRequestId = Guid.CreateGuid7();
         context.Request.PathBase = "/API";
         context.Request.Path = "/test";
+        context.Request.Headers[RequestTraceConstants.ParentRequestIdHeader] = parentRequestId.ToString();
         context.Response.Body = destination;
         var middleware = new RequestTraceCaptureMiddleware(
             async requestContext =>
@@ -78,6 +147,8 @@ public sealed class RequestTracePipelineTests
         Assert.True(queue.TryDequeue(out var response));
         Assert.Equal(RequestTraceEventKinds.Request, request?.Kind);
         Assert.Equal(RequestTraceEventKinds.Response, response?.Kind);
+        Assert.Equal(parentRequestId, request?.ParentRequestId);
+        Assert.Equal(parentRequestId, response?.ParentRequestId);
         Assert.Null(response?.Message?.Body);
     }
 
@@ -88,11 +159,14 @@ public sealed class RequestTracePipelineTests
 
     private sealed class StubRequestTraceRepository : IRequestTraceRepository
     {
+        public RequestTraceSettings? StoredSettings { get; init; }
         public Task AppendAsync(RequestTraceEvent traceEvent, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task AppendAsync(IReadOnlyCollection<RequestTraceEvent> traceEvents, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<RequestTrace?> LoadAsync(Guid requestId, CancellationToken cancellationToken = default) => Task.FromResult<RequestTrace?>(null);
         public Task<RequestTraceSearchResult> SearchAsync(RequestTraceSearchCriteria criteria, CancellationToken cancellationToken = default) => Task.FromResult(new RequestTraceSearchResult([], 0, 1, 50));
         public Task<RequestTracePurgeResult> PurgeAsync(DateTime? beforeUtc, CancellationToken cancellationToken = default) => Task.FromResult(new RequestTracePurgeResult(0));
-        public Task<RequestTraceSettings?> LoadSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<RequestTraceSettings?>(null);
+        public Task<int> PurgeLegacyUiEventsAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
+        public Task<RequestTraceSettings?> LoadSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(StoredSettings);
         public Task StoreSettingsAsync(RequestTraceSettings settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

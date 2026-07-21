@@ -10,8 +10,6 @@ public sealed class RequestTraceOptions
 
     public bool CaptureApi { get; init; } = true;
 
-    public bool CaptureUi { get; init; } = true;
-
     public bool CaptureBodies { get; init; } = true;
 
     public bool Capture500StackTraces { get; init; } = true;
@@ -24,6 +22,8 @@ public sealed class RequestTraceOptions
 
     public int QueueCapacity { get; init; } = 4_096;
 
+    public int BatchSize { get; init; } = 100;
+
     public string[] CapturedContentTypePrefixes { get; init; } =
     [
         "application/json",
@@ -33,7 +33,8 @@ public sealed class RequestTraceOptions
 
     public string[] ExcludedPathPrefixes { get; init; } =
     [
-        "/Diagnostics/RequestTrace/Events",
+        "/Auth/Session",
+        "/Diagnostics/RequestTrace",
         "/openapi",
         "/swagger"
     ];
@@ -51,7 +52,6 @@ public sealed class RequestTraceOptions
         {
             Enabled = Enabled,
             CaptureApi = CaptureApi,
-            CaptureUi = CaptureUi,
             CaptureBodies = CaptureBodies,
             Capture500StackTraces = Capture500StackTraces,
             CaptureLogMessages = CaptureLogMessages,

@@ -2,11 +2,13 @@ using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
 using Repository;
+using System.Text.Json;
 
 namespace Services;
 
-public sealed class InstrumentService(IEventRepository eventRepository, int cacheCapacity = 500) : IReferenceDataService<Instruments, InstrumentServiceDiagnostics>
+public sealed class InstrumentService(IEventRepository eventRepository, int cacheCapacity = 500, IAggregateSnapshotRepository? snapshotRepository = null) : IReferenceDataService<Instruments, InstrumentServiceDiagnostics>
 {
+    private const string AggregateKind = "Instruments";
     private readonly Lock cacheLock = new();
     private readonly BoundedLruCache<InstrumentCacheKey, Instruments> cache = new(cacheCapacity);
 
@@ -63,14 +65,44 @@ public sealed class InstrumentService(IEventRepository eventRepository, int cach
                 return cached;
         }
 
-        var events = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId);
-        var current = new Instruments(valuationDate, events.ToList());
+        var current = await BuildCurrent(valuationDate);
 
         lock (cacheLock)
         {
             cache[cacheKey] = current;
             return current;
         }
+    }
+
+    public async Task PersistSnapshotAsync(Instruments current, CancellationToken cancellationToken = default)
+    {
+        if (snapshotRepository is null)
+            return;
+
+        await snapshotRepository.SaveAsync(new AggregateSnapshot
+        {
+            Id = Guid.CreateGuid7(), AggregateKind = AggregateKind, StreamId = Constants.Initialisation.InstrumentsStreamId,
+            ValuationDateTime = current.ValuationDateTime.Value, AsOfDateTime = current.AsOfDateTime.Value,
+            LastEventID = current.LastEventID.Value, LastAuditDateTime = current.LastAuditDateTime.Value,
+            PayloadJson = JsonSerializer.Serialize(current.Items), CreatedAtUtc = DateTime.UtcNow,
+            SourceEventCount = current.Items.Count, Superseded = false
+        }, cancellationToken);
+    }
+
+    private async Task<Instruments> BuildCurrent(EventDateTime valuationDate)
+    {
+        var snapshot = snapshotRepository is null ? null : await snapshotRepository.FindLatestAsync(AggregateKind, Constants.Initialisation.InstrumentsStreamId, valuationDate.Value);
+        if (snapshot is null)
+        {
+            var events = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId);
+            return new Instruments(valuationDate, events.ToList());
+        }
+
+        var delta = (await eventRepository.LoadStreamAfterAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, new EventID(snapshot.LastEventID)))
+            .Where(@event => @event.EventDateTime.Value <= valuationDate.Value).ToList();
+        var asOf = delta.Count == 0 ? snapshot.AsOfDateTime : delta.Max(@event => @event.AuditDateTime.Value);
+        return new Instruments(valuationDate, new AuditDateTime(asOf), new EventID(snapshot.LastEventID), new LastAuditDateTime(snapshot.LastAuditDateTime),
+            JsonSerializer.Deserialize<List<Instrument>>(snapshot.PayloadJson) ?? [], delta);
     }
 
     public async Task<Instruments> Get(EventDateTime valuationDate, AuditDateTime asAt)
@@ -107,6 +139,7 @@ public sealed class InstrumentService(IEventRepository eventRepository, int cach
 
     private int InvalidateFrom(EventDateTime eventDateTime)
     {
+        snapshotRepository?.RetireFromAsync(AggregateKind, Constants.Initialisation.InstrumentsStreamId, eventDateTime.Value).GetAwaiter().GetResult();
         lock (cacheLock)
         {
             var removedCount = 0;

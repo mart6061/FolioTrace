@@ -19,6 +19,7 @@
     <PackageReference Include="QuickFIXn.FIX50SP2" Version="1.14.0" />
     <PackageReference Include="QuickFIXn.FIXT11" Version="1.14.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
     <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     <PackageReference Include="WorkOS.net" Version="5.3.0" />

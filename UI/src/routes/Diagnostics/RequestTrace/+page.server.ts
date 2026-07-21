@@ -44,7 +44,6 @@ export const actions: Actions = {
       await putRequestTraceSettings(fetch, {
         enabled: form.get('enabled') === 'on',
         captureApi: form.get('captureApi') === 'on',
-        captureUi: form.get('captureUi') === 'on',
         captureBodies: form.get('captureBodies') === 'on',
         capture500StackTraces: form.get('capture500StackTraces') === 'on',
         captureLogMessages: form.get('captureLogMessages') === 'on',

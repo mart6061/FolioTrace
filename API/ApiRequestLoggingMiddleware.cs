@@ -1,11 +1,18 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
 
 namespace API;
 
 public sealed class ApiRequestLoggingMiddleware(
     RequestDelegate next,
-    ILogger<ApiRequestLoggingMiddleware> logger)
+    ILogger<ApiRequestLoggingMiddleware> logger,
+    IOptions<ApiObservabilityOptions> options)
 {
+    private readonly double slowRequestThresholdMilliseconds =
+        options.Value.SlowRequestThresholdMilliseconds > 0
+            ? options.Value.SlowRequestThresholdMilliseconds
+            : 500;
+
     public async Task InvokeAsync(HttpContext context)
     {
         var startTimestamp = Stopwatch.GetTimestamp();
@@ -51,11 +58,13 @@ public sealed class ApiRequestLoggingMiddleware(
     private void LogRequestCompleted(HttpContext context, double elapsedMilliseconds)
     {
         var statusCode = context.Response.StatusCode;
+        if (statusCode < StatusCodes.Status400BadRequest &&
+            elapsedMilliseconds < slowRequestThresholdMilliseconds)
+            return;
+
         var level = statusCode >= StatusCodes.Status500InternalServerError
             ? LogLevel.Error
-            : statusCode >= StatusCodes.Status400BadRequest
-                ? LogLevel.Warning
-                : LogLevel.Information;
+            : LogLevel.Warning;
 
         logger.Log(
             level,

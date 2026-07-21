@@ -31,7 +31,6 @@ public sealed class RequestTraceSerilogSink(IServiceProvider serviceProvider) : 
         queue.TryEnqueue(new RequestTraceEvent
         {
             RequestId = scope.RequestId,
-            Source = scope.Source,
             Kind = RequestTraceEventKinds.Log,
             RecordedAtUtc = logEvent.Timestamp.UtcDateTime,
             LogLevel = logEvent.Level.ToString(),

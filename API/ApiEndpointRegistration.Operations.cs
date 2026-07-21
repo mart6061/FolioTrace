@@ -313,20 +313,6 @@ public static partial class ApiEndpointRegistration
             }
         });
 
-        diagnostics.MapPost("/RequestTrace/Events", async (
-            RequestTraceEventIngestRequest request,
-            RequestTraceLogQueue queue,
-            RequestTraceSettingsService settingsService,
-            CancellationToken cancellationToken) =>
-        {
-            var settings = await settingsService.GetAsync(cancellationToken);
-            if (!settings.Enabled || !settings.CaptureUi)
-                return Results.Accepted();
-
-            queue.TryEnqueue(ToTraceEvent(request));
-            return Results.Accepted();
-        });
-
         diagnostics.MapGet("/RequestTrace/{requestId:guid}", async (Guid requestId, IRequestTraceRepository repository, CancellationToken cancellationToken) =>
         {
             RequestTrace? trace;
@@ -391,11 +377,10 @@ public static partial class ApiEndpointRegistration
             });
         });
 
-        system.MapPost("/Build", async (
-            BuildCoordinator buildCoordinator,
-            CancellationToken cancellationToken) =>
+        system.MapPost("/Build", (
+            BuildCoordinator buildCoordinator) =>
         {
-            var result = await buildCoordinator.BuildAsync(cancellationToken);
+            var result = buildCoordinator.TryStartBuild();
 
             if (!result.Accepted)
                 return Results.Conflict(new
@@ -405,14 +390,10 @@ public static partial class ApiEndpointRegistration
                     Progress = result.Progress
                 });
 
-            if (!result.Succeeded)
-                return Results.Problem(result.Progress.Error ?? result.Progress.Message, statusCode: StatusCodes.Status500InternalServerError);
-
-            return Results.Ok(new
+            return Results.Accepted(value: new
             {
-                Status = "Complete",
-                Message = "Database rebuild complete.",
-                RemovedCacheViews = result.RemovedCacheViews,
+                Status = "Running",
+                Message = "Database rebuild started.",
                 Progress = result.Progress
             });
         });

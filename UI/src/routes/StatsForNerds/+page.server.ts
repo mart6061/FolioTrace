@@ -25,7 +25,7 @@ export const actions: Actions = {
 
       return {
         intent: 'build',
-        message: result.message || 'Database rebuild complete.',
+        message: result.message || 'Database rebuild started.',
         status: 'success'
       };
     } catch (error) {

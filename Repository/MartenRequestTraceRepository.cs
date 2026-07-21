@@ -1,19 +1,33 @@
 using Marten;
 using Marten.Linq;
+using Npgsql;
 using System.Linq;
 
 namespace Repository;
 
-public sealed class MartenRequestTraceRepository(IDocumentStore store) : IRequestTraceRepository
+public sealed class MartenRequestTraceRepository(
+    IDocumentStore store,
+    NpgsqlDataSource dataSource) : IRequestTraceRepository
 {
-    public async Task AppendAsync(RequestTraceEvent traceEvent, CancellationToken cancellationToken = default)
+    internal const string PurgeLegacyUiEventsSql = """
+        delete from mt_doc_requesttraceevent
+        where upper(coalesce(data ->> 'Source', data ->> 'source', '')) = 'UI';
+        """;
+
+    public Task AppendAsync(RequestTraceEvent traceEvent, CancellationToken cancellationToken = default) =>
+        AppendAsync([traceEvent], cancellationToken);
+
+    public async Task AppendAsync(IReadOnlyCollection<RequestTraceEvent> traceEvents, CancellationToken cancellationToken = default)
     {
-        if (traceEvent is null)
-            throw new ArgumentNullException(nameof(traceEvent));
+        ArgumentNullException.ThrowIfNull(traceEvents);
+        if (traceEvents.Count == 0)
+            return;
 
         await using var session = store.LightweightSession();
 
-        session.Store(traceEvent);
+        foreach (var traceEvent in traceEvents)
+            session.Store(traceEvent);
+
         await session.SaveChangesAsync(cancellationToken);
     }
 
@@ -31,8 +45,7 @@ public sealed class MartenRequestTraceRepository(IDocumentStore store) : IReques
 
     public async Task<RequestTraceSearchResult> SearchAsync(RequestTraceSearchCriteria criteria, CancellationToken cancellationToken = default)
     {
-        if (criteria is null)
-            throw new ArgumentNullException(nameof(criteria));
+        ArgumentNullException.ThrowIfNull(criteria);
 
         var page = Math.Max(1, criteria.Page);
         var pageSize = Math.Clamp(criteria.PageSize, 1, 200);
@@ -62,22 +75,53 @@ public sealed class MartenRequestTraceRepository(IDocumentStore store) : IReques
         if (criteria.StatusCode.HasValue)
             query = query.Where(traceEvent => traceEvent.StatusCode == criteria.StatusCode.Value);
 
-        var events = await query
-            .OrderByDescending(traceEvent => traceEvent.RecordedAtUtc)
-            .Take(Math.Max(page * pageSize * 10, pageSize))
-            .ToListAsync(cancellationToken);
+        if (criteria.MinimumDurationMilliseconds.HasValue)
+            query = query.Where(traceEvent => traceEvent.DurationMilliseconds >= criteria.MinimumDurationMilliseconds.Value);
 
-        var grouped = events
+        if (criteria.MaximumDurationMilliseconds.HasValue)
+            query = query.Where(traceEvent => traceEvent.DurationMilliseconds <= criteria.MaximumDurationMilliseconds.Value);
+
+        if (!string.IsNullOrWhiteSpace(criteria.Text))
+        {
+            var searchText = criteria.Text.Trim();
+            query = query.Where(traceEvent =>
+                traceEvent.Method.Contains(searchText) ||
+                traceEvent.Path.Contains(searchText) ||
+                traceEvent.QueryString.Contains(searchText) ||
+                (traceEvent.Message != null && traceEvent.Message.Body != null && traceEvent.Message.Body.Contains(searchText)) ||
+                (traceEvent.ExceptionMessage != null && traceEvent.ExceptionMessage.Contains(searchText)) ||
+                (traceEvent.StackTrace != null && traceEvent.StackTrace.Contains(searchText)) ||
+                (traceEvent.LogMessage != null && traceEvent.LogMessage.Contains(searchText)));
+        }
+
+        var groupedQuery = query
             .GroupBy(traceEvent => traceEvent.RequestId)
-            .Select(group => Group(group.Key, group.OrderBy(traceEvent => traceEvent.RecordedAtUtc)))
-            .Where(trace => Matches(criteria, trace))
-            .OrderByDescending(trace => trace.StartedAtUtc)
-            .ToList();
+            .Select(group => new RequestTracePageCandidate
+            {
+                RequestId = group.Key,
+                RecordedAtUtc = group.Max(traceEvent => traceEvent.RecordedAtUtc)
+            });
 
-        var totalCount = grouped.Count;
-        var items = grouped
+        var totalCount = await groupedQuery.CountAsync(cancellationToken);
+        var requestIds = await groupedQuery
+            .OrderByDescending(candidate => candidate.RecordedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(candidate => candidate.RequestId)
+            .ToListAsync(cancellationToken);
+
+        if (requestIds.Count == 0)
+            return new RequestTraceSearchResult([], totalCount, page, pageSize);
+
+        var events = await session.Query<RequestTraceEvent>()
+            .Where(traceEvent => requestIds.Contains(traceEvent.RequestId))
+            .OrderBy(traceEvent => traceEvent.RecordedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        var items = events
+            .GroupBy(traceEvent => traceEvent.RequestId)
+            .Select(group => Group(group.Key, group))
+            .OrderByDescending(trace => trace.StartedAtUtc)
             .ToList();
 
         return new RequestTraceSearchResult(items, totalCount, page, pageSize);
@@ -100,6 +144,14 @@ public sealed class MartenRequestTraceRepository(IDocumentStore store) : IReques
         await session.SaveChangesAsync(cancellationToken);
 
         return new RequestTracePurgeResult(deletedCount);
+    }
+
+    public async Task<int> PurgeLegacyUiEventsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(PurgeLegacyUiEventsSql, connection);
+
+        return await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public async Task<RequestTraceSettings?> LoadSettingsAsync(CancellationToken cancellationToken = default)
@@ -159,7 +211,6 @@ public sealed class MartenRequestTraceRepository(IDocumentStore store) : IReques
         return new RequestTrace
         {
             RequestId = requestId,
-            Source = string.Join("+", events.Select(traceEvent => traceEvent.Source).Where(source => !string.IsNullOrWhiteSpace(source)).Distinct()),
             StartedAtUtc = startedAtUtc,
             CompletedAtUtc = completedAtUtc,
             DurationMilliseconds = response?.DurationMilliseconds,
@@ -183,40 +234,18 @@ public sealed class MartenRequestTraceRepository(IDocumentStore store) : IReques
         };
     }
 
+    private sealed record RequestTracePageCandidate
+    {
+        public Guid RequestId { get; init; }
+
+        public DateTime RecordedAtUtc { get; init; }
+    }
+
     private static RequestTraceEvent? PreferSource(IEnumerable<RequestTraceEvent> traceEvents, string kind) =>
         traceEvents
             .Where(traceEvent => traceEvent.Kind == kind)
-            .OrderBy(traceEvent => traceEvent.Source == RequestTraceSources.Api ? 0 : 1)
-            .ThenBy(traceEvent => traceEvent.RecordedAtUtc)
+            .OrderBy(traceEvent => traceEvent.RecordedAtUtc)
             .FirstOrDefault();
-
-    private static bool Matches(RequestTraceSearchCriteria criteria, RequestTrace trace)
-    {
-        if (criteria.MinimumDurationMilliseconds.HasValue &&
-            (!trace.DurationMilliseconds.HasValue || trace.DurationMilliseconds.Value < criteria.MinimumDurationMilliseconds.Value))
-            return false;
-
-        if (criteria.MaximumDurationMilliseconds.HasValue &&
-            (!trace.DurationMilliseconds.HasValue || trace.DurationMilliseconds.Value > criteria.MaximumDurationMilliseconds.Value))
-            return false;
-
-        if (string.IsNullOrWhiteSpace(criteria.Text))
-            return true;
-
-        var text = criteria.Text.Trim();
-
-        return Contains(trace.Method, text) ||
-            Contains(trace.Path, text) ||
-            Contains(trace.QueryString, text) ||
-            Contains(trace.Request?.Body, text) ||
-            Contains(trace.Response?.Body, text) ||
-            Contains(trace.Exception?.ExceptionMessage, text) ||
-            Contains(trace.Exception?.StackTrace, text) ||
-            trace.Logs.Any(log => Contains(log.Message, text) || Contains(log.ExceptionMessage, text) || Contains(log.StackTrace, text));
-    }
-
-    private static bool Contains(string? value, string text) =>
-        !string.IsNullOrEmpty(value) && value.Contains(text, StringComparison.OrdinalIgnoreCase);
 
     private static string FirstPopulated(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;

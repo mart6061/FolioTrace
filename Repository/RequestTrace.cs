@@ -4,6 +4,8 @@ public static class RequestTraceConstants
 {
     public const string RequestIdHeader = "X-FolioTrace-Request-Id";
 
+    public const string ParentRequestIdHeader = "X-FolioTrace-Parent-Request-Id";
+
     public const string HttpContextRequestIdItem = "FolioTrace.RequestTrace.RequestId";
 
     public static readonly Guid SettingsDocumentId = Guid.Parse("01900000-0000-7000-8000-000000000101");
@@ -15,7 +17,7 @@ public sealed record RequestTraceEvent
 
     public Guid RequestId { get; init; }
 
-    public string Source { get; init; } = RequestTraceSources.Api;
+    public Guid? ParentRequestId { get; init; }
 
     public string Kind { get; init; } = RequestTraceEventKinds.Request;
 
@@ -52,13 +54,6 @@ public sealed record RequestTraceEvent
     public string? LogMessage { get; init; }
 }
 
-public static class RequestTraceSources
-{
-    public const string Api = "API";
-
-    public const string Ui = "UI";
-}
-
 public static class RequestTraceEventKinds
 {
     public const string Request = "Request";
@@ -86,8 +81,6 @@ public sealed record TraceHttpMessage
 public sealed record RequestTrace
 {
     public Guid RequestId { get; init; }
-
-    public string Source { get; init; } = string.Empty;
 
     public DateTime StartedAtUtc { get; init; }
 
@@ -140,8 +133,6 @@ public sealed record RequestTraceSettings
 
     public bool CaptureApi { get; init; } = true;
 
-    public bool CaptureUi { get; init; } = true;
-
     public bool CaptureBodies { get; init; } = true;
 
     public bool Capture500StackTraces { get; init; } = true;
@@ -161,7 +152,8 @@ public sealed record RequestTraceSettings
 
     public string[] ExcludedPathPrefixes { get; init; } =
     [
-        "/Diagnostics/RequestTrace/Events",
+        "/Auth/Session",
+        "/Diagnostics/RequestTrace",
         "/openapi",
         "/swagger"
     ];

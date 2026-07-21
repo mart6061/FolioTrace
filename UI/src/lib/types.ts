@@ -1083,7 +1083,6 @@ export type RequestTrace = {
 export type RequestTraceSettings = {
   enabled: boolean;
   captureApi: boolean;
-  captureUi: boolean;
   captureBodies: boolean;
   capture500StackTraces: boolean;
   captureLogMessages: boolean;

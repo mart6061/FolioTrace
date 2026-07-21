@@ -23,6 +23,15 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("Connection string 'FolioTrace' was not found.");
 
+        var commandTimeoutSeconds = Math.Max(
+            30,
+            configuration.GetValue<int?>("Database:CommandTimeoutSeconds") ?? 900);
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
+        {
+            CommandTimeout = commandTimeoutSeconds
+        };
+        connectionString = connectionStringBuilder.ConnectionString;
+
         services.AddMarten(options =>
         {
             options.Connection(connectionString);
@@ -38,6 +47,14 @@ public static class ServiceCollectionExtensions
             options.Schema.For<StoredFilePayload>();
             options.Schema.For<AggregateSnapshot>()
                 .Index(snapshot => new { snapshot.AggregateKind, snapshot.StreamId, snapshot.Variant, snapshot.ValuationDateTime });
+            options.Schema.For<RequestTraceEvent>()
+                .Duplicate(traceEvent => traceEvent.RecordedAtUtc)
+                .Duplicate(traceEvent => traceEvent.RequestId)
+                .Duplicate(traceEvent => traceEvent.Kind)
+                .Duplicate(traceEvent => traceEvent.Method)
+                .Duplicate(traceEvent => traceEvent.Path)
+                .Duplicate(traceEvent => traceEvent.StatusCode)
+                .Duplicate(traceEvent => traceEvent.DurationMilliseconds);
         });
 
         services.AddSingleton(NpgsqlDataSource.Create(connectionString));

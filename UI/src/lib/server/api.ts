@@ -1095,12 +1095,6 @@ export async function postSystemBuild(fetchApi: typeof fetch) {
   return (await response.json()) as {
     status: string;
     message: string;
-    removedCacheViews: {
-      countries: number;
-      currencies: number;
-      fXs: number;
-      fXRates: number;
-    };
     progress: BuildProgressNotification;
   };
 }

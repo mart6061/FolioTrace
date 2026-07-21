@@ -26,7 +26,10 @@ public static class ApiObservabilityServiceCollectionExtensions
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext()
-                .WriteTo.Console()
+                .WriteTo.Async(
+                    sink => sink.Console(),
+                    bufferSize: 1_000,
+                    blockWhenFull: false)
                 .WriteTo.Sink(new RequestTraceSerilogSink(services));
 
             if (options.OpenTelemetryEnabled && ShouldUseOtlpExporter(options))

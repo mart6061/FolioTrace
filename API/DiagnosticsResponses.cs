@@ -94,7 +94,6 @@ public sealed record RequestTraceQueueDiagnosticsResponse(
 
 public sealed record RequestTraceResponse(
     Guid RequestId,
-    string Source,
     DateTime StartedAtUtc,
     DateTime? CompletedAtUtc,
     long? DurationMilliseconds,
@@ -136,7 +135,6 @@ public sealed record TraceLogEntryResponse(
 public sealed record RequestTraceSettingsResponse(
     bool Enabled,
     bool CaptureApi,
-    bool CaptureUi,
     bool CaptureBodies,
     bool Capture500StackTraces,
     bool CaptureLogMessages,
@@ -149,7 +147,6 @@ public sealed record RequestTraceSettingsResponse(
 public sealed record RequestTraceSettingsRequest(
     bool Enabled,
     bool CaptureApi,
-    bool CaptureUi,
     bool CaptureBodies,
     bool Capture500StackTraces,
     bool CaptureLogMessages,
@@ -162,23 +159,6 @@ public sealed record RequestTraceSettingsRequest(
 public sealed record RequestTracePurgeRequest(string Confirmation, DateTime? BeforeUtc);
 
 public sealed record RequestTracePurgeResponse(int DeletedCount);
-
-public sealed record RequestTraceEventIngestRequest(
-    Guid RequestId,
-    string Source,
-    string Kind,
-    DateTime RecordedAtUtc,
-    DateTime? StartedAtUtc,
-    DateTime? CompletedAtUtc,
-    long? DurationMilliseconds,
-    string Method,
-    string Path,
-    string QueryString,
-    int? StatusCode,
-    TraceHttpMessageResponse? Message,
-    string? ExceptionType,
-    string? ExceptionMessage,
-    string? StackTrace);
 
 public sealed record FIXOperationSearchResponse(
     IReadOnlyList<FIXOperationResponse> Items,

@@ -27,7 +27,6 @@ public sealed record InstrumentValue : IModel
     public required EventID LastEventID { get; init; }
     public required LastAuditDateTime LastAuditDateTime { get; init; }
 
-    [JsonConstructor]
     [SetsRequiredMembers]
     public InstrumentValue(Instrument instrument, IInstrumentPrice? price, EventDateTime? priceValuationDateTime, IInstrumentIncome? income, EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
     {
@@ -48,6 +47,35 @@ public sealed record InstrumentValue : IModel
         Terms = instrument.Terms;
         EnsureValidValuePair(price, income);
 
+        Price = price;
+        PriceValuationDateTime = priceValuationDateTime;
+        Income = income;
+        ValuationDateTime = valuationDateTime;
+        AsOfDateTime = asOfDateTime;
+        LastEventID = lastEventID;
+        LastAuditDateTime = lastAuditDateTime;
+    }
+
+    [JsonConstructor]
+    [SetsRequiredMembers]
+    public InstrumentValue(InstrumentID instrumentID, string name, string formalName, Exchange exchange, CFI cfi, InstrumentLogo? logo,
+        Active active, Alpha2 incomeCountry, Alpha2 priceCountry, Alpha3 priceCurrency, List<InstrumentIdentifier> identifiers,
+        IInstrumentTerms? terms, IInstrumentPrice? price, EventDateTime? priceValuationDateTime, IInstrumentIncome? income,
+        EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime)
+    {
+        InstrumentID = instrumentID;
+        Name = name;
+        FormalName = formalName;
+        Exchange = exchange;
+        CFI = cfi;
+        Logo = logo;
+        Active = active;
+        IncomeCountry = incomeCountry;
+        PriceCountry = priceCountry;
+        PriceCurrency = priceCurrency;
+        Identifiers = identifiers;
+        Terms = terms;
+        EnsureValidValuePair(price, income);
         Price = price;
         PriceValuationDateTime = priceValuationDateTime;
         Income = income;

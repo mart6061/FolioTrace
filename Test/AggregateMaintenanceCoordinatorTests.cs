@@ -155,12 +155,20 @@ public sealed class AggregateMaintenanceCoordinatorTests
             EventTriggerCount = 100,
             EventTriggerDelay = TimeSpan.Zero,
             SnapshotEligibleAfterDays = 0,
-            DateWindows = new AggregateMaintenanceDateWindowOptions { DaysFromToday = 0 }
+            DateWindows = new AggregateMaintenanceDateWindowOptions { DaysFromToday = 2 }
         });
 
         await coordinator.RunAsync("Test");
 
-        Assert.Contains(snapshotRepository.Snapshots, snapshot => snapshot.AggregateKind == "HoldingPositions");
+        var aggregateKinds = snapshotRepository.Snapshots.Select(snapshot => snapshot.AggregateKind).ToHashSet(StringComparer.Ordinal);
+        Assert.Contains("FXs", aggregateKinds);
+        Assert.Contains("FXRates", aggregateKinds);
+        Assert.Contains("Instruments", aggregateKinds);
+        Assert.Contains("InstrumentValues", aggregateKinds);
+        Assert.Contains("Tickets", aggregateKinds);
+        Assert.Contains("HoldingPositions", aggregateKinds);
+        var diagnostics = coordinator.GetDiagnostics();
+        Assert.True(diagnostics.LastFailedAggregates == 0, string.Join(Environment.NewLine, diagnostics.RecentErrors));
     }
 
     [Fact]
@@ -199,16 +207,17 @@ public sealed class AggregateMaintenanceCoordinatorTests
             new NullFXRateReadModelRepository());
         await seedRepository.Build();
 
+        var snapshotRepository = new FakeAggregateSnapshotRepository();
         var countryService = new CountryService(eventRepository);
         var accountService = new AccountService(eventRepository);
         var brokerService = new BrokerService(eventRepository);
         var currencyService = new CurrencyService(eventRepository);
-        var fxService = new FXService(eventRepository);
-        var fxRateService = new FXRateService(eventRepository, new NullFXRateReadModelRepository());
+        var fxService = new FXService(eventRepository, snapshotRepository: snapshotRepository);
+        var fxRateService = new FXRateService(eventRepository, new NullFXRateReadModelRepository(), snapshotRepository: snapshotRepository, fxService: fxService);
         var holdingService = new HoldingService(eventRepository);
-        var instrumentService = new InstrumentService(eventRepository);
-        var instrumentValueService = new InstrumentValueService(eventRepository);
-        var snapshotRepository = new FakeAggregateSnapshotRepository();
+        var instrumentService = new InstrumentService(eventRepository, snapshotRepository: snapshotRepository);
+        var instrumentValueService = new InstrumentValueService(eventRepository, snapshotRepository: snapshotRepository, instrumentService: instrumentService);
+        var ticketService = new TicketService(eventRepository, snapshotRepository: snapshotRepository);
         var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, snapshotRepository);
 
         var coordinator = new AggregateMaintenanceCoordinator(
@@ -223,7 +232,8 @@ public sealed class AggregateMaintenanceCoordinatorTests
             holdingPositionService,
             instrumentService,
             instrumentValueService,
-            new AggregateUpdateNotificationService());
+            new AggregateUpdateNotificationService(),
+            ticketService);
 
         return (coordinator, snapshotRepository);
     }

@@ -300,7 +300,6 @@
           <div class="request-trace-settings-toggles">
             <label class="toggle-row"><input name="enabled" type="checkbox" checked={settings.enabled} /> Enabled</label>
             <label class="toggle-row"><input name="captureApi" type="checkbox" checked={settings.captureApi} /> API capture</label>
-            <label class="toggle-row"><input name="captureUi" type="checkbox" checked={settings.captureUi} /> UI capture</label>
             <label class="toggle-row"><input name="captureBodies" type="checkbox" checked={settings.captureBodies} /> Bodies</label>
             <label class="toggle-row"><input name="capture500StackTraces" type="checkbox" checked={settings.capture500StackTraces} /> 500 stack traces</label>
             <label class="toggle-row"><input name="captureLogMessages" type="checkbox" checked={settings.captureLogMessages} /> Log messages</label>
@@ -382,7 +381,6 @@
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
                 <th class="px-3 py-2">Started</th>
-                <th class="px-3 py-2">Source</th>
                 <th class="px-3 py-2">Verb</th>
                 <th class="px-3 py-2">Path</th>
                 <th class="px-3 py-2">Status</th>
@@ -395,7 +393,6 @@
               {#each traces as trace (trace.requestId)}
                 <tr class="align-top hover:bg-slate-50">
                   <td class="whitespace-nowrap px-3 py-2 text-slate-600">{formatDateTime(trace.startedAtUtc)}</td>
-                  <td class="px-3 py-2 text-xs font-semibold text-slate-600">{trace.source}</td>
                   <td class="px-3 py-2">
                     <span class={`rounded px-2 py-1 text-xs font-semibold ${methodClass(trace.method)}`}>
                       {trace.method}
