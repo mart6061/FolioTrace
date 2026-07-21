@@ -52,6 +52,7 @@
   --control-font-md: 0.875rem;
   --house-control-height: var(--control-h-md);
   --house-label-size: 0.75rem;
+  --house-label-size-dense: 0.625rem;
   --house-datetime-width: 16.25rem;
   --house-datetime-input-column: 10.75rem;
   --house-datetime-sm-width: 16.25rem;
@@ -101,6 +102,7 @@
   --surface-shadow: rgb(0 0 0 / 0.3);
   --surface-shadow-strong: rgb(0 0 0 / 0.46);
   --focus-ring: rgb(79 209 179 / 0.24);
+  --house-label-size-dense: 0.625rem;
 }
 
 body {
@@ -1062,7 +1064,7 @@ button.h-10 {
 .house-multiselect-compact-brand {
   width: min(100%, 14rem);
   border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
-  background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
+  background: var(--panel);
 }
 
 .house-multiselect-compact-brand .house-multiselect-options {
@@ -2017,6 +2019,10 @@ button.h-10.w-full.self-end.rounded-md.bg-teal-700:focus-visible {
   color: var(--muted);
   font-size: var(--house-label-size);
   font-weight: 700;
+}
+
+.house-field-dense .house-field-label {
+  font-size: var(--house-label-size-dense);
 }
 
 .house-field-required {

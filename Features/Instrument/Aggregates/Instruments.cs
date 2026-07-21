@@ -52,6 +52,19 @@ public sealed record Instruments : IAggregate
             Apply(item);
     }
 
+    [SetsRequiredMembers]
+    public Instruments(EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, List<Instrument> items, IEnumerable<IInstrumentEvent> deltaEvents)
+    {
+        ValuationDateTime = valuationDateTime ?? throw new ArgumentNullException(nameof(valuationDateTime));
+        AsOfDateTime = asOfDateTime ?? throw new ArgumentNullException(nameof(asOfDateTime));
+        LastEventID = lastEventID ?? throw new ArgumentNullException(nameof(lastEventID));
+        LastAuditDateTime = lastAuditDateTime ?? throw new ArgumentNullException(nameof(lastAuditDateTime));
+        Items = items?.ToList() ?? throw new ArgumentNullException(nameof(items));
+
+        foreach (var item in deltaEvents ?? throw new ArgumentNullException(nameof(deltaEvents)))
+            Apply(item);
+    }
+
     public void Apply(IInstrumentEvent instrumentEvent)
     {
         switch (instrumentEvent)

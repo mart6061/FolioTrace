@@ -15,7 +15,8 @@ public sealed class AggregateMaintenanceCoordinator(
     HoldingPositionService holdingPositionService,
     InstrumentService instrumentService,
     InstrumentValueService instrumentValueService,
-    AggregateUpdateNotificationService notificationService)
+    AggregateUpdateNotificationService notificationService,
+    TicketService? ticketService = null)
 {
     private const int MaxRecentErrors = 10;
 
@@ -119,11 +120,19 @@ public sealed class AggregateMaintenanceCoordinator(
                 await WarmAggregate("Holdings", valuationDate, holdingService.IsCached, holdingService.Get, result);
                 await WarmAggregate("Instruments", valuationDate, instrumentService.IsCached, instrumentService.Get, result);
                 await WarmAggregate("InstrumentValues", valuationDate, instrumentValueService.IsCached, instrumentValueService.Get, result);
+                if (ticketService is not null)
+                    await WarmAggregate("Tickets", valuationDate, ticketService.IsCached, ticketService.Get, result);
                 await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.EventDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
                 await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.SettlementDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
 
                 if (IsSnapshotEligible(valuationDate))
                 {
+                    await SnapshotAggregate("FXs", valuationDate, fxService.Get, fxService.PersistSnapshotAsync, result);
+                    await SnapshotAggregate("FXRates", valuationDate, fxRateService.Get, fxRateService.PersistSnapshotAsync, result);
+                    await SnapshotAggregate("Instruments", valuationDate, instrumentService.Get, instrumentService.PersistSnapshotAsync, result);
+                    await SnapshotAggregate("InstrumentValues", valuationDate, instrumentValueService.Get, instrumentValueService.PersistSnapshotAsync, result);
+                    if (ticketService is not null)
+                        await SnapshotAggregate("Tickets", valuationDate, ticketService.Get, ticketService.PersistSnapshotAsync, result);
                     await SnapshotHoldingPositions(valuationDate, HoldingDateBasis.EventDateTime, result);
                     await SnapshotHoldingPositions(valuationDate, HoldingDateBasis.SettlementDateTime, result);
                 }
@@ -218,6 +227,25 @@ public sealed class AggregateMaintenanceCoordinator(
 
     private bool IsSnapshotEligible(EventDateTime valuationDate) =>
         (DateTime.Now.Date - valuationDate.Value.Date).TotalDays >= options.SnapshotEligibleAfterDays;
+
+    private static async Task SnapshotAggregate<TAggregate>(
+        string aggregateKind,
+        EventDateTime valuationDate,
+        Func<EventDateTime, Task<TAggregate>> get,
+        Func<TAggregate, CancellationToken, Task> persist,
+        AggregateMaintenanceRunResult result)
+    {
+        try
+        {
+            var aggregate = await get(valuationDate);
+            await persist(aggregate, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            result.FailedAggregates++;
+            result.Errors.Add($"{aggregateKind} snapshot {valuationDate.Value:O}: {exception.Message}");
+        }
+    }
 
     /// <summary>
     /// Persists a snapshot for a boundary that has aged into the warm/cold tier (Aggregate-Snapshot-Scaling-

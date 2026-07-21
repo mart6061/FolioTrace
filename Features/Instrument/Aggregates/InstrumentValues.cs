@@ -70,6 +70,53 @@ public sealed record InstrumentValues : IAggregate
         }
     }
 
+    [SetsRequiredMembers]
+    public InstrumentValues(EventDateTime valuationDateTime, AuditDateTime asOfDateTime, Instruments instruments, List<InstrumentValue> baselineItems, IEnumerable<IInstrumentPriceEvent> priceDeltaEvents, IEnumerable<IInstrumentIncomeEvent> incomeDeltaEvents)
+    {
+        ValuationDateTime = valuationDateTime ?? throw new ArgumentNullException(nameof(valuationDateTime));
+        AsOfDateTime = asOfDateTime ?? throw new ArgumentNullException(nameof(asOfDateTime));
+        var baseline = (baselineItems ?? throw new ArgumentNullException(nameof(baselineItems))).ToDictionary(item => item.InstrumentID);
+        var prices = LatestByInstrument(priceDeltaEvents ?? throw new ArgumentNullException(nameof(priceDeltaEvents)), valuationDateTime, asOfDateTime);
+        var incomes = LatestByInstrument(incomeDeltaEvents ?? throw new ArgumentNullException(nameof(incomeDeltaEvents)), valuationDateTime, asOfDateTime);
+        Items = [];
+
+        foreach (var instrument in instruments.Items.OrderBy(item => item.Name, StringComparer.Ordinal))
+        {
+            baseline.TryGetValue(instrument.InstrumentID, out var prior);
+            prices.TryGetValue(instrument.InstrumentID, out var priceDelta);
+            incomes.TryGetValue(instrument.InstrumentID, out var incomeDelta);
+            var priceEvent = priceDelta as InstrumentPriceSetEvent;
+            var incomeEvent = incomeDelta as InstrumentIncomeSetEvent;
+            var price = priceEvent?.Price ?? prior?.Price;
+            var income = incomeEvent?.Income ?? prior?.Income;
+            var priceDate = priceEvent?.EventDateTime ?? prior?.PriceValuationDateTime;
+            if (price is null || income is null || !IsValidValuePair(price, income))
+            {
+                price = null;
+                income = null;
+                priceDate = null;
+            }
+
+            var latest = new (DateTime EventDate, DateTime AuditDate, Guid EventID)[]
+            {
+                (instrument.ValuationDateTime.Value, instrument.AsOfDateTime.Value, instrument.LastEventID.Value),
+                (prior?.ValuationDateTime.Value ?? DateTime.MinValue, prior?.AsOfDateTime.Value ?? DateTime.MinValue, prior?.LastEventID.Value ?? Guid.Empty),
+                (priceEvent?.EventDateTime.Value ?? DateTime.MinValue, priceEvent?.AuditDateTime.Value ?? DateTime.MinValue, priceEvent?.EventID.Value ?? Guid.Empty),
+                (incomeEvent?.EventDateTime.Value ?? DateTime.MinValue, incomeEvent?.AuditDateTime.Value ?? DateTime.MinValue, incomeEvent?.EventID.Value ?? Guid.Empty)
+            }.OrderBy(item => item.EventDate).ThenBy(item => item.AuditDate).ThenBy(item => item.EventID).Last();
+
+            Items.Add(new InstrumentValue(instrument, price, priceDate, income,
+                new EventDateTime(latest.EventDate), new AuditDateTime(latest.AuditDate), new EventID(latest.EventID),
+                new LastAuditDateTime(new[] { instrument.LastAuditDateTime.Value, prior?.LastAuditDateTime.Value, priceEvent?.AuditDateTime.Value, incomeEvent?.AuditDateTime.Value }.Where(value => value.HasValue).Max()!.Value)));
+        }
+
+        var aggregateLatest = Items.OrderBy(item => item.ValuationDateTime.Value).ThenBy(item => item.AsOfDateTime.Value).ThenBy(item => item.LastEventID.Value).LastOrDefault();
+        LastEventID = aggregateLatest?.LastEventID ?? Constants.Initialisation.EmptyViewEventID;
+        LastAuditDateTime = Items.Count == 0
+            ? new LastAuditDateTime(asOfDateTime.Value)
+            : new LastAuditDateTime(Items.Max(item => item.LastAuditDateTime.Value));
+    }
+
     private static InstrumentValuePair CreateValuePair(IInstrumentPriceEvent? priceEvent, IInstrumentIncomeEvent? incomeEvent)
     {
         if (priceEvent is not InstrumentPriceSetEvent priceSetEvent || incomeEvent is not InstrumentIncomeSetEvent incomeSetEvent)

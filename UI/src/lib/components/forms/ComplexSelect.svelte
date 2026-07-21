@@ -11,6 +11,7 @@
     confirmSelection?: boolean;
     disabled?: boolean;
     emptyText?: string;
+    id?: string;
     minimumSelections?: number;
     multiple?: boolean;
     name?: string;
@@ -35,6 +36,7 @@
     confirmSelection = false,
     disabled = false,
     emptyText = 'No options match the search',
+    id,
     minimumSelections = 0,
     multiple = false,
     name = '',
@@ -195,6 +197,7 @@
     aria-expanded={open}
     aria-haspopup="listbox"
     class="complex-select-trigger"
+    {id}
     {disabled}
     onkeydown={handleTriggerKeydown}
     onclick={toggleDropdown}
@@ -326,7 +329,7 @@
   }
 
   .complex-select-compact-brand .complex-select-trigger {
-    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
+    background: var(--panel);
     border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
     color: var(--ink);
   }

@@ -14,6 +14,7 @@ public sealed class RequestTraceLogQueue
     {
         this.logger = logger;
         Capacity = Math.Max(1, options.Value.QueueCapacity);
+        BatchSize = Math.Clamp(options.Value.BatchSize, 1, Capacity);
         channel = Channel.CreateBounded<RequestTraceEvent>(
         new BoundedChannelOptions(Capacity)
         {
@@ -24,6 +25,8 @@ public sealed class RequestTraceLogQueue
     }
 
     public int Capacity { get; }
+
+    public int BatchSize { get; }
 
     public long DroppedEventCount => Interlocked.Read(ref droppedEventCount);
 
@@ -54,11 +57,18 @@ public sealed class RequestTraceLogBackgroundService(
 
         await foreach (var traceEvent in queue.ReadAllAsync(stoppingToken))
         {
+            var batch = new List<RequestTraceEvent>(queue.BatchSize) { traceEvent };
+            while (batch.Count < queue.BatchSize && queue.TryDequeue(out var queuedEvent))
+            {
+                if (queuedEvent is not null)
+                    batch.Add(queuedEvent);
+            }
+
             try
             {
                 using var scope = scopeFactory.CreateScope();
                 var repository = scope.ServiceProvider.GetRequiredService<IRequestTraceRepository>();
-                await repository.AppendAsync(traceEvent, stoppingToken);
+                await repository.AppendAsync(batch, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -66,7 +76,7 @@ public sealed class RequestTraceLogBackgroundService(
             }
             catch (Exception exception)
             {
-                logger.LogWarning(exception, "Failed to persist request trace log event for request {RequestId}.", traceEvent.RequestId);
+                logger.LogWarning(exception, "Failed to persist request trace batch of {EventCount} events beginning with request {RequestId}.", batch.Count, traceEvent.RequestId);
             }
         }
     }

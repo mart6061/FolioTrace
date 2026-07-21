@@ -212,7 +212,6 @@ public static partial class ApiEndpointRegistration
     private static RequestTraceResponse ToResponse(RequestTrace trace) =>
         new(
             trace.RequestId,
-            trace.Source,
             trace.StartedAtUtc,
             trace.CompletedAtUtc,
             trace.DurationMilliseconds,
@@ -249,7 +248,6 @@ public static partial class ApiEndpointRegistration
         new(
             settings.Enabled,
             settings.CaptureApi,
-            settings.CaptureUi,
             settings.CaptureBodies,
             settings.Capture500StackTraces,
             settings.CaptureLogMessages,
@@ -264,7 +262,6 @@ public static partial class ApiEndpointRegistration
         {
             Enabled = request.Enabled,
             CaptureApi = request.CaptureApi,
-            CaptureUi = request.CaptureUi,
             CaptureBodies = request.CaptureBodies,
             Capture500StackTraces = request.Capture500StackTraces,
             CaptureLogMessages = request.CaptureLogMessages,
@@ -273,37 +270,6 @@ public static partial class ApiEndpointRegistration
             CapturedContentTypePrefixes = request.CapturedContentTypePrefixes.ToArray(),
             ExcludedPathPrefixes = request.ExcludedPathPrefixes.ToArray(),
             RedactedHeaders = request.RedactedHeaders.ToArray()
-        };
-
-    private static RequestTraceEvent ToTraceEvent(RequestTraceEventIngestRequest request) =>
-        new()
-        {
-            RequestId = request.RequestId,
-            Source = string.Equals(request.Source, RequestTraceSources.Ui, StringComparison.OrdinalIgnoreCase)
-                ? RequestTraceSources.Ui
-                : RequestTraceSources.Api,
-            Kind = request.Kind,
-            RecordedAtUtc = request.RecordedAtUtc,
-            StartedAtUtc = request.StartedAtUtc,
-            CompletedAtUtc = request.CompletedAtUtc,
-            DurationMilliseconds = request.DurationMilliseconds,
-            Method = request.Method.ToUpperInvariant(),
-            Path = request.Path,
-            QueryString = request.QueryString,
-            StatusCode = request.StatusCode,
-            Message = request.Message is null
-                ? null
-                : new TraceHttpMessage
-                {
-                    Headers = request.Message.Headers,
-                    Body = request.Message.Body,
-                    ContentType = request.Message.ContentType,
-                    ContentLength = request.Message.ContentLength,
-                    BodyTruncated = request.Message.BodyTruncated
-                },
-            ExceptionType = request.ExceptionType,
-            ExceptionMessage = request.ExceptionMessage,
-            StackTrace = request.StackTrace
         };
 
     private static FIXOperationResponse ToResponse(FoleoTraderFIXOperationRecordedEvent @event) =>

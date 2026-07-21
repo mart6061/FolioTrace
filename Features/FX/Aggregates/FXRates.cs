@@ -80,6 +80,17 @@ public sealed record FXRates : IAggregate
         Items = items ?? throw new ArgumentNullException(nameof(items));
     }
 
+    public void Apply(FXs fxs)
+    {
+        for (var index = 0; index < Items.Count; index++)
+        {
+            var fx = fxs.Items.Single(item => item.Pair == Items[index].Pair);
+            Items[index] = Items[index].Apply(fx);
+        }
+
+        LastAuditDateTime = new LastAuditDateTime(new DateTime(Math.Max(LastAuditDateTime.Value.Ticks, fxs.LastAuditDateTime.Value.Ticks)));
+    }
+
     public void Apply(IFXRateEvent rateEvent, FXs fxs)
     {
         switch (rateEvent)

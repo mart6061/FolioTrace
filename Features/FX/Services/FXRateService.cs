@@ -2,11 +2,13 @@ using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
 using Repository;
+using System.Text.Json;
 
 namespace Services;
 
-public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadModelRepository readModelRepository, int cacheCapacity = 500)
+public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadModelRepository readModelRepository, int cacheCapacity = 500, IAggregateSnapshotRepository? snapshotRepository = null, FXService? fxService = null)
 {
+    private const string AggregateKind = "FXRates";
     private readonly Lock cacheLock = new();
     private readonly BoundedLruCache<FXRateCacheKey, FXRates> cache = new(cacheCapacity);
 
@@ -65,7 +67,7 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
                 return cached;
         }
 
-        var current = await TryLoadReadModelAsync(valuationDate);
+        var current = await TryBuildFromSnapshotAsync(valuationDate) ?? await TryLoadReadModelAsync(valuationDate);
         if (current is null)
         {
             var fxEvents = await eventRepository.LoadStreamAsync<IFXEvent>(Constants.Initialisation.FXsStreamId);
@@ -78,6 +80,46 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
             cache[cacheKey] = current;
             return current;
         }
+    }
+
+    public async Task PersistSnapshotAsync(FXRates current, CancellationToken cancellationToken = default)
+    {
+        if (snapshotRepository is null)
+            return;
+
+        var checkpoint = await eventRepository.GetLastEventIDAsync(Constants.Initialisation.FXRatesStreamId, current.ValuationDateTime.Value, cancellationToken: cancellationToken)
+            ?? Constants.Initialisation.EmptyViewEventID;
+        await snapshotRepository.SaveAsync(new AggregateSnapshot
+        {
+            Id = Guid.CreateGuid7(), AggregateKind = AggregateKind, StreamId = Constants.Initialisation.FXRatesStreamId,
+            ValuationDateTime = current.ValuationDateTime.Value, AsOfDateTime = current.AsOfDateTime.Value,
+            LastEventID = checkpoint.Value, LastAuditDateTime = current.LastAuditDateTime.Value,
+            PayloadJson = JsonSerializer.Serialize(current.Items), CreatedAtUtc = DateTime.UtcNow,
+            SourceEventCount = current.Items.Count, Superseded = false
+        }, cancellationToken);
+    }
+
+    private async Task<FXRates?> TryBuildFromSnapshotAsync(EventDateTime valuationDate)
+    {
+        if (snapshotRepository is null)
+            return null;
+
+        var snapshot = await snapshotRepository.FindLatestAsync(AggregateKind, Constants.Initialisation.FXRatesStreamId, valuationDate.Value);
+        if (snapshot is null)
+            return null;
+
+        var fxs = fxService is null
+            ? new FXs(valuationDate, (await eventRepository.LoadStreamAsync<IFXEvent>(Constants.Initialisation.FXsStreamId)).ToList())
+            : await fxService.Get(valuationDate);
+        var delta = (await eventRepository.LoadStreamAfterAsync<IFXRateEvent>(Constants.Initialisation.FXRatesStreamId, new EventID(snapshot.LastEventID)))
+            .Where(@event => @event.EventDateTime.Value <= valuationDate.Value).ToList();
+        var asOf = new[] { snapshot.AsOfDateTime, fxs.LastAuditDateTime.Value, delta.Select(@event => @event.AuditDateTime.Value).DefaultIfEmpty(snapshot.AsOfDateTime).Max() }.Max();
+        var current = new FXRates(valuationDate, new AuditDateTime(asOf), new EventID(snapshot.LastEventID), new LastAuditDateTime(snapshot.LastAuditDateTime),
+            JsonSerializer.Deserialize<List<FXRate>>(snapshot.PayloadJson) ?? []);
+        foreach (var @event in delta)
+            current.Apply(@event, fxs);
+        current.Apply(fxs);
+        return current;
     }
 
     private async Task<FXRates?> TryLoadReadModelAsync(EventDateTime valuationDate)
@@ -130,6 +172,7 @@ public sealed class FXRateService(IEventRepository eventRepository, IFXRateReadM
 
     private int InvalidateFrom(EventDateTime eventDateTime)
     {
+        snapshotRepository?.RetireFromAsync(AggregateKind, Constants.Initialisation.FXRatesStreamId, eventDateTime.Value).GetAwaiter().GetResult();
         lock (cacheLock)
         {
             var removedCount = 0;

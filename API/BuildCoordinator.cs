@@ -1,3 +1,5 @@
+using JasperFx;
+using Marten;
 using Repository;
 using Services;
 
@@ -7,26 +9,38 @@ public sealed class BuildCoordinator(
     IServiceScopeFactory serviceScopeFactory,
     AggregateCacheClearService cacheClearService,
     AggregateUpdateNotificationService notificationService,
-    AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator)
+    AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator,
+    IDocumentStore documentStore,
+    ApiReadinessState readinessState,
+    IHostApplicationLifetime applicationLifetime,
+    ILogger<BuildCoordinator> logger)
 {
     private const int CoordinatorStepOffset = 1;
-    private const int TotalCoordinatorSteps = 12;
+    private const int TotalCoordinatorSteps = 14;
 
     private readonly SemaphoreSlim buildLock = new(1, 1);
     private BuildProgressNotification? currentBuild;
 
-    public async Task<BuildCoordinatorResult> BuildAsync(CancellationToken cancellationToken)
+    public BuildCoordinatorStartResult TryStartBuild()
     {
-        if (!await buildLock.WaitAsync(0, cancellationToken))
+        if (!buildLock.Wait(0))
         {
             var rejected = CreateRejectedNotification();
             notificationService.PublishBuildProgress(rejected);
-            return BuildCoordinatorResult.Rejected(rejected);
+            return new BuildCoordinatorStartResult(false, rejected);
         }
 
         var buildID = Guid.CreateGuid7();
         var startedAtUtc = DateTime.UtcNow;
+        readinessState.MarkNotReady();
+        var starting = Publish(buildID, "Running", "Starting", "Starting database rebuild.", 0, 0, 0, startedAtUtc, null);
 
+        _ = RunBuildAsync(buildID, startedAtUtc, applicationLifetime.ApplicationStopping);
+        return new BuildCoordinatorStartResult(true, starting);
+    }
+
+    private async Task RunBuildAsync(Guid buildID, DateTime startedAtUtc, CancellationToken cancellationToken)
+    {
         try
         {
             await using var maintenanceSuspension = await aggregateMaintenanceCoordinator.SuspendAsync("Database rebuild running.", cancellationToken);
@@ -54,17 +68,25 @@ public sealed class BuildCoordinator(
 
             await seedRepository.Build(progress, cancellationToken);
 
-            Publish(buildID, "Running", "Cache", "Clearing aggregate caches after rebuild.", TotalCoordinatorSteps - 1, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
-            var removedCacheViews = cacheClearService.ClearAll();
-            notificationService.PublishAggregatesInvalidated("Database rebuild complete.");
-            var completed = Publish(buildID, "Succeeded", "Complete", "Database rebuild complete.", TotalCoordinatorSteps, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
+            Publish(buildID, "Running", "Schema", "Applying configured database indexes.", TotalCoordinatorSteps - 3, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
+            await documentStore.Storage.ApplyAllConfiguredChangesToDatabaseAsync(AutoCreate.CreateOrUpdate);
+            Publish(buildID, "Running", "Schema", "Configured database indexes applied.", TotalCoordinatorSteps - 2, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
 
-            return BuildCoordinatorResult.Completed(completed, removedCacheViews);
+            var requestTraceRepository = scope.ServiceProvider.GetRequiredService<IRequestTraceRepository>();
+            Publish(buildID, "Running", "Diagnostics", "Removing legacy UI request trace events.", TotalCoordinatorSteps - 2, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
+            var removedUiTraceEvents = await requestTraceRepository.PurgeLegacyUiEventsAsync(cancellationToken);
+            Publish(buildID, "Running", "Diagnostics", $"Removed {removedUiTraceEvents} legacy UI request trace events.", TotalCoordinatorSteps - 1, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
+
+            Publish(buildID, "Running", "Cache", "Clearing aggregate caches after rebuild.", TotalCoordinatorSteps - 1, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
+            cacheClearService.ClearAll();
+            notificationService.PublishAggregatesInvalidated("Database rebuild complete.");
+            readinessState.MarkReady();
+            Publish(buildID, "Succeeded", "Complete", "Database rebuild complete.", TotalCoordinatorSteps, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, null);
         }
         catch (Exception exception)
         {
-            var failed = Publish(buildID, "Failed", "Failed", "Database rebuild failed.", currentBuild?.CompletedSteps ?? 0, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, exception.Message);
-            return BuildCoordinatorResult.Failed(failed);
+            logger.LogError(exception, "Database rebuild {BuildID} failed during {Stage}.", buildID, currentBuild?.Stage ?? "Unknown");
+            Publish(buildID, "Failed", "Failed", "Database rebuild failed.", currentBuild?.CompletedSteps ?? 0, currentBuild?.CompletedEvents ?? 0, currentBuild?.TotalEvents ?? 0, startedAtUtc, exception.Message);
         }
         finally
         {
@@ -121,21 +143,7 @@ public sealed class BuildCoordinator(
     }
 }
 
-public sealed record BuildCoordinatorResult(
-    bool Accepted,
-    bool Succeeded,
-    BuildProgressNotification Progress,
-    AggregateCacheClearResult? RemovedCacheViews)
-{
-    public static BuildCoordinatorResult Completed(BuildProgressNotification progress, AggregateCacheClearResult removedCacheViews) =>
-        new(true, true, progress, removedCacheViews);
-
-    public static BuildCoordinatorResult Failed(BuildProgressNotification progress) =>
-        new(true, false, progress, null);
-
-    public static BuildCoordinatorResult Rejected(BuildProgressNotification progress) =>
-        new(false, false, progress, null);
-}
+public sealed record BuildCoordinatorStartResult(bool Accepted, BuildProgressNotification Progress);
 
 internal sealed class InlineProgress<T>(Action<T> report) : IProgress<T>
 {

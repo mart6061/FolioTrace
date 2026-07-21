@@ -4,9 +4,10 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
-  import { ComplexSelect, PillGroup, type ComplexSelectOption } from '$lib/components/forms';
+  import { ComplexSelect, Field, PillGroup, type ComplexSelectOption } from '$lib/components/forms';
   import { formatTableDateTime, toApiDateTime } from '$lib/dates';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
+  import { tick } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import type {
     Account,
@@ -103,6 +104,9 @@
   let accountSelectionDirty = $state(false);
   let selectedAccountIDOverrides = $state<string[] | null>(null);
   let displayMode: 'Discrete' | 'Aggregate' = $derived(data.assetViewMode);
+  let holdingBasis: HoldingDateBasis = $derived(data.holdingDateBasis);
+  let priceBasis: InstrumentPriceBasis = $derived(data.instrumentPriceBasis);
+  let valuationCurrency = $derived(data.valuationCurrency);
   let expandedAggregateAssetID = $state('');
   let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
   let profitLossByHoldingID = $state<Record<string, AssetProfitLossState>>({});
@@ -126,6 +130,20 @@
     { label: 'Discrete', value: 'Discrete' },
     { label: 'Aggregate', value: 'Aggregate' }
   ];
+  const priceBasisOptions = $derived(data.instrumentPriceBasisOptions.map((option) => ({
+    label: option,
+    value: option
+  })));
+  const currencyOptions = $derived<ComplexSelectOption[]>(currencies.length
+    ? currencies.map((currency) => ({
+        id: currency.alphabeticCode,
+        name: currencyLabel(currency),
+        meta: currency.name,
+        search: `${currency.alphabeticCode} ${currency.name}`
+      }))
+    : data.valuationCurrency
+      ? [{ id: data.valuationCurrency, name: data.valuationCurrency }]
+      : []);
 
   type AggregateAssetRow = {
     assetID: string;
@@ -246,7 +264,8 @@
     return [...new Set(selectedAccounts.map((account) => account.bookCurrency).filter(Boolean))];
   }
 
-  function submitFilterChange() {
+  async function submitFilterChange() {
+    await tick();
     const form = document.getElementById(formID);
 
     if (form instanceof HTMLFormElement)
@@ -261,18 +280,18 @@
     submitFilterChange();
   }
 
-  function updateAccountSelection(nextSelectedAccountIDs: string[], event: Event) {
+  function updateAccountSelection(nextSelectedAccountIDs: string[]) {
     selectedAccountIDOverrides = nextSelectedAccountIDs;
     accountSelectionDirty = !sameAccountIDs(nextSelectedAccountIDs, data.accountIDs ?? []);
-    syncCurrencyForSelection(event, nextSelectedAccountIDs);
+    syncCurrencyForSelection(nextSelectedAccountIDs);
   }
 
-  function changeAccountSelection(selection: string | string[] | undefined, event: Event) {
+  function changeAccountSelection(selection: string | string[] | undefined) {
     if (Array.isArray(selection))
-      updateAccountSelection(selection, event);
+      updateAccountSelection(selection);
   }
 
-  function syncCurrencyForSelection(event: Event, nextSelectedAccountIDs = selectedAccountIDs) {
+  function syncCurrencyForSelection(nextSelectedAccountIDs = selectedAccountIDs) {
     if (nextSelectedAccountIDs.length !== 1)
       return;
 
@@ -281,11 +300,8 @@
     if (!account?.bookCurrency)
       return;
 
-    const control = event.currentTarget as HTMLInputElement | HTMLButtonElement;
-    const currencySelect = control.form?.elements.namedItem('valuationCurrency') as HTMLSelectElement | null;
-
-    if (currencySelect && [...currencySelect.options].some((option) => option.value === account.bookCurrency))
-      currencySelect.value = account.bookCurrency;
+    if (currencyOptions.some((option) => option.id === account.bookCurrency))
+      valuationCurrency = account.bookCurrency;
   }
 
   function aggregateAssetRows(accountValuations: AccountValuation[]): AggregateAssetRow[] {
@@ -695,36 +711,48 @@
         </div>
 
         <div class="asset-filter-secondary-row">
-          <label class="asset-filter-field asset-filter-basis grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-            Holding basis
-            <select class="house-control house-control-md house-control-full" name="holdingDateBasis" onchange={submitFilterChange}>
-              {#each holdingDateBasisOptions as option (option.value)}
-                <option selected={option.value === data.holdingDateBasis} value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </label>
+          <Field class="asset-filter-field asset-filter-basis" controlId="asset-holding-basis" label="Holding basis">
+            <PillGroup
+              ariaLabel="Holding basis"
+              bind:value={holdingBasis}
+              class="asset-basis-toggle"
+              compact
+              id="asset-holding-basis"
+              name="holdingDateBasis"
+              onchange={submitFilterChange}
+              options={holdingDateBasisOptions}
+            />
+          </Field>
 
-          <label class="asset-filter-field asset-filter-price grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-            Price basis
-            <select class="house-control house-control-md house-control-full" name="instrumentPriceBasis" onchange={submitFilterChange}>
-              {#each data.instrumentPriceBasisOptions as option (option)}
-                <option selected={option === data.instrumentPriceBasis} value={option}>{option}</option>
-              {/each}
-            </select>
-          </label>
+          <Field class="asset-filter-field asset-filter-price" controlId="asset-price-basis" label="Price basis">
+            <PillGroup
+              ariaLabel="Price basis"
+              bind:value={priceBasis}
+              class="asset-basis-toggle"
+              compact
+              id="asset-price-basis"
+              name="instrumentPriceBasis"
+              onchange={submitFilterChange}
+              options={priceBasisOptions}
+            />
+          </Field>
 
-          <label class="asset-filter-field asset-filter-currency grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-            Currency
-            <select class="house-control house-control-md house-control-full" name="valuationCurrency" onchange={submitFilterChange}>
-              {#if currencies.length}
-                {#each currencies as currency (currency.alphabeticCode)}
-                  <option selected={currency.alphabeticCode === data.valuationCurrency} value={currency.alphabeticCode}>{currencyLabel(currency)}</option>
-                {/each}
-              {:else}
-                <option value={data.valuationCurrency}>{data.valuationCurrency}</option>
-              {/if}
-            </select>
-          </label>
+          <Field class="asset-filter-field asset-filter-currency" controlId="asset-valuation-currency" label="Currency">
+            <ComplexSelect
+              ariaLabel="Currencies"
+              bind:value={valuationCurrency}
+              class="asset-currency-select"
+              compactBrand
+              disabled={!currencyOptions.length}
+              emptyText="No currencies match"
+              id="asset-valuation-currency"
+              name="valuationCurrency"
+              onchange={submitFilterChange}
+              options={currencyOptions}
+              placeholder="Select currency"
+              searchPlaceholder="Search currencies"
+            />
+          </Field>
         </div>
       </form>
     </div>
@@ -1210,7 +1238,7 @@
   .asset-filter-viewer-form .asset-filter-secondary-row {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: minmax(11rem, 13rem) minmax(10rem, 12rem) minmax(8.5rem, 10rem);
+    grid-template-columns: minmax(13rem, 1fr) minmax(13rem, 1fr) minmax(10rem, 14rem);
     gap: 0.85rem;
     align-items: end;
   }
@@ -1254,6 +1282,26 @@
     width: 100%;
     min-width: 0;
     padding-inline: 0.45rem;
+  }
+  :global(.asset-basis-toggle.house-pill-group) {
+    display: grid;
+    width: fit-content;
+    border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
+    background: color-mix(in srgb, var(--brand-green) 16%, var(--panel));
+    gap: 0.125rem;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    flex-wrap: nowrap;
+  }
+
+  :global(.asset-basis-toggle .house-pill span) {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0.45rem;
+  }
+
+  :global(.asset-basis-toggle .house-pill input:checked + span) {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .asset-name-title {

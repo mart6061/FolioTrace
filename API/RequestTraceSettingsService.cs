@@ -69,8 +69,16 @@ public sealed class RequestTraceSettingsService(
             MinimumLogLevel = string.IsNullOrWhiteSpace(settings.MinimumLogLevel) ? defaults.MinimumLogLevel : settings.MinimumLogLevel,
             MaximumBodyCharacters = settings.MaximumBodyCharacters <= 0 ? defaults.MaximumBodyCharacters : settings.MaximumBodyCharacters,
             CapturedContentTypePrefixes = settings.CapturedContentTypePrefixes.Length == 0 ? defaults.CapturedContentTypePrefixes : settings.CapturedContentTypePrefixes,
-            ExcludedPathPrefixes = settings.ExcludedPathPrefixes.Length == 0 ? defaults.ExcludedPathPrefixes : settings.ExcludedPathPrefixes,
+            ExcludedPathPrefixes = EnsureRequiredExclusions(
+                settings.ExcludedPathPrefixes.Length == 0 ? defaults.ExcludedPathPrefixes : settings.ExcludedPathPrefixes),
             RedactedHeaders = settings.RedactedHeaders.Length == 0 ? defaults.RedactedHeaders : settings.RedactedHeaders
         };
     }
+
+    private static string[] EnsureRequiredExclusions(IEnumerable<string> excludedPathPrefixes) =>
+        excludedPathPrefixes
+            .Concat(["/Auth/Session", "/Diagnostics/RequestTrace"])
+            .Where(prefix => !string.IsNullOrWhiteSpace(prefix))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 }

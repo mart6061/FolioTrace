@@ -21,6 +21,7 @@ public sealed class RequestTraceCaptureMiddleware(
         }
 
         var requestId = ResolveRequestId(context);
+        var parentRequestId = ResolveParentRequestId(context);
         var startedAtUtc = DateTime.UtcNow;
         var stopwatch = Stopwatch.StartNew();
         var originalResponseBody = context.Response.Body;
@@ -30,7 +31,7 @@ public sealed class RequestTraceCaptureMiddleware(
             new RequestTraceEvent
             {
                 RequestId = requestId,
-                Source = RequestTraceSources.Api,
+                ParentRequestId = parentRequestId,
                 Kind = RequestTraceEventKinds.Request,
                 RecordedAtUtc = startedAtUtc,
                 StartedAtUtc = startedAtUtc,
@@ -55,7 +56,7 @@ public sealed class RequestTraceCaptureMiddleware(
         if (responseBody is not null)
             context.Response.Body = responseBody;
 
-        using var _ = RequestTraceLogContext.Begin(requestId, RequestTraceSources.Api);
+        using var _ = RequestTraceLogContext.Begin(requestId);
 
         try
         {
@@ -73,7 +74,7 @@ public sealed class RequestTraceCaptureMiddleware(
                 new RequestTraceEvent
                 {
                     RequestId = requestId,
-                    Source = RequestTraceSources.Api,
+                    ParentRequestId = parentRequestId,
                     Kind = RequestTraceEventKinds.Response,
                     RecordedAtUtc = completedAtUtc,
                     CompletedAtUtc = completedAtUtc,
@@ -97,6 +98,11 @@ public sealed class RequestTraceCaptureMiddleware(
 
         return requestId;
     }
+
+    private static Guid? ResolveParentRequestId(HttpContext context) =>
+        Guid.TryParse(context.Request.Headers[RequestTraceConstants.ParentRequestIdHeader].FirstOrDefault(), out var parentRequestId)
+            ? parentRequestId
+            : null;
 
     private void Enqueue(RequestTraceEvent traceEvent)
     {

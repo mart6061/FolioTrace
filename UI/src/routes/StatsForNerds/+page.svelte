@@ -90,7 +90,7 @@
       stage: 'Starting',
       message: 'Starting database rebuild.',
       completedSteps: 0,
-      totalSteps: 12,
+      totalSteps: 14,
       completedEvents: 0,
       totalEvents: 0,
       startedAtUtc: new Date().toISOString(),
@@ -98,9 +98,10 @@
       error: null
     };
 
-    return async ({ update }) => {
+    return async ({ result, update }) => {
       await update({ reset: false });
-      buildRunning = false;
+      if (result.type === 'failure' || result.type === 'error')
+        buildRunning = false;
     };
   };
 

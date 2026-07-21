@@ -15,4 +15,6 @@ public sealed class ApiObservabilityOptions
     public string? OtlpEndpoint { get; init; }
 
     public OtlpExportProtocol OtlpProtocol { get; init; } = OtlpExportProtocol.Grpc;
+
+    public double SlowRequestThresholdMilliseconds { get; init; } = 500;
 }

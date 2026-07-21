@@ -2,17 +2,39 @@ namespace API;
 
 public sealed class ApiReadinessState
 {
-    private readonly TaskCompletionSource readiness = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly object sync = new();
+    private TaskCompletionSource readiness = CreateReadinessSource();
     private volatile bool ready;
 
     public bool Ready => ready;
 
     public void MarkReady()
     {
-        ready = true;
-        readiness.TrySetResult();
+        lock (sync)
+        {
+            ready = true;
+            readiness.TrySetResult();
+        }
     }
 
-    public Task WaitUntilReadyAsync(CancellationToken cancellationToken) =>
-        readiness.Task.WaitAsync(cancellationToken);
+    public void MarkNotReady()
+    {
+        lock (sync)
+        {
+            if (!ready)
+                return;
+
+            ready = false;
+            readiness = CreateReadinessSource();
+        }
+    }
+
+    public Task WaitUntilReadyAsync(CancellationToken cancellationToken)
+    {
+        lock (sync)
+            return readiness.Task.WaitAsync(cancellationToken);
+    }
+
+    private static TaskCompletionSource CreateReadinessSource() =>
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

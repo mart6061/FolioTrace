@@ -55,6 +55,19 @@ public sealed record FXs : IAggregate
             Apply(item);
     }
 
+    [SetsRequiredMembers]
+    public FXs(EventDateTime valuationDateTime, AuditDateTime asOfDateTime, EventID lastEventID, LastAuditDateTime lastAuditDateTime, List<FX> items, IEnumerable<IFXEvent> deltaEvents)
+    {
+        ValuationDateTime = valuationDateTime ?? throw new ArgumentNullException(nameof(valuationDateTime));
+        AsOfDateTime = asOfDateTime ?? throw new ArgumentNullException(nameof(asOfDateTime));
+        LastEventID = lastEventID ?? throw new ArgumentNullException(nameof(lastEventID));
+        LastAuditDateTime = lastAuditDateTime ?? throw new ArgumentNullException(nameof(lastAuditDateTime));
+        Items = items?.ToList() ?? throw new ArgumentNullException(nameof(items));
+
+        foreach (var item in deltaEvents ?? throw new ArgumentNullException(nameof(deltaEvents)))
+            Apply(item);
+    }
+
     public void Apply(IFXEvent fxEvent)
     {
         switch (fxEvent)

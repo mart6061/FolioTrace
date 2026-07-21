@@ -70,9 +70,11 @@ public sealed class ApiUnhandledExceptionLoggingMiddlewareTests
     private sealed class StubRequestTraceRepository : IRequestTraceRepository
     {
         public Task AppendAsync(RequestTraceEvent traceEvent, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task AppendAsync(IReadOnlyCollection<RequestTraceEvent> traceEvents, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<RequestTrace?> LoadAsync(Guid requestId, CancellationToken cancellationToken = default) => Task.FromResult<RequestTrace?>(null);
         public Task<RequestTraceSearchResult> SearchAsync(RequestTraceSearchCriteria criteria, CancellationToken cancellationToken = default) => Task.FromResult(new RequestTraceSearchResult([], 0, 1, 50));
         public Task<RequestTracePurgeResult> PurgeAsync(DateTime? beforeUtc, CancellationToken cancellationToken = default) => Task.FromResult(new RequestTracePurgeResult(0));
+        public Task<int> PurgeLegacyUiEventsAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
         public Task<RequestTraceSettings?> LoadSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<RequestTraceSettings?>(null);
         public Task StoreSettingsAsync(RequestTraceSettings settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
