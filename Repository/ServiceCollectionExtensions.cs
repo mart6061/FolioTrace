@@ -1,6 +1,7 @@
 using Marten;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
+using FolioTrace.Snapshots;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -46,7 +47,7 @@ public static class ServiceCollectionExtensions
             options.Schema.For<FXRatePointReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
             options.Schema.For<StoredFilePayload>();
             options.Schema.For<AggregateSnapshot>()
-                .Index(snapshot => new { snapshot.AggregateKind, snapshot.StreamId, snapshot.Variant, snapshot.ValuationDateTime });
+                .Index(snapshot => new { snapshot.AggregateKind, snapshot.StreamId, snapshot.Variant, snapshot.ValuationDateTime }, index => index.Name = "idx_aggregate_snapshot_lookup");
             options.Schema.For<RequestTraceEvent>()
                 .Duplicate(traceEvent => traceEvent.RecordedAtUtc)
                 .Duplicate(traceEvent => traceEvent.RequestId)

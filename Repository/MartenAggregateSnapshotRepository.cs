@@ -1,4 +1,5 @@
 using Marten;
+using FolioTrace.Snapshots;
 using Services;
 
 namespace Repository;
@@ -17,6 +18,7 @@ public sealed class MartenAggregateSnapshotRepository(IDocumentStore store) : IA
 
     public async Task<AggregateSnapshot?> FindLatestAsync(string aggregateKind, Guid streamId, DateTime valuationDateTime, string variant = "", CancellationToken cancellationToken = default)
     {
+        var databaseValuationDateTime = DateTime.SpecifyKind(valuationDateTime, DateTimeKind.Unspecified);
         await using var session = store.QuerySession();
 
         return await session.Query<AggregateSnapshot>()
@@ -24,7 +26,7 @@ public sealed class MartenAggregateSnapshotRepository(IDocumentStore store) : IA
                 snapshot.AggregateKind == aggregateKind
                 && snapshot.StreamId == streamId
                 && snapshot.Variant == variant
-                && snapshot.ValuationDateTime <= valuationDateTime
+                && snapshot.ValuationDateTime <= databaseValuationDateTime
                 && !snapshot.Superseded)
             .OrderByDescending(snapshot => snapshot.ValuationDateTime)
             .ThenByDescending(snapshot => snapshot.AsOfDateTime)
@@ -33,6 +35,7 @@ public sealed class MartenAggregateSnapshotRepository(IDocumentStore store) : IA
 
     public async Task<int> RetireFromAsync(string aggregateKind, Guid streamId, DateTime eventDateTime, string variant = "", CancellationToken cancellationToken = default)
     {
+        var databaseEventDateTime = DateTime.SpecifyKind(eventDateTime, DateTimeKind.Unspecified);
         await using var session = store.LightweightSession();
 
         var affected = await session.Query<AggregateSnapshot>()
@@ -40,7 +43,7 @@ public sealed class MartenAggregateSnapshotRepository(IDocumentStore store) : IA
                 snapshot.AggregateKind == aggregateKind
                 && snapshot.StreamId == streamId
                 && snapshot.Variant == variant
-                && snapshot.ValuationDateTime >= eventDateTime
+                && snapshot.ValuationDateTime >= databaseEventDateTime
                 && !snapshot.Superseded)
             .ToListAsync(cancellationToken);
 
