@@ -8,10 +8,11 @@ using Services;
 namespace Test;
 
 /// <summary>
-/// End-to-end coverage of HoldingPositionService's snapshot wiring (Aggregate-Snapshot-Scaling-Plan.md 3.3/3.4):
-/// finding and using a persisted snapshot, falling back to a full rebuild when none exists, and - the
+/// End-to-end coverage of HoldingPositionService's snapshot wiring (Aggregate-Snapshot-Scaling-Plan.md
+/// 3.3/3.4/4.1): finding and using a persisted snapshot, falling back to a full rebuild when none exists, the
 /// critical safety property - retiring a snapshot the moment a correction lands that could have invalidated
-/// its baked-in totals, before any read can pick it up stale.
+/// its baked-in totals, before any read can pick it up stale - and Phase 4's rollout-safety verification mode
+/// catching a deliberately-wrong snapshot.
 /// </summary>
 public sealed class HoldingPositionServiceSnapshotTests
 {
@@ -82,6 +83,84 @@ public sealed class HoldingPositionServiceSnapshotTests
         service.Invalidate(new FakeTransactionEvent(Fixture.ValuationDate.Value.AddYears(1)));
 
         Assert.Contains(snapshotRepository.Snapshots, snapshot => !snapshot.Superseded);
+    }
+
+    [Fact]
+    public async Task Get_VerificationMode_CatchesADeliberatelyWrongSnapshot()
+    {
+        // Simulates "a snapshot bug" per the plan's own verify step, by persisting a snapshot whose payload
+        // doesn't match what a full replay would actually produce - i.e. exactly what a bug in the seeded-
+        // reconstruction merge logic would look like from the outside.
+        var fixture = Fixture.Create();
+        fixture.CreditTargetHolding(10m, 250m);
+        var service = fixture.CreateService(out var snapshotRepository, new HoldingPositionSnapshotVerificationOptions { Enabled = true, SampleRate = 1.0 });
+
+        var correct = await service.Get(Fixture.ValuationDate, HoldingDateBasis.EventDateTime);
+        var wrongPayload = System.Text.Json.JsonSerializer.Serialize(new[]
+        {
+            new HoldingPositionSnapshotItem(fixture.TargetHoldingID.Value, 999m, 999m, correct.LastEventID.Value, correct.LastAuditDateTime.Value)
+        });
+        await snapshotRepository.SaveAsync(new AggregateSnapshot
+        {
+            Id = Guid.CreateGuid7(),
+            AggregateKind = "HoldingPositions",
+            StreamId = Constants.Initialisation.TransactionsStreamId,
+            Variant = HoldingDateBasis.EventDateTime.ToString(),
+            ValuationDateTime = Fixture.ValuationDate.Value,
+            AsOfDateTime = correct.AsOfDateTime.Value,
+            LastEventID = correct.LastEventID.Value,
+            LastAuditDateTime = correct.LastAuditDateTime.Value,
+            PayloadJson = wrongPayload,
+            CreatedAtUtc = DateTime.UtcNow,
+            SourceEventCount = 1
+        });
+        service.InvalidateAll();
+
+        var seeded = await service.Get(Fixture.ValuationDate, HoldingDateBasis.EventDateTime);
+
+        // The wrong snapshot is still what gets served - verification observes without correcting.
+        Assert.Equal(999m, seeded.Items.Single().Quantity);
+
+        var diagnostics = service.GetDiagnostics();
+        Assert.Equal(1, diagnostics.SnapshotVerifiedCount);
+        Assert.Equal(1, diagnostics.SnapshotMismatchCount);
+        Assert.NotNull(diagnostics.LastSnapshotMismatchAtUtc);
+        Assert.Contains(fixture.TargetHoldingID.Value.ToString(), diagnostics.LastSnapshotMismatchDetails);
+    }
+
+    [Fact]
+    public async Task Get_VerificationMode_FindsNoMismatch_ForACorrectSnapshot()
+    {
+        var fixture = Fixture.Create();
+        fixture.CreditTargetHolding(10m, 250m);
+        var service = fixture.CreateService(out _, new HoldingPositionSnapshotVerificationOptions { Enabled = true, SampleRate = 1.0 });
+
+        var first = await service.Get(Fixture.ValuationDate, HoldingDateBasis.EventDateTime);
+        await service.PersistSnapshotAsync(first);
+        service.InvalidateAll();
+
+        await service.Get(Fixture.ValuationDate, HoldingDateBasis.EventDateTime);
+
+        var diagnostics = service.GetDiagnostics();
+        Assert.Equal(1, diagnostics.SnapshotVerifiedCount);
+        Assert.Equal(0, diagnostics.SnapshotMismatchCount);
+        Assert.Null(diagnostics.LastSnapshotMismatchAtUtc);
+    }
+
+    [Fact]
+    public async Task Get_VerificationMode_NeverRuns_WhenDisabled()
+    {
+        var fixture = Fixture.Create();
+        fixture.CreditTargetHolding(10m, 250m);
+        var service = fixture.CreateService(out _, new HoldingPositionSnapshotVerificationOptions { Enabled = false, SampleRate = 1.0 });
+
+        var first = await service.Get(Fixture.ValuationDate, HoldingDateBasis.EventDateTime);
+        await service.PersistSnapshotAsync(first);
+        service.InvalidateAll();
+
+        await service.Get(Fixture.ValuationDate, HoldingDateBasis.EventDateTime);
+
+        Assert.Equal(0, service.GetDiagnostics().SnapshotVerifiedCount);
     }
 
     private sealed class FakeTransactionEvent(DateTime eventDateTime) : IEventBase
@@ -159,14 +238,19 @@ public sealed class HoldingPositionServiceSnapshotTests
             return new Fixture(accountID, targetHoldingID, targetInstrumentID, fundingHoldingID, fundingInstrumentID, accountEvents, instrumentEvents, holdingEvents, holdingsForValidation);
         }
 
-        public HoldingPositionService CreateService(out FakeAggregateSnapshotRepository snapshotRepository)
+        public HoldingID TargetHoldingID => targetHoldingID;
+
+        public HoldingPositionService CreateService(out FakeAggregateSnapshotRepository snapshotRepository) =>
+            CreateService(out snapshotRepository, verificationOptions: null);
+
+        public HoldingPositionService CreateService(out FakeAggregateSnapshotRepository snapshotRepository, HoldingPositionSnapshotVerificationOptions? verificationOptions)
         {
             snapshotRepository = new FakeAggregateSnapshotRepository();
             var eventRepository = new FakeEventRepository(accountEvents, instrumentEvents, holdingEvents, transactionEvents);
             var holdingService = new HoldingService(eventRepository);
             var accountService = new AccountService(eventRepository);
             var instrumentService = new InstrumentService(eventRepository);
-            return new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, snapshotRepository);
+            return new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, snapshotRepository, verificationOptions: verificationOptions);
         }
 
         public void CreditTargetHolding(decimal quantity, decimal bookCost)

@@ -13,24 +13,49 @@ public sealed class HoldingPositionService(
     AccountService accountService,
     InstrumentService instrumentService,
     IAggregateSnapshotRepository snapshotRepository,
-    int cacheCapacity = 2000)
+    int cacheCapacity = 2000,
+    HoldingPositionSnapshotVerificationOptions? verificationOptions = null)
 {
     private const string AggregateKind = "HoldingPositions";
 
+    private readonly HoldingPositionSnapshotVerificationOptions verification = verificationOptions ?? new();
     private readonly Lock cacheLock = new();
     private readonly BoundedLruCache<HoldingPositionCacheKey, HoldingPositions> cache = new(cacheCapacity);
 
+    private readonly Lock verificationLock = new();
+    private int verifiedCount;
+    private int mismatchCount;
+    private DateTime? lastMismatchAtUtc;
+    private string? lastMismatchDetails;
+
     public HoldingPositionServiceDiagnostics GetDiagnostics()
     {
+        int cacheEntryCount;
+        int positionCount;
+        long estimatedMemoryBytes;
         lock (cacheLock)
         {
-            var positionCount = cache.Values
+            cacheEntryCount = cache.Count;
+            positionCount = cache.Values
                 .OrderByDescending(positions => positions.LastAuditDateTime.Value)
                 .FirstOrDefault()
                 ?.Items.Count ?? 0;
-
-            return new HoldingPositionServiceDiagnostics(cache.Count, positionCount, CacheMemoryEstimator.EstimateBytes(cache.Values));
+            estimatedMemoryBytes = CacheMemoryEstimator.EstimateBytes(cache.Values);
         }
+
+        int verified;
+        int mismatches;
+        DateTime? lastMismatchAt;
+        string? lastMismatch;
+        lock (verificationLock)
+        {
+            verified = verifiedCount;
+            mismatches = mismatchCount;
+            lastMismatchAt = lastMismatchAtUtc;
+            lastMismatch = lastMismatchDetails;
+        }
+
+        return new HoldingPositionServiceDiagnostics(cacheEntryCount, positionCount, estimatedMemoryBytes, verified, mismatches, lastMismatchAt, lastMismatch);
     }
 
     public int Invalidate(IEventBase @event) => InvalidateFrom(GetInvalidationDate(@event));
@@ -154,7 +179,7 @@ public sealed class HoldingPositionService(
         var deltaEvents = await eventRepository.LoadStreamAfterAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId, new EventID(snapshot.LastEventID));
         var baselineTotals = DeserializeBaseline(snapshot.PayloadJson);
 
-        return new HoldingPositions(
+        var seeded = new HoldingPositions(
             valuationDate,
             asAt,
             holdingDateBasis,
@@ -166,6 +191,70 @@ public sealed class HoldingPositionService(
             new EventID(snapshot.LastEventID),
             new AuditDateTime(snapshot.LastAuditDateTime),
             deltaEvents);
+
+        if (verification.Enabled && Random.Shared.NextDouble() < verification.SampleRate)
+            await VerifyAgainstFullReplayAsync(seeded, valuationDate, asAt, holdingDateBasis, holdings, accounts, instruments);
+
+        return seeded;
+    }
+
+    /// <summary>
+    /// Aggregate-Snapshot-Scaling-Plan.md Phase 4: for a sample of snapshot-seeded reads, also computes a
+    /// full from-scratch replay and compares - a subtly wrong snapshot-plus-delta result is worse than a slow
+    /// full replay for financial position data. Awaited inline (not fire-and-forget) so the extra latency for
+    /// sampled requests is an accepted, visible cost during rollout rather than a background surprise, and so
+    /// the result is recorded before the caller's Get() returns.
+    /// </summary>
+    private async Task VerifyAgainstFullReplayAsync(HoldingPositions seeded, EventDateTime valuationDate, AuditDateTime asAt, HoldingDateBasis holdingDateBasis, Holdings holdings, Accounts accounts, Instruments instruments)
+    {
+        var transactionEvents = await eventRepository.LoadStreamAsync<ITransactionEvent>(Constants.Initialisation.TransactionsStreamId);
+        var replay = new HoldingPositions(valuationDate, asAt, holdings, accounts, instruments, transactionEvents, HoldingPositionFilter.Default, holdingDateBasis);
+
+        var mismatch = DescribeMismatch(seeded, replay);
+
+        lock (verificationLock)
+        {
+            verifiedCount++;
+            if (mismatch is not null)
+            {
+                mismatchCount++;
+                lastMismatchAtUtc = DateTime.UtcNow;
+                lastMismatchDetails = mismatch;
+            }
+        }
+    }
+
+    private static string? DescribeMismatch(HoldingPositions seeded, HoldingPositions replay)
+    {
+        var differences = new List<string>();
+
+        if (seeded.LastEventID != replay.LastEventID)
+            differences.Add($"LastEventID: seeded={seeded.LastEventID.Value} replay={replay.LastEventID.Value}");
+        if (seeded.LastAuditDateTime.Value != replay.LastAuditDateTime.Value)
+            differences.Add($"LastAuditDateTime: seeded={seeded.LastAuditDateTime.Value:O} replay={replay.LastAuditDateTime.Value:O}");
+
+        var seededByHolding = seeded.Items.ToDictionary(item => item.HoldingID.Value);
+        var replayByHolding = replay.Items.ToDictionary(item => item.HoldingID.Value);
+
+        foreach (var holdingID in seededByHolding.Keys.Union(replayByHolding.Keys))
+        {
+            if (!seededByHolding.TryGetValue(holdingID, out var seededItem))
+            {
+                differences.Add($"Holding {holdingID}: present in replay only");
+                continue;
+            }
+
+            if (!replayByHolding.TryGetValue(holdingID, out var replayItem))
+            {
+                differences.Add($"Holding {holdingID}: present in seeded only");
+                continue;
+            }
+
+            if (seededItem.Quantity != replayItem.Quantity || seededItem.BookCost != replayItem.BookCost)
+                differences.Add($"Holding {holdingID}: seeded(Quantity={seededItem.Quantity},BookCost={seededItem.BookCost}) replay(Quantity={replayItem.Quantity},BookCost={replayItem.BookCost})");
+        }
+
+        return differences.Count == 0 ? null : string.Join("; ", differences);
     }
 
     private static Dictionary<Guid, HoldingPositions.HoldingPositionTotals> DeserializeBaseline(string payloadJson)
