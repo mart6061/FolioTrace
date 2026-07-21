@@ -9,6 +9,7 @@
     compactBrand?: boolean;
     disabled?: boolean;
     holdings: Holding[];
+    id?: string;
     multiple?: boolean;
     name?: string;
     nameOnlySummary?: boolean;
@@ -24,6 +25,7 @@
     compactBrand = false,
     disabled = false,
     holdings,
+    id,
     multiple = false,
     name = '',
     nameOnlySummary = false,
@@ -65,6 +67,7 @@
   confirmSelection={multiple}
   {disabled}
   emptyText="No holdings match the selected account"
+  {id}
   {multiple}
   {name}
   {options}

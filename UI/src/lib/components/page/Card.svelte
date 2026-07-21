@@ -103,7 +103,7 @@
     margin: 0;
     color: var(--accent-strong);
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: normal;
   }
 

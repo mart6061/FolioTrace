@@ -1,6 +1,7 @@
 import { redirect, type Handle, type HandleFetch } from '@sveltejs/kit';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { getApiBaseUrl } from '$lib/server/api';
+import { getApiReadiness } from '$lib/server/apiReadiness';
 import { isCurrentUser, type CurrentUser } from '$lib/authTypes';
 
 const apiBaseUrl = getApiBaseUrl();
@@ -153,18 +154,6 @@ function isPublicPath(pathname: string) {
     || pathname.startsWith('/brand/')
     || pathname === '/favicon.ico'
     || pathname === '/robots.txt';
-}
-
-async function getApiReadiness(fetchApi: typeof fetch) {
-  try {
-    const response = await fetchApi(`${apiBaseUrl}/System/Health`);
-    if (!response.ok)
-      return { ready: false };
-
-    return (await response.json()) as { ready: boolean };
-  } catch {
-    return { ready: false };
-  }
 }
 
 function isConfiguredApiUrl(url: string) {

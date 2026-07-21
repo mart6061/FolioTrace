@@ -8,6 +8,7 @@
     compactBrand?: boolean;
     disabled?: boolean;
     instruments?: Instrument[];
+    id?: string;
     name?: string;
     placeholder?: string;
     selectedTicketNumbers?: number[];
@@ -19,6 +20,7 @@
     compactBrand = false,
     disabled = false,
     instruments = [],
+    id,
     name = '',
     placeholder = 'Select tickets',
     selectedTicketNumbers = $bindable([]),
@@ -51,6 +53,7 @@
   {compactBrand}
   {disabled}
   emptyText="No tickets match the search"
+  {id}
   multiple
   {name}
   {options}
