@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { ApiError, getApiBaseUrl, getMemoryDiagnostics, postSystemBuild, postSystemClearCacheAndProjections } from '$lib/server/api';
+import { ApiError, getApiBaseUrl, getMemoryDiagnostics, postSystemBuild, postSystemClearCache } from '$lib/server/api';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
@@ -37,19 +37,19 @@ export const actions: Actions = {
     }
   },
 
-  clearCacheAndProjections: async ({ fetch }) => {
+  clearCache: async ({ fetch }) => {
     try {
-      const result = await postSystemClearCacheAndProjections(fetch);
+      const result = await postSystemClearCache(fetch);
 
       return {
-        intent: 'clearCacheAndProjections',
-        message: result.message || 'Caches and projections cleared.',
+        intent: 'clearCache',
+        message: result.message || 'Caches cleared.',
         status: 'success'
       };
     } catch (error) {
       return fail(502, {
-        intent: 'clearCacheAndProjections',
-        message: error instanceof Error ? error.message : 'Unable to clear caches and projections.',
+        intent: 'clearCache',
+        message: error instanceof Error ? error.message : 'Unable to clear caches.',
         status: 'failure'
       });
     }

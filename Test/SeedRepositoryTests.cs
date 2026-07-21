@@ -42,7 +42,7 @@ public sealed class SeedRepositoryTests
     public async Task SeedData_BuildCreatesOnlyValidEvents()
     {
         var eventRepository = new ValidatingEventRepository();
-        var seedRepository = new SeedRepository(eventRepository, new NullFXRateReadModelRepository());
+        var seedRepository = new SeedRepository(eventRepository);
 
         await seedRepository.Build();
 
@@ -265,15 +265,4 @@ public sealed class SeedRepositoryTests
         }
     }
 
-    private sealed class NullFXRateReadModelRepository : IFXRateReadModelRepository
-    {
-        public Task<FXRates?> LoadAsync(EventDateTime valuationDateTime, CancellationToken cancellationToken = default) =>
-            Task.FromResult<FXRates?>(null);
-
-        public Task RebuildAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task RebuildPairAsync(CurrencyPair pair, CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
 }

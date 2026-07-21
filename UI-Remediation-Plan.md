@@ -93,7 +93,7 @@ if (!response.ok)
 return (await response.json()) as SomeType;
 ```
 Error handling is also inconsistent — most functions throw a plain `Error` (callers can't branch on HTTP
-status), while a handful (`postSystemBuild`, `postSystemClearCacheAndProjections`, several FX/instrument
+status), while a handful (`postSystemBuild`, `postSystemClearCache`, several FX/instrument
 POST endpoints) throw the richer `ApiError` with `.status` and `readApiError(errorText)` parsing of the
 response body.
 

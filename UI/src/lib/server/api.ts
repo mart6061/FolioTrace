@@ -1099,8 +1099,8 @@ export async function postSystemBuild(fetchApi: typeof fetch) {
   };
 }
 
-export async function postSystemClearCacheAndProjections(fetchApi: typeof fetch) {
-  const response = await fetchApi(`${getApiBaseUrl()}/System/ClearCacheAndProjections`, {
+export async function postSystemClearCache(fetchApi: typeof fetch) {
+  const response = await fetchApi(`${getApiBaseUrl()}/System/ClearCache`, {
     method: 'POST'
   });
 
@@ -1118,7 +1118,6 @@ export async function postSystemClearCacheAndProjections(fetchApi: typeof fetch)
       fXs: number;
       fXRates: number;
     };
-    clearedProjections: string[];
   };
 }
 

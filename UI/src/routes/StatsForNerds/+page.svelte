@@ -233,7 +233,7 @@
           <h2 id="system-heading">System</h2>
         </div>
 
-        {#if form?.intent === 'build' || form?.intent === 'clearCacheAndProjections'}
+        {#if form?.intent === 'build' || form?.intent === 'clearCache'}
           <div class={`dashboard-alert ${form.status === 'success' ? 'dashboard-alert-success' : 'dashboard-alert-danger'}`}>
             {form.message}
           </div>
@@ -297,11 +297,11 @@
 
           <article class="metric-card metric-card-danger">
             <span class="metric-label">Danger Zone</span>
-            <strong>Clear caches and projections</strong>
-            <span>This will clear all in-memory aggregate caches and stored projection data. Events will not be deleted.</span>
+            <strong>Clear caches</strong>
+            <span>This will clear all in-memory aggregate caches. Events and persisted snapshots will not be deleted.</span>
             <form
               class="danger-confirmation"
-              action="?/clearCacheAndProjections"
+              action="?/clearCache"
               method="POST"
               use:enhance={enhanceClearCache}
             >

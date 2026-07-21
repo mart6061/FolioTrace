@@ -37,14 +37,6 @@ public static class ServiceCollectionExtensions
         {
             options.Connection(connectionString);
             options.Events.AddEventTypes(GetEventTypes());
-            options.Schema.For<FXDefinitionReadModel>().Index(model => model.Pair);
-            options.Schema.For<FXDefinitionReadModel>().Index(model => model.ValidFrom);
-            options.Schema.For<FXDefinitionReadModel>().Index(model => model.ValidTo);
-            options.Schema.For<FXDefinitionReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
-            options.Schema.For<FXRatePointReadModel>().Index(model => model.Pair);
-            options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidFrom);
-            options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidTo);
-            options.Schema.For<FXRatePointReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
             options.Schema.For<StoredFilePayload>();
             options.Schema.For<AggregateSnapshot>()
                 .Index(snapshot => new { snapshot.AggregateKind, snapshot.StreamId, snapshot.Variant, snapshot.ValuationDateTime }, index => index.Name = "idx_aggregate_snapshot_lookup");
@@ -65,7 +57,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRequestTraceRepository, MartenRequestTraceRepository>();
         services.AddScoped<IFoleoTraderFixOperationRepository, MartenFoleoTraderFixOperationRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
-        services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
         services.AddSingleton<IAggregateSnapshotRepository, MartenAggregateSnapshotRepository>();
         services.AddScoped<ISeedRepository, SeedRepository>();
 

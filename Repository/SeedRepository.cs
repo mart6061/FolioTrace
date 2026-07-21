@@ -6,7 +6,7 @@ using Repository.Seed;
 
 namespace Repository;
 
-public sealed class SeedRepository(IEventRepository eventRepository, IFXRateReadModelRepository fxRateReadModelRepository) : ISeedRepository
+public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepository
 {
     private const int TotalBuildSteps = 18;
     private const int SeedTransactionMonths = 60;
@@ -28,10 +28,9 @@ public sealed class SeedRepository(IEventRepository eventRepository, IFXRateRead
 
     private async Task DeleteEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
-        progress("Clear", "Clearing events and projections.", 0, false);
+        progress("Clear", "Clearing events.", 0, false);
         await eventRepository.ClearAsync(cancellationToken);
-        await fxRateReadModelRepository.ClearAsync(cancellationToken);
-        progress("Clear", "Events and projections cleared.", 0, true);
+        progress("Clear", "Events cleared.", 0, true);
     }
 
     private async Task CreateSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)

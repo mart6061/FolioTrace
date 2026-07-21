@@ -51,7 +51,7 @@ public sealed class AggregateMaintenanceHostedServiceTests
         var countryService = new CountryService(eventRepository);
         var currencyService = new CurrencyService(eventRepository);
         var fxService = new FXService(eventRepository);
-        var fxRateService = new FXRateService(eventRepository, new FakeFXRateReadModelRepository());
+        var fxRateService = new FXRateService(eventRepository);
         var holdingService = new HoldingService(eventRepository);
         var instrumentService = new InstrumentService(eventRepository);
         var instrumentValueService = new InstrumentValueService(eventRepository);
@@ -72,18 +72,6 @@ public sealed class AggregateMaintenanceHostedServiceTests
             new AggregateUpdateNotificationService());
 
         return (options, coordinator);
-    }
-
-    private sealed class FakeFXRateReadModelRepository : IFXRateReadModelRepository
-    {
-        public Task<FXRates?> LoadAsync(EventDateTime valuationDateTime, CancellationToken cancellationToken = default) =>
-            Task.FromResult<FXRates?>(null);
-
-        public Task RebuildAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task RebuildPairAsync(CurrencyPair pair, CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class FakeEventRepository : IEventRepository

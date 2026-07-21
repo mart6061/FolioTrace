@@ -398,29 +398,22 @@ public static partial class ApiEndpointRegistration
             });
         });
 
-        system.MapPost("/ClearCacheAndProjections", async (
+        system.MapPost("/ClearCache", async (
             AggregateCacheClearService cacheClearService,
             AggregateUpdateNotificationService notificationService,
             AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator,
-            IFXRateReadModelRepository fxRateReadModelRepository,
             CancellationToken cancellationToken) =>
         {
-            await using var maintenanceSuspension = await aggregateMaintenanceCoordinator.SuspendAsync("Clearing caches and projections.", cancellationToken);
+            await using var maintenanceSuspension = await aggregateMaintenanceCoordinator.SuspendAsync("Clearing caches.", cancellationToken);
 
             var removedCacheViews = cacheClearService.ClearAll();
-            await fxRateReadModelRepository.ClearAsync(cancellationToken);
-            notificationService.PublishAggregatesInvalidated("Caches and projections cleared.");
+            notificationService.PublishAggregatesInvalidated("Caches cleared.");
 
             return Results.Ok(new
             {
                 Status = "Complete",
-                Message = "Caches and projections cleared.",
-                RemovedCacheViews = removedCacheViews,
-                ClearedProjections = new[]
-                {
-                    nameof(FXDefinitionReadModel),
-                    nameof(FXRatePointReadModel)
-                }
+                Message = "Caches cleared.",
+                RemovedCacheViews = removedCacheViews
             });
         });
     }
