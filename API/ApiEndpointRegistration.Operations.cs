@@ -140,7 +140,11 @@ public static partial class ApiEndpointRegistration
                 new HoldingPositionServiceDiagnosticsResponse(
                     holdingPositionDiagnostics.CacheEntryCount,
                     holdingPositionDiagnostics.PositionCount,
-                    holdingPositionDiagnostics.EstimatedMemoryBytes),
+                    holdingPositionDiagnostics.EstimatedMemoryBytes,
+                    holdingPositionDiagnostics.SnapshotVerifiedCount,
+                    holdingPositionDiagnostics.SnapshotMismatchCount,
+                    holdingPositionDiagnostics.LastSnapshotMismatchAtUtc,
+                    holdingPositionDiagnostics.LastSnapshotMismatchDetails),
                 new InstrumentServiceDiagnosticsResponse(
                     instrumentDiagnostics.CacheEntryCount,
                     instrumentDiagnostics.InstrumentCount,

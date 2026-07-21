@@ -20,7 +20,14 @@ public sealed record FXRateServiceDiagnosticsResponse(int CacheEntryCount, int F
 
 public sealed record HoldingServiceDiagnosticsResponse(int CacheEntryCount, int HoldingCount, long EstimatedMemoryBytes);
 
-public sealed record HoldingPositionServiceDiagnosticsResponse(int CacheEntryCount, int PositionCount, long EstimatedMemoryBytes);
+public sealed record HoldingPositionServiceDiagnosticsResponse(
+    int CacheEntryCount,
+    int PositionCount,
+    long EstimatedMemoryBytes,
+    int SnapshotVerifiedCount,
+    int SnapshotMismatchCount,
+    DateTime? LastSnapshotMismatchAtUtc,
+    string? LastSnapshotMismatchDetails);
 
 public sealed record InstrumentServiceDiagnosticsResponse(int CacheEntryCount, int InstrumentCount, long EstimatedMemoryBytes);
 

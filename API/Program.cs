@@ -90,6 +90,10 @@ builder.Services.AddSingleton(
     builder.Configuration
         .GetSection(AggregateMaintenanceOptions.SectionName)
         .Get<AggregateMaintenanceOptions>() ?? new AggregateMaintenanceOptions());
+builder.Services.AddSingleton(
+    builder.Configuration
+        .GetSection(HoldingPositionSnapshotVerificationOptions.SectionName)
+        .Get<HoldingPositionSnapshotVerificationOptions>() ?? new HoldingPositionSnapshotVerificationOptions());
 builder.Services.AddFolioTraceRepository(builder.Configuration);
 builder.Services.AddFolioTraceServices();
 builder.Services.Configure<RequestTraceOptions>(builder.Configuration.GetSection(RequestTraceOptions.SectionName));
