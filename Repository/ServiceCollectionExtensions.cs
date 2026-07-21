@@ -4,6 +4,7 @@ using FolioTrace.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Services;
 
 namespace Repository;
 
@@ -35,6 +36,8 @@ public static class ServiceCollectionExtensions
             options.Schema.For<FXRatePointReadModel>().Index(model => model.ValidTo);
             options.Schema.For<FXRatePointReadModel>().Index(model => new { model.ValidFrom, model.ValidTo });
             options.Schema.For<StoredFilePayload>();
+            options.Schema.For<AggregateSnapshot>()
+                .Index(snapshot => new { snapshot.AggregateKind, snapshot.StreamId, snapshot.Variant, snapshot.ValuationDateTime });
         });
 
         services.AddSingleton(NpgsqlDataSource.Create(connectionString));
@@ -45,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFoleoTraderFixOperationRepository, MartenFoleoTraderFixOperationRepository>();
         services.AddSingleton<IEventRepository, InMemoryEventsRepository>();
         services.AddSingleton<IFXRateReadModelRepository, MartenFXRateReadModelRepository>();
+        services.AddSingleton<IAggregateSnapshotRepository, MartenAggregateSnapshotRepository>();
         services.AddScoped<ISeedRepository, SeedRepository>();
 
         return services;

@@ -123,6 +123,30 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         return events.OfType<TEvent>().ToList();
     }
 
+    public async Task<IReadOnlyList<TEvent>> LoadStreamAfterAsync<TEvent>(Guid streamId, EventID afterEventID, CancellationToken cancellationToken = default)
+        where TEvent : class, IAuditEventBase
+    {
+        if (afterEventID is null)
+            throw new ArgumentNullException(nameof(afterEventID));
+
+        await EnsureLoadedAsync(cancellationToken);
+
+        lock (sync)
+        {
+            if (!streams.TryGetValue(streamId, out var events) || events.Count == 0)
+                return [];
+
+            if (!eventsById.TryGetValue(afterEventID.Value, out var boundary))
+                return events.OfType<TEvent>().ToList();
+
+            // events is sorted by CompareEventOrder, and boundary is itself a member of it, so the standard
+            // "upper bound" insertion index (first index strictly greater than boundary) is exactly the start
+            // of the events-after-boundary range.
+            var afterIndex = FindInsertionIndex(events, boundary);
+            return events.Skip(afterIndex).OfType<TEvent>().ToList();
+        }
+    }
+
     public async Task StartStreamAsync<TAggregate, TEvent>(Guid streamId, IReadOnlyList<TEvent> events, CancellationToken cancellationToken = default)
         where TAggregate : class
         where TEvent : class, IAuditEventBase
@@ -293,7 +317,7 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
         while (low < high)
         {
             var mid = low + (high - low) / 2;
-            if (CompareEventOrder(events[mid], @event) <= 0)
+            if (EventOrderComparer.Compare(events[mid], @event) <= 0)
                 low = mid + 1;
             else
                 high = mid;
@@ -332,20 +356,4 @@ public sealed class InMemoryEventsRepository(MartenEventRepository durableReposi
     }
 
     private static Guid? TryGetEventId(IAuditEventBase? @event) => @event?.EventID?.Value;
-
-    private static int CompareEventOrder(IAuditEventBase left, IAuditEventBase right)
-    {
-        if (left is IEventBase leftTimed && right is IEventBase rightTimed)
-        {
-            var eventDateComparison = leftTimed.EventDateTime.Value.CompareTo(rightTimed.EventDateTime.Value);
-            if (eventDateComparison != 0)
-                return eventDateComparison;
-        }
-
-        var auditDateComparison = left.AuditDateTime.Value.CompareTo(right.AuditDateTime.Value);
-        if (auditDateComparison != 0)
-            return auditDateComparison;
-
-        return left.EventID.Value.CompareTo(right.EventID.Value);
-    }
 }

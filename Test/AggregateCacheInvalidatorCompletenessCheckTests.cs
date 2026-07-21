@@ -15,6 +15,7 @@ public sealed class AggregateCacheInvalidatorCompletenessCheckTests
         var services = new ServiceCollection();
         services.AddSingleton<IEventRepository>(new FakeEventRepository());
         services.AddSingleton<IFXRateReadModelRepository>(new FakeFXRateReadModelRepository());
+        services.AddSingleton<IAggregateSnapshotRepository>(new FakeAggregateSnapshotRepository());
         services.AddFolioTraceServices();
         var provider = services.BuildServiceProvider();
 

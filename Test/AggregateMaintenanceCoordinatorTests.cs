@@ -146,7 +146,44 @@ public sealed class AggregateMaintenanceCoordinatorTests
         Assert.True(coordinator.GetDiagnostics().IsSuspended);
     }
 
-    private static async Task<AggregateMaintenanceCoordinator> CreateCoordinator(AggregateMaintenanceOptions? options = null)
+    [Fact]
+    public async Task RunAsync_PersistsSnapshots_ForBoundariesInTheWarmTier()
+    {
+        var (coordinator, snapshotRepository) = await CreateCoordinatorWithSnapshots(new AggregateMaintenanceOptions
+        {
+            Enabled = true,
+            EventTriggerCount = 100,
+            EventTriggerDelay = TimeSpan.Zero,
+            SnapshotEligibleAfterDays = 0,
+            DateWindows = new AggregateMaintenanceDateWindowOptions { DaysFromToday = 0 }
+        });
+
+        await coordinator.RunAsync("Test");
+
+        Assert.Contains(snapshotRepository.Snapshots, snapshot => snapshot.AggregateKind == "HoldingPositions");
+    }
+
+    [Fact]
+    public async Task RunAsync_DoesNotPersistSnapshots_ForBoundariesInTheHotTier()
+    {
+        var (coordinator, snapshotRepository) = await CreateCoordinatorWithSnapshots(new AggregateMaintenanceOptions
+        {
+            Enabled = true,
+            EventTriggerCount = 100,
+            EventTriggerDelay = TimeSpan.Zero,
+            SnapshotEligibleAfterDays = 14,
+            DateWindows = new AggregateMaintenanceDateWindowOptions { DaysFromToday = 0 }
+        });
+
+        await coordinator.RunAsync("Test");
+
+        Assert.Empty(snapshotRepository.Snapshots);
+    }
+
+    private static async Task<AggregateMaintenanceCoordinator> CreateCoordinator(AggregateMaintenanceOptions? options = null) =>
+        (await CreateCoordinatorWithSnapshots(options)).Coordinator;
+
+    private static async Task<(AggregateMaintenanceCoordinator Coordinator, FakeAggregateSnapshotRepository SnapshotRepository)> CreateCoordinatorWithSnapshots(AggregateMaintenanceOptions? options = null)
     {
         options ??= new AggregateMaintenanceOptions
         {
@@ -171,9 +208,10 @@ public sealed class AggregateMaintenanceCoordinatorTests
         var holdingService = new HoldingService(eventRepository);
         var instrumentService = new InstrumentService(eventRepository);
         var instrumentValueService = new InstrumentValueService(eventRepository);
-        var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService);
+        var snapshotRepository = new FakeAggregateSnapshotRepository();
+        var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, snapshotRepository);
 
-        return new AggregateMaintenanceCoordinator(
+        var coordinator = new AggregateMaintenanceCoordinator(
             options,
             accountService,
             brokerService,
@@ -186,6 +224,8 @@ public sealed class AggregateMaintenanceCoordinatorTests
             instrumentService,
             instrumentValueService,
             new AggregateUpdateNotificationService());
+
+        return (coordinator, snapshotRepository);
     }
 
     private sealed class TestEventRepository : IEventRepository
