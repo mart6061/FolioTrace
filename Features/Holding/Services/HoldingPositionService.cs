@@ -2,6 +2,7 @@ using System.Text.Json;
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
+using FolioTrace.Snapshots;
 using FolioTrace.Types;
 using Repository;
 

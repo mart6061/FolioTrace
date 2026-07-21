@@ -24,8 +24,7 @@ public sealed class AggregateMaintenanceHostedServiceTests
         });
         var hostedService = new AggregateMaintenanceHostedService(coordinator.Options, coordinator.Coordinator, readinessState);
 
-        using var cancellation = new CancellationTokenSource();
-        var executeTask = hostedService.StartAsync(cancellation.Token);
+        await hostedService.StartAsync(CancellationToken.None);
 
         for (var attempt = 0; attempt < 100; attempt++)
         {
@@ -38,8 +37,10 @@ public sealed class AggregateMaintenanceHostedServiceTests
         Assert.Equal("Startup", coordinator.Coordinator.GetDiagnostics().LastTrigger);
         Assert.Equal("Succeeded", coordinator.Coordinator.GetDiagnostics().Status);
 
-        await cancellation.CancelAsync();
-        await Task.WhenAny(executeTask, Task.Delay(TimeSpan.FromSeconds(2)));
+        await hostedService.StopAsync(CancellationToken.None);
+        await hostedService.ExecuteTask!;
+
+        Assert.Equal(TaskStatus.RanToCompletion, hostedService.ExecuteTask.Status);
     }
 
     private static (AggregateMaintenanceOptions Options, AggregateMaintenanceCoordinator Coordinator) CreateCoordinator(AggregateMaintenanceOptions options)

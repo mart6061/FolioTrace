@@ -1,4 +1,4 @@
-namespace Services;
+namespace FolioTrace.Snapshots;
 
 /// <summary>
 /// A persisted, point-in-time materialization of an aggregate, used to avoid replaying an aggregate's full

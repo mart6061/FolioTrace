@@ -1,5 +1,6 @@
 using FolioTrace;
 using FolioTrace.Aggregates;
+using FolioTrace.Snapshots;
 using FolioTrace.Types;
 using Repository;
 using System.Text.Json;

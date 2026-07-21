@@ -103,12 +103,14 @@ public sealed class MartenRequestTraceRepository(
             });
 
         var totalCount = await groupedQuery.CountAsync(cancellationToken);
-        var requestIds = await groupedQuery
+        var pageCandidates = await groupedQuery
             .OrderByDescending(candidate => candidate.RecordedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(candidate => candidate.RequestId)
             .ToListAsync(cancellationToken);
+        var requestIds = pageCandidates
+            .Select(candidate => candidate.RequestId)
+            .ToList();
 
         if (requestIds.Count == 0)
             return new RequestTraceSearchResult([], totalCount, page, pageSize);

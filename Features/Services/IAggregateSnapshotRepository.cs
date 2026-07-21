@@ -1,3 +1,5 @@
+using FolioTrace.Snapshots;
+
 namespace Services;
 
 public interface IAggregateSnapshotRepository
