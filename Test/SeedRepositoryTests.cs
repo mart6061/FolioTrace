@@ -23,7 +23,8 @@ public sealed class SeedRepositoryTests
         { "asset allocation created", () => SeedRepository.CreateInitialAssetAllocationCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "report created", () => SeedRepository.CreateInitialReportCreatedEvents().Cast<IAuditEventBase>().ToList() },
         { "holding created", () => SeedRepository.CreateInitialHoldingCreatedEvents().Cast<IAuditEventBase>().ToList() },
-        { "transaction", () => SeedRepository.CreateInitialTransactionEvents().Cast<IAuditEventBase>().ToList() }
+        { "transaction", () => SeedRepository.CreateInitialTransactionEvents().Cast<IAuditEventBase>().ToList() },
+        { "ticket", () => SeedRepository.CreateInitialTicketEvents().Cast<IAuditEventBase>().ToList() }
     };
 
     [Theory]
@@ -49,6 +50,7 @@ public sealed class SeedRepositoryTests
         Assert.Contains(FolioTrace.Constants.Initialisation.FXsStreamId, eventRepository.StreamIds);
         Assert.Contains(FolioTrace.Constants.Initialisation.InstrumentsStreamId, eventRepository.StreamIds);
         Assert.Contains(FolioTrace.Constants.Initialisation.TransactionsStreamId, eventRepository.StreamIds);
+        Assert.Contains(FolioTrace.Constants.Initialisation.TicketsStreamId, eventRepository.StreamIds);
     }
 
     [Fact]
@@ -69,6 +71,60 @@ public sealed class SeedRepositoryTests
             @event.BookCostSource == BookCostSource.FxEstimate &&
             @event.BookCostEstimated &&
             @event.BookCost.Value != @event.LocalCost.Value);
+    }
+
+    [Fact]
+    public void SeedData_CreatesBuyAndSellTicketsAcrossEveryStage()
+    {
+        var ticketEvents = SeedRepository.CreateInitialTicketEvents();
+        var tickets = new Tickets(EventDateTimeBuilder.Create(DateTime.UtcNow), ticketEvents.ToList());
+
+        // 6 lifecycle stages x (5 buy + 5 sell).
+        Assert.Equal(60, tickets.Items.Count);
+        Assert.Equal(30, tickets.Items.Count(ticket => ticket.Side == TicketSide.Buy));
+        Assert.Equal(30, tickets.Items.Count(ticket => ticket.Side == TicketSide.Sell));
+
+        // Proposal - in progress.
+        Assert.Equal(10, tickets.Items.Count(ticket =>
+            ticket.Stage == TicketStage.Proposal && ticket.ProposalDecision == TicketDecision.InProgress));
+        // Proposal - pending approval.
+        Assert.Equal(10, tickets.Items.Count(ticket =>
+            ticket.Stage == TicketStage.Proposal && ticket.ProposalDecision == TicketDecision.PendingApproval));
+        // Trade - ready (proposal approved, no fills yet).
+        Assert.Equal(10, tickets.Items.Count(ticket =>
+            ticket.Stage == TicketStage.Trade && ticket.TradeDecision == TicketDecision.InProgress && ticket.Fills.Count == 0));
+        // Trade - in progress (fills added, not yet submitted for approval).
+        Assert.Equal(10, tickets.Items.Count(ticket =>
+            ticket.Stage == TicketStage.Trade && ticket.TradeDecision == TicketDecision.InProgress && ticket.Fills.Count > 0));
+        // Trade - pending approval.
+        Assert.Equal(10, tickets.Items.Count(ticket =>
+            ticket.Stage == TicketStage.Trade && ticket.TradeDecision == TicketDecision.PendingApproval));
+        // Completed.
+        Assert.Equal(10, tickets.Items.Count(ticket => ticket.Stage == TicketStage.Completed));
+    }
+
+    [Fact]
+    public void SeedData_SellTicketsOnlyTargetHeldInstruments()
+    {
+        var ticketEvents = SeedRepository.CreateInitialTicketEvents();
+        var tickets = new Tickets(EventDateTimeBuilder.Create(DateTime.UtcNow), ticketEvents.ToList());
+        var holdings = new Holdings(
+            EventDateTimeBuilder.Create(DateTime.UtcNow),
+            AuditDateTimeBuilder.Create(),
+            SeedRepository.CreateInitialHoldingCreatedEvents().Cast<IHoldingEvent>().ToList());
+
+        var assetHoldingKinds = holdings.Items
+            .Where(holding => holding.GetHoldingKindName() == HoldingKindRuntime.GetKindName<HoldingPositionAsset>())
+            .Select(holding => (holding.AccountID, holding.InstrumentID))
+            .ToHashSet();
+
+        var sellTickets = tickets.Items.Where(ticket => ticket.Side == TicketSide.Sell).ToList();
+        Assert.NotEmpty(sellTickets);
+
+        // "You can't sell what you don't have": every sell ticket's account must already hold the instrument.
+        Assert.All(sellTickets, ticket =>
+            Assert.All(ticket.AccountIDs, accountID =>
+                Assert.Contains((accountID, ticket.InstrumentID), assetHoldingKinds)));
     }
 
     private static void AssertValidSeedEvent(string seedGroup, int index, IAuditEventBase? @event)
