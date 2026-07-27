@@ -276,8 +276,7 @@ public sealed class ProfitLossBuilderTests
             "Set price",
             InstrumentID,
             new InstrumentPriceEquity(
-                new InstrumentPrice(30m),
-                new InstrumentPrice(30m),
+                new InstrumentQuote(new InstrumentPrice(30m), new InstrumentPrice(30m), new InstrumentPrice(30m)),
                 new InstrumentPrice(30m),
                 new InstrumentPrice(30m))).Value!;
         var income = InstrumentIncomeSetEventBuilder.CreateSeed(

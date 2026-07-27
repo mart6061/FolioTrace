@@ -188,7 +188,7 @@ export type HoldingPosition = Holding & {
 
 export type HoldingDateBasis = 'EventDateTime' | 'SettlementDateTime';
 
-export type InstrumentPriceBasis = 'Bid' | 'Ask' | 'Mid' | 'NAV';
+export type InstrumentPriceBasis = 'Bid' | 'Ask' | 'Mid' | 'Last' | 'NAV';
 
 export type ProfitLossMethod = 'FIFO' | 'LIFO' | 'RunningAverage';
 
@@ -557,22 +557,24 @@ export type InstrumentPrice = {
   amount?: number | null;
 };
 
-export type InstrumentPriceEquity = {
-  $type?: 'InstrumentPriceEquity';
+/** The ordered bid/mid/ask triple. Last traded price and NAV sit outside it; neither applies to a bond. */
+export type InstrumentQuote = {
   bid: InstrumentPrice;
   mid: InstrumentPrice;
   ask: InstrumentPrice;
+};
+
+export type InstrumentPriceEquity = {
+  $type?: 'InstrumentPriceEquity';
+  quote: InstrumentQuote;
+  last: InstrumentPrice;
   nav: InstrumentPrice;
   priceType?: string;
 };
 
-export type ValuationPrice = {
-  amount?: number | null;
-};
-
 export type InstrumentPriceFixedIncome = {
   $type?: 'InstrumentPriceFixedIncome';
-  cleanPrice: ValuationPrice;
+  cleanQuote: InstrumentQuote;
   priceType?: string;
 };
 
@@ -595,7 +597,7 @@ export type InstrumentIncomeEquity = {
 
 export type InstrumentIncomeFixedIncome = {
   $type?: 'InstrumentIncomeFixedIncome';
-  accruedInterest: ValuationPrice;
+  accruedInterest: InstrumentPrice;
   incomeType?: string;
 };
 

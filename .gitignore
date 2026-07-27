@@ -9,6 +9,8 @@ TestResults/
 API/Logs/
 API/FixLog/
 API/FixStore/
+FoleoTrader/FixLog/
+FoleoTrader/FixStore/
 *.user
 *.suo
 *.rsuser
@@ -23,3 +25,5 @@ UI/.certs/
 UI/.env
 UI/.env.*
 !UI/.env.example
+
+.claude/settings.local.json

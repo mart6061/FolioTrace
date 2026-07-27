@@ -157,8 +157,7 @@ public sealed class ValuationBuilderTests
             "Set price",
             instrumentID,
             new InstrumentPriceEquity(
-                new InstrumentPrice(midPrice),
-                new InstrumentPrice(midPrice),
+                new InstrumentQuote(new InstrumentPrice(midPrice), new InstrumentPrice(midPrice), new InstrumentPrice(midPrice)),
                 new InstrumentPrice(midPrice),
                 new InstrumentPrice(midPrice))).Value!;
 

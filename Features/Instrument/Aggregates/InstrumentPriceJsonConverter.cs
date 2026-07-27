@@ -18,10 +18,10 @@ internal sealed class InstrumentPriceJsonConverter : JsonConverter<IInstrumentPr
         var root = document.RootElement;
         var type = ReadDiscriminator(root);
 
-        if (type is null && HasProperty(root, nameof(InstrumentPriceEquity.Bid)))
+        if (type is null && HasProperty(root, nameof(InstrumentPriceEquity.Quote)))
             type = nameof(InstrumentPriceEquity);
 
-        if (type is null && HasProperty(root, nameof(InstrumentPriceFixedIncome.CleanPrice)))
+        if (type is null && HasProperty(root, nameof(InstrumentPriceFixedIncome.CleanQuote)))
             type = nameof(InstrumentPriceFixedIncome);
 
         if (type is null && HasProperty(root, nameof(InstrumentPriceCash.Price)))

@@ -92,11 +92,11 @@
   }
 
   function equityPrice(price: InstrumentValue['price']): InstrumentPriceEquity | null {
-    return price && 'bid' in price ? price : null;
+    return price && 'quote' in price ? price : null;
   }
 
   function fixedIncomePrice(price: InstrumentValue['price']): InstrumentPriceFixedIncome | null {
-    return price && 'cleanPrice' in price ? price : null;
+    return price && 'cleanQuote' in price ? price : null;
   }
 
   function cashPrice(price: InstrumentValue['price']): InstrumentPriceCash | null {
@@ -230,11 +230,11 @@
   function priceSummary(instrument: InstrumentValue) {
     const equity = equityPrice(instrument.price);
     if (equity)
-      return `Bid ${money(equity.bid.amount)} | Mid ${money(equity.mid.amount)} | Ask ${money(equity.ask.amount)} | NAV ${money(equity.nav.amount)}`;
+      return `Bid ${money(equity.quote.bid.amount)} | Mid ${money(equity.quote.mid.amount)} | Ask ${money(equity.quote.ask.amount)} | Last ${money(equity.last.amount)} | NAV ${money(equity.nav.amount)}`;
 
     const fixedIncome = fixedIncomePrice(instrument.price);
     if (fixedIncome)
-      return `Clean ${money(fixedIncome.cleanPrice.amount)}`;
+      return `Clean bid ${money(fixedIncome.cleanQuote.bid.amount)} | Clean mid ${money(fixedIncome.cleanQuote.mid.amount)} | Clean ask ${money(fixedIncome.cleanQuote.ask.amount)}`;
 
     const cash = cashPrice(instrument.price);
     if (cash)
@@ -498,30 +498,46 @@
                             <td class="px-3 py-2">{instrument.exchange}</td>
                             <td class="px-3 py-2">
                               {#if currentFixedIncomePrice}
-                                <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
-                                  <span>Clean price</span>
-                                  <input class="house-control house-control-sm w-32 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="cleanPrice" required step="0.00000001" type="number" value={currentFixedIncomePrice.cleanPrice.amount ?? ''} />
-                                </label>
+                                <div class="grid gap-2 sm:grid-cols-3">
+                                  <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
+                                    <span>Clean bid</span>
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="bid" step="0.00000001" type="number" value={currentFixedIncomePrice.cleanQuote.bid.amount ?? ''} />
+                                  </label>
+                                  <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
+                                    <span>Clean mid</span>
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="mid" step="0.00000001" type="number" value={currentFixedIncomePrice.cleanQuote.mid.amount ?? ''} />
+                                  </label>
+                                  <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
+                                    <span>Clean ask</span>
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="ask" step="0.00000001" type="number" value={currentFixedIncomePrice.cleanQuote.ask.amount ?? ''} />
+                                  </label>
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500">Dirty prices are derived by adding accrued interest and are not entered here.</p>
                               {:else}
                                 <div class="grid gap-2 sm:grid-cols-2">
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>Bid</span>
-                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="bid" required step="0.00000001" type="number" value={currentPrice?.bid.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="bid" step="0.00000001" type="number" value={currentPrice?.quote.bid.amount ?? ''} />
                                   </label>
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>Mid</span>
-                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="mid" required step="0.00000001" type="number" value={currentPrice?.mid.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="mid" step="0.00000001" type="number" value={currentPrice?.quote.mid.amount ?? ''} />
                                   </label>
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>Ask</span>
-                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="ask" required step="0.00000001" type="number" value={currentPrice?.ask.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="ask" step="0.00000001" type="number" value={currentPrice?.quote.ask.amount ?? ''} />
+                                  </label>
+                                  <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
+                                    <span>Last</span>
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="last" step="0.00000001" type="number" value={currentPrice?.last.amount ?? ''} />
                                   </label>
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
                                     <span>NAV</span>
-                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="nav" required step="0.00000001" type="number" value={currentPrice?.nav.amount ?? ''} />
+                                    <input class="house-control house-control-sm w-28 text-right font-mono" form={`instrument-price-edit-${instrument.instrumentID}`} min="0" name="nav" step="0.00000001" type="number" value={currentPrice?.nav.amount ?? ''} />
                                   </label>
                                 </div>
                               {/if}
+
                             </td>
                             <td class="px-3 py-2">
                               <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>

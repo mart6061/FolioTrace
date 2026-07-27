@@ -97,6 +97,32 @@ public sealed record InstrumentValue : IModel
             throw new ArgumentException($"Instrument value price type '{price.PriceType}' cannot be paired with income type '{income.IncomeType}'.");
     }
 
+    /// <summary>
+    /// Fixed income quoted dirty: the clean quotes plus accrued interest. Derived rather than stored, because
+    /// accrued interest moves with the valuation date. Null for every other price type.
+    /// </summary>
+    [JsonIgnore]
+    public InstrumentQuote? DirtyQuote =>
+        (Price, Income) is (InstrumentPriceFixedIncome fixedIncome, InstrumentIncomeFixedIncome fixedIncomeIncome)
+            ? fixedIncome.CleanQuote.Add(fixedIncomeIncome.AccruedInterest)
+            : null;
+
+    /// <summary>
+    /// Resolves a single price for the given basis, optionally including accrued interest. The two axes are
+    /// independent: the basis chooses which quote, the accrual flag chooses clean or dirty, and the flag is
+    /// only meaningful for fixed income.
+    /// </summary>
+    public InstrumentPrice? SelectPrice(InstrumentPriceBasis basis, bool includeAccruedInterest = false) =>
+        Price switch
+        {
+            InstrumentPriceCash cash => cash.Price,
+            InstrumentPriceEquity equity => equity.Select(basis),
+            InstrumentPriceFixedIncome fixedIncome => includeAccruedInterest
+                ? DirtyQuote?.Select(basis)
+                : fixedIncome.CleanQuote.Select(basis),
+            _ => null
+        };
+
     private static bool IsValidValuePair(IInstrumentPrice price, IInstrumentIncome income) =>
         (price, income) switch
         {
