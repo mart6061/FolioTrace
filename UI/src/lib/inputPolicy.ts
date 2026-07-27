@@ -24,14 +24,62 @@ export function canonicalDecimalText(value: string) {
   return `${negative ? '-' : ''}${integerPart}${trimmed.includes('.') ? `.${decimalPart}` : ''}`;
 }
 
-export function formatInputPolicyValue(value: string, policy: InputControlPolicy) {
+/**
+ * Moves the decimal point by `places` powers of ten, working on the text rather than the number so that
+ * repeated scaling stays exact. Dividing by 100 in floating point turns "0.12" into 0.0012000000000000001,
+ * which would then fail the decimal place check in validateInputPolicyValue.
+ */
+export function shiftDecimalText(value: string, places: number) {
   const canonical = canonicalDecimalText(value);
-  const validation = validateInputPolicyValue(canonical, policy);
+
+  if (!canonical || canonical === '-' || canonical === '.' || canonical === '-.' || places === 0)
+    return canonical;
+
+  const negative = canonical.startsWith('-');
+  const unsigned = negative ? canonical.slice(1) : canonical;
+  const [integerPart = '', decimalPart = ''] = unsigned.split('.');
+  const digits = `${integerPart}${decimalPart}`;
+
+  let shiftedDigits = digits;
+  let pointIndex = integerPart.length + places;
+
+  if (pointIndex <= 0) {
+    shiftedDigits = `${'0'.repeat(1 - pointIndex)}${digits}`;
+    pointIndex = 1;
+  } else if (pointIndex > digits.length) {
+    shiftedDigits = `${digits}${'0'.repeat(pointIndex - digits.length)}`;
+  }
+
+  const nextInteger = shiftedDigits.slice(0, pointIndex).replace(/^0+(?=\d)/, '') || '0';
+  // Padding above can leave trailing zeros that the original value did not have, which would make the shift
+  // irreversible: 0.1 displayed as 10 would otherwise come back as 0.10.
+  const nextDecimal = shiftedDigits.slice(pointIndex).replace(/0+$/, '');
+
+  return `${negative ? '-' : ''}${nextInteger}${nextDecimal ? `.${nextDecimal}` : ''}`;
+}
+
+/** Converts text the user sees into the value that is stored and sent to the API. */
+export function toStoredValue(displayText: string, displayExponent = 0) {
+  return shiftDecimalText(displayText, -displayExponent);
+}
+
+/** Converts a stored value into the units the user sees. */
+export function toDisplayText(storedValue: string, displayExponent = 0) {
+  return shiftDecimalText(storedValue, displayExponent);
+}
+
+/**
+ * Formats a value for display. `value` is in display units; the policy's limits are in stored units, so the
+ * decimal place cap is reduced by `displayExponent` to describe the same precision on the displayed scale.
+ */
+export function formatInputPolicyValue(value: string, policy: InputControlPolicy, displayExponent = 0) {
+  const canonical = canonicalDecimalText(value);
+  const validation = validateInputPolicyValue(toStoredValue(canonical, displayExponent), policy);
 
   if (validation.parsedValue === null || validation.messages.length)
     return value;
 
-  return formatDecimal(validation.parsedValue, policy.formatPattern, policy.decimalPlaces);
+  return formatDecimal(Number(canonical), policy.formatPattern, Math.max(0, policy.decimalPlaces - displayExponent));
 }
 
 export function validateInputPolicyValue(value: string, policy: InputControlPolicy): InputPolicyValidationResult {
@@ -71,11 +119,13 @@ export function validateInputPolicyValue(value: string, policy: InputControlPoli
   return { canonicalValue, messages, parsedValue };
 }
 
-export function inputPolicyStep(policy: InputControlPolicy) {
-  if (policy.decimalPlaces <= 0)
+export function inputPolicyStep(policy: InputControlPolicy, displayExponent = 0) {
+  const displayDecimalPlaces = policy.decimalPlaces - displayExponent;
+
+  if (displayDecimalPlaces <= 0)
     return '1';
 
-  return `0.${'0'.repeat(Math.max(0, policy.decimalPlaces - 1))}1`;
+  return `0.${'0'.repeat(displayDecimalPlaces - 1)}1`;
 }
 
 function formatDecimal(value: number, pattern: string, decimalPlacesCap: number) {

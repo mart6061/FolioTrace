@@ -7,11 +7,24 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
-  import type { ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
+  import type { InputControlPolicy, ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
   import ValuationNodeEditor from './ValuationNodeEditor.svelte';
 
   let { data, form } = $props();
+
+  // Percent limits are stored fractions, so a 100% ceiling is a max value of 1.
+  const fallbackPercentPolicy: InputControlPolicy = {
+    allowNegative: false,
+    controlKind: 'Percent',
+    currency: null,
+    decimalPlaces: 6,
+    formatPattern: '#,##0.####',
+    formatSource: 'TypeDefault',
+    maxValue: null,
+    minValue: 0,
+    validationMessages: []
+  };
 
   const allocationCount = $derived(data.valuationSettings?.items.length ?? 0);
   const asOfSummary = $derived(data.auditDateTime && data.valuationSettings ? formatDisplayDateTime(data.valuationSettings.asOfDateTime) : 'now');
@@ -34,6 +47,9 @@
   let addNodeRequestByID = $state<Record<string, number>>({});
 
   const accounts = $derived(data.accounts?.items ?? []);
+  const percentPolicy = $derived(
+    (data.inputPolicies ?? []).find((policy) => policy.controlKind === 'Percent') ?? fallbackPercentPolicy
+  );
 
   const filteredAllocations = $derived(
     (data.valuationSettings?.items ?? []).filter((allocation) => {
@@ -530,7 +546,7 @@
 													<button class="valuation-add-node-button" onclick={() => addTopLevelNode(allocation.assetAllocationID)} title="Add node" type="button">Add</button>
 												</div>
 												{#key allocation.assetAllocationID}
-													<ValuationNodeEditor accounts={accounts} addRequest={addNodeRequestByID[allocation.assetAllocationID] ?? 0} allocationAccountIDs={allocation.accountIDs} nodeHoldingCounts={data.nodeHoldingCountsByAllocationID[allocation.assetAllocationID] ?? {}} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} rootNodeID={allocation.rootNodeID} />
+													<ValuationNodeEditor accounts={accounts} addRequest={addNodeRequestByID[allocation.assetAllocationID] ?? 0} allocationAccountIDs={allocation.accountIDs} nodeHoldingCounts={data.nodeHoldingCountsByAllocationID[allocation.assetAllocationID] ?? {}} bind:nodesJson={editNodesJsonByID[allocation.assetAllocationID]} {percentPolicy} rootNodeID={allocation.rootNodeID} />
 												{/key}
 												<div class="flex justify-end gap-2">
                           <button class="house-button house-button-primary house-button-md" disabled={submittingAllocationID === allocation.assetAllocationID} type="submit">Save</button>

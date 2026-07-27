@@ -338,7 +338,7 @@ export type Currencies = {
   items: Currency[];
 };
 
-export type InputControlKind = 'Quantity' | 'Money';
+export type InputControlKind = 'Quantity' | 'Money' | 'Price' | 'Percent';
 
 export type InputControlPolicy = {
   controlKind: InputControlKind;

@@ -36,7 +36,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       getHoldings(fetch, valuationDateTime, asAtDateTime),
       getInputPolicies(fetch, {
         auditDateTime: asAtDateTime,
-        controlKinds: ['Quantity', 'Money'],
+        controlKinds: ['Quantity', 'Money', 'Price', 'Percent'],
         currency: 'GBP',
         eventDateTime: valuationDateTime,
         userID: currentUser?.userID

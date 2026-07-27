@@ -11,6 +11,14 @@ public sealed class InputControlSettingsTests
     private static readonly EventDateTime EventDate = EventDateTimeBuilder.Create(new DateTime(2026, 7, 9, 12, 0, 0, DateTimeKind.Utc));
     private static readonly AuditDateTime FirstAuditDate = AuditDateTimeBuilder.Create(new DateTime(2026, 7, 9, 12, 0, 1, DateTimeKind.Utc));
     private static readonly AuditDateTime SecondAuditDate = AuditDateTimeBuilder.Create(new DateTime(2026, 7, 9, 12, 0, 2, DateTimeKind.Utc));
+    private static readonly Currency Sterling = new(
+        Alpha3Builder.Create("GBP"),
+        826,
+        2,
+        "Pound Sterling",
+        EventDate,
+        FirstAuditDate,
+        Guid.CreateGuid7());
 
     [Fact]
     public void CreatedBuilder_RejectsDuplicateSettings()
@@ -142,6 +150,95 @@ public sealed class InputControlSettingsTests
         Assert.Equal("JPY", policy.Currency);
         Assert.Equal("#,##0.00##", policy.FormatPattern);
         Assert.Equal("Global", policy.FormatSource);
+    }
+
+    [Fact]
+    public void Resolver_UsesSettingsDecimalPlacesForPriceRatherThanCurrency()
+    {
+        var settings = SettingsFromDefinitions(
+        [
+            new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, 0m, null, "#,##0.00######", false)
+        ]);
+
+        var policy = InputPolicyResolver.Resolve(InputControlKind.Price, settings, [Sterling], null, UserID, Alpha3Builder.Create("GBP"), null);
+
+        Assert.Equal((short)8, policy.DecimalPlaces);
+        Assert.Equal("GBP", policy.Currency);
+        Assert.Equal("Global", policy.FormatSource);
+        Assert.Empty(policy.ValidationMessages);
+    }
+
+    [Fact]
+    public void Resolver_TakesMostRestrictivePriceDecimalPlacesAcrossScopes()
+    {
+        var settings = SettingsFromDefinitions(
+        [
+            new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, null, null, "#,##0.00######", false),
+            new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Account, AccountID, null, 5, null, null, "#,##0.00###", false)
+        ]);
+
+        var policy = InputPolicyResolver.Resolve(InputControlKind.Price, settings, [Sterling], AccountID, UserID, Alpha3Builder.Create("GBP"), null);
+
+        Assert.Equal((short)5, policy.DecimalPlaces);
+        Assert.Equal("Account", policy.FormatSource);
+    }
+
+    [Fact]
+    public void Resolver_RequiresCurrencyForPrice()
+    {
+        var settings = SettingsFromDefinitions(
+        [
+            new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, null, null, "#,##0.00######", false)
+        ]);
+
+        var policy = InputPolicyResolver.Resolve(InputControlKind.Price, settings, [], null, UserID, null, null);
+
+        Assert.Contains("Currency is required for Price input policies.", policy.ValidationMessages);
+    }
+
+    [Fact]
+    public void Resolver_UsesSettingsDecimalPlacesForPercentAndIgnoresCurrency()
+    {
+        var settings = SettingsFromDefinitions(
+        [
+            new InputControlSettingDefinition(InputControlKind.Percent, InputControlSettingScope.Global, null, null, 6, 0m, null, "#,##0.####", false)
+        ]);
+
+        // A currency is supplied but Percent is not denominated in one, so it must not be echoed back.
+        var policy = InputPolicyResolver.Resolve(InputControlKind.Percent, settings, [Sterling], null, UserID, Alpha3Builder.Create("GBP"), null);
+
+        Assert.Equal((short)6, policy.DecimalPlaces);
+        Assert.Null(policy.Currency);
+        Assert.Empty(policy.ValidationMessages);
+    }
+
+    [Fact]
+    public void CreatedBuilder_AllowsPriceAndPercentDecimalPlaceSettings()
+    {
+        var settings = new[]
+        {
+            new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, null, null, null, null),
+            new InputControlSettingDefinition(InputControlKind.Percent, InputControlSettingScope.Global, null, null, 6, null, null, null, null)
+        };
+
+        var result = InputControlSettingsCreatedEventBuilder.CreateSeed(
+            Guid.CreateGuid7(),
+            UserID,
+            EventDate,
+            FirstAuditDate,
+            "Create settings",
+            settings);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void ValidateValue_TreatsPercentBoundsAsFractions()
+    {
+        var percentPolicy = new InputControlPolicy(InputControlKind.Percent, 6, 0m, 1m, "#,##0.####", "Global", false, null, []);
+
+        Assert.Empty(InputPolicyResolver.ValidateValue("0.0012", percentPolicy));
+        Assert.Contains("Value must be no more than 1.", InputPolicyResolver.ValidateValue("1.5", percentPolicy));
     }
 
     [Fact]

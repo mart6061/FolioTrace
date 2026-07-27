@@ -2,7 +2,7 @@
   import type { ComponentProps } from 'svelte';
   import { Card, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, BrokerDropdown, ComplexSelect, Field, HoldingDropdown, MoneyInput, PillGroup, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
@@ -22,6 +22,14 @@
   let quantityFormattedValue = $state('');
   let quantityValidationMessages = $state<string[]>([]);
   let quantityValue = $state('1234.5678');
+  let priceDisplayValue = $state('');
+  let priceFormattedValue = $state('');
+  let priceValidationMessages = $state<string[]>([]);
+  let priceValue = $state('123.45678912');
+  let percentDisplayValue = $state('');
+  let percentFormattedValue = $state('');
+  let percentValidationMessages = $state<string[]>([]);
+  let percentValue = $state('0.0012');
   let refreshedInputPolicies = $state<InputControlPolicy[] | null>(null);
   let selectedSideFilter = $state('All');
   let selectedStageFilters = $state(['All']);
@@ -53,12 +61,17 @@
   const templateReferences = {
     accountDropdown: templateReference<ComponentProps<typeof AccountDropdown>>('AccountDropdown', ['accounts', 'class', 'compactBrand', 'disabled', 'id', 'multiple', 'name', 'nameOnlySummary', 'placeholder', 'selectedAccountID', 'selectedAccountIDs']),
     brokerDropdown: templateReference<ComponentProps<typeof BrokerDropdown>>('BrokerDropdown', ['brokers', 'class', 'compactBrand', 'disabled', 'id', 'method', 'name', 'placeholder', 'selectedBrokerLEI']),
+    button: templateReference<ComponentProps<typeof Button>>('Button', ['children', 'class', 'disabled', 'fullWidth', 'onclick', 'size', 'type', 'variant']),
     card: templateReference<ComponentProps<typeof Card>>('Card', ['actions', 'ariaLive', 'children', 'class', 'density', 'intent', 'role', 'subtitle', 'title']),
     complexSelect: templateReference<ComponentProps<typeof ComplexSelect>>('ComplexSelect', ['ariaLabel', 'class', 'compactBrand', 'confirmSelection', 'disabled', 'emptyText', 'id', 'minimumSelections', 'multiple', 'name', 'onchange', 'onclose', 'onopenchange', 'open', 'options', 'placeholder', 'searchPlaceholder', 'showClear', 'showSelectAll', 'summary', 'value', 'values']),
     dateTimeInput: templateReference<ComponentProps<typeof DateTimeInput>>('DateTimeInput', ['class', 'disabled', 'form', 'fullWidth', 'futureLimited', 'invalid', 'id', 'max', 'min', 'name', 'onchange', 'required', 'showShortcuts', 'shortcutMode', 'size', 'step', 'value']),
+    dropdown: templateReference<ComponentProps<typeof Dropdown>>('Dropdown', ['children', 'class', 'close', 'compactBrand', 'disabled', 'ontoggle', 'open', 'summary']),
+    field: templateReference<ComponentProps<typeof Field>>('Field', ['children', 'class', 'controlId', 'dense', 'error', 'help', 'inline', 'label', 'required']),
     holdingDropdown: templateReference<ComponentProps<typeof HoldingDropdown>>('HoldingDropdown', ['accountID', 'class', 'compactBrand', 'disabled', 'holdings', 'id', 'multiple', 'name', 'nameOnlySummary', 'placeholder', 'showInstrumentID', 'selectedHoldingID', 'selectedHoldingIDs']),
     menuCardGroup: templateReference<ComponentProps<typeof MenuCardGroup>>('MenuCardGroup', ['items', 'selected', 'onselect']),
     moneyInput: templateReference<ComponentProps<typeof MoneyInput>>('MoneyInput', ['class', 'currency', 'disabled', 'displayValue', 'formattedValue', 'id', 'label', 'name', 'policy', 'required', 'size', 'validationMessages', 'value']),
+    percentInput: templateReference<ComponentProps<typeof PercentInput>>('PercentInput', ['class', 'disabled', 'displayValue', 'formattedValue', 'id', 'label', 'name', 'policy', 'required', 'size', 'validationMessages', 'value']),
+    priceInput: templateReference<ComponentProps<typeof PriceInput>>('PriceInput', ['class', 'currency', 'disabled', 'displayValue', 'formattedValue', 'id', 'label', 'name', 'policy', 'required', 'size', 'validationMessages', 'value']),
     pageCard: templateReference<ComponentProps<typeof PageCard>>('PageCard', ['accent', 'title', 'subtitle', 'actions', 'children']),
     pageTitle: templateReference<ComponentProps<typeof PageTitle>>('PageTitle', ['kicker', 'title', 'description', 'details', 'minimized', 'bookmark', 'filter']),
     pillGroup: templateReference<ComponentProps<typeof PillGroup>>('PillGroup', ['ariaLabel', 'class', 'compact', 'id', 'mode', 'name', 'onchange', 'options', 'value', 'values']),
@@ -71,23 +84,34 @@
     ticketDropdown: templateReference<ComponentProps<typeof TicketDropdown>>('TicketDropdown', ['class', 'compactBrand', 'disabled', 'instruments', 'id', 'name', 'placeholder', 'selectedTicketNumbers', 'tickets'])
   } as const;
 
+  const templateCategories = ['Text', 'Numeric', 'Date', 'Selection', 'Domain lookups', 'Form structure'] as const;
+
   const inputTemplates = [
-    { id: 'textInput', label: 'Text input', reference: templateReferences.textInput },
-    { id: 'textArea', label: 'Text area', reference: templateReferences.textArea },
-    { id: 'select', label: 'Select', reference: templateReferences.select },
-    { id: 'toggle', label: 'Toggle', reference: templateReferences.toggle },
-    { id: 'complexSelect', label: 'Complex select', reference: templateReferences.complexSelect },
-    { id: 'accountDropdown', label: 'Account dropdown', reference: templateReferences.accountDropdown },
-    { id: 'holdingDropdown', label: 'Holding dropdown', reference: templateReferences.holdingDropdown },
-    { id: 'brokerDropdown', label: 'Broker dropdown', reference: templateReferences.brokerDropdown },
-    { id: 'ticketDropdown', label: 'Ticket dropdown', reference: templateReferences.ticketDropdown },
-    { id: 'pillGroup', label: 'Pill group', reference: templateReferences.pillGroup },
-    { id: 'dateTimeInput', label: 'Date and time input', reference: templateReferences.dateTimeInput },
-    { id: 'quantityInput', label: 'Quantity input', reference: templateReferences.quantityInput },
-    { id: 'moneyInput', label: 'Money input', reference: templateReferences.moneyInput }
+    { category: 'Text', id: 'textInput', label: 'Text input', reference: templateReferences.textInput },
+    { category: 'Text', id: 'textArea', label: 'Text area', reference: templateReferences.textArea },
+    { category: 'Numeric', id: 'quantityInput', label: 'Quantity input', reference: templateReferences.quantityInput },
+    { category: 'Numeric', id: 'moneyInput', label: 'Money input', reference: templateReferences.moneyInput },
+    { category: 'Numeric', id: 'priceInput', label: 'Price input', reference: templateReferences.priceInput },
+    { category: 'Numeric', id: 'percentInput', label: 'Percent input', reference: templateReferences.percentInput },
+    { category: 'Date', id: 'dateTimeInput', label: 'Date and time input', reference: templateReferences.dateTimeInput },
+    { category: 'Selection', id: 'select', label: 'Select', reference: templateReferences.select },
+    { category: 'Selection', id: 'toggle', label: 'Toggle', reference: templateReferences.toggle },
+    { category: 'Selection', id: 'pillGroup', label: 'Pill group', reference: templateReferences.pillGroup },
+    { category: 'Selection', id: 'complexSelect', label: 'Complex select', reference: templateReferences.complexSelect },
+    { category: 'Domain lookups', id: 'accountDropdown', label: 'Account dropdown', reference: templateReferences.accountDropdown },
+    { category: 'Domain lookups', id: 'holdingDropdown', label: 'Holding dropdown', reference: templateReferences.holdingDropdown },
+    { category: 'Domain lookups', id: 'brokerDropdown', label: 'Broker dropdown', reference: templateReferences.brokerDropdown },
+    { category: 'Domain lookups', id: 'ticketDropdown', label: 'Ticket dropdown', reference: templateReferences.ticketDropdown },
+    { category: 'Form structure', id: 'field', label: 'Field', reference: templateReferences.field },
+    { category: 'Form structure', id: 'button', label: 'Button', reference: templateReferences.button },
+    { category: 'Form structure', id: 'dropdown', label: 'Dropdown shell', reference: templateReferences.dropdown }
   ] as const;
 
   type InputTemplateID = typeof inputTemplates[number]['id'];
+
+  const groupedInputTemplates = templateCategories
+    .map((category) => ({ category, templates: inputTemplates.filter((template) => template.category === category) }))
+    .filter((group) => group.templates.length);
 
   let selectedInputTemplateID = $state<InputTemplateID>('textInput');
   let explorerTextValue = $state('Example text');
@@ -96,10 +120,26 @@
   let explorerToggleChecked = $state(true);
   let explorerComplexValue = $state('GBP');
   let explorerPillValue = $state('Discrete');
+  let explorerFieldValue = $state('Example value');
+  let explorerButtonStatus = $state('No button pressed yet.');
+  let explorerDropdownOpen = $state(false);
+  let explorerDropdownSelections = $state<string[]>(['Proposal']);
+
+  const dropdownDemoOptions = ['Proposal', 'Trade', 'Completed', 'Cancelled'] as const;
+
+  function toggleExplorerDropdownSelection(option: string) {
+    explorerDropdownSelections = explorerDropdownSelections.includes(option)
+      ? explorerDropdownSelections.filter((selection) => selection !== option)
+      : [...explorerDropdownSelections, option];
+  }
 
   const selectedInputTemplate = $derived(
     inputTemplates.find((template) => template.id === selectedInputTemplateID) ?? inputTemplates[0]
   );
+  const explorerFieldError = $derived(explorerFieldValue.trim() ? '' : 'Field is required.');
+  const explorerDropdownSummary = $derived(explorerDropdownSelections.length
+    ? explorerDropdownSelections.join(', ')
+    : 'Select stages');
   const accounts = $derived(data.accounts?.items ?? []);
   const brokers = $derived(data.brokers?.items ?? []);
   const currencies = $derived(data.currencies?.items ?? []);
@@ -171,8 +211,14 @@
     inputPolicies.find((policy) => policy.controlKind === 'Money' && policy.currency === selectedPolicyCurrency) ?? fallbackPolicy('Money', selectedPolicyCurrency)
   );
   const quantityPolicy = $derived(inputPolicies.find((policy) => policy.controlKind === 'Quantity') ?? fallbackPolicy('Quantity'));
+  const pricePolicy = $derived(
+    inputPolicies.find((policy) => policy.controlKind === 'Price') ?? fallbackPolicy('Price', selectedPolicyCurrency)
+  );
+  const percentPolicy = $derived(inputPolicies.find((policy) => policy.controlKind === 'Percent') ?? fallbackPolicy('Percent'));
   const moneyValidationText = $derived(moneyValidationMessages.length ? moneyValidationMessages.join(' ') : 'Valid');
   const quantityValidationText = $derived(quantityValidationMessages.length ? quantityValidationMessages.join(' ') : 'Valid');
+  const priceValidationText = $derived(priceValidationMessages.length ? priceValidationMessages.join(' ') : 'Valid');
+  const percentValidationText = $derived(percentValidationMessages.length ? percentValidationMessages.join(' ') : 'Valid');
   const summaryText = $derived(`${accounts.length} accounts | ${accountHoldings.length || holdings.length} holdings | ${instruments.length} instruments | ${tickets.length} tickets | ${currencies.length} currencies`);
   const templateMenuCards: [MenuCardItem, MenuCardItem, MenuCardItem] = [
     { id: 'filter-card', title: 'Filter Card', description: 'Gold-accented container for page filters and view controls.' },
@@ -238,7 +284,7 @@
   async function refreshInputPolicies(accountID: string, currency: string, valuationDate: string, auditDateTime: string) {
     const serial = ++policyRefreshSerial;
     const params = new URLSearchParams({
-      controlKinds: 'Quantity,Money',
+      controlKinds: 'Quantity,Money,Price,Percent',
       currency,
       eventDateTime: toApiDateTime(valuationDate)
     });
@@ -265,16 +311,18 @@
   }
 
   function fallbackPolicy(controlKind: InputControlKind, currency: string | null = null): InputControlPolicy {
-    const decimalPlaces = controlKind === 'Money'
-      ? (currencies.find((currencyDefinition) => currencyDefinition.alphabeticCode === currency)?.decimalPlace ?? 8)
-      : 8;
+    const currencyDecimalPlaces = currencies.find((currencyDefinition) => currencyDefinition.alphabeticCode === currency)?.decimalPlace ?? 8;
+    const decimalPlaces = controlKind === 'Money' ? currencyDecimalPlaces : controlKind === 'Percent' ? 6 : 8;
+    const formatPattern = controlKind === 'Money' || controlKind === 'Price'
+      ? '#,##0.00######'
+      : controlKind === 'Percent' ? '#,##0.####' : '#,##0.########';
 
     return {
       allowNegative: false,
       controlKind,
-      currency,
+      currency: controlKind === 'Money' || controlKind === 'Price' ? currency : null,
       decimalPlaces,
-      formatPattern: controlKind === 'Money' ? '#,##0.00######' : '#,##0.########',
+      formatPattern,
       formatSource: 'TypeDefault',
       maxValue: null,
       minValue: controlKind === 'Quantity' ? 0.00000001 : 0,
@@ -344,16 +392,19 @@
         <nav aria-label="Input templates" class="input-template-list">
           <p>All inputs</p>
           <div>
-            {#each inputTemplates as template (template.id)}
-              <button
-                aria-pressed={selectedInputTemplateID === template.id}
-                class:input-template-selected={selectedInputTemplateID === template.id}
-                onclick={() => selectedInputTemplateID = template.id}
-                type="button"
-              >
-                <span>{template.label}</span>
-                <code>{template.reference.name}</code>
-              </button>
+            {#each groupedInputTemplates as group (group.category)}
+              <p class="input-template-group-label">{group.category}</p>
+              {#each group.templates as template (template.id)}
+                <button
+                  aria-pressed={selectedInputTemplateID === template.id}
+                  class:input-template-selected={selectedInputTemplateID === template.id}
+                  onclick={() => selectedInputTemplateID = template.id}
+                  type="button"
+                >
+                  <span>{template.label}</span>
+                  <code>{template.reference.name}</code>
+                </button>
+              {/each}
             {/each}
           </div>
         </nav>
@@ -362,6 +413,7 @@
           <dl>
             <div><dt>Label</dt><dd>{selectedInputTemplate.label}</dd></div>
             <div><dt>Name</dt><dd><code>{selectedInputTemplate.reference.name}</code></dd></div>
+            <div><dt>Category</dt><dd>{selectedInputTemplate.category}</dd></div>
           </dl>
 
           <div class="input-template-preview">
@@ -414,7 +466,53 @@
               </Field>
             {:else if selectedInputTemplateID === 'quantityInput'}
               <QuantityInput label="Quantity input" name="explorerQuantity" policy={quantityPolicy} bind:displayValue={quantityDisplayValue} bind:formattedValue={quantityFormattedValue} bind:validationMessages={quantityValidationMessages} bind:value={quantityValue} />
-            {:else}
+            {:else if selectedInputTemplateID === 'priceInput'}
+              <PriceInput currency={selectedPolicyCurrency} label="Price input" name="explorerPrice" policy={pricePolicy} bind:displayValue={priceDisplayValue} bind:formattedValue={priceFormattedValue} bind:validationMessages={priceValidationMessages} bind:value={priceValue} />
+            {:else if selectedInputTemplateID === 'percentInput'}
+              <PercentInput label="Percent input" name="explorerPercent" policy={percentPolicy} bind:displayValue={percentDisplayValue} bind:formattedValue={percentFormattedValue} bind:validationMessages={percentValidationMessages} bind:value={percentValue} />
+            {:else if selectedInputTemplateID === 'field'}
+              <Field controlId="ideas-explorer-field" error={explorerFieldError} help="Wraps a control with its label, help text, and error text." label="Field" required>
+                <TextInput id="ideas-explorer-field" fullWidth invalid={Boolean(explorerFieldError)} name="explorerField" placeholder="Clear this to see the error state" bind:value={explorerFieldValue} />
+              </Field>
+            {:else if selectedInputTemplateID === 'button'}
+              <div class="input-template-button-demo">
+                <div class="input-template-button-row">
+                  <Button onclick={() => explorerButtonStatus = 'Primary pressed.'} variant="primary">Primary</Button>
+                  <Button onclick={() => explorerButtonStatus = 'Secondary pressed.'}>Secondary</Button>
+                  <Button onclick={() => explorerButtonStatus = 'Danger pressed.'} variant="danger">Danger</Button>
+                  <Button onclick={() => explorerButtonStatus = 'Ghost pressed.'} variant="ghost">Ghost</Button>
+                  <Button disabled variant="primary">Disabled</Button>
+                </div>
+                <div class="input-template-button-row">
+                  <Button size="sm" variant="primary">Small</Button>
+                  <Button size="md" variant="primary">Medium</Button>
+                  <Button size="compact" variant="primary">Compact</Button>
+                </div>
+                <p class="template-copy" role="status">{explorerButtonStatus}</p>
+              </div>
+            {:else if selectedInputTemplateID === 'dropdown'}
+              <div class="input-template-dropdown-demo">
+                <Dropdown compactBrand bind:open={explorerDropdownOpen} summary={explorerDropdownSummary}>
+                  <div class="input-template-dropdown-panel">
+                    {#each dropdownDemoOptions as option (option)}
+                      <label>
+                        <input
+                          checked={explorerDropdownSelections.includes(option)}
+                          onchange={() => toggleExplorerDropdownSelection(option)}
+                          type="checkbox"
+                          value={option}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    {/each}
+                  </div>
+                </Dropdown>
+                <p class="template-copy">
+                  A positioning and dismissal shell only &mdash; it renders whatever children you pass. Use it for filter panels,
+                  checkbox lists, and menus. For a full option list with search and select-all, use <code>ComplexSelect</code>.
+                </p>
+              </div>
+            {:else if selectedInputTemplateID === 'moneyInput'}
               <MoneyInput currency={selectedPolicyCurrency} label="Money input" name="explorerMoney" policy={moneyPolicy} bind:displayValue={moneyDisplayValue} bind:formattedValue={moneyFormattedValue} bind:validationMessages={moneyValidationMessages} bind:value={moneyValue} />
             {/if}
           </div>
@@ -716,6 +814,53 @@
           </div>
         </div>
 
+        <div class="template-number-field">
+          <PriceInput
+            class="template-policy-input"
+            currency={selectedPolicyCurrency}
+            label="Price"
+            name="templatePrice"
+            policy={pricePolicy}
+            size="md"
+            bind:displayValue={priceDisplayValue}
+            bind:formattedValue={priceFormattedValue}
+            bind:validationMessages={priceValidationMessages}
+            bind:value={priceValue}
+          />
+          {@render showTemplateReference(templateReferences.priceInput)}
+          <div class="template-input-dev-values">
+            <span>Raw: {priceValue || '(empty)'}</span>
+            <span>Display: {priceFormattedValue || priceDisplayValue || '(empty)'}</span>
+            <span>Decimals: {pricePolicy.decimalPlaces}</span>
+            <span>Format: {pricePolicy.formatPattern} ({pricePolicy.formatSource})</span>
+            <span class:template-valid-value={!priceValidationMessages.length}>Validation: {priceValidationText}</span>
+          </div>
+          <p class="template-copy">Currency labels the value but never caps precision, so a GBP price keeps its {pricePolicy.decimalPlaces} decimal places.</p>
+        </div>
+
+        <div class="template-number-field">
+          <PercentInput
+            class="template-policy-input"
+            label="Percent"
+            name="templatePercent"
+            policy={percentPolicy}
+            size="md"
+            bind:displayValue={percentDisplayValue}
+            bind:formattedValue={percentFormattedValue}
+            bind:validationMessages={percentValidationMessages}
+            bind:value={percentValue}
+          />
+          {@render showTemplateReference(templateReferences.percentInput)}
+          <div class="template-input-dev-values">
+            <span>Raw (stored fraction): {percentValue || '(empty)'}</span>
+            <span>Display: {percentFormattedValue || percentDisplayValue || '(empty)'}</span>
+            <span>Decimals (fraction): {percentPolicy.decimalPlaces}</span>
+            <span>Format: {percentPolicy.formatPattern} ({percentPolicy.formatSource})</span>
+            <span class:template-valid-value={!percentValidationMessages.length}>Validation: {percentValidationText}</span>
+          </div>
+          <p class="template-copy">Stored as a fraction and shown multiplied by 100. Policy limits are fractions too, so a 100% ceiling is a max value of 1.</p>
+        </div>
+
         {#if inputPolicyError}
           <Card class="template-wide-field" density="compact" intent="warning">{inputPolicyError}</Card>
         {/if}
@@ -766,6 +911,20 @@
     max-height: 31rem;
     overflow-y: auto;
     padding-right: 0.15rem;
+  }
+
+  .input-template-group-label {
+    color: color-mix(in srgb, var(--muted) 88%, var(--panel));
+    font-size: 0.57rem;
+    font-weight: 700;
+    grid-column: 1 / -1;
+    letter-spacing: 0.06em;
+    margin: 0.4rem 0 0.05rem;
+    text-transform: uppercase;
+  }
+
+  .input-template-group-label:first-child {
+    margin-top: 0;
   }
 
   .input-template-list button {
@@ -856,8 +1015,40 @@
 
   .input-template-preview :global(.house-field),
   .input-template-preview :global(.house-toggle),
+  .input-template-preview :global(.house-dropdown),
   .input-template-preview :global(.policy-decimal-input) {
     max-width: 23rem;
+  }
+
+  .input-template-dropdown-demo {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .input-template-dropdown-panel {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 11rem;
+    padding: 0.15rem;
+  }
+
+  .input-template-dropdown-panel label {
+    align-items: center;
+    display: flex;
+    font-size: 0.76rem;
+    gap: 0.4rem;
+  }
+
+  .input-template-button-demo {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .input-template-button-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
 
   .input-template-params ul {

@@ -30,6 +30,8 @@ function readBoolean(value: string | null) {
   return value.toLowerCase() === 'true';
 }
 
+const inputControlKinds: InputControlKind[] = ['Quantity', 'Money', 'Price', 'Percent'];
+
 function readControlKinds(value: string | null): InputControlKind[] {
   if (!value)
     return ['Quantity', 'Money'];
@@ -37,5 +39,5 @@ function readControlKinds(value: string | null): InputControlKind[] {
   return value
     .split(',')
     .map((item) => item.trim())
-    .filter((item): item is InputControlKind => item === 'Quantity' || item === 'Money');
+    .filter((item): item is InputControlKind => (inputControlKinds as string[]).includes(item));
 }

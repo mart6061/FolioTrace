@@ -7,10 +7,31 @@
   import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
-  import type { BrokerReferenceEvent } from '$lib/types';
+  import { PercentInput } from '$lib/components/forms';
+  import type { BrokerReferenceEvent, InputControlPolicy } from '$lib/types';
   import type { SubmitFunction } from '@sveltejs/kit';
 
   let { data, form } = $props();
+
+  // Commission is a rate stored as a fraction: 0.0012 is entered and displayed as 0.12%.
+  const fallbackPercentPolicy: InputControlPolicy = {
+    allowNegative: false,
+    controlKind: 'Percent',
+    currency: null,
+    decimalPlaces: 6,
+    formatPattern: '#,##0.####',
+    formatSource: 'TypeDefault',
+    maxValue: null,
+    minValue: 0,
+    validationMessages: []
+  };
+
+  const percentPolicy = $derived(
+    (data.inputPolicies ?? []).find((policy) => policy.controlKind === 'Percent') ?? fallbackPercentPolicy
+  );
+
+  let createCommission = $state('');
+  let editCommissionByLEI = $state<Record<string, string>>({});
 
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   type SortKey = 'broker' | 'lei' | 'commission' | 'active' | 'approved' | 'nextReview' | 'lastAudit';
@@ -482,7 +503,17 @@
                   <td class="px-3 py-2 text-right">
                     <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form="broker-create">
                       <span>Commission</span>
-                      <input class="house-control house-control-sm w-28 text-right font-mono" form="broker-create" min="0" name="commission" required step="0.00000001" type="number" value={form?.intent === 'createBroker' ? formText('commission') : ''} />
+                      <PercentInput
+                        bare
+                        class="broker-commission-input"
+                        form="broker-create"
+                        label="Commission"
+                        name="commission"
+                        policy={percentPolicy}
+                        required
+                        size="sm"
+                        bind:value={createCommission}
+                      />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -553,7 +584,20 @@
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`broker-edit-${broker.lei}`}>
                         <span>Commission</span>
-                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`broker-edit-${broker.lei}`} min="0" name="commission" required step="0.00000001" type="number" value={form?.lei === broker.lei ? formText('commission', broker.commission.toString()) : broker.commission} />
+                        <PercentInput
+                          bare
+                          class="broker-commission-input"
+                          form={`broker-edit-${broker.lei}`}
+                          label="Commission"
+                          name="commission"
+                          policy={percentPolicy}
+                          required
+                          size="sm"
+                          bind:value={
+                            () => editCommissionByLEI[broker.lei] ?? (form?.lei === broker.lei ? formText('commission', broker.commission.toString()) : String(broker.commission)),
+                            (next) => editCommissionByLEI[broker.lei] = next
+                          }
+                        />
                       </label>
                     </td>
                     <td class="px-3 py-2">
