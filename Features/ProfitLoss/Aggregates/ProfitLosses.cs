@@ -111,7 +111,8 @@ public sealed record ProfitLosses : IAggregate
         var quantity = orderedMovements.Sum(SignedQuantity);
         var bookCost = orderedMovements.Sum(SignedBookCost);
         var priceCurrency = instrumentValue?.PriceCurrency ?? instrumentDefinition?.PriceCurrency ?? Alpha3Builder.Create("GBP");
-        var localPrice = SelectInstrumentPrice(instrumentValue?.Price, instrumentPriceBasis);
+        // Fixed income values clean here, preserving existing behaviour. Pass includeAccruedInterest to value dirty.
+        var localPrice = (decimal?)instrumentValue?.SelectPrice(instrumentPriceBasis);
         var bookPrice = SelectBookPrice(localPrice, priceCurrency, account.BookCurrency, fxRates);
         var marketValue = bookPrice.HasValue ? quantity * bookPrice.Value : (decimal?)null;
         var methodValues = Enum.GetValues<ProfitLossMethod>()
@@ -325,22 +326,6 @@ public sealed record ProfitLosses : IAggregate
             : TransactionEventSelector.IsDebit(movement)
                 ? -movement.BookCost.Value
                 : 0m;
-
-    private static decimal? SelectInstrumentPrice(IInstrumentPrice? price, InstrumentPriceBasis basis) =>
-        price switch
-        {
-            InstrumentPriceCash cash => cash.Price,
-            InstrumentPriceFixedIncome fixedIncome => fixedIncome.CleanPrice,
-            InstrumentPriceEquity equity => basis switch
-            {
-                InstrumentPriceBasis.Bid => equity.Bid,
-                InstrumentPriceBasis.Ask => equity.Ask,
-                InstrumentPriceBasis.Mid => equity.Mid,
-                InstrumentPriceBasis.NAV => equity.Nav,
-                _ => equity.Mid
-            },
-            _ => null
-        };
 
     private static decimal? SelectBookPrice(decimal? localPrice, Alpha3 priceCurrency, Alpha3 bookCurrency, FXRates fxRates)
     {

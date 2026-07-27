@@ -6,6 +6,7 @@ import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
   getBrokers,
+  getInputPolicies,
   postBrokerActiveSetEvent,
   postBrokerApprovedDateTimeSetEvent,
   postBrokerCreatedEvent,
@@ -20,22 +21,30 @@ import {
   type BrokerNotesSetRequest
 } from '$lib/server/api';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
+  const { currentUser } = await parent();
 
   try {
-    const brokers = await getBrokers(
-      fetch,
-      toApiDateTime(valuationDate),
-      auditDateTime ? toApiDateTime(auditDateTime) : null
-    );
+    const valuationDateTime = toApiDateTime(valuationDate);
+    const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+    const [brokers, inputPolicies] = await Promise.all([
+      getBrokers(fetch, valuationDateTime, asAtDateTime),
+      getInputPolicies(fetch, {
+        auditDateTime: asAtDateTime,
+        controlKinds: ['Percent'],
+        eventDateTime: valuationDateTime,
+        userID: currentUser?.userID
+      })
+    ]);
 
     return {
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       brokers,
       error: '',
+      inputPolicies,
       valuationDate
     };
   } catch (error) {
@@ -44,6 +53,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       auditDateTime,
       brokers: null,
       error: error instanceof Error ? error.message : 'Unable to load brokers.',
+      inputPolicies: [],
       valuationDate
     };
   }

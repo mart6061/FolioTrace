@@ -9,6 +9,7 @@ import {
   getAssetAllocationMappings,
   getApiBaseUrl,
   getHoldingPositions,
+  getInputPolicies,
   getValuationSettings,
   postAssetAllocationAccountIDsSetEvent,
   postAssetAllocationActiveSetEvent,
@@ -24,16 +25,23 @@ import {
 const SPECIAL_NODE_NAME = 'Unallocated';
 const SPECIAL_NODE_COLOUR = '#dc2626';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
+  const { currentUser } = await parent();
 
   try {
     const valuationDateTime = toApiDateTime(valuationDate);
     const asAtDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    const [accounts, holdingPositions, valuationSettings] = await Promise.all([
+    const [accounts, holdingPositions, inputPolicies, valuationSettings] = await Promise.all([
       getAccounts(fetch, valuationDateTime, asAtDateTime),
       getHoldingPositions(fetch, valuationDateTime, asAtDateTime, 'EventDateTime', null, true),
+      getInputPolicies(fetch, {
+        auditDateTime: asAtDateTime,
+        controlKinds: ['Percent'],
+        eventDateTime: valuationDateTime,
+        userID: currentUser?.userID
+      }),
       getValuationSettings(fetch, valuationDateTime, asAtDateTime)
     ]);
     const mappingsByAllocationID = new Map(
@@ -50,6 +58,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       error: '',
+      inputPolicies,
       nodeHoldingCountsByAllocationID: Object.fromEntries(
         valuationSettings.items.map((setting) => [
           setting.assetAllocationID,
@@ -65,6 +74,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       apiBaseUrl: getApiBaseUrl(),
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load asset allocation tools.',
+      inputPolicies: [],
       nodeHoldingCountsByAllocationID: {},
       valuationDate,
       valuationSettings: null

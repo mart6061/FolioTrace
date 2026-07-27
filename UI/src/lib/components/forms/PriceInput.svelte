@@ -6,6 +6,7 @@
   type Props = {
     bare?: boolean;
     class?: string;
+    currency: string;
     disabled?: boolean;
     displayValue?: string;
     form?: string;
@@ -23,19 +24,22 @@
   let {
     bare = false,
     class: className = '',
+    currency,
     disabled = false,
     displayValue = $bindable(''),
     form,
     formattedValue = $bindable(''),
     id,
-    label = 'Quantity',
-    name = 'quantity',
+    label = 'Price',
+    name = 'price',
     policy,
     required = false,
     size = 'md',
     validationMessages = $bindable<string[]>([]),
     value = $bindable('')
   }: Props = $props();
+
+  const resolvedLabel = $derived(currency ? `${label} (${currency})` : label);
 </script>
 
 <PolicyDecimalInput
@@ -46,7 +50,7 @@
   {form}
   bind:formattedValue
   {id}
-  {label}
+  label={resolvedLabel}
   {name}
   {policy}
   {required}

@@ -102,7 +102,8 @@ public sealed record Valuations : IAggregate
         Alpha3 valuationCurrency)
     {
         var priceCurrency = instrument?.PriceCurrency ?? Alpha3Builder.Create("GBP");
-        var localPrice = SelectInstrumentPrice(instrument?.Price, instrumentPriceBasis);
+        // Fixed income values clean here, preserving existing behaviour. Pass includeAccruedInterest to value dirty.
+        var localPrice = (decimal?)instrument?.SelectPrice(instrumentPriceBasis);
         var fxSelection = SelectFX(fxRates, priceCurrency, valuationCurrency, instrumentPriceBasis);
         var complete = localPrice.HasValue && fxSelection.FXRate.HasValue;
         var quotePrice = complete ? localPrice.GetValueOrDefault() * fxSelection.FXRate.GetValueOrDefault() : (decimal?)null;
@@ -141,22 +142,6 @@ public sealed record Valuations : IAggregate
             WeightPercent = item.BookValue.HasValue && totalBookValue != 0m
                 ? item.BookValue.Value / totalBookValue * 100m
                 : null
-        };
-
-    private static decimal? SelectInstrumentPrice(IInstrumentPrice? price, InstrumentPriceBasis basis) =>
-        price switch
-        {
-            InstrumentPriceCash cash => cash.Price,
-            InstrumentPriceFixedIncome fixedIncome => fixedIncome.CleanPrice,
-            InstrumentPriceEquity equity => basis switch
-            {
-                InstrumentPriceBasis.Bid => equity.Bid,
-                InstrumentPriceBasis.Ask => equity.Ask,
-                InstrumentPriceBasis.Mid => equity.Mid,
-                InstrumentPriceBasis.NAV => equity.Nav,
-                _ => equity.Mid
-            },
-            _ => null
         };
 
     private static FXSelection SelectFX(FXRates fxRates, Alpha3 priceCurrency, Alpha3 valuationCurrency, InstrumentPriceBasis basis)

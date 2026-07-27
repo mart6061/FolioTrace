@@ -1042,7 +1042,7 @@ button.h-10 {
   min-height: var(--house-control-height);
 }
 
-.house-multiselect {
+.house-dropdown {
   position: relative;
   width: 100%;
   min-width: 0;
@@ -1053,7 +1053,7 @@ button.h-10 {
   box-shadow: 0 1px 2px var(--surface-shadow);
 }
 
-.house-multiselect[open] {
+.house-dropdown[open] {
   z-index: 70;
   border-color: var(--accent);
   box-shadow:
@@ -1061,24 +1061,24 @@ button.h-10 {
     0 0.75rem 1.5rem color-mix(in srgb, var(--surface-shadow) 82%, transparent);
 }
 
-.house-multiselect-compact-brand {
+.house-dropdown-compact-brand {
   width: min(100%, 14rem);
   border-color: color-mix(in srgb, var(--brand-green) 54%, var(--line));
   background: var(--panel);
 }
 
-.house-multiselect-compact-brand .house-multiselect-options {
+.house-dropdown-compact-brand .house-dropdown-options {
   border-color: color-mix(in srgb, var(--brand-green) 46%, var(--line));
   background: var(--panel);
 }
 
-.house-multiselect[aria-disabled='true'] {
+.house-dropdown[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.64;
   pointer-events: none;
 }
 
-.house-multiselect > summary {
+.house-dropdown > summary {
   display: flex;
   min-height: var(--house-control-height);
   align-items: center;
@@ -1092,11 +1092,11 @@ button.h-10 {
   padding: 0.375rem 0.625rem;
 }
 
-.house-multiselect > summary::-webkit-details-marker {
+.house-dropdown > summary::-webkit-details-marker {
   display: none;
 }
 
-.house-multiselect > summary::after {
+.house-dropdown > summary::after {
   flex: 0 0 auto;
   color: var(--muted);
   content: 'v';
@@ -1104,15 +1104,15 @@ button.h-10 {
   font-weight: 800;
 }
 
-.house-multiselect[open] > summary::after {
+.house-dropdown[open] > summary::after {
   content: '^';
 }
 
-.house-multiselect > summary:focus-visible {
+.house-dropdown > summary:focus-visible {
   outline: none;
 }
 
-.house-multiselect-options {
+.house-dropdown-options {
   position: absolute;
   z-index: 50;
   top: calc(100% + 0.35rem);
@@ -3073,23 +3073,23 @@ tbody tr {
   overflow: hidden;
 }
 
-.page-header:has(.house-multiselect[open]),
+.page-header:has(.house-dropdown[open]),
 .page-header:has(.complex-select-menu),
 .page-header:has(.account-combobox-menu),
 .page-header:has(.holding-combobox-menu),
-.filter-panel:has(.house-multiselect[open]),
+.filter-panel:has(.house-dropdown[open]),
 .filter-panel:has(.complex-select-menu),
 .filter-panel:has(.account-combobox-menu),
 .filter-panel:has(.holding-combobox-menu),
-.section-band:has(.house-multiselect[open]),
+.section-band:has(.house-dropdown[open]),
 .section-band:has(.complex-select-menu),
 .section-band:has(.account-combobox-menu),
 .section-band:has(.holding-combobox-menu),
-.data-panel:has(.house-multiselect[open]),
+.data-panel:has(.house-dropdown[open]),
 .data-panel:has(.complex-select-menu),
 .data-panel:has(.account-combobox-menu),
 .data-panel:has(.holding-combobox-menu),
-.ticket-card:has(.house-multiselect[open]),
+.ticket-card:has(.house-dropdown[open]),
 .ticket-card:has(.complex-select-menu),
 .ticket-card:has(.account-combobox-menu),
 .ticket-card:has(.holding-combobox-menu) {
@@ -3991,7 +3991,7 @@ input[type='number']::-webkit-outer-spin-button {
   background: color-mix(in srgb, var(--panel-muted) 54%, var(--panel));
 }
 
-.account-add-form:has(.house-multiselect[open]),
+.account-add-form:has(.house-dropdown[open]),
 .account-add-form:has(.complex-select-menu) {
   z-index: 80;
 }

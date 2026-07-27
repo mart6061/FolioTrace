@@ -301,11 +301,11 @@
   }
 
   function equityPrice(price: InstrumentValue['price']): InstrumentPriceEquity | null {
-    return price && 'bid' in price ? price : null;
+    return price && 'quote' in price ? price : null;
   }
 
   function fixedIncomePrice(price: InstrumentValue['price']): InstrumentPriceFixedIncome | null {
-    return price && 'cleanPrice' in price ? price : null;
+    return price && 'cleanQuote' in price ? price : null;
   }
 
   function cashPrice(price: InstrumentValue['price']): InstrumentPriceCash | null {
@@ -380,12 +380,12 @@
     const equity = equityPrice(instrument?.price);
 
     if (equity)
-      return equity.mid.amount ?? null;
+      return equity.quote.mid.amount ?? null;
 
     const fixedIncome = fixedIncomePrice(instrument?.price);
 
     if (fixedIncome)
-      return fixedIncome.cleanPrice.amount ?? null;
+      return fixedIncome.cleanQuote.mid.amount ?? null;
 
     const cash = cashPrice(instrument?.price);
 

@@ -17,7 +17,7 @@ public static class InputPolicyResolver
     {
         var applicableSettings = ApplicableSettings(controlKind, settings, accountID, userID).ToList();
         var defaultPolicy = DefaultPolicy(controlKind, allowNegative);
-        var decimalPlaces = controlKind == InputControlKind.Money
+        var decimalPlaces = UsesCurrencyDecimalPlaces(controlKind)
             ? defaultPolicy.DecimalPlaces
             : ResolveDecimalPlaces(defaultPolicy.DecimalPlaces, applicableSettings);
         var minValue = ResolveMinValue(defaultPolicy.MinValue, applicableSettings);
@@ -25,11 +25,11 @@ public static class InputPolicyResolver
         var absolute = ResolveAbsoluteSettings(defaultPolicy, applicableSettings);
         var validationMessages = new List<string>();
 
-        if (controlKind == InputControlKind.Money)
+        if (RequiresCurrency(controlKind))
         {
             if (currency is null)
             {
-                validationMessages.Add("Currency is required for Money input policies.");
+                validationMessages.Add($"Currency is required for {controlKind} input policies.");
             }
             else
             {
@@ -38,7 +38,7 @@ public static class InputPolicyResolver
                 {
                     validationMessages.Add($"Currency '{currency.Value}' was not found.");
                 }
-                else
+                else if (UsesCurrencyDecimalPlaces(controlKind))
                 {
                     decimalPlaces = currencyDefinition.DecimalPlace;
                 }
@@ -59,7 +59,7 @@ public static class InputPolicyResolver
             absolute.FormatPattern,
             absolute.FormatSource,
             allowNegative ?? absolute.AllowNegative,
-            currency?.Value,
+            RequiresCurrency(controlKind) ? currency?.Value : null,
             validationMessages);
     }
 
@@ -90,6 +90,21 @@ public static class InputPolicyResolver
         return messages;
     }
 
+    /// <summary>
+    /// Money and Price are both denominated in a currency. For Price the currency identifies what the number means
+    /// (an FX rate uses the pair's quote currency) but must not constrain precision, because a GBP price such as
+    /// 123.45678912 is legitimate even though GBP itself carries two decimal places.
+    /// </summary>
+    private static bool RequiresCurrency(InputControlKind controlKind) =>
+        controlKind is InputControlKind.Money or InputControlKind.Price;
+
+    /// <summary>
+    /// Only Money takes its decimal places from the currency definition. Every other kind resolves them from the
+    /// applicable Global, Account, and User settings, taking the most restrictive value.
+    /// </summary>
+    private static bool UsesCurrencyDecimalPlaces(InputControlKind controlKind) =>
+        controlKind == InputControlKind.Money;
+
     private static IEnumerable<InputControlSetting> ApplicableSettings(InputControlKind controlKind, IReadOnlyList<InputControlSetting> settings, AccountID? accountID, UserID? userID) =>
         settings.Where(setting => setting.ControlKind == controlKind)
             .Where(setting => setting.Scope switch
@@ -107,6 +122,12 @@ public static class InputPolicyResolver
         {
             InputControlKind.Quantity => new InputControlPolicy(controlKind, TypeDecimalPlaces, 0.00000001m, null, "#,##0.########", "TypeDefault", false, null, []),
             InputControlKind.Money => new InputControlPolicy(controlKind, TypeDecimalPlaces, resolvedAllowNegative ? null : 0m, null, "#,##0.00######", "TypeDefault", resolvedAllowNegative, null, []),
+            // Prices are never negative, and zero is permitted because FX rates allow it.
+            InputControlKind.Price => new InputControlPolicy(controlKind, TypeDecimalPlaces, 0m, null, "#,##0.00######", "TypeDefault", false, null, []),
+            // Percent values are stored as fractions, so DecimalPlaces and Min/Max are expressed as fractions too:
+            // a "no more than 100%" ceiling is MaxValue 1, not 100. Negatives are caller-controlled because
+            // performance and yield figures can legitimately fall below zero.
+            InputControlKind.Percent => new InputControlPolicy(controlKind, TypeDecimalPlaces, resolvedAllowNegative ? null : 0m, null, "#,##0.########", "TypeDefault", resolvedAllowNegative, null, []),
             _ => throw new ArgumentOutOfRangeException(nameof(controlKind), controlKind, null)
         };
     }

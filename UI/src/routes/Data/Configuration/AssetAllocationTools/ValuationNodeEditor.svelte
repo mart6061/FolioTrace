@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-  import type { Account, AssetAllocationNode, AssetAllocationNodeAccountSetting } from '$lib/types';
+  import { PercentInput } from '$lib/components/forms';
+  import type { Account, AssetAllocationNode, AssetAllocationNodeAccountSetting, InputControlPolicy } from '$lib/types';
 
   const DEFAULT_NODE_COLOUR = '#0f766e';
   const SPECIAL_NODE_NAME = 'Unallocated';
@@ -17,6 +18,7 @@
     allocationAccountIDs,
     nodeHoldingCounts = {},
     nodesJson = $bindable(''),
+    percentPolicy,
     rootNodeID
   }: {
     addRequest?: number;
@@ -24,6 +26,7 @@
     allocationAccountIDs: string[];
     nodeHoldingCounts?: Record<string, number>;
     nodesJson: string;
+    percentPolicy: InputControlPolicy;
     rootNodeID: string;
   } = $props();
 
@@ -742,7 +745,7 @@
       : node.accountSettings[settingIndex];
     const nextSetting = {
       ...currentSetting,
-      [key]: readPercentageInput(value)
+      [key]: readStoredFraction(value)
     };
 
     node.accountSettings = settingIndex === -1
@@ -758,12 +761,20 @@
       .map((node) => node.nodeID);
   }
 
-  function readPercentageInput(value: string) {
+  /**
+   * PercentInput hands back the stored fraction, so there is no division here. The previous `/ 100` was lossy:
+   * entering 1.1 stored 0.011000000000000001 rather than 0.011.
+   */
+  function readStoredFraction(value: string) {
     if (!value.trim())
       return null;
 
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed / 100 : null;
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function storedFractionText(value: number | null) {
+    return value === null ? '' : String(value);
   }
 
   function parentIDFor(nodeID: string, sourceNodes: EditableNode[]) {
@@ -1117,37 +1128,53 @@
                     {@const accountSetting = accountSettingForNode(row.node, account.accountID)}
                     <div class="valuation-node-account-name" title={account.formalName}>{account.name}</div>
                     {#if metricsEditing}
-                      <input
-                        aria-label={`${account.name} target percentage`}
-                        class="house-control house-control-compact valuation-node-account-input"
-                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeight', event.currentTarget.value)}
-                        step="0.01"
-                        type="number"
-                        value={percentInputValue(accountSetting.targetWeight)}
+                      <PercentInput
+                        bare
+                        class="valuation-node-account-input"
+                        label={`${account.name} target`}
+                        name={`targetWeight-${row.node.nodeID}-${account.accountID}`}
+                        policy={percentPolicy}
+                        size="compact"
+                        bind:value={
+                          () => storedFractionText(accountSetting.targetWeight),
+                          (next) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeight', next)
+                        }
                       />
-                      <input
-                        aria-label={`${account.name} minimum percentage`}
-                        class="house-control house-control-compact valuation-node-account-input"
-                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeightMin', event.currentTarget.value)}
-                        step="0.01"
-                        type="number"
-                        value={percentInputValue(accountSetting.targetWeightMin)}
+                      <PercentInput
+                        bare
+                        class="valuation-node-account-input"
+                        label={`${account.name} minimum`}
+                        name={`targetWeightMin-${row.node.nodeID}-${account.accountID}`}
+                        policy={percentPolicy}
+                        size="compact"
+                        bind:value={
+                          () => storedFractionText(accountSetting.targetWeightMin),
+                          (next) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeightMin', next)
+                        }
                       />
-                      <input
-                        aria-label={`${account.name} maximum percentage`}
-                        class="house-control house-control-compact valuation-node-account-input"
-                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeightMax', event.currentTarget.value)}
-                        step="0.01"
-                        type="number"
-                        value={percentInputValue(accountSetting.targetWeightMax)}
+                      <PercentInput
+                        bare
+                        class="valuation-node-account-input"
+                        label={`${account.name} maximum`}
+                        name={`targetWeightMax-${row.node.nodeID}-${account.accountID}`}
+                        policy={percentPolicy}
+                        size="compact"
+                        bind:value={
+                          () => storedFractionText(accountSetting.targetWeightMax),
+                          (next) => setAccountSetting(row.node.nodeID, account.accountID, 'targetWeightMax', next)
+                        }
                       />
-                      <input
-                        aria-label={`${account.name} yield percentage`}
-                        class="house-control house-control-compact valuation-node-account-input"
-                        onchange={(event) => setAccountSetting(row.node.nodeID, account.accountID, 'targetYield', event.currentTarget.value)}
-                        step="0.01"
-                        type="number"
-                        value={percentInputValue(accountSetting.targetYield)}
+                      <PercentInput
+                        bare
+                        class="valuation-node-account-input"
+                        label={`${account.name} yield`}
+                        name={`targetYield-${row.node.nodeID}-${account.accountID}`}
+                        policy={percentPolicy}
+                        size="compact"
+                        bind:value={
+                          () => storedFractionText(accountSetting.targetYield),
+                          (next) => setAccountSetting(row.node.nodeID, account.accountID, 'targetYield', next)
+                        }
                       />
                     {:else}
                       <div class="valuation-node-account-value">{formatPercent(accountSetting.targetWeight)}</div>
@@ -1404,7 +1431,8 @@
     white-space: nowrap;
   }
 
-  .valuation-node-account-input {
+  /* PercentInput renders bare here, so the control itself is the grid child. */
+  :global(.valuation-node-account-input.policy-decimal-input-bare .house-control) {
     width: 100%;
     min-width: 0;
   }

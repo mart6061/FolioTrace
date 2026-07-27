@@ -149,11 +149,18 @@ internal static class SeedInstrumentData
         seed.Kind switch
         {
             InstrumentSeedKind.Equity => new InstrumentPriceEquity(
-                new InstrumentPrice(Round(mid - spread)),
+                new InstrumentQuote(
+                    new InstrumentPrice(Round(mid - spread)),
+                    new InstrumentPrice(mid),
+                    new InstrumentPrice(Round(mid + spread))),
                 new InstrumentPrice(mid),
-                new InstrumentPrice(Round(mid + spread)),
                 new InstrumentPrice(mid)),
-            InstrumentSeedKind.FixedIncome => new InstrumentPriceFixedIncome(new ValuationPrice(mid)),
+            // Bonds quote clean, with a tighter spread than equities.
+            InstrumentSeedKind.FixedIncome => new InstrumentPriceFixedIncome(
+                new InstrumentQuote(
+                    new InstrumentPrice(Round(mid - (spread / 2m))),
+                    new InstrumentPrice(mid),
+                    new InstrumentPrice(Round(mid + (spread / 2m))))),
             InstrumentSeedKind.Cash => new InstrumentPriceCash(),
             _ => throw new InvalidOperationException($"Unsupported instrument seed kind '{seed.Kind}'.")
         };
@@ -189,7 +196,7 @@ internal static class SeedInstrumentData
         var accruedDays = 15 + index % 45;
         var accruedInterest = Round(100m * couponRate * accruedDays / 365m);
 
-        return new InstrumentIncomeFixedIncome(new ValuationPrice(accruedInterest));
+        return new InstrumentIncomeFixedIncome(new InstrumentPrice(accruedInterest));
     }
 
     private static InstrumentTermsBond CreateBondTerms(string currency, decimal couponRate, DateTime issueDate, DateTime maturityDate, string dayCount) =>

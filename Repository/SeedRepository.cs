@@ -403,6 +403,10 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
         {
             new(InputControlKind.Quantity, InputControlSettingScope.Global, null, null, 4, 0.0001m, null, "#,##0.####", false),
             new(InputControlKind.Money, InputControlSettingScope.Global, null, null, null, 0m, null, "#,##0.00##", false),
+            // Price precision is a system-wide rule rather than a currency one, so the ceiling lives here.
+            new(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, 0m, null, "#,##0.00######", false),
+            // Stored as a fraction: 6 fraction places is 4 places once shown as a percentage.
+            new(InputControlKind.Percent, InputControlSettingScope.Global, null, null, 6, 0m, null, "#,##0.####", false),
             new(InputControlKind.Quantity, InputControlSettingScope.User, null, Constants.Initialisation.UserID, 6, null, null, "#,##0.######", null),
             new(InputControlKind.Quantity, InputControlSettingScope.Account, usAccountID, null, 2, 1m, null, "#,##0.##", false)
         };

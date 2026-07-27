@@ -47,22 +47,24 @@ async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request, 
   const bidText = getFormString(formData, 'bid');
   const midText = getFormString(formData, 'mid');
   const askText = getFormString(formData, 'ask');
+  const lastText = getFormString(formData, 'last');
   const navText = getFormString(formData, 'nav');
-  const cleanPriceText = getFormString(formData, 'cleanPrice');
   const bid = Number.parseFloat(bidText);
   const mid = Number.parseFloat(midText);
   const ask = Number.parseFloat(askText);
+  const last = Number.parseFloat(lastText);
   const nav = Number.parseFloat(navText);
-  const cleanPrice = Number.parseFloat(cleanPriceText);
 
   if (!instrumentID || !eventDateTime || !currency || !priceType)
     return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Instrument, currency, price type, and event date are required.', status: 'failure' });
 
-  if (priceType === 'InstrumentPriceEquity' && (!bidText || !midText || !askText || !navText || ![bid, mid, ask, nav].every(Number.isFinite) || bid > mid || mid > ask))
-    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Bid, mid, ask, and nav must be valid numbers ordered bid <= mid <= ask.', status: 'failure' });
+  // Quotes are optional individually, but whatever is supplied must be a number and correctly ordered.
+  const supplied = [bidText, midText, askText].filter((text) => text !== '');
+  if (supplied.length && ![bid, mid, ask].filter((value) => !Number.isNaN(value)).every(Number.isFinite))
+    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Bid, mid, and ask must be valid numbers.', status: 'failure' });
 
-  if (priceType === 'InstrumentPriceFixedIncome' && (!cleanPriceText || !Number.isFinite(cleanPrice)))
-    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Clean price must be a valid number.', status: 'failure' });
+  if ((Number.isFinite(bid) && Number.isFinite(mid) && bid > mid) || (Number.isFinite(mid) && Number.isFinite(ask) && mid > ask))
+    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Quotes must be ordered bid <= mid <= ask.', status: 'failure' });
 
   if (priceType !== 'InstrumentPriceEquity' && priceType !== 'InstrumentPriceFixedIncome')
     return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Only equity and fixed income price edits are supported.', status: 'failure' });
@@ -76,13 +78,15 @@ async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request, 
       reason: `Set instrument price ${instrumentID}`
     };
 
+    const optional = (value: number) => (Number.isFinite(value) ? value : null);
+
+    priceRequest.bid = optional(bid);
+    priceRequest.mid = optional(mid);
+    priceRequest.ask = optional(ask);
+
     if (priceType === 'InstrumentPriceEquity') {
-      priceRequest.ask = ask;
-      priceRequest.bid = bid;
-      priceRequest.mid = mid;
-      priceRequest.nav = nav;
-    } else {
-      priceRequest.cleanPrice = cleanPrice;
+      priceRequest.last = optional(last);
+      priceRequest.nav = optional(nav);
     }
 
     const result = await postInstrumentPriceSetEvent(fetch, priceRequest, userID);

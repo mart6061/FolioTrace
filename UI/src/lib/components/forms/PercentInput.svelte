@@ -28,8 +28,8 @@
     form,
     formattedValue = $bindable(''),
     id,
-    label = 'Quantity',
-    name = 'quantity',
+    label = 'Percent',
+    name = 'percent',
     policy,
     required = false,
     size = 'md',
@@ -38,15 +38,20 @@
   }: Props = $props();
 </script>
 
+<!--
+  `value` is the stored fraction: a bound value of 0.0012 is shown to the user as 0.12. The policy's decimal
+  places and Min/Max are fractions too, so a "no more than 100%" ceiling is a MaxValue of 1 rather than 100.
+-->
 <PolicyDecimalInput
   {bare}
   class={className}
   {disabled}
+  displayExponent={2}
   bind:displayValue
   {form}
   bind:formattedValue
   {id}
-  {label}
+  label={`${label} (%)`}
   {name}
   {policy}
   {required}

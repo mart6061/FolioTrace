@@ -44,7 +44,7 @@
 <details
   aria-disabled={disabled ? 'true' : undefined}
   bind:open
-  class={classNames('house-multiselect', compactBrand && 'house-multiselect-compact-brand', className)}
+  class={classNames('house-dropdown', compactBrand && 'house-dropdown-compact-brand', className)}
   ontoggle={ontoggle}
   use:closeOnOutside={{ close: closeDropdown, enabled: open }}
 >
@@ -52,7 +52,7 @@
     <span class="truncate">{summary}</span>
   </summary>
   <div
-    class="house-multiselect-options"
+    class="house-dropdown-options"
     popover="auto"
     use:floatingPopover={{ close: closeDropdown, enabled: open }}
   >

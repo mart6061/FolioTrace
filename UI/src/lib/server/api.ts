@@ -316,11 +316,13 @@ export type InstrumentPriceSetRequest = {
   instrumentID: string;
   currency: string;
   priceType: 'InstrumentPriceEquity' | 'InstrumentPriceFixedIncome';
-  bid?: number;
-  mid?: number;
-  ask?: number;
-  nav?: number;
-  cleanPrice?: number;
+  bid?: number | null;
+  mid?: number | null;
+  ask?: number | null;
+  /** Equity only. Outside the bid/mid/ask spread, and not applicable to fixed income. */
+  last?: number | null;
+  /** Equity only. */
+  nav?: number | null;
 };
 
 export type InstrumentCreatedRequest = {
@@ -1443,18 +1445,23 @@ export async function postFXRateSetEvent(fetchApi: typeof fetch, request: FXRate
 }
 
 export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, request: InstrumentPriceSetRequest, userID: string) {
-  const price = (amount: number) => ({ Amount: amount });
+  // Absent quotes stay absent: null is a legitimate "not quoted", distinct from zero.
+  const price = (amount: number | null | undefined) => ({ Amount: amount ?? null });
+  const quote = {
+    Bid: price(request.bid),
+    Mid: price(request.mid),
+    Ask: price(request.ask)
+  };
   const eventPrice = request.priceType === 'InstrumentPriceFixedIncome'
     ? {
         $type: 'InstrumentPriceFixedIncome',
-        CleanPrice: { Amount: request.cleanPrice }
+        CleanQuote: quote
       }
     : {
         $type: 'InstrumentPriceEquity',
-        Bid: price(request.bid ?? 0),
-        Mid: price(request.mid ?? 0),
-        Ask: price(request.ask ?? 0),
-        Nav: price(request.nav ?? 0)
+        Quote: quote,
+        Last: price(request.last),
+        Nav: price(request.nav)
       };
   const response = await fetchApi(`${getApiBaseUrl()}/Events/InstrumentPrice/InstrumentPriceSetEvent`, {
     method: 'POST',

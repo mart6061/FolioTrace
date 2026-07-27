@@ -572,9 +572,9 @@ public sealed class TypeValidationTests
     public static TheoryData<IInstrumentPrice, IInstrumentIncome> ValidInstrumentValuePairs => new()
     {
         { new InstrumentPriceCash(), new InstrumentIncomeCash() },
-        { new InstrumentPriceFixedIncome(new ValuationPrice(100m)), new InstrumentIncomeFixedIncome(new ValuationPrice(1.25m)) },
+        { new InstrumentPriceFixedIncome(new InstrumentQuote(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m))), new InstrumentIncomeFixedIncome(new InstrumentPrice(1.25m)) },
         {
-            new InstrumentPriceEquity(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m), new InstrumentPrice(100m)),
+            new InstrumentPriceEquity(new InstrumentQuote(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m)), new InstrumentPrice(100m), new InstrumentPrice(100m)),
             new InstrumentIncomeEquity(
                 new InstrumentPrice(1m),
                 "Regular",
@@ -588,8 +588,8 @@ public sealed class TypeValidationTests
     public static TheoryData<IInstrumentPrice, IInstrumentIncome> InvalidInstrumentValuePairs => new()
     {
         { new InstrumentPriceCash(), new InstrumentIncomeEquity(new InstrumentPrice(1m), "Regular", InstrumentDateBuilder.Create(new DateOnly(2026, 1, 1)), InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)), InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)), InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31))) },
-        { new InstrumentPriceFixedIncome(new ValuationPrice(100m)), new InstrumentIncomeCash() },
-        { new InstrumentPriceEquity(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m), new InstrumentPrice(100m)), new InstrumentIncomeFixedIncome(new ValuationPrice(1.25m)) }
+        { new InstrumentPriceFixedIncome(new InstrumentQuote(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m))), new InstrumentIncomeCash() },
+        { new InstrumentPriceEquity(new InstrumentQuote(new InstrumentPrice(99m), new InstrumentPrice(100m), new InstrumentPrice(101m)), new InstrumentPrice(100m), new InstrumentPrice(100m)), new InstrumentIncomeFixedIncome(new InstrumentPrice(1.25m)) }
     };
 
     private static InstrumentValue CreateInstrumentValue(IInstrumentPrice? price, IInstrumentIncome? income)

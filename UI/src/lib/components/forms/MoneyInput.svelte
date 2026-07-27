@@ -4,10 +4,12 @@
   import type { ControlSize } from './controls';
 
   type Props = {
+    bare?: boolean;
     class?: string;
     currency: string;
     disabled?: boolean;
     displayValue?: string;
+    form?: string;
     formattedValue?: string;
     id?: string;
     label?: string;
@@ -20,10 +22,12 @@
   };
 
   let {
+    bare = false,
     class: className = '',
     currency,
     disabled = false,
     displayValue = $bindable(''),
+    form,
     formattedValue = $bindable(''),
     id,
     label = 'Money',
@@ -39,9 +43,11 @@
 </script>
 
 <PolicyDecimalInput
+  {bare}
   class={className}
   {disabled}
   bind:displayValue
+  {form}
   bind:formattedValue
   {id}
   label={resolvedLabel}

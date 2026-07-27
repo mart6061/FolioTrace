@@ -6,29 +6,30 @@ namespace FolioTrace.Aggregates;
 
 public sealed record InstrumentPriceEquity : IInstrumentPrice
 {
-    public required InstrumentPrice Bid { get; init; }
+    public required InstrumentQuote Quote { get; init; }
 
-    public required InstrumentPrice Mid { get; init; }
+    /// <summary>The last traded price. Outside <see cref="Quote"/> because it does not participate in the spread.</summary>
+    public required InstrumentPrice Last { get; init; }
 
-    public required InstrumentPrice Ask { get; init; }
-
+    /// <summary>Net asset value. A fund valuation rather than a market quote, so it sits outside the spread.</summary>
     public required InstrumentPrice Nav { get; init; }
 
     public string PriceType => nameof(InstrumentPriceEquity);
 
     [JsonConstructor]
     [SetsRequiredMembers]
-    public InstrumentPriceEquity(InstrumentPrice bid, InstrumentPrice mid, InstrumentPrice ask, InstrumentPrice nav)
+    public InstrumentPriceEquity(InstrumentQuote quote, InstrumentPrice last, InstrumentPrice nav)
     {
-        Bid = bid ?? throw new ArgumentNullException(nameof(bid));
-        Mid = mid ?? throw new ArgumentNullException(nameof(mid));
-        Ask = ask ?? throw new ArgumentNullException(nameof(ask));
+        Quote = quote ?? throw new ArgumentNullException(nameof(quote));
+        Last = last ?? throw new ArgumentNullException(nameof(last));
         Nav = nav ?? throw new ArgumentNullException(nameof(nav));
-
-        if (Bid.Amount.HasValue && Mid.Amount.HasValue && Bid.Amount > Mid.Amount)
-            throw new ArgumentException("Bid must be less than or equal to mid.", nameof(bid));
-
-        if (Mid.Amount.HasValue && Ask.Amount.HasValue && Mid.Amount > Ask.Amount)
-            throw new ArgumentException("Mid must be less than or equal to ask.", nameof(mid));
     }
+
+    public InstrumentPrice Select(InstrumentPriceBasis basis) =>
+        basis switch
+        {
+            InstrumentPriceBasis.Last => Last,
+            InstrumentPriceBasis.NAV => Nav,
+            _ => Quote.Select(basis)
+        };
 }

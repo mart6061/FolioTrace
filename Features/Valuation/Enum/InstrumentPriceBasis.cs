@@ -15,6 +15,9 @@ public enum InstrumentPriceBasis
     [Description("Mid price")]
     Mid,
 
+    [Description("Last traded price")]
+    Last,
+
     [Description("Net Asset Value")]
     NAV
 }
