@@ -1,8 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import PageTitle from '$lib/components/page/PageTitle.svelte';
   import { Button, Select, TextInput, Toggle } from '$lib/components/forms';
   import { startOfDayForInput } from '$lib/dates';
   import type { InputControlKind, InputControlSetting, InputControlSettingScope } from '$lib/types';
@@ -15,6 +15,7 @@
   // every save, because the aggregate stores one collection and a save replaces all of it.
   const editableScopes: InputControlSettingScope[] = ['Global', 'Account'];
 
+  let pageHeaderMinimized = $state(false);
   let selectedScope = $state<InputControlSettingScope>('Global');
   let selectedAccountID = $state('');
 
@@ -111,19 +112,13 @@
 </svelte:head>
 
 <main class="min-h-screen">
-  <section class="page-header">
-    <div class="page-container">
-      <p class="page-kicker">CONFIGURATION</p>
-      <div class="page-title-row">
-        <h1>Input Control Settings</h1>
-        <BookmarkButton />
-      </div>
-      <p class="page-description">
-        Precision and limits for numeric entry. A control resolves the most restrictive value across the rules
-        that apply to it, so an account rule can tighten a global one but never loosen it.
-      </p>
-    </div>
-  </section>
+  <PageTitle
+    bind:minimized={pageHeaderMinimized}
+    description="Precision and limits for numeric entry. A control resolves the most restrictive value across the rules that apply to it, so an account rule can tighten a global one but never loosen it."
+    details={`${storedSettings.length} stored rules · as of now`}
+    kicker="CONFIGURATION"
+    title="Input Control Settings"
+  />
 
   <section class="page-container page-section grid gap-3">
     {#if data.error}

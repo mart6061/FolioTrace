@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
-  import { Card, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
+  import { Card, MenuCardGroup, PageCard, PageTitle, SortableHeader, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
@@ -81,6 +81,7 @@
     pageTitle: templateReference<ComponentProps<typeof PageTitle>>('PageTitle', ['kicker', 'title', 'description', 'details', 'minimized', 'bookmark', 'filter']),
     pillGroup: templateReference<ComponentProps<typeof PillGroup>>('PillGroup', ['ariaLabel', 'class', 'compact', 'id', 'mode', 'name', 'onchange', 'options', 'value', 'values']),
     quantityInput: templateReference<ComponentProps<typeof QuantityInput>>('QuantityInput', ['class', 'disabled', 'displayValue', 'formattedValue', 'id', 'label', 'name', 'policy', 'required', 'size', 'validationMessages', 'value']),
+    sortableHeader: templateReference<ComponentProps<typeof SortableHeader>>('SortableHeader', ['activeKey', 'buttonClass', 'children', 'class', 'direction', 'onsort', 'sortKey']),
     tableTools: templateReference<ComponentProps<typeof TableTools>>('TableTools', ['filterText', 'filterLabel', 'placeholder', 'onadd', 'onexportjson', 'onexportcsv', 'onexportxlsx', 'onprint']),
     select: templateReference<ComponentProps<typeof Select>>('Select', ['children', 'class', 'disabled', 'fullWidth', 'id', 'invalid', 'name', 'required', 'size', 'value']),
     textArea: templateReference<ComponentProps<typeof TextArea>>('TextArea', ['class', 'disabled', 'fullWidth', 'id', 'invalid', 'name', 'placeholder', 'required', 'rows', 'size', 'value']),
@@ -111,6 +112,8 @@
     { category: 'Form structure', id: 'button', label: 'Button', reference: templateReferences.button },
     { category: 'Form structure', id: 'dropdown', label: 'Dropdown shell', reference: templateReferences.dropdown },
     { category: 'Form structure', id: 'confirmInput', label: 'Confirm input', reference: templateReferences.confirmInput },
+    { category: 'Page chrome', id: 'pageTitle', label: 'Page title', reference: templateReferences.pageTitle },
+    { category: 'Page chrome', id: 'sortableHeader', label: 'Sortable header', reference: templateReferences.sortableHeader },
     { category: 'Page chrome', id: 'bookmarkButton', label: 'Bookmark button', reference: templateReferences.bookmarkButton },
     { category: 'Page chrome', id: 'themeModeControl', label: 'Theme mode control', reference: templateReferences.themeModeControl }
   ] as const;
@@ -132,6 +135,18 @@
   let explorerButtonStatus = $state('No button pressed yet.');
   let explorerConfirmValue = $state('');
   let explorerConfirmed = $state(false);
+  let explorerSortKey = $state<'name' | 'type'>('name');
+  let explorerSortDirection = $state<1 | -1>(1);
+
+  function setExplorerSort(key: 'name' | 'type') {
+    if (explorerSortKey === key) {
+      explorerSortDirection = explorerSortDirection === 1 ? -1 : 1;
+      return;
+    }
+
+    explorerSortKey = key;
+    explorerSortDirection = 1;
+  }
   let explorerDropdownOpen = $state(false);
   let explorerDropdownSelections = $state<string[]>(['Proposal']);
 
@@ -520,6 +535,34 @@
                 <p class="template-copy">
                   A positioning and dismissal shell only &mdash; it renders whatever children you pass. Use it for filter panels,
                   checkbox lists, and menus. For a full option list with search and select-all, use <code>ComplexSelect</code>.
+                </p>
+              </div>
+            {:else if selectedInputTemplateID === 'pageTitle'}
+              <div class="input-template-chrome-demo">
+                <p class="template-copy">
+                  The page header: kicker, title, description, details, bookmark and the minimise control. It takes an
+                  optional <code>filter</code> snippet, so a page renders it with or without a filter card rather than
+                  hand-rolling a header. Live examples sit at the top of this page and on Input Control Settings.
+                </p>
+              </div>
+            {:else if selectedInputTemplateID === 'sortableHeader'}
+              <div class="input-template-chrome-demo">
+                <table class="template-table">
+                  <thead>
+                    <tr>
+                      <SortableHeader activeKey={explorerSortKey} direction={explorerSortDirection} onsort={setExplorerSort} sortKey="name">Name</SortableHeader>
+                      <SortableHeader activeKey={explorerSortKey} direction={explorerSortDirection} onsort={setExplorerSort} sortKey="type">Type</SortableHeader>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each [...tableTemplateRows].sort((left, right) => explorerSortDirection * left[explorerSortKey].localeCompare(right[explorerSortKey])) as row (row.name)}
+                      <tr><td>{row.name}</td><td>{row.type}</td></tr>
+                    {/each}
+                  </tbody>
+                </table>
+                <p class="template-copy">
+                  Renders the cell as well as the button, because <code>aria-sort</code> belongs on the column header
+                  rather than the control inside it. Clicking the active column reverses it.
                 </p>
               </div>
             {:else if selectedInputTemplateID === 'confirmInput'}

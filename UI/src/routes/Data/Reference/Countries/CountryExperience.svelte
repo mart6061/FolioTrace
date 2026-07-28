@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import SortableHeader from '$lib/components/page/SortableHeader.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type { CountryReferenceEvent } from '$lib/types';
@@ -111,12 +112,6 @@
     sortDirection = 1;
   }
 
-  function sortLabel(nextSortKey: SortKey) {
-    if (sortKey !== nextSortKey)
-      return '';
-
-    return sortDirection === 1 ? ' ↑' : ' ↓';
-  }
 
   function countryExportRows() {
     return sortedCountries.map((country) => ({
@@ -411,31 +406,11 @@
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
                 <th class="w-14 px-3 py-2">Flag</th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('country')} type="button">
-                    Country{sortLabel('country')}
-                  </button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('alpha2')} type="button">
-                    Alpha-2{sortLabel('alpha2')}
-                  </button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('alpha3')} type="button">
-                    Alpha-3{sortLabel('alpha3')}
-                  </button>
-                </th>
-                <th class="px-3 py-2 text-right">
-                  <button class="table-sort-button ml-auto" onclick={() => setSort('numeric')} type="button">
-                    Numeric{sortLabel('numeric')}
-                  </button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">
-                    Last audit{sortLabel('lastAudit')}
-                  </button>
-                </th>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="country">Country</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="alpha2">Alpha-2</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="alpha3">Alpha-3</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2 text-right" buttonClass="ml-auto" direction={sortDirection} onsort={setSort} sortKey="numeric">Numeric</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="lastAudit">Last audit</SortableHeader>
                 <th class="w-40 px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>

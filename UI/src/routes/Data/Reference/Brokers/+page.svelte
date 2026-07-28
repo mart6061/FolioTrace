@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import SortableHeader from '$lib/components/page/SortableHeader.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import { PercentInput } from '$lib/components/forms';
@@ -126,12 +127,6 @@
     sortDirection = 1;
   }
 
-  function sortLabel(nextSortKey: SortKey) {
-    if (sortKey !== nextSortKey)
-      return '';
-
-    return sortDirection === 1 ? ' ^' : ' v';
-  }
 
   function formText(key: string, fallback = '') {
     const values = (form?.values ?? {}) as Record<string, unknown>;
@@ -455,27 +450,13 @@
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
-                <th class="min-w-56 px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('broker')} type="button">Broker{sortLabel('broker')}</button>
-                </th>
-                <th class="min-w-48 px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('lei')} type="button">LEI{sortLabel('lei')}</button>
-                </th>
-                <th class="min-w-28 px-3 py-2 text-right">
-                  <button class="table-sort-button ml-auto" onclick={() => setSort('commission')} type="button">Commission{sortLabel('commission')}</button>
-                </th>
-                <th class="min-w-28 px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('active')} type="button">Status{sortLabel('active')}</button>
-                </th>
-                <th class="w-24 px-3 py-2 text-center">
-                  <button class="table-sort-button" onclick={() => setSort('approved')} type="button">Approved{sortLabel('approved')}</button>
-                </th>
-                <th class="min-w-44 px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('nextReview')} type="button">Next review{sortLabel('nextReview')}</button>
-                </th>
-                <th class="min-w-36 px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">Last audit{sortLabel('lastAudit')}</button>
-                </th>
+                <SortableHeader activeKey={sortKey} class="min-w-56 px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="broker">Broker</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="min-w-48 px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="lei">LEI</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="min-w-28 px-3 py-2 text-right" buttonClass="ml-auto" direction={sortDirection} onsort={setSort} sortKey="commission">Commission</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="min-w-28 px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="active">Status</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="w-24 px-3 py-2 text-center" direction={sortDirection} onsort={setSort} sortKey="approved">Approved</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="min-w-44 px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="nextReview">Next review</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="min-w-36 px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="lastAudit">Last audit</SortableHeader>
                 <th class="w-48 px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
