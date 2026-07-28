@@ -6,6 +6,7 @@
   import { Toggle } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import SortableHeader from '$lib/components/page/SortableHeader.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
   import type { InputControlPolicy, ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
@@ -101,12 +102,6 @@
     sortDirection = 1;
   }
 
-  function sortLabel(nextSortKey: SortKey) {
-    if (sortKey !== nextSortKey)
-      return '';
-
-    return sortDirection === 1 ? ' ^' : ' v';
-  }
 
   function startAdd() {
     addingAllocation = true;
@@ -434,21 +429,11 @@
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('name')} type="button">Name{sortLabel('name')}</button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('status')} type="button">Status{sortLabel('status')}</button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('accounts')} type="button">Accounts{sortLabel('accounts')}</button>
-                </th>
-                <th class="w-36 px-3 py-2 whitespace-nowrap">
-                  <button class="table-sort-button" onclick={() => setSort('nodes')} type="button">Nodes{sortLabel('nodes')}</button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">Last audit{sortLabel('lastAudit')}</button>
-                </th>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="name">Name</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="status">Status</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="accounts">Accounts</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="w-36 px-3 py-2 whitespace-nowrap" direction={sortDirection} onsort={setSort} sortKey="nodes">Nodes</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="lastAudit">Last audit</SortableHeader>
                 <th class="min-w-[30rem] px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>

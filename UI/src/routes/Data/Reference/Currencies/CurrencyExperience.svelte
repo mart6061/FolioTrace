@@ -5,6 +5,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import SortableHeader from '$lib/components/page/SortableHeader.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
   import type { CurrencyReferenceEvent } from '$lib/types';
@@ -111,12 +112,6 @@
     sortDirection = 1;
   }
 
-  function sortLabel(nextSortKey: SortKey) {
-    if (sortKey !== nextSortKey)
-      return '';
-
-    return sortDirection === 1 ? ' ↑' : ' ↓';
-  }
 
   function currencyExportRows() {
     return sortedCurrencies.map((currency) => ({
@@ -389,21 +384,11 @@
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('currency')} type="button">Currency{sortLabel('currency')}</button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('alphabeticCode')} type="button">Alphabetic{sortLabel('alphabeticCode')}</button>
-                </th>
-                <th class="px-3 py-2 text-right">
-                  <button class="table-sort-button ml-auto" onclick={() => setSort('numericCode')} type="button">Numeric{sortLabel('numericCode')}</button>
-                </th>
-                <th class="px-3 py-2 text-right">
-                  <button class="table-sort-button ml-auto" onclick={() => setSort('decimalPlace')} type="button">Decimals{sortLabel('decimalPlace')}</button>
-                </th>
-                <th class="px-3 py-2">
-                  <button class="table-sort-button" onclick={() => setSort('lastAudit')} type="button">Last audit{sortLabel('lastAudit')}</button>
-                </th>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="currency">Currency</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="alphabeticCode">Alphabetic</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2 text-right" buttonClass="ml-auto" direction={sortDirection} onsort={setSort} sortKey="numericCode">Numeric</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2 text-right" buttonClass="ml-auto" direction={sortDirection} onsort={setSort} sortKey="decimalPlace">Decimals</SortableHeader>
+                <SortableHeader activeKey={sortKey} class="px-3 py-2" direction={sortDirection} onsort={setSort} sortKey="lastAudit">Last audit</SortableHeader>
                 <th class="w-40 px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>

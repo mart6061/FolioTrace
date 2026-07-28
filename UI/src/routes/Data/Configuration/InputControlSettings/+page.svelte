@@ -1,8 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import PageTitle from '$lib/components/page/PageTitle.svelte';
   import { Button, Select, TextInput, Toggle } from '$lib/components/forms';
   import { startOfDayForInput } from '$lib/dates';
   import type { InputControlKind, InputControlSetting, InputControlSettingScope } from '$lib/types';
@@ -10,7 +10,14 @@
   let { data, form } = $props();
 
   const controlKinds: InputControlKind[] = ['Quantity', 'Money', 'Price', 'Percent'];
-  const scopes: InputControlSettingScope[] = ['Global', 'Account', 'User'];
+  // User scope is deliberately absent. It means "the signed in user's own preference", which belongs with
+  // the rest of their preferences rather than in a configuration tool. Those rows are still carried through
+  // every save, because the aggregate stores one collection and a save replaces all of it.
+  const editableScopes: InputControlSettingScope[] = ['Global', 'Account'];
+
+  let pageHeaderMinimized = $state(false);
+  let selectedScope = $state<InputControlSettingScope>('Global');
+  let selectedAccountID = $state('');
 
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   const accounts = $derived(data.accounts?.items ?? []);
@@ -32,6 +39,16 @@
   });
 
   const settingsJson = $derived(JSON.stringify(draft));
+
+  /** Rows the page is not showing, kept so that saving the collection does not delete them. */
+  const carriedRows = $derived(draft.filter((setting) => setting.scope === 'User'));
+
+  const visibleRows = $derived(
+    draft
+      .map((setting, index) => ({ index, setting }))
+      .filter(({ setting }) => setting.scope === selectedScope
+        && (selectedScope !== 'Account' || (setting.accountID ?? '') === selectedAccountID))
+  );
   const duplicateKeys = $derived.by(() => {
     const seen = new Map<string, number>();
 
@@ -50,7 +67,16 @@
   const canSave = $derived(draft.length > 0 && duplicateKeys.length === 0 && !moneyWithDecimalPlaces && !submitting);
 
   function addSetting() {
-    draft = [...draft, { allowNegative: null, controlKind: 'Quantity', decimalPlaces: null, formatPattern: null, maxValue: null, minValue: null, scope: 'Global' }];
+    draft = [...draft, {
+      accountID: selectedScope === 'Account' ? selectedAccountID || null : null,
+      allowNegative: null,
+      controlKind: 'Quantity',
+      decimalPlaces: null,
+      formatPattern: null,
+      maxValue: null,
+      minValue: null,
+      scope: selectedScope
+    }];
   }
 
   function removeSetting(index: number) {
@@ -69,12 +95,7 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
-  function scopeTargetLabel(setting: InputControlSetting) {
-    if (setting.scope === 'Account')
-      return accounts.find((account: { accountID: string; name: string }) => account.accountID === setting.accountID)?.name ?? 'Select account';
-
-    return setting.scope === 'User' ? 'Current user' : 'All accounts and users';
-  }
+  const canAdd = $derived(selectedScope !== 'Account' || Boolean(selectedAccountID));
 
   const enhanceSave = () => {
     submitting = true;
@@ -91,19 +112,13 @@
 </svelte:head>
 
 <main class="min-h-screen">
-  <section class="page-header">
-    <div class="page-container">
-      <p class="page-kicker">CONFIGURATION</p>
-      <div class="page-title-row">
-        <h1>Input Control Settings</h1>
-        <BookmarkButton />
-      </div>
-      <p class="page-description">
-        Precision and limits for numeric entry. A control resolves the most restrictive value across the rules
-        that apply to it, so an account rule can tighten a global one but never loosen it.
-      </p>
-    </div>
-  </section>
+  <PageTitle
+    bind:minimized={pageHeaderMinimized}
+    description="Precision and limits for numeric entry. A control resolves the most restrictive value across the rules that apply to it, so an account rule can tighten a global one but never loosen it."
+    details={`${storedSettings.length} stored rules · as of now`}
+    kicker="CONFIGURATION"
+    title="Input Control Settings"
+  />
 
   <section class="page-container page-section grid gap-3">
     {#if data.error}
@@ -140,36 +155,39 @@
         <input name="eventDateTime" type="hidden" value={eventDateDefault} />
         <input name="settingsJson" type="hidden" value={settingsJson} />
 
+        <div class="settings-scope-bar">
+          <label class="settings-scope-field">
+            <span>Scope</span>
+            <Select size="sm" value={selectedScope} onchange={(event) => { selectedScope = (event.currentTarget as HTMLSelectElement).value as InputControlSettingScope; selectedAccountID = ''; }}>
+              {#each editableScopes as scope (scope)}<option value={scope}>{scope}</option>{/each}
+            </Select>
+          </label>
+          {#if selectedScope === 'Account'}
+            <label class="settings-scope-field">
+              <span>Account</span>
+              <Select size="sm" value={selectedAccountID} onchange={(event) => selectedAccountID = (event.currentTarget as HTMLSelectElement).value}>
+                <option value="">Select account</option>
+                {#each accounts as account (account.accountID)}<option value={account.accountID}>{account.name}</option>{/each}
+              </Select>
+            </label>
+          {/if}
+        </div>
+
         <div class="settings-table-wrap overflow-x-auto">
           <table class="settings-table">
             <thead>
               <tr>
-                <th>Kind</th><th>Scope</th><th>Applies to</th><th>Decimals</th>
+                <th>Kind</th><th>Decimals</th>
                 <th>Min</th><th>Max</th><th>Format</th><th>Negative</th><th></th>
               </tr>
             </thead>
             <tbody>
-              {#each draft as setting, index (index)}
+              {#each visibleRows as { setting, index } (index)}
                 <tr>
                   <td>
                     <Select size="sm" value={setting.controlKind} onchange={(event) => updateSetting(index, { controlKind: (event.currentTarget as HTMLSelectElement).value as InputControlKind })}>
                       {#each controlKinds as kind (kind)}<option value={kind}>{kind}</option>{/each}
                     </Select>
-                  </td>
-                  <td>
-                    <Select size="sm" value={setting.scope} onchange={(event) => updateSetting(index, { scope: (event.currentTarget as HTMLSelectElement).value as InputControlSettingScope, accountID: null })}>
-                      {#each scopes as scope (scope)}<option value={scope}>{scope}</option>{/each}
-                    </Select>
-                  </td>
-                  <td>
-                    {#if setting.scope === 'Account'}
-                      <Select size="sm" value={setting.accountID ?? ''} onchange={(event) => updateSetting(index, { accountID: (event.currentTarget as HTMLSelectElement).value || null })}>
-                        <option value="">Select account</option>
-                        {#each accounts as account (account.accountID)}<option value={account.accountID}>{account.name}</option>{/each}
-                      </Select>
-                    {:else}
-                      <span class="settings-static">{scopeTargetLabel(setting)}</span>
-                    {/if}
                   </td>
                   <td>
                     <TextInput
@@ -197,7 +215,11 @@
                   </td>
                 </tr>
               {:else}
-                <tr><td colspan="9" class="settings-empty">No rules stored. Every control falls back to its type default.</td></tr>
+                <tr><td colspan="7" class="settings-empty">
+                  {selectedScope === 'Account' && !selectedAccountID
+                    ? 'Select an account to see or add its rules.'
+                    : 'No rules at this scope. Controls fall back to a broader scope, then to the type default.'}
+                </td></tr>
               {/each}
             </tbody>
           </table>
@@ -220,12 +242,19 @@
             <span>Event date</span>
             <DateTimeInput name="eventDateTimeDisplay" size="sm" step="1" value={eventDateDefault} />
           </label>
-          <Button onclick={addSetting} size="sm">Add rule</Button>
+          <Button disabled={!canAdd} onclick={addSetting} size="sm">Add rule</Button>
           <Button disabled={!canSave} type="submit" variant="primary">Save all rules</Button>
         </div>
         <p class="settings-note">
-          Saving replaces the whole collection, because the aggregate stores the rules as one set rather than
-          individually.
+          Decimal places resolve to the tightest value across every scope that applies. Format and negativity
+          resolve by precedence instead, Account first, then Global, then User.
+        </p>
+        <p class="settings-note">
+          Saving replaces the whole collection, because the aggregate stores the rules as one set.
+          {#if carriedRows.length}
+            {carriedRows.length} user {carriedRows.length === 1 ? 'rule is' : 'rules are'} not shown here and
+            {carriedRows.length === 1 ? 'is' : 'are'} carried through unchanged.
+          {/if}
         </p>
       </form>
     </Card>
@@ -264,6 +293,20 @@
     margin: 0.5rem 0 0;
   }
 
+  .settings-scope-bar {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .settings-scope-field {
+    display: grid;
+    font-size: 0.7rem;
+    gap: 0.15rem;
+  }
+
   .settings-table {
     border-collapse: collapse;
     font-size: 0.8rem;
@@ -283,11 +326,6 @@
     font-size: 0.68rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-  }
-
-  .settings-static {
-    color: var(--muted);
-    font-size: 0.75rem;
   }
 
   .settings-empty {
