@@ -4,23 +4,34 @@ import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
+  getInputPolicies,
   getInstrumentValues,
   postInstrumentPriceSetEvent,
   type InstrumentPriceSetRequest
 } from '$lib/server/api';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiValuationDate = toApiDateTime(valuationDate);
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+  const { currentUser } = await parent();
 
   try {
-    const instrumentValues = await getInstrumentValues(fetch, apiValuationDate, apiAuditDateTime);
+    const [instrumentValues, inputPolicies] = await Promise.all([
+      getInstrumentValues(fetch, apiValuationDate, apiAuditDateTime),
+      getInputPolicies(fetch, {
+        auditDateTime: apiAuditDateTime,
+        controlKinds: ['Price'],
+        eventDateTime: apiValuationDate,
+        userID: currentUser?.userID
+      })
+    ]);
 
     return {
       auditDateTime,
       error: '',
+      inputPolicies,
       instrumentValues,
       valuationDate
     };
@@ -28,6 +39,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
     return {
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load instrument values.',
+      inputPolicies: [],
       instrumentValues: null,
       valuationDate
     };

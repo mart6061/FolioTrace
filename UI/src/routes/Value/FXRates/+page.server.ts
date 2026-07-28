@@ -6,20 +6,30 @@ import { requireCurrentUser } from '$lib/server/auth';
 import {
   getFXRates,
   getFXs,
+  getInputPolicies,
   postFXRateSetEvent,
   type FXRateSetRequest
 } from '$lib/server/api';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiValuationDate = toApiDateTime(valuationDate);
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+  const { currentUser } = await parent();
 
   try {
-    const [fxRates, fxs] = await Promise.all([
+    const [fxRates, fxs, inputPolicies] = await Promise.all([
       getFXRates(fetch, apiValuationDate, apiAuditDateTime),
-      getFXs(fetch, apiValuationDate, apiAuditDateTime)
+      getFXs(fetch, apiValuationDate, apiAuditDateTime),
+      getInputPolicies(fetch, {
+        auditDateTime: apiAuditDateTime,
+        controlKinds: ['Price'],
+        // An FX rate is quoted in the pair's quote currency, which varies per row, so the policy is
+        // resolved without one. Price precision comes from settings, never from the currency.
+        eventDateTime: apiValuationDate,
+        userID: currentUser?.userID
+      })
     ]);
 
     return {
@@ -27,6 +37,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       error: '',
       fxRates,
       fxs,
+      inputPolicies,
       valuationDate
     };
   } catch (error) {
@@ -35,6 +46,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       error: error instanceof Error ? error.message : 'Unable to load FX rates.',
       fxRates: null,
       fxs: null,
+      inputPolicies: [],
       valuationDate
     };
   }
