@@ -325,6 +325,14 @@ export type InstrumentPriceSetRequest = {
   nav?: number | null;
 };
 
+export type InstrumentAccruedInterestSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  instrumentID: string;
+  /** Stored per unit, in the instrument's price currency. Null clears the accrual. */
+  accruedInterest: number | null;
+};
+
 export type InstrumentCreatedRequest = {
   eventDateTime: string;
   reason: string;
@@ -1472,6 +1480,30 @@ export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, reques
       Reason: request.reason,
       InstrumentID: request.instrumentID,
       Price: eventPrice
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentAccruedInterestSetEvent(fetchApi: typeof fetch, request: InstrumentAccruedInterestSetRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/InstrumentIncome/InstrumentIncomeSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      Income: {
+        $type: 'InstrumentIncomeFixedIncome',
+        AccruedInterest: { Amount: request.accruedInterest }
+      }
     })
   });
 

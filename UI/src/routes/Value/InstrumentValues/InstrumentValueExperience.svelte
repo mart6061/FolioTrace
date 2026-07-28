@@ -383,6 +383,16 @@
     ].join('|');
   }
 
+  const enhanceAccruedInterest: SubmitFunction = ({ formData }) => {
+    const instrumentID = formData.get('instrumentID');
+    submittingInstrumentID = typeof instrumentID === 'string' ? instrumentID : '';
+
+    return async ({ update }) => {
+      await update({ reset: false });
+      submittingInstrumentID = '';
+    };
+  };
+
   const enhancePrice: SubmitFunction = ({ formData }) => {
     const instrumentID = formData.get('instrumentID');
     submittingInstrumentID = typeof instrumentID === 'string' ? instrumentID : '';
@@ -505,6 +515,10 @@
                           {@const currentFixedIncomePrice = fixedIncomePrice(instrument.price)}
                           <tr class="bg-teal-50/30 align-top">
                             <td class="px-3 py-2">
+                              <form id={`instrument-accrual-edit-${instrument.instrumentID}`} action="?/setAccruedInterest" method="POST" use:enhance={enhanceAccruedInterest}>
+                                <input name="instrumentID" type="hidden" value={instrument.instrumentID} />
+                                <input name="eventDateTime" type="hidden" value={eventDateDefault} />
+                              </form>
                               <form id={`instrument-price-edit-${instrument.instrumentID}`} action="?/setInstrumentPrice" method="POST" use:enhance={enhancePrice}>
                                 <input name="instrumentID" type="hidden" value={instrument.instrumentID} />
                                 <input name="currency" type="hidden" value={currency(instrument)} />
@@ -560,7 +574,31 @@
                                     />
                                   </label>
                                 </div>
-                                <p class="mt-1 text-xs text-slate-500">Dirty prices are derived by adding accrued interest and are not entered here.</p>
+                                {@const accrual = fixedIncomeIncome(instrument.income)}
+                                {@const accrued = accrual?.accruedInterest.amount ?? null}
+                                <div class="mt-2 grid gap-1 text-xs font-medium text-slate-600">
+                                  <span>Accrued interest</span>
+                                  <div class="flex flex-wrap items-center gap-2">
+                                    <PriceInput
+                                      bare
+                                      class="instrument-price-input"
+                                      currency={currency(instrument)}
+                                      form={`instrument-accrual-edit-${instrument.instrumentID}`}
+                                      label="Accrued interest"
+                                      name="accruedInterest"
+                                      policy={pricePolicy}
+                                      size="sm"
+                                      value={String(accrued ?? '')}
+                                    />
+                                    <button class="house-button house-button-secondary house-button-sm" form={`instrument-accrual-edit-${instrument.instrumentID}`} type="submit">Save accrual</button>
+                                  </div>
+                                  <span class="font-normal text-slate-500">
+                                    Dirty is derived, never stored: clean + accrued. Mid dirty is currently
+                                    {currentFixedIncomePrice.cleanQuote.mid.amount !== null && currentFixedIncomePrice.cleanQuote.mid.amount !== undefined
+                                      ? money((currentFixedIncomePrice.cleanQuote.mid.amount ?? 0) + (accrued ?? 0))
+                                      : 'unavailable while no clean mid is quoted'}.
+                                  </span>
+                                </div>
                               {:else}
                                 <div class="grid gap-2 sm:grid-cols-2">
                                   <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
