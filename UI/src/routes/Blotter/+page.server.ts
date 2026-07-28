@@ -10,6 +10,7 @@ import {
   getInstrumentValues,
   getInstruments,
   getTicketStageOptions,
+  getInputPolicies,
   getTickets,
   postTicketAccountAddedEvent,
   postTicketAccountRemovedEvent,
@@ -42,11 +43,12 @@ import type { Account, Instrument, Ticket, TicketProposalAllocation, TicketSide,
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const eventDateTime = toApiDateTime(valuationDate);
   const asOfDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+  const { currentUser } = await parent();
 
   try {
     const [tickets, accounts, brokers, holdings, instruments, instrumentValues, ticketStageOptions, foleoTraderOrders, tradeFiles] = await Promise.all([
@@ -61,7 +63,30 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       getActiveTradeFiles(fetch)
     ]);
 
+    // Price and Quantity resolve the same way whatever the currency, so one request covers the page. Money
+    // takes its decimal places from the currency, and tickets trade in several, so each needs its own.
+    const tradeCurrencies = [...new Set(tickets.items.map((ticket) => ticket.tradeCurrency).filter(Boolean))];
+    const [sharedPolicies, ...moneyPolicies] = await Promise.all([
+      getInputPolicies(fetch, {
+        auditDateTime: asOfDateTime,
+        controlKinds: ['Price', 'Quantity'],
+        eventDateTime,
+        userID: currentUser?.userID
+      }),
+      ...tradeCurrencies.map((currency) => getInputPolicies(fetch, {
+        auditDateTime: asOfDateTime,
+        controlKinds: ['Money'],
+        currency,
+        eventDateTime,
+        userID: currentUser?.userID
+      }))
+    ]);
+
     return {
+      inputPolicies: sharedPolicies,
+      moneyPoliciesByCurrency: Object.fromEntries(
+        tradeCurrencies.map((currency, index) => [currency, moneyPolicies[index]?.[0] ?? null])
+      ),
       accounts,
       auditDateTime,
       brokers,
@@ -82,6 +107,8 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       brokers: null,
       error: error instanceof Error ? error.message : 'Unable to load the blotter.',
       foleoTraderOrders: null,
+      inputPolicies: [],
+      moneyPoliciesByCurrency: {},
       holdings: null,
       instruments: null,
       instrumentValues: null,

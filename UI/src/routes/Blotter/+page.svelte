@@ -4,15 +4,43 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import { MoneyInput, PriceInput, QuantityInput } from '$lib/components/forms';
   import { BrokerDropdown, ComplexSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
-  import type { Account, Broker, FoleoTraderOrder, Holding, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
+  import type { Account, Broker, FoleoTraderOrder, Holding, InputControlPolicy, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   type TicketEditContext = 'Proposal' | 'Trade';
 
   let { data, form } = $props();
+
+  const pricePolicy = $derived(
+    (data.inputPolicies ?? []).find((policy: InputControlPolicy) => policy.controlKind === 'Price') ?? fallbackPolicy('Price')
+  );
+  const quantityPolicy = $derived(
+    (data.inputPolicies ?? []).find((policy: InputControlPolicy) => policy.controlKind === 'Quantity') ?? fallbackPolicy('Quantity')
+  );
+
+  /** Money decimal places come from the currency, so each traded currency resolves its own policy. */
+  function moneyPolicyFor(currency: string): InputControlPolicy {
+    const byCurrency = (data.moneyPoliciesByCurrency ?? {}) as Record<string, InputControlPolicy | null>;
+    return byCurrency[currency] ?? fallbackPolicy('Money', currency);
+  }
+
+  function fallbackPolicy(controlKind: InputControlPolicy['controlKind'], currency: string | null = null): InputControlPolicy {
+    return {
+      allowNegative: false,
+      controlKind,
+      currency,
+      decimalPlaces: 8,
+      formatPattern: controlKind === 'Quantity' ? '#,##0.########' : '#,##0.00######',
+      formatSource: 'TypeDefault',
+      maxValue: null,
+      minValue: 0,
+      validationMessages: []
+    };
+  }
 
   const eventDateDefault = $derived(data.valuationDate);
   let submitting = $state('');
@@ -526,25 +554,16 @@
     input.value = input.value.replace(/[^0-9,]/g, '');
   }
 
-  function updateProposalQuantityDraft(ticketNumber: number, accountID: string, event: Event) {
-    cleanDecimalInput(event);
-
-    const input = event.currentTarget as HTMLInputElement;
-    proposalQuantityDrafts[proposalQuantityDraftKey(ticketNumber, accountID)] = input.value;
+  function updateProposalQuantityDraft(ticketNumber: number, accountID: string, value: string) {
+    proposalQuantityDrafts[proposalQuantityDraftKey(ticketNumber, accountID)] = value;
   }
 
-  function updateTradeQuantityDraft(ticketNumber: number, accountID: string, event: Event) {
-    cleanDecimalInput(event);
-
-    const input = event.currentTarget as HTMLInputElement;
-    tradeQuantityDrafts[tradeDraftKey(ticketNumber, accountID)] = input.value;
+  function updateTradeQuantityDraft(ticketNumber: number, accountID: string, value: string) {
+    tradeQuantityDrafts[tradeDraftKey(ticketNumber, accountID)] = value;
   }
 
-  function updateTradeSettlementAmountDraft(ticketNumber: number, accountID: string, event: Event) {
-    cleanDecimalInput(event);
-
-    const input = event.currentTarget as HTMLInputElement;
-    tradeSettlementAmountDrafts[tradeDraftKey(ticketNumber, accountID)] = input.value;
+  function updateTradeSettlementAmountDraft(ticketNumber: number, accountID: string, value: string) {
+    tradeSettlementAmountDrafts[tradeDraftKey(ticketNumber, accountID)] = value;
   }
 
   function updateTradeCashHoldingDraft(ticketNumber: number, accountID: string, event: Event) {
@@ -1524,7 +1543,7 @@
                     <label class="field">
                       <span>Target price ({ticket.tradeCurrency})</span>
                       {#if proposalInputActive && canEditProposalTerms(ticket)}
-                        <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="targetPrice" value={targetPriceInputValue(ticket)} oninput={cleanDecimalInput} />
+                        <PriceInput bare class="ticket-term-input" currency={ticket.tradeCurrency} form={saveFormID} label="Target price" name="targetPrice" policy={pricePolicy} size="sm" value={targetPriceInputValue(ticket)} />
                       {:else}
                         <span class="ticket-readonly-value">{targetPriceDisplay(ticket)}</span>
                       {/if}
@@ -1593,7 +1612,7 @@
                         <div class="account-allocation-quantity">
                           <input form={saveFormID} type="hidden" name="proposalAllocationAccountID" value={accountID} disabled={!proposalInputActive || !canEditProposal(ticket)} />
                           {#if proposalInputActive && canEditProposal(ticket)}
-                            <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`proposalQuantity-${accountID}`} value={proposalQuantityInputValue(ticket, accountID)} placeholder="Qty" oninput={(event) => updateProposalQuantityDraft(ticket.ticketNumber, accountID, event)} />
+                            <QuantityInput bare class="ticket-term-input" form={saveFormID} label="Proposal quantity" name={`proposalQuantity-${accountID}`} policy={quantityPolicy} size="sm" bind:value={() => proposalQuantityInputValue(ticket, accountID), (next) => updateProposalQuantityDraft(ticket.ticketNumber, accountID, next)} />
                           {:else}
                             <span class="ticket-readonly-value">{formattedDisplay(quantityText(allocation?.quantity))}</span>
                           {/if}
@@ -1628,7 +1647,7 @@
                       <label class="field">
                         <span>Traded price ({ticket.tradeCurrency})</span>
                         {#if tradeInputActive && canEditTrade(ticket)}
-                          <input form={saveFormID} class="input ticket-term-input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="tradedPrice" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} oninput={cleanDecimalInput} />
+                          <PriceInput bare class="ticket-term-input" currency={ticket.tradeCurrency} form={saveFormID} label="Traded price" name="tradedPrice" policy={pricePolicy} size="sm" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} />
                         {:else}
                           <span class="ticket-readonly-value">{formattedDisplay(priceText(ticket.tradePrice, ticket.tradeCurrency))}</span>
                         {/if}
@@ -1668,8 +1687,8 @@
                             </div>
                             <input form={saveFormID} type="hidden" name="tradeAllocationAccountID" value={accountID} disabled={!tradeInputActive || !canEditTrade(ticket)} />
                             {#if tradeInputActive && canEditTrade(ticket)}
-                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeQuantity-${accountID}`} value={tradeQuantityInputValue(ticket, accountID)} placeholder="Qty" oninput={(event) => updateTradeQuantityDraft(ticket.ticketNumber, accountID, event)} />
-                              <input form={saveFormID} class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name={`tradeSettlementAmount-${accountID}`} value={tradeSettlementAmountInputValue(ticket, accountID)} placeholder="Amount" oninput={(event) => updateTradeSettlementAmountDraft(ticket.ticketNumber, accountID, event)} />
+                              <QuantityInput bare form={saveFormID} label="Trade quantity" name={`tradeQuantity-${accountID}`} policy={quantityPolicy} size="sm" bind:value={() => tradeQuantityInputValue(ticket, accountID), (next) => updateTradeQuantityDraft(ticket.ticketNumber, accountID, next)} />
+                              <MoneyInput bare currency={ticket.tradeCurrency} form={saveFormID} label="Settlement amount" name={`tradeSettlementAmount-${accountID}`} policy={moneyPolicyFor(ticket.tradeCurrency)} size="sm" bind:value={() => tradeSettlementAmountInputValue(ticket, accountID), (next) => updateTradeSettlementAmountDraft(ticket.ticketNumber, accountID, next)} />
                               <select form={saveFormID} class="input trade-cash-holding-select" name={`tradeCashHoldingID-${accountID}`} value={selectedCashHoldingID} disabled={cashHoldings.length === 0} onchange={(event) => updateTradeCashHoldingDraft(ticket.ticketNumber, accountID, event)} required>
                                 <option value="">Cash holding</option>
                                 {#each cashHoldings as holding (holding.holdingID)}
@@ -1760,8 +1779,8 @@
                           <option value={broker.lei}>{brokerLabel(broker)}</option>
                         {/each}
                       </select>
-                      <input class="input" type="text" inputmode="numeric" pattern={integerInputPattern} name="fillQuantity" placeholder="Qty" oninput={cleanIntegerInput} required />
-                      <input class="input" type="text" inputmode="decimal" pattern={decimalInputPattern} name="fillSettlementAmount" placeholder="Amount" oninput={cleanDecimalInput} required />
+                      <QuantityInput bare label="Fill quantity" name="fillQuantity" policy={quantityPolicy} required size="sm" />
+                      <MoneyInput bare currency={ticket.tradeCurrency} label="Fill settlement amount" name="fillSettlementAmount" policy={moneyPolicyFor(ticket.tradeCurrency)} required size="sm" />
                       <input class="input" name="fillNote" placeholder="Note" />
                       <button class="house-button house-button-secondary house-button-sm" type="submit" disabled={activeBrokers.length === 0 || savedFillRemaining <= 0 || savedFillSettlementAmountRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
                     {:else}
