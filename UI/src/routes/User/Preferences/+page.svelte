@@ -3,6 +3,7 @@
   import { invalidateAll } from '$app/navigation';
   import { formatBookmarkType, formatBookmarkUrl } from '$lib/bookmarks';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import { draggable, dropZone } from '$lib/actions/dragDrop';
   import { Toggle } from '$lib/components/forms';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import Card from '$lib/components/page/Card.svelte';
@@ -173,26 +174,7 @@
     return JSON.stringify(items);
   }
 
-  function startBookmarkDrag(event: DragEvent, bookmarkID: string) {
-    draggedBookmarkID = bookmarkID;
-    dragOverBookmarkID = bookmarkID;
-    event.dataTransfer?.setData('text/plain', bookmarkID);
-
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'move';
-  }
-
-  function dragOverBookmark(event: DragEvent, bookmarkID: string) {
-    event.preventDefault();
-    dragOverBookmarkID = bookmarkID;
-
-    if (event.dataTransfer)
-      event.dataTransfer.dropEffect = 'move';
-  }
-
-  function dropBookmark(event: DragEvent, targetBookmarkID: string) {
-    event.preventDefault();
-    const sourceBookmarkID = event.dataTransfer?.getData('text/plain') || draggedBookmarkID;
+  function moveBookmark(sourceBookmarkID: string, targetBookmarkID: string) {
     draggedBookmarkID = null;
     dragOverBookmarkID = null;
 
@@ -215,6 +197,8 @@
     draggedBookmarkID = null;
     dragOverBookmarkID = null;
   }
+
+  const bookmarkDragKind = 'bookmark';
 </script>
 
 <main class="min-h-screen">
@@ -361,18 +345,24 @@
             {#each bookmarks as bookmark (bookmark.bookmarkID)}
               <div
                 class={`bookmark-preference-row ${dragOverBookmarkID === bookmark.bookmarkID ? 'bookmark-preference-row-over' : ''}`}
-                ondragover={(event) => dragOverBookmark(event, bookmark.bookmarkID)}
-                ondrop={(event) => dropBookmark(event, bookmark.bookmarkID)}
                 role="listitem"
+                use:dropZone={{
+                  accepts: [bookmarkDragKind],
+                  ondrop: (_kind, value) => moveBookmark(value, bookmark.bookmarkID),
+                  onhover: (over) => dragOverBookmarkID = over ? bookmark.bookmarkID : null
+                }}
               >
                 <button
                   aria-label={`Drag ${bookmark.url}`}
                   class="bookmark-preference-grip"
-                  draggable="true"
-                  ondragend={endBookmarkDrag}
-                  ondragstart={(event) => startBookmarkDrag(event, bookmark.bookmarkID)}
                   title="Drag to reorder"
                   type="button"
+                  use:draggable={{
+                    kind: bookmarkDragKind,
+                    value: bookmark.bookmarkID,
+                    onstart: (value) => draggedBookmarkID = value,
+                    onend: endBookmarkDrag
+                  }}
                 >
                   <span aria-hidden="true"></span>
                 </button>
