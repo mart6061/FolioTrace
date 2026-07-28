@@ -2,7 +2,9 @@
   import type { ComponentProps } from 'svelte';
   import { Card, MenuCardGroup, PageCard, PageTitle, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
-  import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import BookmarkButton from '$lib/components/BookmarkButton.svelte';
+  import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
+  import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, ConfirmInput, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
@@ -65,7 +67,10 @@
     card: templateReference<ComponentProps<typeof Card>>('Card', ['actions', 'ariaLive', 'children', 'class', 'density', 'intent', 'role', 'subtitle', 'title']),
     complexSelect: templateReference<ComponentProps<typeof ComplexSelect>>('ComplexSelect', ['ariaLabel', 'class', 'compactBrand', 'confirmSelection', 'disabled', 'emptyText', 'id', 'minimumSelections', 'multiple', 'name', 'onchange', 'onclose', 'onopenchange', 'open', 'options', 'placeholder', 'searchPlaceholder', 'showClear', 'showSelectAll', 'summary', 'value', 'values']),
     dateTimeInput: templateReference<ComponentProps<typeof DateTimeInput>>('DateTimeInput', ['class', 'disabled', 'form', 'fullWidth', 'futureLimited', 'invalid', 'id', 'max', 'min', 'name', 'onchange', 'required', 'showShortcuts', 'shortcutMode', 'size', 'step', 'value']),
+    bookmarkButton: templateReference<ComponentProps<typeof BookmarkButton>>('BookmarkButton', []),
+    themeModeControl: templateReference<ComponentProps<typeof ThemeModeControl>>('ThemeModeControl', ['class', 'label']),
     dropdown: templateReference<ComponentProps<typeof Dropdown>>('Dropdown', ['children', 'class', 'close', 'compactBrand', 'disabled', 'ontoggle', 'open', 'summary']),
+    confirmInput: templateReference<ComponentProps<typeof ConfirmInput>>('ConfirmInput', ['caseSensitive', 'class', 'confirmed', 'confirmWord', 'disabled', 'id', 'label', 'name', 'size', 'value']),
     field: templateReference<ComponentProps<typeof Field>>('Field', ['children', 'class', 'controlId', 'dense', 'error', 'help', 'inline', 'label', 'required']),
     holdingDropdown: templateReference<ComponentProps<typeof HoldingDropdown>>('HoldingDropdown', ['accountID', 'class', 'compactBrand', 'disabled', 'holdings', 'id', 'multiple', 'name', 'nameOnlySummary', 'placeholder', 'showInstrumentID', 'selectedHoldingID', 'selectedHoldingIDs']),
     menuCardGroup: templateReference<ComponentProps<typeof MenuCardGroup>>('MenuCardGroup', ['items', 'selected', 'onselect']),
@@ -84,7 +89,7 @@
     ticketDropdown: templateReference<ComponentProps<typeof TicketDropdown>>('TicketDropdown', ['class', 'compactBrand', 'disabled', 'instruments', 'id', 'name', 'placeholder', 'selectedTicketNumbers', 'tickets'])
   } as const;
 
-  const templateCategories = ['Text', 'Numeric', 'Date', 'Selection', 'Domain lookups', 'Form structure'] as const;
+  const templateCategories = ['Text', 'Numeric', 'Date', 'Selection', 'Domain lookups', 'Form structure', 'Page chrome'] as const;
 
   const inputTemplates = [
     { category: 'Text', id: 'textInput', label: 'Text input', reference: templateReferences.textInput },
@@ -104,7 +109,10 @@
     { category: 'Domain lookups', id: 'ticketDropdown', label: 'Ticket dropdown', reference: templateReferences.ticketDropdown },
     { category: 'Form structure', id: 'field', label: 'Field', reference: templateReferences.field },
     { category: 'Form structure', id: 'button', label: 'Button', reference: templateReferences.button },
-    { category: 'Form structure', id: 'dropdown', label: 'Dropdown shell', reference: templateReferences.dropdown }
+    { category: 'Form structure', id: 'dropdown', label: 'Dropdown shell', reference: templateReferences.dropdown },
+    { category: 'Form structure', id: 'confirmInput', label: 'Confirm input', reference: templateReferences.confirmInput },
+    { category: 'Page chrome', id: 'bookmarkButton', label: 'Bookmark button', reference: templateReferences.bookmarkButton },
+    { category: 'Page chrome', id: 'themeModeControl', label: 'Theme mode control', reference: templateReferences.themeModeControl }
   ] as const;
 
   type InputTemplateID = typeof inputTemplates[number]['id'];
@@ -122,6 +130,8 @@
   let explorerPillValue = $state('Discrete');
   let explorerFieldValue = $state('Example value');
   let explorerButtonStatus = $state('No button pressed yet.');
+  let explorerConfirmValue = $state('');
+  let explorerConfirmed = $state(false);
   let explorerDropdownOpen = $state(false);
   let explorerDropdownSelections = $state<string[]>(['Proposal']);
 
@@ -511,6 +521,22 @@
                   A positioning and dismissal shell only &mdash; it renders whatever children you pass. Use it for filter panels,
                   checkbox lists, and menus. For a full option list with search and select-all, use <code>ComplexSelect</code>.
                 </p>
+              </div>
+            {:else if selectedInputTemplateID === 'confirmInput'}
+              <div class="input-template-chrome-demo">
+                <ConfirmInput confirmWord="Delete" name="explorerConfirm" bind:confirmed={explorerConfirmed} bind:value={explorerConfirmValue} />
+                <Button disabled={!explorerConfirmed} variant="danger">Destructive action</Button>
+                <p class="template-copy">Gates a destructive action on typing the word. Matching is exact by default so a guard is not weakened by accident; pass <code>caseSensitive={'{false}'}</code> to relax it.</p>
+              </div>
+            {:else if selectedInputTemplateID === 'bookmarkButton'}
+              <div class="input-template-chrome-demo">
+                <BookmarkButton />
+                <p class="template-copy">Reads the current route and posts to the bookmark API, so it takes no props. Pressing it here really does bookmark the Ideas page; remove it again from User Preferences.</p>
+              </div>
+            {:else if selectedInputTemplateID === 'themeModeControl'}
+              <div class="input-template-chrome-demo">
+                <ThemeModeControl />
+                <p class="template-copy">Wraps Toggle and writes the dark mode preference. Switching it here changes the theme for the whole app, not just this preview.</p>
               </div>
             {:else if selectedInputTemplateID === 'moneyInput'}
               <MoneyInput currency={selectedPolicyCurrency} label="Money input" name="explorerMoney" policy={moneyPolicy} bind:displayValue={moneyDisplayValue} bind:formattedValue={moneyFormattedValue} bind:validationMessages={moneyValidationMessages} bind:value={moneyValue} />
@@ -1018,6 +1044,12 @@
   .input-template-preview :global(.house-dropdown),
   .input-template-preview :global(.policy-decimal-input) {
     max-width: 23rem;
+  }
+
+  .input-template-chrome-demo {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
   }
 
   .input-template-dropdown-demo {

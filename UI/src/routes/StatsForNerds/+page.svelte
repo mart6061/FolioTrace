@@ -3,6 +3,7 @@
   import { invalidateAll } from '$app/navigation';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import { ConfirmInput } from '$lib/components/forms';
   import { formatTableDateTime } from '$lib/dates';
   import type { AggregateMaintenanceNotification, BuildProgressNotification } from '$lib/types';
   import { onMount } from 'svelte';
@@ -42,8 +43,8 @@
   }
 
   const buildPercent = $derived(calculateBuildPercent(buildProgress));
-  const canConfirmBuild = $derived(buildConfirmationInput === 'Build');
-  const canConfirmClear = $derived(clearConfirmationInput === 'Clear');
+  let canConfirmBuild = $state(false);
+  let canConfirmClear = $state(false);
 
   onMount(() => {
     const source = new EventSource('/API/Notifications/Aggregates');
@@ -262,15 +263,7 @@
               method="POST"
               use:enhance={enhanceBuild}
             >
-              <label>
-                <span>Type Build to confirm</span>
-                <input
-                  autocomplete="off"
-                  bind:value={buildConfirmationInput}
-                  disabled={buildRunning}
-                  spellcheck="false"
-                />
-              </label>
+              <ConfirmInput confirmWord="Build" disabled={buildRunning} name="buildConfirmation" bind:confirmed={canConfirmBuild} bind:value={buildConfirmationInput} />
               <button disabled={!canConfirmBuild || buildRunning} type="submit">
                 {buildRunning ? 'Build running' : 'Rebuild database'}
               </button>
@@ -305,14 +298,7 @@
               method="POST"
               use:enhance={enhanceClearCache}
             >
-              <label>
-                <span>Type Clear to confirm</span>
-                <input
-                  autocomplete="off"
-                  bind:value={clearConfirmationInput}
-                  spellcheck="false"
-                />
-              </label>
+              <ConfirmInput confirmWord="Clear" name="clearConfirmation" bind:confirmed={canConfirmClear} bind:value={clearConfirmationInput} />
               <button disabled={!canConfirmClear} type="submit">Clear caches</button>
             </form>
           </article>

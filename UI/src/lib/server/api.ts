@@ -20,6 +20,8 @@ import type {
   HoldingKind,
   InputControlKind,
   InputControlPolicy,
+  InputControlSetting,
+  InputControlSettings,
   HoldingReferenceEvent,
   InstrumentLogo,
   InstrumentReferenceEvent,
@@ -323,6 +325,14 @@ export type InstrumentPriceSetRequest = {
   last?: number | null;
   /** Equity only. */
   nav?: number | null;
+};
+
+export type InstrumentAccruedInterestSetRequest = {
+  eventDateTime: string;
+  reason: string;
+  instrumentID: string;
+  /** Stored per unit, in the instrument's price currency. Null clears the accrual. */
+  accruedInterest: number | null;
 };
 
 export type InstrumentCreatedRequest = {
@@ -1472,6 +1482,73 @@ export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, reques
       Reason: request.reason,
       InstrumentID: request.instrumentID,
       Price: eventPrice
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function getInputControlSettings(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/InputControlSettings/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  return apiFetch<InputControlSettings>(fetchApi, url);
+}
+
+/**
+ * The aggregate replaces its whole collection, so this posts the complete desired set rather than a delta.
+ */
+export async function postInputControlSettingsModifiedEvent(fetchApi: typeof fetch, settings: InputControlSetting[], eventDateTime: string, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/InputControlSettings/InputControlSettingsModifiedEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: eventDateTime,
+      Reason: 'Modify input control settings',
+      Settings: settings.map((setting) => ({
+        ControlKind: setting.controlKind,
+        Scope: setting.scope,
+        AccountID: setting.accountID ?? null,
+        UserID: setting.userID ?? null,
+        DecimalPlaces: setting.decimalPlaces ?? null,
+        MinValue: setting.minValue ?? null,
+        MaxValue: setting.maxValue ?? null,
+        FormatPattern: setting.formatPattern || null,
+        AllowNegative: setting.allowNegative ?? null
+      }))
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentAccruedInterestSetEvent(fetchApi: typeof fetch, request: InstrumentAccruedInterestSetRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/InstrumentIncome/InstrumentIncomeSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: request.reason,
+      InstrumentID: request.instrumentID,
+      Income: {
+        $type: 'InstrumentIncomeFixedIncome',
+        AccruedInterest: { Amount: request.accruedInterest }
+      }
     })
   });
 

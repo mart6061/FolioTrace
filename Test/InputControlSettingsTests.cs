@@ -160,10 +160,10 @@ public sealed class InputControlSettingsTests
             new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, 0m, null, "#,##0.00######", false)
         ]);
 
+        // Sterling carries two decimal places; the price keeps the eight the settings allow.
         var policy = InputPolicyResolver.Resolve(InputControlKind.Price, settings, [Sterling], null, UserID, Alpha3Builder.Create("GBP"), null);
 
         Assert.Equal((short)8, policy.DecimalPlaces);
-        Assert.Equal("GBP", policy.Currency);
         Assert.Equal("Global", policy.FormatSource);
         Assert.Empty(policy.ValidationMessages);
     }
@@ -184,16 +184,19 @@ public sealed class InputControlSettingsTests
     }
 
     [Fact]
-    public void Resolver_RequiresCurrencyForPrice()
+    public void Resolver_ResolvesPriceWithoutACurrency()
     {
         var settings = SettingsFromDefinitions(
         [
             new InputControlSettingDefinition(InputControlKind.Price, InputControlSettingScope.Global, null, null, 8, null, null, "#,##0.00######", false)
         ]);
 
+        // An FX rate grid quotes each pair in its own currency, so one policy has to serve them all. The
+        // currency cannot change the resolved precision, so requiring it would only produce a spurious message.
         var policy = InputPolicyResolver.Resolve(InputControlKind.Price, settings, [], null, UserID, null, null);
 
-        Assert.Contains("Currency is required for Price input policies.", policy.ValidationMessages);
+        Assert.Equal((short)8, policy.DecimalPlaces);
+        Assert.Empty(policy.ValidationMessages);
     }
 
     [Fact]

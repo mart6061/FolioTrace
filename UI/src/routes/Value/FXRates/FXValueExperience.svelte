@@ -5,14 +5,31 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import { PriceInput } from '$lib/components/forms';
   import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
-  import type { FXRate, FXRateHistoryEvent } from '$lib/types';
+  import type { FXRate, FXRateHistoryEvent, InputControlPolicy } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   type RenderMode = 'full' | 'filter' | 'body';
 
   let { data: pageData, form: actionForm, formAction = '', renderMode = 'full' as RenderMode, selectedSection = '' } = $props();
+
+  const fallbackPricePolicy: InputControlPolicy = {
+    allowNegative: false,
+    controlKind: 'Price',
+    currency: null,
+    decimalPlaces: 8,
+    formatPattern: '#,##0.00######',
+    formatSource: 'TypeDefault',
+    maxValue: null,
+    minValue: 0,
+    validationMessages: []
+  };
+
+  const pricePolicy = $derived(
+    (pageData.inputPolicies ?? []).find((policy: InputControlPolicy) => policy.controlKind === 'Price') ?? fallbackPricePolicy
+  );
 
   const data = $derived(pageData as PageData);
   const form = $derived(actionForm as ActionData | undefined);
@@ -331,19 +348,52 @@
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Bid</span>
-                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`fx-rate-edit-${fx.pair}`} min="0" name="bid" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.bid ?? priceValue(rate, 'bid')) : priceValue(rate, 'bid')} />
+                        <PriceInput
+                          bare
+                          class="fx-rate-input"
+                          currency={fx.quoteCurrency}
+                          form={`fx-rate-edit-${fx.pair}`}
+                          label="Bid"
+                          name="bid"
+                          policy={pricePolicy}
+                          required
+                          size="sm"
+                          value={form?.pair === fx.pair ? (form.values?.bid ?? priceValue(rate, 'bid')) : priceValue(rate, 'bid')}
+                        />
                       </label>
                     </td>
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Mid</span>
-                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`fx-rate-edit-${fx.pair}`} min="0" name="mid" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.mid ?? priceValue(rate, 'mid')) : priceValue(rate, 'mid')} />
+                        <PriceInput
+                          bare
+                          class="fx-rate-input"
+                          currency={fx.quoteCurrency}
+                          form={`fx-rate-edit-${fx.pair}`}
+                          label="Mid"
+                          name="mid"
+                          policy={pricePolicy}
+                          required
+                          size="sm"
+                          value={form?.pair === fx.pair ? (form.values?.mid ?? priceValue(rate, 'mid')) : priceValue(rate, 'mid')}
+                        />
                       </label>
                     </td>
                     <td class="px-3 py-2 text-right">
                       <label class="grid justify-end gap-1 text-xs font-medium text-slate-600" form={`fx-rate-edit-${fx.pair}`}>
                         <span>Ask</span>
-                        <input class="house-control house-control-sm w-28 text-right font-mono" form={`fx-rate-edit-${fx.pair}`} min="0" name="ask" required step="0.00000001" type="number" value={form?.pair === fx.pair ? (form.values?.ask ?? priceValue(rate, 'ask')) : priceValue(rate, 'ask')} />
+                        <PriceInput
+                          bare
+                          class="fx-rate-input"
+                          currency={fx.quoteCurrency}
+                          form={`fx-rate-edit-${fx.pair}`}
+                          label="Ask"
+                          name="ask"
+                          policy={pricePolicy}
+                          required
+                          size="sm"
+                          value={form?.pair === fx.pair ? (form.values?.ask ?? priceValue(rate, 'ask')) : priceValue(rate, 'ask')}
+                        />
                       </label>
                     </td>
                     <td class="px-3 py-2">

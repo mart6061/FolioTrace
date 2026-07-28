@@ -340,6 +340,29 @@ export type Currencies = {
 
 export type InputControlKind = 'Quantity' | 'Money' | 'Price' | 'Percent';
 
+export type InputControlSettingScope = 'User' | 'Global' | 'Account';
+
+/** One stored rule. Null fields mean "no opinion", leaving that aspect to a broader scope or the type default. */
+export type InputControlSetting = {
+  controlKind: InputControlKind;
+  scope: InputControlSettingScope;
+  accountID?: string | null;
+  userID?: string | null;
+  decimalPlaces?: number | null;
+  minValue?: number | null;
+  maxValue?: number | null;
+  formatPattern?: string | null;
+  allowNegative?: boolean | null;
+};
+
+export type InputControlSettings = {
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+  items: InputControlSetting[];
+};
+
 export type InputControlPolicy = {
   controlKind: InputControlKind;
   decimalPlaces: number;

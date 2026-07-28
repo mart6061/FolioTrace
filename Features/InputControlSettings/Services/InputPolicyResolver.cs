@@ -91,12 +91,14 @@ public static class InputPolicyResolver
     }
 
     /// <summary>
-    /// Money and Price are both denominated in a currency. For Price the currency identifies what the number means
-    /// (an FX rate uses the pair's quote currency) but must not constrain precision, because a GBP price such as
-    /// 123.45678912 is legitimate even though GBP itself carries two decimal places.
+    /// Only Money needs a currency to resolve, because only Money takes its precision from one. A price is
+    /// denominated in a currency too, but that currency does not change the resolved policy, so requiring it
+    /// here would demand information that cannot affect the answer. It also has to vary per row in places such
+    /// as an FX rate grid, where each pair quotes in its own currency. The currency belongs on the control,
+    /// which uses it to label the value.
     /// </summary>
     private static bool RequiresCurrency(InputControlKind controlKind) =>
-        controlKind is InputControlKind.Money or InputControlKind.Price;
+        controlKind == InputControlKind.Money;
 
     /// <summary>
     /// Only Money takes its decimal places from the currency definition. Every other kind resolves them from the

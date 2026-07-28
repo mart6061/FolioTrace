@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { PercentInput } from '$lib/components/forms';
+  import { draggable, dropZone } from '$lib/actions/dragDrop';
   import type { Account, AssetAllocationNode, AssetAllocationNodeAccountSetting, InputControlPolicy } from '$lib/types';
 
   const DEFAULT_NODE_COLOUR = '#0f766e';
@@ -285,41 +286,24 @@
     commitVisualNodes(nextNodes);
   }
 
-  function startNodeDrag(event: DragEvent, nodeID: string) {
-    if (isSpecialNodeID(nodeID)) {
-      event.preventDefault();
-      return;
-    }
+  type NodeDropMode = 'after' | 'as-child' | 'before';
 
-    draggedNodeID = nodeID;
-    dragOverNodeID = nodeID;
-    event.dataTransfer?.setData('text/plain', nodeID);
+  const nodeDragKind = 'valuation-node';
 
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'move';
-  }
+  /**
+   * A node cannot move into its own descendant, and the special Unallocated node cannot move at all, so a
+   * zone declines rather than accepting and silently discarding the drop.
+   */
+  function canDropNode(targetNodeID: string, mode: NodeDropMode) {
+    if (!draggedNodeID || isSpecialNodeID(targetNodeID))
+      return false;
 
-  function allowDrop(event: DragEvent, targetNodeID: string, mode: 'after' | 'as-child' | 'before') {
-    if (!draggedNodeID)
-      return;
-
-    const allowed = mode === 'as-child'
+    return mode === 'as-child'
       ? canMoveAsChild(draggedNodeID, targetNodeID)
       : canMoveBeside(draggedNodeID, targetNodeID);
-
-    if (!allowed)
-      return;
-
-    event.preventDefault();
-    dragOverNodeID = targetNodeID;
-
-    if (event.dataTransfer)
-      event.dataTransfer.dropEffect = 'move';
   }
 
-  function dropNode(event: DragEvent, targetNodeID: string, mode: 'after' | 'as-child' | 'before') {
-    event.preventDefault();
-    const sourceNodeID = event.dataTransfer?.getData('text/plain') || draggedNodeID;
+  function dropNode(sourceNodeID: string, targetNodeID: string, mode: NodeDropMode) {
     draggedNodeID = '';
     dragOverNodeID = '';
 
@@ -332,6 +316,15 @@
     }
 
     moveNodeBeside(sourceNodeID, targetNodeID, mode);
+  }
+
+  function nodeDropZone(targetNodeID: string, mode: NodeDropMode) {
+    return {
+      accepts: [nodeDragKind],
+      canDrop: () => canDropNode(targetNodeID, mode),
+      ondrop: (_kind: string, value: string) => dropNode(value, targetNodeID, mode),
+      onhover: (over: boolean) => dragOverNodeID = over ? targetNodeID : ''
+    };
   }
 
   function endNodeDrag() {
@@ -1004,8 +997,7 @@
             <div
               aria-hidden="true"
               class={`valuation-node-drop-zone ${dragOverNodeID === row.node.nodeID ? 'valuation-node-drop-zone-active' : ''}`}
-              ondragover={(event) => allowDrop(event, row.node.nodeID, 'before')}
-              ondrop={(event) => dropNode(event, row.node.nodeID, 'before')}
+              use:dropZone={nodeDropZone(row.node.nodeID, 'before')}
             ></div>
           {:else if isSpecialNodeID(row.node.nodeID)}
             <div aria-hidden="true" class="valuation-node-drop-zone valuation-node-drop-zone-static"></div>
@@ -1015,9 +1007,8 @@
             aria-level={row.depth + 1}
             aria-selected="false"
             class={`valuation-node-pill ${isSpecialNodeID(row.node.nodeID) ? 'valuation-node-pill-special' : ''} ${!row.displayedColour ? 'valuation-node-pill-none' : ''} ${dragOverNodeID === row.node.nodeID ? 'valuation-node-pill-over' : ''}`}
-            ondragover={(event) => allowDrop(event, row.node.nodeID, 'as-child')}
-            ondrop={(event) => dropNode(event, row.node.nodeID, 'as-child')}
             role="treeitem"
+            use:dropZone={nodeDropZone(row.node.nodeID, 'as-child')}
             tabindex="0"
           >
             {#if row.hasChildren}
@@ -1039,11 +1030,14 @@
               <button
                 aria-label={`Drag ${row.node.name}`}
                 class="valuation-node-icon-button valuation-node-drag-button"
-                draggable="true"
-                ondragend={endNodeDrag}
-                ondragstart={(event) => startNodeDrag(event, row.node.nodeID)}
                 title="Drag"
                 type="button"
+                use:draggable={{
+                  kind: nodeDragKind,
+                  value: row.node.nodeID,
+                  onstart: (value) => { draggedNodeID = value; dragOverNodeID = value; },
+                  onend: endNodeDrag
+                }}
               >
                 <span aria-hidden="true">::</span>
               </button>
@@ -1192,8 +1186,7 @@
             <div
               aria-hidden="true"
               class={`valuation-node-drop-zone ${dragOverNodeID === row.node.nodeID ? 'valuation-node-drop-zone-active' : ''}`}
-              ondragover={(event) => allowDrop(event, row.node.nodeID, 'after')}
-              ondrop={(event) => dropNode(event, row.node.nodeID, 'after')}
+              use:dropZone={nodeDropZone(row.node.nodeID, 'after')}
             ></div>
           {:else if isSpecialNodeID(row.node.nodeID)}
             <div aria-hidden="true" class="valuation-node-drop-zone valuation-node-drop-zone-static"></div>

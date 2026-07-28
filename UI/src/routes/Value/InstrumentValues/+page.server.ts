@@ -4,23 +4,36 @@ import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
+  getInputPolicies,
   getInstrumentValues,
+  postInstrumentAccruedInterestSetEvent,
   postInstrumentPriceSetEvent,
+  type InstrumentAccruedInterestSetRequest,
   type InstrumentPriceSetRequest
 } from '$lib/server/api';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiValuationDate = toApiDateTime(valuationDate);
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
+  const { currentUser } = await parent();
 
   try {
-    const instrumentValues = await getInstrumentValues(fetch, apiValuationDate, apiAuditDateTime);
+    const [instrumentValues, inputPolicies] = await Promise.all([
+      getInstrumentValues(fetch, apiValuationDate, apiAuditDateTime),
+      getInputPolicies(fetch, {
+        auditDateTime: apiAuditDateTime,
+        controlKinds: ['Price'],
+        eventDateTime: apiValuationDate,
+        userID: currentUser?.userID
+      })
+    ]);
 
     return {
       auditDateTime,
       error: '',
+      inputPolicies,
       instrumentValues,
       valuationDate
     };
@@ -28,6 +41,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
     return {
       auditDateTime,
       error: error instanceof Error ? error.message : 'Unable to load instrument values.',
+      inputPolicies: [],
       instrumentValues: null,
       valuationDate
     };
@@ -35,8 +49,50 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 };
 
 export const actions: Actions = {
-  setInstrumentPrice: async ({ fetch, locals, request }) => postPriceEvent(fetch, request, requireCurrentUser(locals).userID)
+  setInstrumentPrice: async ({ fetch, locals, request }) => postPriceEvent(fetch, request, requireCurrentUser(locals).userID),
+  setAccruedInterest: async ({ fetch, locals, request }) => postAccruedInterestEvent(fetch, request, requireCurrentUser(locals).userID)
 };
+
+async function postAccruedInterestEvent(fetch: typeof globalThis.fetch, request: Request, userID: string) {
+  const formData = await request.formData();
+  const instrumentID = getFormString(formData, 'instrumentID');
+  const eventDateTime = getFormString(formData, 'eventDateTime');
+  const accruedText = getFormString(formData, 'accruedInterest');
+  const accrued = Number.parseFloat(accruedText);
+
+  if (!instrumentID || !eventDateTime)
+    return fail(400, { instrumentID, intent: 'setAccruedInterest', message: 'Instrument and event date are required.', status: 'failure' });
+
+  if (accruedText && !Number.isFinite(accrued))
+    return fail(400, { instrumentID, intent: 'setAccruedInterest', message: 'Accrued interest must be a valid number.', status: 'failure' });
+
+  try {
+    const accruedRequest: InstrumentAccruedInterestSetRequest = {
+      // An empty field clears the accrual rather than posting zero, which would be a real value.
+      accruedInterest: accruedText ? accrued : null,
+      eventDateTime: toApiDateTime(eventDateTime),
+      instrumentID,
+      reason: `Set accrued interest ${instrumentID}`
+    };
+
+    const result = await postInstrumentAccruedInterestSetEvent(fetch, accruedRequest, userID);
+
+    return {
+      eventID: result.eventID,
+      instrumentID,
+      intent: 'setAccruedInterest',
+      message: 'Accrued interest was set successfully.',
+      status: 'success'
+    };
+  } catch (error) {
+    return fail(502, {
+      instrumentID,
+      intent: 'setAccruedInterest',
+      message: error instanceof Error ? error.message : 'Unable to set accrued interest.',
+      status: 'failure'
+    });
+  }
+}
 
 async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request, userID: string) {
   const formData = await request.formData();
