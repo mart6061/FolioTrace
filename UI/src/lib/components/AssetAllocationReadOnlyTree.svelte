@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { draggable, dropZone } from '$lib/actions/dragDrop';
   import { SvelteSet } from 'svelte/reactivity';
   import type { Account, AssetAllocationNode, AssetAllocationNodeAccountSetting, HoldingPosition } from '$lib/types';
 
@@ -93,34 +94,14 @@
       : [...collapsedAccountNodeIDs, nodeID];
   }
 
-  function startHoldingDrag(event: DragEvent, holdingID: string) {
-    event.dataTransfer?.setData('text/plain', holdingID);
+  // Only leaf nodes hold positions, so a branch accepts nothing.
+  const holdingDragKind = 'allocation-holding';
 
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'move';
-
-    onHoldingDragStart?.(holdingID);
-  }
-
-  function allowHoldingDrop(event: DragEvent, node: AssetAllocationNode) {
-    if (!isLeaf(node))
-      return;
-
-    event.preventDefault();
-    dragOverNodeID = node.nodeID;
-
-    if (event.dataTransfer)
-      event.dataTransfer.dropEffect = 'move';
-  }
-
-  function dropHolding(event: DragEvent, node: AssetAllocationNode) {
-    event.preventDefault();
+  function dropHolding(node: AssetAllocationNode) {
     dragOverNodeID = '';
 
-    if (!isLeaf(node))
-      return;
-
-    onHoldingDrop?.(node.nodeID);
+    if (isLeaf(node))
+      onHoldingDrop?.(node.nodeID);
   }
 
   function endDropHover() {
@@ -255,18 +236,24 @@
               <div
                 aria-label={`${isSpecialNode(row.node) ? SPECIAL_NODE_NAME : row.node.name} holdings`}
                 class={`allocation-holding-drop-zone ${dragOverNodeID === row.node.nodeID ? 'allocation-holding-drop-zone-active' : ''}`}
-                ondragover={(event) => allowHoldingDrop(event, row.node)}
-                ondragleave={endDropHover}
-                ondrop={(event) => dropHolding(event, row.node)}
                 role="group"
+                use:dropZone={{
+                  accepts: [holdingDragKind],
+                  canDrop: () => isLeaf(row.node),
+                  ondrop: () => dropHolding(row.node),
+                  onhover: (over) => dragOverNodeID = over ? row.node.nodeID : ''
+                }}
               >
                 {#each nodeHoldings as holding (holding.holdingID)}
                   <button
                     class="allocation-holding"
-                    draggable="true"
-                    ondragend={endDropHover}
-                    ondragstart={(event) => startHoldingDrag(event, holding.holdingID)}
                     type="button"
+                    use:draggable={{
+                      kind: holdingDragKind,
+                      value: holding.holdingID,
+                      onstart: (value) => onHoldingDragStart?.(value),
+                      onend: endDropHover
+                    }}
                   >
                     <span class="allocation-holding-name">{holding.name}</span>
                     <span class="allocation-holding-meta">{holding.instrumentName}</span>

@@ -25,6 +25,12 @@ export type DraggableOptions = {
 export type DropZoneOptions = {
   accepts: readonly string[];
   ondrop: (kind: string, value: string, event: DragEvent) => void;
+  /**
+   * Rejects a drag the zone would otherwise accept, for moves that are structurally impossible such as
+   * dropping a tree node into its own descendant. Declining here leaves the browser showing its no-drop
+   * cursor, which is the honest signal; accepting and then ignoring the drop is not.
+   */
+  canDrop?: (kind: string, event: DragEvent) => boolean;
   /** Called with true while an accepted drag is over the zone, and false when it leaves or drops. */
   onhover?: (over: boolean) => void;
 };
@@ -73,7 +79,12 @@ export const dropZone: Action<HTMLElement, DropZoneOptions> = (node, options) =>
 
   function acceptedKind(event: DragEvent) {
     const types = event.dataTransfer?.types ?? [];
-    return current.accepts.find((kind) => types.includes(dragMimeType(kind)));
+    const kind = current.accepts.find((candidate) => types.includes(dragMimeType(candidate)));
+
+    if (kind === undefined)
+      return undefined;
+
+    return current.canDrop?.(kind, event) === false ? undefined : kind;
   }
 
   function handleDragEnter(event: DragEvent) {

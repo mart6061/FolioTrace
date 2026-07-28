@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { draggable, dropZone } from '$lib/actions/dragDrop';
   import { enhance } from '$app/forms';
   import { tick } from 'svelte';
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
@@ -257,77 +258,50 @@
     draftNodes = normalizeReportNodes(next);
   }
 
-  function handleTemplateDragStart(event: DragEvent, type: ReportNodeType) {
-    templateDragInProgress = true;
-    event.dataTransfer?.setData('application/x-report-node-template', type);
-    event.dataTransfer?.setData('text/plain', type);
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'copy';
-  }
+  // A palette template is copied into the flow; a placed node is moved within it. The two are separate
+  // kinds so a zone can tell them apart before the drop, when only the MIME types are readable.
+  const nodeTemplateKind = 'report-node-template';
+  const nodeKind = 'report-node';
 
   function handleTemplateDragEnd() {
+    // Cleared after the click that ends the drag, so the palette button's onclick does not also fire.
     setTimeout(() => {
       templateDragInProgress = false;
     }, 0);
   }
 
-  function handleNodeDragStart(event: DragEvent, reportNodeID: string) {
-    event.stopPropagation();
-    draggedReportNodeID = reportNodeID;
-    event.dataTransfer?.setData('application/x-report-node-id', reportNodeID);
-    event.dataTransfer?.setData('text/plain', reportNodeID);
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'move';
-  }
+  function dropReportNode(kind: string, value: string, index = draftNodes.length) {
+    if (kind === nodeTemplateKind) {
+      if (nodeTypes.some((nodeType) => nodeType.type === value))
+        addNode(value as ReportNodeType, index);
 
-  function handleNodeDragEnd() {
-    draggedReportNodeID = null;
-  }
-
-  function handleDrop(event: DragEvent, index = draftNodes.length) {
-    if (!isReportNodeDrag(event))
-      return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    const templateType = event.dataTransfer?.getData('application/x-report-node-template') as ReportNodeType;
-    const reportNodeID = event.dataTransfer?.getData('application/x-report-node-id');
-
-    if (templateType && nodeTypes.some((nodeType) => nodeType.type === templateType)) {
-      addNode(templateType, index);
       return;
     }
 
-    if (reportNodeID)
-      moveNode(reportNodeID, index);
-
+    moveNode(value, index);
     draggedReportNodeID = null;
   }
 
-  function handleNodeCardDrop(event: DragEvent, index: number) {
-    const card = event.currentTarget;
-    const targetIndex = card instanceof HTMLElement && event.clientY > card.getBoundingClientRect().top + card.offsetHeight / 2
-      ? index + 1
-      : index;
-
-    handleDrop(event, targetIndex);
+  function reportNodeDropZone(index?: number) {
+    return {
+      accepts: [nodeTemplateKind, nodeKind],
+      ondrop: (kind: string, value: string) => dropReportNode(kind, value, index ?? draftNodes.length)
+    };
   }
 
-  function allowDrop(event: DragEvent) {
-    if (!isReportNodeDrag(event))
-      return;
+  /** Dropping on the lower half of a card places after it, which is what the pointer position implies. */
+  function reportNodeCardDropZone(index: number) {
+    return {
+      accepts: [nodeTemplateKind, nodeKind],
+      ondrop: (kind: string, value: string, event: DragEvent) => {
+        const card = event.currentTarget;
+        const targetIndex = card instanceof HTMLElement && event.clientY > card.getBoundingClientRect().top + card.offsetHeight / 2
+          ? index + 1
+          : index;
 
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.dataTransfer)
-      event.dataTransfer.dropEffect = event.dataTransfer.types.includes('application/x-report-node-template') ? 'copy' : 'move';
-  }
-
-  function isReportNodeDrag(event: DragEvent) {
-    return Boolean(
-      event.dataTransfer?.types.includes('application/x-report-node-template')
-      || event.dataTransfer?.types.includes('application/x-report-node-id')
-    );
+        dropReportNode(kind, value, targetIndex);
+      }
+    };
   }
 
   function defaultValuationColumns(): ReportValuationColumn[] {
@@ -402,70 +376,45 @@
     updateValuationNodeColumns(reportNodeID, columns);
   }
 
-  function handleValuationColumnSourceDragStart(event: DragEvent, columnKey: ReportValuationColumnKey) {
-    event.stopPropagation();
-    event.dataTransfer?.setData('application/x-report-valuation-column-template', columnKey);
-    event.dataTransfer?.setData('text/plain', columnKey);
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'copy';
-  }
+  const columnTemplateKind = 'report-valuation-column-template';
+  const columnKind = 'report-valuation-column';
 
-  function handleValuationColumnDragStart(event: DragEvent, reportNodeID: string, index: number) {
-    event.stopPropagation();
-    event.dataTransfer?.setData('application/x-report-valuation-column-index', `${reportNodeID}:${index}`);
-    event.dataTransfer?.setData('text/plain', `${reportNodeID}:${index}`);
-    if (event.dataTransfer)
-      event.dataTransfer.effectAllowed = 'move';
-  }
+  function dropValuationColumn(kind: string, value: string, reportNodeID: string, index?: number) {
+    if (kind === columnTemplateKind) {
+      if (isValuationColumnKey(value))
+        addValuationColumn(reportNodeID, value, index);
 
-  function allowValuationColumnDrop(event: DragEvent) {
-    if (!isValuationColumnDrag(event))
-      return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.dataTransfer)
-      event.dataTransfer.dropEffect = event.dataTransfer.types.includes('application/x-report-valuation-column-template') ? 'copy' : 'move';
-  }
-
-  function handleValuationColumnDrop(event: DragEvent, reportNodeID: string, index?: number) {
-    if (!isValuationColumnDrag(event))
-      return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const columnKey = event.dataTransfer?.getData('application/x-report-valuation-column-template');
-    if (isValuationColumnKey(columnKey)) {
-      addValuationColumn(reportNodeID, columnKey, index);
       return;
     }
 
-    const dragged = event.dataTransfer?.getData('application/x-report-valuation-column-index') ?? '';
-    const [sourceReportNodeID, sourceIndexValue] = dragged.split(':');
+    // A placed pill carries its owning node so a column cannot be dragged between report nodes.
+    const [sourceReportNodeID, sourceIndexValue] = value.split(':');
     const sourceIndex = Number(sourceIndexValue);
 
     if (sourceReportNodeID === reportNodeID && Number.isInteger(sourceIndex))
       moveValuationColumn(reportNodeID, sourceIndex, index ?? Number.MAX_SAFE_INTEGER);
   }
 
-  function handleValuationColumnPillDrop(event: DragEvent, reportNodeID: string, index: number) {
-    if (!isValuationColumnDrag(event))
-      return;
-
-    const target = event.currentTarget;
-    const targetIndex = target instanceof HTMLElement && event.clientX > target.getBoundingClientRect().left + target.offsetWidth / 2
-      ? index + 1
-      : index;
-
-    handleValuationColumnDrop(event, reportNodeID, targetIndex);
+  function valuationColumnDropZone(reportNodeID: string, index?: number) {
+    return {
+      accepts: [columnTemplateKind, columnKind],
+      ondrop: (kind: string, value: string) => dropValuationColumn(kind, value, reportNodeID, index)
+    };
   }
 
-  function isValuationColumnDrag(event: DragEvent) {
-    return Boolean(
-      event.dataTransfer?.types.includes('application/x-report-valuation-column-template')
-      || event.dataTransfer?.types.includes('application/x-report-valuation-column-index')
-    );
+  /** Columns run horizontally, so the midpoint that decides before or after is the horizontal one. */
+  function valuationColumnPillDropZone(reportNodeID: string, index: number) {
+    return {
+      accepts: [columnTemplateKind, columnKind],
+      ondrop: (kind: string, value: string, event: DragEvent) => {
+        const target = event.currentTarget;
+        const targetIndex = target instanceof HTMLElement && event.clientX > target.getBoundingClientRect().left + target.offsetWidth / 2
+          ? index + 1
+          : index;
+
+        dropValuationColumn(kind, value, reportNodeID, targetIndex);
+      }
+    };
   }
 
   function isValuationColumnKey(value: string | undefined): value is ReportValuationColumnKey {
@@ -602,29 +551,35 @@
                   {#each nodeTypes as nodeType (nodeType.type)}
                     <button
                       class="report-node-template"
-                      draggable="true"
                       type="button"
-                      ondragstart={(event) => handleTemplateDragStart(event, nodeType.type)}
-                      ondragend={handleTemplateDragEnd}
                       onclick={() => handleTemplateClick(nodeType.type)}
+                      use:draggable={{
+                        kind: nodeTemplateKind,
+                        value: nodeType.type,
+                        effect: 'copy',
+                        onstart: () => templateDragInProgress = true,
+                        onend: handleTemplateDragEnd
+                      }}
                     >
                       {nodeType.label}
                     </button>
                   {/each}
                 </aside>
 
-                <div class="report-flow" role="list" ondragover={allowDrop} ondrop={(event) => handleDrop(event)}>
+                <div class="report-flow" role="list" use:dropZone={reportNodeDropZone()}>
                   {#each draftNodes as node, index (node.reportNodeID)}
                     {@const type = reportNodeType(node)}
-                    <div class="report-drop-target" role="presentation" ondragover={allowDrop} ondrop={(event) => handleDrop(event, index)}></div>
+                    <div class="report-drop-target" role="presentation" use:dropZone={reportNodeDropZone(index)}></div>
                     <section
                       class={['report-node-card', draggedReportNodeID === node.reportNodeID && 'is-dragging']}
                       role="listitem"
-                      draggable="true"
-                      ondragstart={(event) => handleNodeDragStart(event, node.reportNodeID)}
-                      ondragend={handleNodeDragEnd}
-                      ondragover={allowDrop}
-                      ondrop={(event) => handleNodeCardDrop(event, index)}
+                      use:draggable={{
+                        kind: nodeKind,
+                        value: node.reportNodeID,
+                        onstart: (value) => draggedReportNodeID = value,
+                        onend: () => draggedReportNodeID = null
+                      }}
+                      use:dropZone={reportNodeCardDropZone(index)}
                     >
                       <div class="report-node-card-header">
                         <span class="report-node-kind">{index + 1}. {nodeTypeLabel(type)}</span>
@@ -751,10 +706,9 @@
                                     'report-column-source-pill',
                                     valuationColumnToneClass(column.key)
                                   ]}
-                                  draggable="true"
                                   type="button"
-                                  ondragstart={(event) => handleValuationColumnSourceDragStart(event, column.key)}
                                   onclick={() => addValuationColumn(node.reportNodeID, column.key)}
+                                  use:draggable={{ kind: columnTemplateKind, value: column.key, effect: 'copy' }}
                                 >
                                   {column.label}
                                 </button>
@@ -766,8 +720,7 @@
                             <div
                               class="report-column-selected-list"
                               role="list"
-                              ondragover={allowValuationColumnDrop}
-                              ondrop={(event) => handleValuationColumnDrop(event, node.reportNodeID)}
+                              use:dropZone={valuationColumnDropZone(node.reportNodeID)}
                             >
                               <div class="report-column-pill report-column-selected-pill report-column-fixed-pill" role="listitem" aria-label="Fixed Name column">
                                 <span>Name</span>
@@ -780,10 +733,8 @@
                                     valuationColumnToneClass(column.columnKey)
                                   ]}
                                   role="listitem"
-                                  draggable="true"
-                                  ondragstart={(event) => handleValuationColumnDragStart(event, node.reportNodeID, columnIndex)}
-                                  ondragover={allowValuationColumnDrop}
-                                  ondrop={(event) => handleValuationColumnPillDrop(event, node.reportNodeID, columnIndex)}
+                                  use:draggable={{ kind: columnKind, value: `${node.reportNodeID}:${columnIndex}` }}
+                                  use:dropZone={valuationColumnPillDropZone(node.reportNodeID, columnIndex)}
                                 >
                                   <span>{valuationColumnLabel(column.columnKey)}</span>
                                   <button
@@ -804,12 +755,12 @@
                       {/if}
                     </section>
                   {:else}
-                    <div class="report-flow-empty" role="presentation" ondragover={allowDrop} ondrop={(event) => handleDrop(event)}>
+                    <div class="report-flow-empty" role="presentation" use:dropZone={reportNodeDropZone()}>
                       Drag report nodes here
                     </div>
                   {/each}
                   {#if draftNodes.length}
-                    <div class="report-drop-target report-drop-target-end" role="presentation" ondragover={allowDrop} ondrop={(event) => handleDrop(event)}></div>
+                    <div class="report-drop-target report-drop-target-end" role="presentation" use:dropZone={reportNodeDropZone()}></div>
                   {/if}
                 </div>
               </div>
