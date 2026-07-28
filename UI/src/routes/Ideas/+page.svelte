@@ -4,7 +4,7 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
-  import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
+  import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, ConfirmInput, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import type { InputControlKind, InputControlPolicy } from '$lib/types';
 
@@ -70,6 +70,7 @@
     bookmarkButton: templateReference<ComponentProps<typeof BookmarkButton>>('BookmarkButton', []),
     themeModeControl: templateReference<ComponentProps<typeof ThemeModeControl>>('ThemeModeControl', ['class', 'label']),
     dropdown: templateReference<ComponentProps<typeof Dropdown>>('Dropdown', ['children', 'class', 'close', 'compactBrand', 'disabled', 'ontoggle', 'open', 'summary']),
+    confirmInput: templateReference<ComponentProps<typeof ConfirmInput>>('ConfirmInput', ['caseSensitive', 'class', 'confirmed', 'confirmWord', 'disabled', 'id', 'label', 'name', 'size', 'value']),
     field: templateReference<ComponentProps<typeof Field>>('Field', ['children', 'class', 'controlId', 'dense', 'error', 'help', 'inline', 'label', 'required']),
     holdingDropdown: templateReference<ComponentProps<typeof HoldingDropdown>>('HoldingDropdown', ['accountID', 'class', 'compactBrand', 'disabled', 'holdings', 'id', 'multiple', 'name', 'nameOnlySummary', 'placeholder', 'showInstrumentID', 'selectedHoldingID', 'selectedHoldingIDs']),
     menuCardGroup: templateReference<ComponentProps<typeof MenuCardGroup>>('MenuCardGroup', ['items', 'selected', 'onselect']),
@@ -109,6 +110,7 @@
     { category: 'Form structure', id: 'field', label: 'Field', reference: templateReferences.field },
     { category: 'Form structure', id: 'button', label: 'Button', reference: templateReferences.button },
     { category: 'Form structure', id: 'dropdown', label: 'Dropdown shell', reference: templateReferences.dropdown },
+    { category: 'Form structure', id: 'confirmInput', label: 'Confirm input', reference: templateReferences.confirmInput },
     { category: 'Page chrome', id: 'bookmarkButton', label: 'Bookmark button', reference: templateReferences.bookmarkButton },
     { category: 'Page chrome', id: 'themeModeControl', label: 'Theme mode control', reference: templateReferences.themeModeControl }
   ] as const;
@@ -128,6 +130,8 @@
   let explorerPillValue = $state('Discrete');
   let explorerFieldValue = $state('Example value');
   let explorerButtonStatus = $state('No button pressed yet.');
+  let explorerConfirmValue = $state('');
+  let explorerConfirmed = $state(false);
   let explorerDropdownOpen = $state(false);
   let explorerDropdownSelections = $state<string[]>(['Proposal']);
 
@@ -517,6 +521,12 @@
                   A positioning and dismissal shell only &mdash; it renders whatever children you pass. Use it for filter panels,
                   checkbox lists, and menus. For a full option list with search and select-all, use <code>ComplexSelect</code>.
                 </p>
+              </div>
+            {:else if selectedInputTemplateID === 'confirmInput'}
+              <div class="input-template-chrome-demo">
+                <ConfirmInput confirmWord="Delete" name="explorerConfirm" bind:confirmed={explorerConfirmed} bind:value={explorerConfirmValue} />
+                <Button disabled={!explorerConfirmed} variant="danger">Destructive action</Button>
+                <p class="template-copy">Gates a destructive action on typing the word. Matching is exact by default so a guard is not weakened by accident; pass <code>caseSensitive={'{false}'}</code> to relax it.</p>
               </div>
             {:else if selectedInputTemplateID === 'bookmarkButton'}
               <div class="input-template-chrome-demo">

@@ -4,7 +4,7 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
-  import { MoneyInput, PriceInput, QuantityInput } from '$lib/components/forms';
+  import { ConfirmInput, MoneyInput, PriceInput, QuantityInput } from '$lib/components/forms';
   import { BrokerDropdown, ComplexSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
@@ -118,7 +118,7 @@
     !!resolveInstrumentInput(createTicketInstrument) &&
     submitting !== 'createTicket'
   );
-  const canConfirmTicketCancel = $derived(cancelConfirmationInput.trim().toLowerCase() === 'delete');
+  let canConfirmTicketCancel = $state(false);
 
   $effect(() => {
     const nextHistoryContextKey = historyContextKey;
@@ -1507,10 +1507,7 @@
               >
                 <input type="hidden" name="ticketNumber" value={ticket.ticketNumber} />
                 <input type="hidden" name="eventDateTime" value={eventDateDefault} />
-                <label>
-                  <span>Type Delete to confirm</span>
-                  <input class="input" autocomplete="off" bind:value={cancelConfirmationInput} spellcheck="false" />
-                </label>
+                <ConfirmInput caseSensitive={false} confirmWord="Delete" name="cancelConfirmation" size="sm" bind:confirmed={canConfirmTicketCancel} bind:value={cancelConfirmationInput} />
                 <div class="danger-confirmation-actions">
                   <button disabled={!canConfirmTicketCancel || submitting === `delete-${ticket.ticketNumber}`} type="submit">Delete</button>
                   <button type="button" onclick={cancelTicketCancellation}>Keep ticket</button>
