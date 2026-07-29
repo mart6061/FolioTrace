@@ -41,7 +41,12 @@ public static class ServiceCollectionExtensions
             options.Schema.For<AggregateSnapshot>()
                 .Index(snapshot => new { snapshot.AggregateKind, snapshot.StreamId, snapshot.Variant, snapshot.ValuationDateTime }, index => index.Name = "idx_aggregate_snapshot_lookup");
             options.Schema.For<RequestTraceEvent>()
-                .Duplicate(traceEvent => traceEvent.RecordedAtUtc)
+                // The pg type must be pinned: Marten's DDL maps a duplicated DateTime to "timestamp without
+                // time zone", but its runtime writes the UTC value as "timestamp with time zone", and Postgres
+                // has no implicit cast between them - so every upsert fails to resolve the function (42883)
+                // while the schema assertion still passes. Pinning the column to timestamptz makes the DDL
+                // agree with what the runtime actually sends.
+                .Duplicate(traceEvent => traceEvent.RecordedAtUtc, pgType: "timestamp with time zone")
                 .Duplicate(traceEvent => traceEvent.RequestId)
                 .Duplicate(traceEvent => traceEvent.Kind)
                 .Duplicate(traceEvent => traceEvent.Method)
