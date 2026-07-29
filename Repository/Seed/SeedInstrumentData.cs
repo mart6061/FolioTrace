@@ -5,7 +5,12 @@ namespace Repository.Seed;
 
 internal static class SeedInstrumentData
 {
-    private const int SeedMonths = 60;
+    /// <summary>
+    /// How far back seeded prices reach. Every weekday in this window produces three observations for every
+    /// instrument, so the event count grows fast: three months is a few thousand price events, five years was
+    /// several hundred thousand and made a full build impractical.
+    /// </summary>
+    private const int SeedMonths = 3;
 
     public static DateTime ValueStartDate => DateTime.UtcNow.Date.AddMonths(-SeedMonths);
 

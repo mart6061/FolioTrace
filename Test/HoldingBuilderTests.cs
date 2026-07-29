@@ -173,16 +173,17 @@ public sealed class HoldingBuilderTests
         string[] bankNames = ["HSBC", "Barclays"];
         string[] investableCurrencies = ["GBP", "EUR", "USD", "JPY", "CHF"];
 
-        Assert.Equal(328, events.Count);
+        // Five traded instruments per account across ten accounts: three equities and two bonds.
+        Assert.Equal(388, events.Count);
         Assert.Equal(10, events.OfType<HoldingPositionCashCreatedEvent>().Count(@event => @event.Name == "Capital" && @event.Default));
-        Assert.Equal(30, events.OfType<HoldingPositionAssetCreatedEvent>().Count(@event => @event.Name.StartsWith("Asset ") && !@event.Default));
+        Assert.Equal(50, events.OfType<HoldingPositionAssetCreatedEvent>().Count(@event => @event.Name.StartsWith("Asset ") && !@event.Default));
         Assert.Equal(10, events.OfType<HoldingCashDebtCreatedEvent>().Count(@event => @event.Name == "Debt" && !@event.Default));
         Assert.Equal(50, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name.StartsWith("Investable ") && !@event.Default));
         Assert.Equal(10, events.OfType<HoldingCashNonInvestableCreatedEvent>().Count(@event => @event.Name == "Income" && !@event.Default));
         Assert.Equal(50, events.OfType<HoldingNominalInflowCreatedEvent>().Count());
         Assert.Equal(50, events.OfType<HoldingNominalOutflowCreatedEvent>().Count());
-        Assert.Equal(30, events.OfType<HoldingNominalInSpecieInCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie In ") && !@event.Default));
-        Assert.Equal(30, events.OfType<HoldingNominalInSpecieOutCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie Out ") && !@event.Default));
+        Assert.Equal(50, events.OfType<HoldingNominalInSpecieInCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie In ") && !@event.Default));
+        Assert.Equal(50, events.OfType<HoldingNominalInSpecieOutCreatedEvent>().Count(@event => @event.Name.StartsWith("InSpecie Out ") && !@event.Default));
         Assert.All(investableCurrencies, currency =>
         {
             Assert.Equal(10, events.OfType<HoldingCashInvestableCreatedEvent>().Count(@event => @event.Name == $"Investable {currency}"));

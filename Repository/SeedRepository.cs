@@ -9,8 +9,26 @@ namespace Repository;
 public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepository
 {
     private const int TotalBuildSteps = 18;
-    private const int SeedTransactionMonths = 60;
+
+    /// <summary>
+    /// Months of trading history. Kept in step with <see cref="SeedInstrumentData.ValueStartDate"/> so every
+    /// transaction falls inside the window that has prices — a trade older than the first price would value
+    /// as incomplete.
+    /// </summary>
+    private const int SeedTransactionMonths = 3;
+
     private const int SeedStocksPerAccount = 3;
+    private const int SeedBondsPerAccount = 2;
+
+    /// <summary>
+    /// Accounts draw their instruments from small shared pools and step through them by less than they take,
+    /// so neighbouring accounts deliberately overlap. Holding the same instrument in several accounts is what
+    /// makes the aggregate view and cross-account grouping worth looking at.
+    /// </summary>
+    private const int SeedSharedPoolStride = 2;
+
+    private const int SeedSharedEquityPoolSize = 12;
+    private const int SeedSharedBondPoolSize = 4;
     private const int SeedTicketsPerSideAndStage = 5;
 
     public async Task Build(CancellationToken cancellationToken = default)
@@ -1139,8 +1157,9 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
             holdingEvents.Cast<IHoldingEvent>().ToList());
         var events = new List<ITransactionEvent>();
         var fxPairSeeds = SeedFXData.CreatePairSeeds();
-        var startDate = DateTime.UtcNow.Date.AddYears(-5);
-        var endDate = startDate.AddYears(5);
+        // Anchored to the same window as the seeded prices, so every trade has a price behind it.
+        var startDate = SeedInstrumentData.ValueStartDate.Date;
+        var endDate = startDate.AddMonths(SeedTransactionMonths);
 
         foreach (var account in SeedAccounts)
         {
@@ -1375,24 +1394,61 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
             && holding.Name == name);
     }
 
+    /// <summary>
+    /// The instruments an account trades and holds: a few equities and a couple of bonds, drawn from shared
+    /// pools so accounts overlap. Bonds are included deliberately — they are the only thing that accrues
+    /// interest, so without them no account ever shows a clean/dirty difference.
+    /// </summary>
     private static IReadOnlyList<InstrumentSeed> SelectSeedEquitiesForAccount(IReadOnlyList<InstrumentSeed> instrumentSeeds, int accountIndex)
     {
-        var equities = instrumentSeeds
-            .Where(seed => seed.Kind is InstrumentSeedKind.Equity)
-            .OrderBy(seed => seed.Ticker, StringComparer.Ordinal)
-            .ToList();
-        var selected = new List<InstrumentSeed>();
-        var offset = Math.Abs(accountIndex * 7) % equities.Count;
+        var bookCurrency = SeedAccounts[accountIndex].BookCurrency;
+        var equities = SelectFromSharedPool(instrumentSeeds, InstrumentSeedKind.Equity, accountIndex, bookCurrency, SeedSharedEquityPoolSize, SeedStocksPerAccount);
+        var bonds = SelectFromSharedPool(instrumentSeeds, InstrumentSeedKind.FixedIncome, accountIndex, bookCurrency, SeedSharedBondPoolSize, SeedBondsPerAccount);
 
-        for (var index = 0; selected.Count < SeedStocksPerAccount; index++)
+        return [.. equities, .. bonds];
+    }
+
+    private static List<InstrumentSeed> SelectFromSharedPool(
+        IReadOnlyList<InstrumentSeed> instrumentSeeds,
+        InstrumentSeedKind kind,
+        int accountIndex,
+        string bookCurrency,
+        int poolSize,
+        int takeCount)
+    {
+        // Only instruments that can actually settle into this account's book currency. Seeded FX runs through
+        // GBP/EUR/USD hubs, so a JPY instrument in a CHF account has no rate and the build would fail.
+        var pool = instrumentSeeds
+            .Where(seed => seed.Kind == kind && HasSeedFxPath(seed.Currency, bookCurrency))
+            .OrderBy(seed => seed.Ticker, StringComparer.Ordinal)
+            .Take(poolSize)
+            .ToList();
+
+        if (pool.Count == 0)
+            return [];
+
+        // Stepping by less than we take is what creates the overlap: each account shares instruments with its
+        // neighbours rather than owning a private slice.
+        var offset = Math.Abs(accountIndex * SeedSharedPoolStride) % pool.Count;
+        var selected = new List<InstrumentSeed>();
+
+        for (var index = 0; selected.Count < Math.Min(takeCount, pool.Count); index++)
         {
-            var equity = equities[(offset + (index * 11)) % equities.Count];
-            if (!selected.Any(seed => seed.InstrumentID == equity.InstrumentID))
-                selected.Add(equity);
+            var candidate = pool[(offset + index) % pool.Count];
+            if (!selected.Any(seed => seed.InstrumentID == candidate.InstrumentID))
+                selected.Add(candidate);
         }
 
         return selected;
     }
+
+    private static readonly Lazy<HashSet<string>> SeedFxPairKeys = new(() => SeedFXData.CreatePairSeeds()
+        .Select(pair => $"{pair.BaseCurrency}{pair.QuoteCurrency}")
+        .ToHashSet(StringComparer.Ordinal));
+
+    private static bool HasSeedFxPath(string instrumentCurrency, string bookCurrency) =>
+        string.Equals(instrumentCurrency, bookCurrency, StringComparison.Ordinal)
+        || SeedFxPairKeys.Value.Contains($"{instrumentCurrency}{bookCurrency}");
 
     private static Random CreateSeedRandom(AccountID accountID)
     {
