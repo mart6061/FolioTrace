@@ -2,11 +2,73 @@ using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
 using Repository;
+using Repository.Seed;
 
 namespace Test;
 
 public sealed class SeedRepositoryTests
 {
+    [Fact]
+    public void SeedData_HoldsTheSameInstrumentInSeveralAccounts()
+    {
+        // Accounts draw from shared pools, so instruments deliberately repeat across them. Without overlap the
+        // aggregate view and cross-account grouping have nothing to group.
+        var assetHoldings = SeedAssetHoldingsByInstrument();
+
+        var shared = assetHoldings.Where(entry => entry.Value.Count > 1).ToList();
+
+        Assert.NotEmpty(shared);
+    }
+
+    [Fact]
+    public void SeedData_GivesEveryAccountAFixedIncomeHolding()
+    {
+        // Bonds are the only seeded instrument that accrues interest, so without one per account the
+        // clean/dirty price convention has nothing to show.
+        var bondInstrumentIDs = SeedInstrumentData.CreateInstrumentSeeds()
+            .Where(seed => seed.Kind == InstrumentSeedKind.FixedIncome)
+            .Select(seed => seed.InstrumentID.Value)
+            .ToHashSet();
+        var accountsWithBonds = SeedRepository.CreateInitialHoldingCreatedEvents()
+            .Where(@event => @event is HoldingPositionAssetCreatedEvent && bondInstrumentIDs.Contains(@event.InstrumentID.Value))
+            .Select(@event => @event.AccountID.Value)
+            .ToHashSet();
+        var allAccounts = SeedRepository.CreateInitialAccountCreatedEvents()
+            .Select(@event => @event.AccountID.Value)
+            .ToHashSet();
+
+        Assert.Equal(allAccounts, accountsWithBonds);
+    }
+
+    [Fact]
+    public void SeedData_KeepsTransactionsInsideThePricedWindow()
+    {
+        // A trade older than the first seeded price values as incomplete, so the two windows must agree.
+        var firstPriceDate = SeedInstrumentData.ValueStartDate.Date;
+
+        var earliest = SeedRepository.CreateInitialTransactionEvents()
+            .OfType<IEventBase>()
+            .Min(@event => @event.EventDateTime.Value);
+
+        Assert.True(earliest >= firstPriceDate, $"Earliest transaction {earliest:u} precedes the first seeded price {firstPriceDate:u}.");
+    }
+
+    private static Dictionary<Guid, List<Guid>> SeedAssetHoldingsByInstrument()
+    {
+        var byInstrument = new Dictionary<Guid, List<Guid>>();
+
+        foreach (var @event in SeedRepository.CreateInitialHoldingCreatedEvents().OfType<HoldingPositionAssetCreatedEvent>())
+        {
+            if (!byInstrument.TryGetValue(@event.InstrumentID.Value, out var accounts))
+                byInstrument[@event.InstrumentID.Value] = accounts = [];
+
+            if (!accounts.Contains(@event.AccountID.Value))
+                accounts.Add(@event.AccountID.Value);
+        }
+
+        return byInstrument;
+    }
+
     public static TheoryData<string, Func<IReadOnlyList<IAuditEventBase>>> SeedEventFactories => new()
     {
         { "country created", () => SeedRepository.CreateInitialCountryCreatedEvents().Cast<IAuditEventBase>().ToList() },
