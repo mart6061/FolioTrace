@@ -46,6 +46,7 @@ import type {
   HoldingDateBasis,
   EventPropertyDetail,
   InstrumentPriceBasis,
+  ValuationPriceConvention,
   ProfitLosses,
   ProfitLossMethod,
   ReportConfigs,
@@ -519,6 +520,7 @@ export type UserValuationPreferencesRequest = {
   startValuationDateOption: UserValuationDateOption;
   endValuationDateOption: UserValuationDateOption;
   holdingDateBasis: HoldingDateBasis;
+  valuationPriceConvention: ValuationPriceConvention;
   showZeroBalances: boolean;
 };
 
@@ -717,6 +719,7 @@ export async function getValuations(
   auditDateTime: string | null,
   holdingDateBasis: HoldingDateBasis,
   instrumentPriceBasis: InstrumentPriceBasis,
+  valuationPriceConvention: ValuationPriceConvention,
   valuationCurrency: string,
   accountID: string | null = null
 ) {
@@ -724,6 +727,7 @@ export async function getValuations(
   url.searchParams.set('eventDateTime', eventDateTime);
   url.searchParams.set('holdingDateBasis', holdingDateBasis);
   url.searchParams.set('instrumentPriceBasis', instrumentPriceBasis);
+  url.searchParams.set('valuationPriceConvention', valuationPriceConvention);
   url.searchParams.set('valuationCurrency', valuationCurrency);
 
   if (auditDateTime)
@@ -2138,6 +2142,7 @@ async function postUserValuationPreferencesEvent(fetchApi: typeof fetch, eventTy
       StartValuationDateOption: request.startValuationDateOption,
       EndValuationDateOption: request.endValuationDateOption,
       HoldingDateBasis: request.holdingDateBasis,
+      ValuationPriceConvention: request.valuationPriceConvention,
       ShowZeroBalances: request.showZeroBalances
     })
   });
@@ -2643,6 +2648,7 @@ function toReportNodeBody(node: ReportNodeRequest) {
     body.ColourBullet = node.colourBullet ?? true;
     body.ColourText = node.colourText ?? false;
     body.DisplayHoldings = node.displayHoldings ?? true;
+    body.ValuationPriceConvention = node.valuationPriceConvention ?? 'Clean';
   }
 
   if (type === 'ReportNodeProfitLoss')

@@ -18,6 +18,7 @@ public static class UserValuationPreferencesCreatedEventBuilder
             request.StartValuationDateOption ?? UserValuationPreferenceDefaults.StartValuationDateOption,
             request.EndValuationDateOption ?? request.ValuationDateOption,
             request.HoldingDateBasis,
+            request.ValuationPriceConvention,
             request.ShowZeroBalances);
     }
 
@@ -33,10 +34,11 @@ public static class UserValuationPreferencesCreatedEventBuilder
             UserValuationPreferenceDefaults.StartValuationDateOption,
             UserValuationPreferenceDefaults.EndValuationDateOption,
             UserValuationPreferenceDefaults.HoldingDateBasis,
+            UserValuationPreferenceDefaults.ValuationPriceConvention,
             UserValuationPreferenceDefaults.ShowZeroBalances);
     }
 
-    public static Result<UserValuationPreferencesCreatedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
+    public static Result<UserValuationPreferencesCreatedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, ValuationPriceConvention valuationPriceConvention, bool showZeroBalances)
     {
         return Create(
             userID,
@@ -45,17 +47,18 @@ public static class UserValuationPreferencesCreatedEventBuilder
             UserValuationPreferenceDefaults.StartValuationDateOption,
             valuationDateOption,
             holdingDateBasis,
+            valuationPriceConvention,
             showZeroBalances);
     }
 
-    public static Result<UserValuationPreferencesCreatedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, UserValuationDateOption startValuationDateOption, UserValuationDateOption endValuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
+    public static Result<UserValuationPreferencesCreatedEvent> Create(UserID userID, EventDateTime eventDateTime, string reason, UserValuationDateOption startValuationDateOption, UserValuationDateOption endValuationDateOption, HoldingDateBasis holdingDateBasis, ValuationPriceConvention valuationPriceConvention, bool showZeroBalances)
     {
         var auditDateTime = AuditDateTimeBuilder.Create();
         EventID eventID = Guid.CreateGuid7();
-        return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, startValuationDateOption, endValuationDateOption, holdingDateBasis, showZeroBalances);
+        return CreateSeed(eventID, userID, eventDateTime, auditDateTime, reason, startValuationDateOption, endValuationDateOption, holdingDateBasis, valuationPriceConvention, showZeroBalances);
     }
 
-    public static Result<UserValuationPreferencesCreatedEvent> CreateSeed(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
+    public static Result<UserValuationPreferencesCreatedEvent> CreateSeed(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption valuationDateOption, HoldingDateBasis holdingDateBasis, ValuationPriceConvention valuationPriceConvention, bool showZeroBalances)
     {
         return CreateSeed(
             eventID,
@@ -66,15 +69,16 @@ public static class UserValuationPreferencesCreatedEventBuilder
             UserValuationPreferenceDefaults.StartValuationDateOption,
             valuationDateOption,
             holdingDateBasis,
+            valuationPriceConvention,
             showZeroBalances);
     }
 
-    public static Result<UserValuationPreferencesCreatedEvent> CreateSeed(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption startValuationDateOption, UserValuationDateOption endValuationDateOption, HoldingDateBasis holdingDateBasis, bool showZeroBalances)
+    public static Result<UserValuationPreferencesCreatedEvent> CreateSeed(EventID eventID, UserID userID, EventDateTime eventDateTime, AuditDateTime auditDateTime, string reason, UserValuationDateOption startValuationDateOption, UserValuationDateOption endValuationDateOption, HoldingDateBasis holdingDateBasis, ValuationPriceConvention valuationPriceConvention, bool showZeroBalances)
     {
-        var validationErrors = UserValuationPreferencesEventValidation.Validate(eventID, userID, eventDateTime, auditDateTime, reason, startValuationDateOption, endValuationDateOption, holdingDateBasis);
+        var validationErrors = UserValuationPreferencesEventValidation.Validate(eventID, userID, eventDateTime, auditDateTime, reason, startValuationDateOption, endValuationDateOption, holdingDateBasis, valuationPriceConvention);
 
         return validationErrors.Count == 0
-            ? Result<UserValuationPreferencesCreatedEvent>.Success(new UserValuationPreferencesCreatedEvent(eventID, userID, eventDateTime, auditDateTime, reason, startValuationDateOption, endValuationDateOption, holdingDateBasis, showZeroBalances))
+            ? Result<UserValuationPreferencesCreatedEvent>.Success(new UserValuationPreferencesCreatedEvent(eventID, userID, eventDateTime, auditDateTime, reason, startValuationDateOption, endValuationDateOption, holdingDateBasis, valuationPriceConvention, showZeroBalances))
             : Result<UserValuationPreferencesCreatedEvent>.Invalid(validationErrors);
     }
 }

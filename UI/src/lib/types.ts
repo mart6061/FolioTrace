@@ -106,6 +106,7 @@ export type UserValuationPreferences = {
   startValuationDateOption: UserValuationDateOption;
   endValuationDateOption: UserValuationDateOption;
   holdingDateBasis: HoldingDateBasis;
+  valuationPriceConvention: ValuationPriceConvention;
   showZeroBalances: boolean;
   hasStoredPreferences: boolean;
   valuationDateTime: string;
@@ -190,6 +191,9 @@ export type HoldingDateBasis = 'EventDateTime' | 'SettlementDateTime';
 
 export type InstrumentPriceBasis = 'Bid' | 'Ask' | 'Mid' | 'Last' | 'NAV';
 
+/** Whether prices show clean or dirty. Orthogonal to the price basis, which chooses which quote. */
+export type ValuationPriceConvention = 'Clean' | 'Dirty';
+
 export type ProfitLossMethod = 'FIFO' | 'LIFO' | 'RunningAverage';
 
 export type ReportProfitLossMethod = 'Default' | ProfitLossMethod;
@@ -268,7 +272,12 @@ export type AssetAllocationMappings = {
 };
 
 export type ValuationTotals = {
+  /** The final total. Always includes accrued interest, whichever convention is displayed. */
   bookValue: number;
+  /** The clean subtotal, derived from the final total rather than summed separately. */
+  cleanValue: number;
+  /** Total accrued interest, in the valuation currency. */
+  accruedValue: number;
   bookCost: number;
   incompleteCount: number;
 };
@@ -290,6 +299,10 @@ export type ValuationItem = {
   quantity: number;
   localPrice?: number | null;
   quotePrice?: number | null;
+  /** Accrued interest per unit, in the price currency. Null where nothing accrues. */
+  localAccruedInterest?: number | null;
+  /** The position's accrued interest in the valuation currency. Null where nothing accrues. */
+  accruedValue?: number | null;
   bookValue?: number | null;
   weightPercent?: number | null;
   bookCost: number;
@@ -311,6 +324,7 @@ export type Valuations = {
   asOfDateTime: string;
   holdingDateBasis: HoldingDateBasis;
   instrumentPriceBasis: InstrumentPriceBasis;
+  valuationPriceConvention: ValuationPriceConvention;
   valuationCurrency: string;
   accountID?: string | null;
   lastEventID: string;
@@ -421,7 +435,9 @@ export type ReportValuationColumnKey =
   | 'ISIN'
   | 'Sedol'
   | 'QuotePrice'
+  | 'AccruedInterest'
   | 'Quantity'
+  | 'CleanValue'
   | 'BookValue'
   | 'BookValueDefault'
   | 'BookValueFIFO'
@@ -464,6 +480,8 @@ export type ReportNodeBase = {
   colourBullet?: boolean;
   colourText?: boolean;
   displayHoldings?: boolean;
+  /** Valuation nodes only: whether the section prints clean or dirty prices. */
+  valuationPriceConvention?: ValuationPriceConvention;
   profitLossMethod?: ReportProfitLossMethod;
 };
 

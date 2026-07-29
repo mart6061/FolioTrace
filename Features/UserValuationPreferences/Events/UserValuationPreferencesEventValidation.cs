@@ -12,7 +12,8 @@ internal static class UserValuationPreferencesEventValidation
         string? reason,
         UserValuationDateOption startValuationDateOption,
         UserValuationDateOption endValuationDateOption,
-        HoldingDateBasis holdingDateBasis)
+        HoldingDateBasis holdingDateBasis,
+        ValuationPriceConvention valuationPriceConvention)
     {
         var messages = EventFieldValidation.CommonFieldMessages(eventID, userID, eventDateTime, auditDateTime, reason);
 
@@ -24,6 +25,9 @@ internal static class UserValuationPreferencesEventValidation
 
         if (!Enum.IsDefined(holdingDateBasis))
             messages.Add($"HoldingDateBasis '{holdingDateBasis}' is not supported.");
+
+        if (!Enum.IsDefined(valuationPriceConvention))
+            messages.Add($"ValuationPriceConvention '{valuationPriceConvention}' is not supported.");
 
         return messages;
     }

@@ -12,4 +12,5 @@ public sealed record ReportNodeValuation(
     List<ReportValuationColumn>? Columns = null,
     bool ColourBullet = true,
     bool ColourText = false,
-    bool DisplayHoldings = true) : ReportNodeBase(ReportNodeID, DisplayOrder, Name, Title);
+    bool DisplayHoldings = true,
+    ValuationPriceConvention ValuationPriceConvention = ValuationPriceConvention.Clean) : ReportNodeBase(ReportNodeID, DisplayOrder, Name, Title);

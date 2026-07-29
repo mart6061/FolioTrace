@@ -7,6 +7,14 @@ namespace FolioTrace.Aggregates;
 [FeatureAggregate(Description = "Profit and loss")]
 public sealed record ProfitLosses : IAggregate
 {
+    /// <summary>
+    /// Profit and loss always values dirty, so market value and book cost compare like with like — book cost
+    /// reflects the dirty price, and valuing clean against it would overstate unrealised profit and loss by
+    /// the accrued interest. Deliberately a constant: the clean/dirty toggle on the valuation is a display
+    /// choice and must not reach this calculation.
+    /// </summary>
+    private const bool IncludeAccruedInterest = true;
+
     public required EventDateTime ValuationDateTime { get; init; }
 
     public required AuditDateTime AsOfDateTime { get; init; }
@@ -111,8 +119,7 @@ public sealed record ProfitLosses : IAggregate
         var quantity = orderedMovements.Sum(SignedQuantity);
         var bookCost = orderedMovements.Sum(SignedBookCost);
         var priceCurrency = instrumentValue?.PriceCurrency ?? instrumentDefinition?.PriceCurrency ?? Alpha3Builder.Create("GBP");
-        // Fixed income values clean here, preserving existing behaviour. Pass includeAccruedInterest to value dirty.
-        var localPrice = (decimal?)instrumentValue?.SelectPrice(instrumentPriceBasis);
+        var localPrice = instrumentValue?.SelectPrice(instrumentPriceBasis, IncludeAccruedInterest)?.Amount;
         var bookPrice = SelectBookPrice(localPrice, priceCurrency, account.BookCurrency, fxRates);
         var marketValue = bookPrice.HasValue ? quantity * bookPrice.Value : (decimal?)null;
         var methodValues = Enum.GetValues<ProfitLossMethod>()

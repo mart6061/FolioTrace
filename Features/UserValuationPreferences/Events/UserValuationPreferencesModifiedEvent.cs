@@ -19,6 +19,9 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
     [EventProperty(Description = "Holding Date Basis")]
     public HoldingDateBasis HoldingDateBasis { get; init; }
 
+    [EventProperty(Description = "Valuation Price Convention")]
+    public ValuationPriceConvention ValuationPriceConvention { get; init; }
+
     [EventProperty(Description = "Show Zero Balances")]
     public bool ShowZeroBalances { get; init; }
 
@@ -37,6 +40,7 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
         UserValuationDateOption startValuationDateOption,
         UserValuationDateOption endValuationDateOption,
         HoldingDateBasis holdingDateBasis,
+        ValuationPriceConvention valuationPriceConvention,
         bool showZeroBalances)
         : base(eventID, userID, eventDateTime, auditDateTime, reason)
     {
@@ -44,6 +48,7 @@ public sealed record UserValuationPreferencesModifiedEvent : EventBase, IUserVal
         StartValuationDateOption = startValuationDateOption;
         EndValuationDateOption = endValuationDateOption;
         HoldingDateBasis = holdingDateBasis;
+        ValuationPriceConvention = valuationPriceConvention;
         ShowZeroBalances = showZeroBalances;
     }
 

@@ -8,8 +8,8 @@
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
-  import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, normalizeHoldingDateBasis, normalizeValuationDateOption, holdingDateBasisOptions, valuationDateOptions } from '$lib/valuationPreferences';
-  import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption } from '$lib/types';
+  import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention, holdingDateBasisOptions, valuationDateOptions, valuationPriceConventionOptions } from '$lib/valuationPreferences';
+  import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption, ValuationPriceConvention } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   interface Props {
@@ -29,10 +29,12 @@
   let startValuationDateOption = $state<UserValuationDateOption>(defaultStartValuationDateOption);
   let endValuationDateOption = $state<UserValuationDateOption>(defaultEndValuationDateOption);
   let holdingDateBasis = $state<HoldingDateBasis>(defaultHoldingDateBasis);
+  let valuationPriceConvention = $state<ValuationPriceConvention>(defaultValuationPriceConvention);
   let showZeroBalances = $state(defaultShowZeroBalances);
   let originalStartValuationDateOption = $state<UserValuationDateOption>(defaultStartValuationDateOption);
   let originalEndValuationDateOption = $state<UserValuationDateOption>(defaultEndValuationDateOption);
   let originalHoldingDateBasis = $state<HoldingDateBasis>(defaultHoldingDateBasis);
+  let originalValuationPriceConvention = $state<ValuationPriceConvention>(defaultValuationPriceConvention);
   let originalShowZeroBalances = $state(defaultShowZeroBalances);
   let bookmarks = $state<UserBookmarkItem[]>(createBookmarks());
   let originalBookmarks = $state<UserBookmarkItem[]>(createBookmarks());
@@ -58,10 +60,12 @@
       startValuationDateOption = normalizeValuationDateOption(data.valuationPreferences.startValuationDateOption ?? data.valuationPreferences.valuationDateOption, defaultStartValuationDateOption);
       endValuationDateOption = normalizeValuationDateOption(data.valuationPreferences.endValuationDateOption ?? data.valuationPreferences.valuationDateOption, defaultEndValuationDateOption);
       holdingDateBasis = normalizeHoldingDateBasis(data.valuationPreferences.holdingDateBasis);
+      valuationPriceConvention = normalizeValuationPriceConvention(data.valuationPreferences.valuationPriceConvention);
       showZeroBalances = Boolean(data.valuationPreferences.showZeroBalances);
       originalStartValuationDateOption = startValuationDateOption;
       originalEndValuationDateOption = endValuationDateOption;
       originalHoldingDateBasis = holdingDateBasis;
+      originalValuationPriceConvention = valuationPriceConvention;
       originalShowZeroBalances = showZeroBalances;
       syncedValuationSignature = nextValuationSignature;
     }
@@ -86,6 +90,7 @@
         originalStartValuationDateOption = startValuationDateOption;
         originalEndValuationDateOption = endValuationDateOption;
         originalHoldingDateBasis = holdingDateBasis;
+        originalValuationPriceConvention = valuationPriceConvention;
         originalShowZeroBalances = showZeroBalances;
         originalBookmarks = cloneBookmarks(bookmarks);
         submitting = false;
@@ -142,6 +147,7 @@
       data.valuationPreferences.startValuationDateOption ?? data.valuationPreferences.valuationDateOption,
       data.valuationPreferences.endValuationDateOption ?? data.valuationPreferences.valuationDateOption,
       data.valuationPreferences.holdingDateBasis,
+      data.valuationPreferences.valuationPriceConvention,
       String(data.valuationPreferences.showZeroBalances)
     ].join('|');
   }
@@ -272,6 +278,7 @@
         <input type="hidden" name="originalStartValuationDateOption" value={originalStartValuationDateOption} />
         <input type="hidden" name="originalEndValuationDateOption" value={originalEndValuationDateOption} />
         <input type="hidden" name="originalHoldingDateBasis" value={originalHoldingDateBasis} />
+        <input type="hidden" name="originalValuationPriceConvention" value={originalValuationPriceConvention} />
         <input type="hidden" name="originalShowZeroBalances" value={String(originalShowZeroBalances)} />
 
         <div class="menu-preference-list">
@@ -312,6 +319,20 @@
               onchange={(event) => holdingDateBasis = normalizeHoldingDateBasis(event.currentTarget.value)}
             >
               {#each holdingDateBasisOptions as option (option.value)}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="menu-preference-row">
+            <span>Price Convention</span>
+            <select
+              class="menu-preference-select"
+              name="valuationPriceConvention"
+              value={valuationPriceConvention}
+              onchange={(event) => valuationPriceConvention = normalizeValuationPriceConvention(event.currentTarget.value)}
+            >
+              {#each valuationPriceConventionOptions as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>

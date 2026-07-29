@@ -71,11 +71,13 @@
     sedol: string;
     quantity: number;
     quotePrice: number | null;
+    accruedValue: number;
     weightPercent: number;
     targetPercent: number | null;
     targetMinPercent: number | null;
     targetMaxPercent: number | null;
     variancePercent: number | null;
+    cleanValue: number;
     bookValue: number;
     bookValueDefault: number;
     bookValueFIFO: number;
@@ -86,7 +88,9 @@
 
   type ReportValuationSubtotal = {
     quantity: number;
+    accruedValue: number;
     weightPercent: number;
+    cleanValue: number;
     bookValue: number;
     bookValueDefault: number;
     bookValueFIFO: number;
@@ -116,11 +120,13 @@
     sedol: string;
     quantity: number;
     quotePrice: number | null;
+    accruedValue: number;
     weightPercent: number;
     targetPercent: number | null;
     targetMinPercent: number | null;
     targetMaxPercent: number | null;
     variancePercent: number | null;
+    cleanValue: number;
     bookValue: number;
     bookValueDefault: number;
     bookValueFIFO: number;
@@ -408,8 +414,12 @@
         return row.sedol;
       case 'QuotePrice':
         return formatOptionalMoney(row.quotePrice, currency);
+      case 'AccruedInterest':
+        return formatMoney(row.accruedValue, currency);
       case 'Quantity':
         return formatQuantity(row.quantity);
+      case 'CleanValue':
+        return formatMoney(row.cleanValue, currency);
       case 'BookValue':
         return formatMoney(row.bookValue, currency);
       case 'BookValueDefault':

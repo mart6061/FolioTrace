@@ -19,6 +19,7 @@ public sealed record Valuations : IAggregate
     public required AuditDateTime AsOfDateTime { get; init; }
     public required HoldingDateBasis HoldingDateBasis { get; init; }
     public required InstrumentPriceBasis InstrumentPriceBasis { get; init; }
+    public required ValuationPriceConvention ValuationPriceConvention { get; init; }
     public required Alpha3 ValuationCurrency { get; init; }
     public AccountID? AccountID { get; init; }
     public EventID LastEventID { get; private set; }
@@ -32,6 +33,7 @@ public sealed record Valuations : IAggregate
         AuditDateTime asOfDateTime,
         HoldingDateBasis holdingDateBasis,
         InstrumentPriceBasis instrumentPriceBasis,
+        ValuationPriceConvention valuationPriceConvention,
         Alpha3 valuationCurrency,
         Accounts accounts,
         HoldingPositions positions,
@@ -43,6 +45,7 @@ public sealed record Valuations : IAggregate
         AsOfDateTime = asOfDateTime;
         HoldingDateBasis = holdingDateBasis;
         InstrumentPriceBasis = instrumentPriceBasis;
+        ValuationPriceConvention = valuationPriceConvention;
         ValuationCurrency = valuationCurrency;
         AccountID = accountID;
         LastEventID = positions.LastEventID;
@@ -62,11 +65,13 @@ public sealed record Valuations : IAggregate
         var unweightedItems = positions.Items
             .Where(position => position.IncludeInValuation)
             .Where(position => accountLookup.ContainsKey(position.AccountID.Value))
-            .Select(position => BuildItem(position, instrumentLookup.GetValueOrDefault(position.InstrumentID.Value), fxRates, instrumentPriceBasis, valuationCurrency))
+            .Select(position => BuildItem(position, instrumentLookup.GetValueOrDefault(position.InstrumentID.Value), fxRates, instrumentPriceBasis, valuationPriceConvention, valuationCurrency))
             .ToList();
-        var totalBookValue = unweightedItems.Sum(item => item.BookValue ?? 0m);
+        // Weights are shares of the final total, which includes accrued interest under either convention. A
+        // position's share of the portfolio is not a display choice.
+        var totalBookValue = unweightedItems.Sum(item => FinalValue(item, valuationPriceConvention));
         var items = unweightedItems
-            .Select(item => ApplyWeight(item, totalBookValue))
+            .Select(item => ApplyWeight(item, totalBookValue, valuationPriceConvention))
             .OrderBy(item => item.AccountName)
             .ThenBy(item => HoldingKindRank(item.HoldingKind))
             .ThenBy(item => item.Name)
@@ -85,13 +90,13 @@ public sealed record Valuations : IAggregate
                     BookCurrency = account.BookCurrency,
                     ValuationCurrency = valuationCurrency,
                     Items = accountItems,
-                    Totals = BuildTotals(accountItems)
+                    Totals = BuildTotals(accountItems, valuationPriceConvention)
                 };
             })
             .Where(account => account.Items.Count > 0)
             .ToList();
 
-        Totals = BuildTotals(Accounts.SelectMany(account => account.Items));
+        Totals = BuildTotals(Accounts.SelectMany(account => account.Items), valuationPriceConvention);
     }
 
     private static ValuationItem BuildItem(
@@ -99,15 +104,21 @@ public sealed record Valuations : IAggregate
         InstrumentValue? instrument,
         FXRates fxRates,
         InstrumentPriceBasis instrumentPriceBasis,
+        ValuationPriceConvention valuationPriceConvention,
         Alpha3 valuationCurrency)
     {
         var priceCurrency = instrument?.PriceCurrency ?? Alpha3Builder.Create("GBP");
-        // Fixed income values clean here, preserving existing behaviour. Pass includeAccruedInterest to value dirty.
-        var localPrice = (decimal?)instrument?.SelectPrice(instrumentPriceBasis);
+        var localPrice = instrument?.SelectPrice(instrumentPriceBasis, valuationPriceConvention == ValuationPriceConvention.Dirty)?.Amount;
         var fxSelection = SelectFX(fxRates, priceCurrency, valuationCurrency, instrumentPriceBasis);
         var complete = localPrice.HasValue && fxSelection.FXRate.HasValue;
         var quotePrice = complete ? localPrice.GetValueOrDefault() * fxSelection.FXRate.GetValueOrDefault() : (decimal?)null;
         var bookValue = quotePrice.HasValue ? position.Quantity * quotePrice.Value : (decimal?)null;
+        // Accrued interest is per unit, like a price, so it takes the price path: scaled by quantity and
+        // converted at fxSelection — the rate the price itself used, never a fresh lookup.
+        var localAccruedInterest = instrument?.AccruedInterest?.Amount;
+        var accruedValue = localAccruedInterest.HasValue && fxSelection.FXRate.HasValue
+            ? position.Quantity * localAccruedInterest.Value * fxSelection.FXRate.Value
+            : (decimal?)null;
         var incompleteReason = BuildIncompleteReason(instrument is null, localPrice.HasValue, fxSelection.FXRate.HasValue, priceCurrency, valuationCurrency);
 
         return new ValuationItem
@@ -128,6 +139,8 @@ public sealed record Valuations : IAggregate
             Quantity = position.Quantity,
             LocalPrice = localPrice,
             QuotePrice = quotePrice,
+            LocalAccruedInterest = localAccruedInterest,
+            AccruedValue = accruedValue,
             BookValue = bookValue,
             WeightPercent = null,
             BookCost = position.BookCost,
@@ -136,13 +149,20 @@ public sealed record Valuations : IAggregate
         };
     }
 
-    private static ValuationItem ApplyWeight(ValuationItem item, decimal totalBookValue) =>
+    private static ValuationItem ApplyWeight(ValuationItem item, decimal totalBookValue, ValuationPriceConvention valuationPriceConvention) =>
         item with
         {
             WeightPercent = item.BookValue.HasValue && totalBookValue != 0m
-                ? item.BookValue.Value / totalBookValue * 100m
+                ? FinalValue(item, valuationPriceConvention) / totalBookValue * 100m
                 : null
         };
+
+    /// <summary>
+    /// The item's contribution to the final total, which always includes accrued interest. Under Dirty the
+    /// item's book value already carries it; under Clean it is added back here.
+    /// </summary>
+    private static decimal FinalValue(ValuationItem item, ValuationPriceConvention valuationPriceConvention) =>
+        (item.BookValue ?? 0m) + (valuationPriceConvention == ValuationPriceConvention.Dirty ? 0m : item.AccruedValue ?? 0m);
 
     private static FXSelection SelectFX(FXRates fxRates, Alpha3 priceCurrency, Alpha3 valuationCurrency, InstrumentPriceBasis basis)
     {
@@ -196,11 +216,18 @@ public sealed record Valuations : IAggregate
     private static int HoldingKindRank(string holdingKind) =>
         HoldingKindOrder.TryGetValue(holdingKind, out var rank) ? rank : 100;
 
-    private static ValuationTotals BuildTotals(IEnumerable<ValuationItem> items)
+    private static ValuationTotals BuildTotals(IEnumerable<ValuationItem> items, ValuationPriceConvention valuationPriceConvention)
     {
         var list = items.ToList();
+        // The final total is summed once and the clean subtotal derived from it. Summing the two independently
+        // would let them drift apart, and each would still look internally consistent.
+        var bookValue = list.Sum(item => FinalValue(item, valuationPriceConvention));
+        var accruedValue = list.Sum(item => item.AccruedValue ?? 0m);
+
         return new ValuationTotals(
-            list.Sum(item => item.BookValue ?? 0m),
+            bookValue,
+            bookValue - accruedValue,
+            accruedValue,
             list.Sum(item => item.BookCost),
             list.Count(item => !item.Complete));
     }

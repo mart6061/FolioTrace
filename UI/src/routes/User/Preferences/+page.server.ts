@@ -3,7 +3,7 @@ import { getFormString } from '$lib/server/forms';
 import type { PageServerLoad, Actions } from './$types';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
-import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption } from '$lib/valuationPreferences';
+import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention } from '$lib/valuationPreferences';
 import { requireCurrentUser } from '$lib/server/auth';
 import {
   getApiBaseUrl,
@@ -82,10 +82,12 @@ export const actions: Actions = {
     const endValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'endValuationDateOption'), defaultEndValuationDateOption);
     const valuationDateOption = endValuationDateOption;
     const holdingDateBasis = normalizeHoldingDateBasis(getFormString(formData, 'holdingDateBasis'));
+    const valuationPriceConvention = normalizeValuationPriceConvention(getFormString(formData, 'valuationPriceConvention'));
     const showZeroBalances = getFormString(formData, 'showZeroBalances') === 'true';
     const originalStartValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalStartValuationDateOption'), defaultStartValuationDateOption);
     const originalEndValuationDateOption = normalizeValuationDateOption(getFormString(formData, 'originalEndValuationDateOption'), defaultEndValuationDateOption);
     const originalHoldingDateBasis = normalizeHoldingDateBasis(getFormString(formData, 'originalHoldingDateBasis'));
+    const originalValuationPriceConvention = normalizeValuationPriceConvention(getFormString(formData, 'originalValuationPriceConvention'));
     const originalShowZeroBalances = getFormString(formData, 'originalShowZeroBalances') === 'true';
     const bookmarks = parseBookmarks(getFormString(formData, 'bookmarks'));
     const originalBookmarks = parseBookmarks(getFormString(formData, 'originalBookmarks'));
@@ -93,6 +95,7 @@ export const actions: Actions = {
     const valuationChanged = startValuationDateOption !== originalStartValuationDateOption
       || endValuationDateOption !== originalEndValuationDateOption
       || holdingDateBasis !== originalHoldingDateBasis
+      || valuationPriceConvention !== originalValuationPriceConvention
       || showZeroBalances !== originalShowZeroBalances;
     const bookmarkChanges = getBookmarkChanges(bookmarks, originalBookmarks);
 
@@ -125,6 +128,7 @@ export const actions: Actions = {
           startValuationDateOption,
           endValuationDateOption,
           holdingDateBasis,
+          valuationPriceConvention,
           showZeroBalances
         };
         const result = hasStoredValuationPreferences

@@ -109,6 +109,36 @@ public sealed class ProfitLossBuilderTests
         AssertIncompleteMethod(item, ProfitLossMethod.RunningAverage, realized: 450m, bookValue: 0m, unrealized: -450m, total: 0m);
     }
 
+    [Fact]
+    public void ProfitLosses_ValuesFixedIncomeDirty()
+    {
+        // Book cost reflects the dirty price, so market value must too: valuing clean against a dirty cost
+        // would overstate unrealised profit and loss by the accrued interest. Pinned here because the
+        // clean/dirty toggle on the valuation must never reach this calculation.
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments(fixedIncome: true);
+        var holdings = CreateHoldings();
+        var instrumentValues = CreateInstrumentValues(fixedIncome: true);
+        var transactions = CreateTransactions(holdings);
+        var asOfDate = AuditDateTimeBuilder.Create();
+
+        var profitLosses = new ProfitLosses(
+            ValuationDate,
+            asOfDate,
+            HoldingDateBasis.EventDateTime,
+            accounts,
+            holdings,
+            instruments,
+            instrumentValues,
+            new FXRates(ValuationDate, asOfDate, [], []),
+            transactions);
+
+        var item = profitLosses.Accounts.Single().Items.Single(value => value.HoldingID == AssetHoldingID);
+        Assert.Equal(5m, item.Quantity);
+        Assert.Equal(CleanPrice + AccruedInterestPerUnit, item.LocalPrice);
+        Assert.Equal(5m * (CleanPrice + AccruedInterestPerUnit), item.MarketValue);
+    }
+
     private static IReadOnlyList<ITransactionEvent> CreateTransactions(Holdings holdings)
     {
         var firstPurchase = CreateTransaction(
@@ -183,27 +213,26 @@ public sealed class ProfitLossBuilderTests
         return new Accounts(SetupDate, SetupAuditDate, [created]);
     }
 
-    private static Instruments CreateInstruments()
-    {
-        var created = InstrumentCreatedEventBuilder.CreateSeed(
+    private static Instruments CreateInstruments(bool fixedIncome = false) =>
+        new(SetupDate, SetupAuditDate, [CreateInstrument(fixedIncome)]);
+
+    private static InstrumentCreatedEvent CreateInstrument(bool fixedIncome) =>
+        InstrumentCreatedEventBuilder.CreateSeed(
             CreateEventID(),
             UserID,
             SetupDate,
             SetupAuditDate,
             "Create instrument",
             InstrumentID,
-            "Example Equity",
-            "Example Equity plc",
+            fixedIncome ? "Example Bond" : "Example Equity",
+            fixedIncome ? "Example Bond 4%" : "Example Equity plc",
             ExchangeBuilder.Create("XLON"),
-            CFIBuilder.Create("ESVUFR"),
+            CFIBuilder.Create(fixedIncome ? "DBFUFR" : "ESVUFR"),
             null,
             true,
             Alpha2Builder.Create("GB"),
             Alpha2Builder.Create("GB"),
             Alpha3Builder.Create("GBP")).Value!;
-
-        return new Instruments(SetupDate, SetupAuditDate, [created]);
-    }
 
     private static Holdings CreateHoldings()
     {
@@ -250,24 +279,9 @@ public sealed class ProfitLossBuilderTests
         return new Holdings(SetupDate, SetupAuditDate, events.Cast<IHoldingEvent>().ToList());
     }
 
-    private static InstrumentValues CreateInstrumentValues()
+    private static InstrumentValues CreateInstrumentValues(bool fixedIncome = false)
     {
-        var instrument = InstrumentCreatedEventBuilder.CreateSeed(
-            CreateEventID(),
-            UserID,
-            SetupDate,
-            SetupAuditDate,
-            "Create instrument",
-            InstrumentID,
-            "Example Equity",
-            "Example Equity plc",
-            ExchangeBuilder.Create("XLON"),
-            CFIBuilder.Create("ESVUFR"),
-            null,
-            true,
-            Alpha2Builder.Create("GB"),
-            Alpha2Builder.Create("GB"),
-            Alpha3Builder.Create("GBP")).Value!;
+        var instrument = CreateInstrument(fixedIncome);
         var price = InstrumentPriceSetEventBuilder.CreateSeed(
             CreateEventID(),
             UserID,
@@ -275,10 +289,12 @@ public sealed class ProfitLossBuilderTests
             SetupAuditDate,
             "Set price",
             InstrumentID,
-            new InstrumentPriceEquity(
-                new InstrumentQuote(new InstrumentPrice(30m), new InstrumentPrice(30m), new InstrumentPrice(30m)),
-                new InstrumentPrice(30m),
-                new InstrumentPrice(30m))).Value!;
+            fixedIncome
+                ? new InstrumentPriceFixedIncome(new InstrumentQuote(new InstrumentPrice(CleanPrice), new InstrumentPrice(CleanPrice), new InstrumentPrice(CleanPrice)))
+                : new InstrumentPriceEquity(
+                    new InstrumentQuote(new InstrumentPrice(30m), new InstrumentPrice(30m), new InstrumentPrice(30m)),
+                    new InstrumentPrice(30m),
+                    new InstrumentPrice(30m))).Value!;
         var income = InstrumentIncomeSetEventBuilder.CreateSeed(
             CreateEventID(),
             UserID,
@@ -286,13 +302,15 @@ public sealed class ProfitLossBuilderTests
             SetupAuditDate,
             "Set income",
             InstrumentID,
-            new InstrumentIncomeEquity(
-                new InstrumentPrice(0m),
-                "Regular",
-                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 1)),
-                InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)),
-                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)),
-                InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31)))).Value!;
+            fixedIncome
+                ? new InstrumentIncomeFixedIncome(new InstrumentPrice(AccruedInterestPerUnit))
+                : new InstrumentIncomeEquity(
+                    new InstrumentPrice(0m),
+                    "Regular",
+                    InstrumentDateBuilder.Create(new DateOnly(2026, 1, 1)),
+                    InstrumentDateBuilder.Create(new DateOnly(2025, 12, 1)),
+                    InstrumentDateBuilder.Create(new DateOnly(2026, 1, 2)),
+                    InstrumentDateBuilder.Create(new DateOnly(2026, 1, 31)))).Value!;
 
         return new InstrumentValues(ValuationDate, SetupAuditDate, [instrument], [price], [income]);
     }
@@ -327,6 +345,9 @@ public sealed class ProfitLossBuilderTests
     }
 
     private static EventID CreateEventID() => new(Guid.CreateGuid7());
+
+    private const decimal CleanPrice = 30m;
+    private const decimal AccruedInterestPerUnit = 1.25m;
 
     private static readonly UserID UserID = new(Guid.Parse("48c885d1-8e98-4fe7-a797-77420fbfb449"));
     private static readonly EventDateTime SetupDate = EventDateTimeBuilder.Create(new DateTime(2026, 5, 31, 9, 0, 0, DateTimeKind.Utc));
