@@ -28,8 +28,12 @@ app.UseRouting();
 app.MapPost("/trade-files", async (HttpRequest request, TradeFileSimulator simulator, CancellationToken cancellationToken) =>
 {
     var form = await request.ReadFormAsync(cancellationToken);
-    var metadata = JsonSerializer.Deserialize<FolioTrace.Aggregates.TradeFileDeliveryMetadata>(form["metadata"].ToString())
+    // The API writes this part with JsonContent.Create, which uses the camelCase web defaults. Deserialising
+    // with the default options is case-sensitive, so every property would silently bind to null.
+    var metadata = JsonSerializer.Deserialize<FolioTrace.Aggregates.TradeFileDeliveryMetadata>(form["metadata"].ToString(), JsonSerializerOptions.Web)
         ?? throw new BadHttpRequestException("TradeFile metadata is required.");
+    if (metadata.Tickets is null || metadata.Tickets.Count == 0)
+        throw new BadHttpRequestException("TradeFile metadata requires at least one ticket.");
     if (form.Files.GetFile("file") is null)
         throw new BadHttpRequestException("TradeFile content is required.");
     await simulator.ReceiveAsync(metadata, cancellationToken);
