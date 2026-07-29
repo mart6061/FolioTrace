@@ -6,7 +6,7 @@
   import Card from '$lib/components/page/Card.svelte';
   import { ComplexSelect, Field, PillGroup, type ComplexSelectOption } from '$lib/components/forms';
   import { formatTableDateTime, toApiDateTime } from '$lib/dates';
-  import { holdingDateBasisOptions } from '$lib/valuationPreferences';
+  import { holdingDateBasisOptions, valuationPriceConventionOptions } from '$lib/valuationPreferences';
   import { tick } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import type {
@@ -22,7 +22,9 @@
     ProfitLossMethod,
     TransactionReferenceEvent,
     ValuationItem,
-    Valuations
+    Valuations,
+    ValuationPriceConvention,
+    ValuationTotals
   } from '$lib/types';
 
   type AssetExperienceData = {
@@ -36,6 +38,7 @@
     holdingDateBasis: HoldingDateBasis;
     instrumentPriceBasis: InstrumentPriceBasis;
     instrumentPriceBasisOptions: InstrumentPriceBasis[];
+    valuationPriceConvention: ValuationPriceConvention;
     valuationCurrency: string;
     valuationDate: string;
     valuations: Valuations | null;
@@ -106,6 +109,7 @@
   let displayMode: 'Discrete' | 'Aggregate' = $derived(data.assetViewMode);
   let holdingBasis: HoldingDateBasis = $derived(data.holdingDateBasis);
   let priceBasis: InstrumentPriceBasis = $derived(data.instrumentPriceBasis);
+  let priceConvention: ValuationPriceConvention = $derived(data.valuationPriceConvention);
   let valuationCurrency = $derived(data.valuationCurrency);
   let expandedAggregateAssetID = $state('');
   let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
@@ -134,6 +138,9 @@
     label: option,
     value: option
   })));
+  // Reads the loaded data rather than the pill's bound value, so the table and its accrued sub-lines always
+  // agree with the prices actually fetched.
+  const showAccrued = $derived(data.valuationPriceConvention === 'Clean');
   const currencyOptions = $derived<ComplexSelectOption[]>(currencies.length
     ? currencies.map((currency) => ({
         id: currency.alphabeticCode,
@@ -161,6 +168,8 @@
     incompleteReason?: string | null;
     instrumentName: string;
     localPrice?: number | null;
+    localAccruedInterest?: number | null;
+    accruedValue: number | null;
     name: string;
     priceCurrency: string;
     quantity: number;
@@ -321,6 +330,9 @@
       incompleteReasons: Set<string>;
       instrumentName: string;
       localPrice?: number | null;
+      localAccruedInterest?: number | null;
+      accruedValue: number;
+      accruesInterest: boolean;
       name: string;
       priceCurrency: string;
       quantity: number;
@@ -343,6 +355,8 @@
           incompleteCount: 0,
           incompleteReasons: new Set<string>(),
           instrumentName: item.instrumentName,
+          accruedValue: 0,
+          accruesInterest: false,
           name: item.name,
           priceCurrency: item.priceCurrency,
           quantity: 0,
@@ -356,6 +370,8 @@
         group.quantity += Number.isFinite(item.quantity) ? item.quantity : 0;
         group.bookValue += Number.isFinite(item.bookValue) ? item.bookValue ?? 0 : 0;
         group.bookCost += Number.isFinite(item.bookCost) ? item.bookCost : 0;
+        group.accruedValue += Number.isFinite(item.accruedValue) ? item.accruedValue ?? 0 : 0;
+        group.accruesInterest = group.accruesInterest || item.accruedValue !== null && item.accruedValue !== undefined;
         group.complete = group.complete && item.complete;
 
         if (!item.complete) {
@@ -364,6 +380,7 @@
         }
 
         group.localPrice ??= item.localPrice;
+        group.localAccruedInterest ??= item.localAccruedInterest;
         group.quotePrice ??= item.quotePrice;
         group.fxRate ??= item.fxRate;
         group.fxPair ??= item.fxPair;
@@ -372,7 +389,11 @@
       }
     }
 
-    const totalBookValue = [...groups.values()].reduce((total, group) => total + group.bookValue, 0);
+    // Weights are shares of the final total, which includes accrued interest under either convention, mirroring
+    // how the backend weights the discrete rows.
+    const finalValue = (group: { bookValue: number; accruedValue: number }) =>
+      group.bookValue + (showAccrued ? group.accruedValue : 0);
+    const totalBookValue = [...groups.values()].reduce((total, group) => total + finalValue(group), 0);
 
     return [...groups.entries()]
       .map(([assetID, group]) => ({
@@ -396,12 +417,14 @@
           : null,
         instrumentName: group.instrumentName,
         localPrice: group.localPrice,
+        localAccruedInterest: group.localAccruedInterest,
+        accruedValue: group.accruesInterest ? group.accruedValue : null,
         name: group.name,
         priceCurrency: group.priceCurrency,
         quantity: group.quantity,
         quotePrice: group.quotePrice,
         valuationCurrency: group.valuationCurrency,
-        weightPercent: totalBookValue > 0 ? group.bookValue / totalBookValue * 100 : null
+        weightPercent: totalBookValue > 0 ? finalValue(group) / totalBookValue * 100 : null
       }))
       .sort((left, right) => left.name.localeCompare(right.name));
   }
@@ -631,6 +654,24 @@
   }
 </script>
 
+{#snippet totalsSummary(totals: ValuationTotals, currency: string, bookCostUnavailable = false)}
+  <!-- Clean mode shows the route to the final total: clean subtotal, then accrued in the valuation currency,
+       then the total. Dirty mode shows the total alone, because the price already contains the accrued. -->
+  {#if showAccrued && totals.accruedValue !== 0}
+    <div class="house-muted">Clean {formatMoney(totals.cleanValue, currency)}</div>
+    <div class="house-muted">Accrued {formatMoney(totals.accruedValue, currency)}</div>
+  {/if}
+  <div class="font-semibold text-slate-950">{formatMoney(totals.bookValue, currency)}</div>
+  <div class="house-muted">Cost {formatBookCost(totals.bookCost, currency, bookCostUnavailable)}</div>
+{/snippet}
+
+{#snippet accruedSubLine(accruedInterest: number | null | undefined, currency: string)}
+  <!-- Only where accrued interest exists, which in practice means bonds. Rows are ragged by design: no zero
+       accrual prints under an equity. -->
+  {#if showAccrued && accruedInterest !== null && accruedInterest !== undefined}
+    <div class="text-xs font-normal text-slate-500">+{formatMoney(accruedInterest, currency)} accrued</div>
+  {/if}
+{/snippet}
 
 <div
   class={[
@@ -737,6 +778,19 @@
             />
           </Field>
 
+          <Field class="asset-filter-field asset-filter-convention" controlId="asset-price-convention" label="Price convention">
+            <PillGroup
+              ariaLabel="Price convention"
+              bind:value={priceConvention}
+              class="asset-basis-toggle"
+              compact
+              id="asset-price-convention"
+              name="valuationPriceConvention"
+              onchange={submitFilterChange}
+              options={valuationPriceConventionOptions}
+            />
+          </Field>
+
           <Field class="asset-filter-field asset-filter-currency" controlId="asset-valuation-currency" label="Currency">
             <ComplexSelect
               ariaLabel="Currencies"
@@ -777,8 +831,7 @@
               <p class="house-muted text-sm">{aggregateRows.length} assets across {valuations.accounts.length} accounts</p>
             </div>
             <div class="text-right text-sm">
-              <div class="font-semibold text-slate-950">{formatMoney(valuations.totals.bookValue, valuations.valuationCurrency)}</div>
-              <div class="house-muted">Cost {formatBookCost(valuations.totals.bookCost, valuations.valuationCurrency, aggregateBookCostUnavailable)}</div>
+              {@render totalsSummary(valuations.totals, valuations.valuationCurrency, aggregateBookCostUnavailable)}
             </div>
           </div>
 
@@ -817,7 +870,10 @@
                     <td class="px-3 py-2 text-slate-700">{item.holdingKind}</td>
                     <td class="px-3 py-2 text-right font-mono">{formatNumber(item.quantity)}</td>
                     <td class="px-3 py-2 text-right font-mono">{formatWeightPercent(item.weightPercent)}</td>
-                    <td class="asset-price-column px-3 py-2 text-right font-mono">{formatMoney(item.localPrice, item.priceCurrency)}</td>
+                    <td class="asset-price-column px-3 py-2 text-right font-mono">
+                      {formatMoney(item.localPrice, item.priceCurrency)}
+                      {@render accruedSubLine(item.localAccruedInterest, item.priceCurrency)}
+                    </td>
                     <td class="asset-currency-column px-3 py-2 text-right font-mono">
                       {#if item.fxRate}
                         {#if isSameCurrencyFx(item)}
@@ -865,7 +921,10 @@
                         <td class="px-3 py-2 text-slate-600">{holdingKindLabel(holding.holdingKind)}</td>
                         <td class="px-3 py-2 text-right font-mono">{formatNumber(holding.quantity)}</td>
                         <td class="px-3 py-2 text-right font-mono">{formatWeightPercent(holding.weightPercent)}</td>
-                        <td class="asset-price-column px-3 py-2 text-right font-mono">{formatMoney(holding.localPrice, holding.priceCurrency)}</td>
+                        <td class="asset-price-column px-3 py-2 text-right font-mono">
+                          {formatMoney(holding.localPrice, holding.priceCurrency)}
+                          {@render accruedSubLine(holding.localAccruedInterest, holding.priceCurrency)}
+                        </td>
                         <td class="asset-currency-column px-3 py-2 text-right font-mono">
                           {#if holding.fxRate}
                             {#if isSameCurrencyFx(holding)}
@@ -907,8 +966,7 @@
                 <p class="house-muted text-sm">Book currency {account.bookCurrency} | Valuation currency {account.valuationCurrency}</p>
               </div>
               <div class="text-right text-sm">
-                <div class="font-semibold text-slate-950">{formatMoney(account.totals.bookValue, account.valuationCurrency)}</div>
-                <div class="house-muted">Cost {formatMoney(account.totals.bookCost, account.valuationCurrency)}</div>
+                {@render totalsSummary(account.totals, account.valuationCurrency)}
               </div>
             </div>
 
@@ -944,7 +1002,10 @@
                       <td class="px-3 py-2 text-slate-700">{holdingKindLabel(item.holdingKind)}</td>
                       <td class="px-3 py-2 text-right font-mono">{formatNumber(item.quantity)}</td>
                       <td class="px-3 py-2 text-right font-mono">{formatWeightPercent(item.weightPercent)}</td>
-                      <td class="asset-price-column px-3 py-2 text-right font-mono">{formatMoney(item.localPrice, item.priceCurrency)}</td>
+                      <td class="asset-price-column px-3 py-2 text-right font-mono">
+                        {formatMoney(item.localPrice, item.priceCurrency)}
+                        {@render accruedSubLine(item.localAccruedInterest, item.priceCurrency)}
+                      </td>
                       <td class="asset-currency-column px-3 py-2 text-right font-mono">
                         {#if item.fxRate}
                           {#if isSameCurrencyFx(item)}
@@ -1197,6 +1258,12 @@
     flex-grow: 0.6;
   }
 
+  .asset-filter-convention {
+    --asset-filter-min: 10rem;
+    --asset-filter-width: 11rem;
+    flex-grow: 0.6;
+  }
+
   .asset-filter-currency {
     --asset-filter-min: 8.5rem;
     --asset-filter-width: 9.5rem;
@@ -1230,6 +1297,7 @@
   .asset-filter-viewer-form .asset-filter-view,
   .asset-filter-viewer-form .asset-filter-basis,
   .asset-filter-viewer-form .asset-filter-price,
+  .asset-filter-viewer-form .asset-filter-convention,
   .asset-filter-viewer-form .asset-filter-currency {
     --asset-filter-min: 0;
     --asset-filter-width: auto;
@@ -1238,7 +1306,7 @@
   .asset-filter-viewer-form .asset-filter-secondary-row {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: minmax(13rem, 1fr) minmax(13rem, 1fr) minmax(10rem, 14rem);
+    grid-template-columns: minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(10rem, 14rem);
     gap: 0.85rem;
     align-items: end;
   }

@@ -5,7 +5,8 @@
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import { ComplexSelect, Toggle, type ComplexSelectOption } from '$lib/components/forms';
-  import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportProfitLossMethod, ReportValuationColumn, ReportValuationColumnKey } from '$lib/types';
+  import { defaultValuationPriceConvention, normalizeValuationPriceConvention } from '$lib/valuationPreferences';
+  import type { ReportChartPieLevel, ReportConfig, ReportNodeBase, ReportNodePageOrientation, ReportNodeType, ReportProfitLossMethod, ReportValuationColumn, ReportValuationColumnKey, ValuationPriceConvention } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -25,7 +26,9 @@
     { key: 'ISIN', label: 'ISIN' },
     { key: 'Sedol', label: 'Sedol' },
     { key: 'QuotePrice', label: 'Quote Price' },
+    { key: 'AccruedInterest', label: 'Accrued' },
     { key: 'Quantity', label: 'Quantity' },
+    { key: 'CleanValue', label: 'Clean Value' },
     { key: 'BookValue', label: 'Book Value' },
     { key: 'BookValueDefault', label: 'Book Value (default)' },
     { key: 'BookValueFIFO', label: 'Book Value (FIFO)' },
@@ -47,6 +50,11 @@
     { value: 1, label: 'Level 1' },
     { value: 2, label: 'Level 2' },
     { value: 3, label: 'Level 3' }
+  ];
+
+  const valuationPriceConventionRadioOptions: { value: ValuationPriceConvention; label: string }[] = [
+    { value: 'Clean', label: 'Clean' },
+    { value: 'Dirty', label: 'Dirty' }
   ];
 
   const profitLossMethodOptions: { value: ReportProfitLossMethod; label: string }[] = [
@@ -125,6 +133,7 @@
       colourBullet: reportNodeType(node) === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
       colourText: reportNodeType(node) === 'ReportNodeValuation' ? node.colourText ?? false : undefined,
       displayHoldings: reportNodeType(node) === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined,
+      valuationPriceConvention: reportNodeType(node) === 'ReportNodeValuation' ? normalizeValuationPriceConvention(node.valuationPriceConvention) : undefined,
       profitLossMethod: reportNodeType(node) === 'ReportNodeProfitLoss' ? normalizeProfitLossMethod(node.profitLossMethod) : undefined
     }));
   }
@@ -150,6 +159,7 @@
         colourBullet: type === 'ReportNodeValuation' ? node.colourBullet ?? true : undefined,
         colourText: type === 'ReportNodeValuation' ? node.colourText ?? false : undefined,
         displayHoldings: type === 'ReportNodeValuation' ? node.displayHoldings ?? true : undefined,
+        valuationPriceConvention: type === 'ReportNodeValuation' ? normalizeValuationPriceConvention(node.valuationPriceConvention) : undefined,
         profitLossMethod: type === 'ReportNodeProfitLoss' ? normalizeProfitLossMethod(node.profitLossMethod) : undefined
       };
     });
@@ -207,6 +217,7 @@
       node.colourBullet = true;
       node.colourText = false;
       node.displayHoldings = true;
+      node.valuationPriceConvention = defaultValuationPriceConvention;
     }
 
     if (type === 'ReportNodeProfitLoss')
@@ -690,6 +701,17 @@
                       {/if}
                       {#if type === 'ReportNodeValuation'}
                         {@const valuationColumns = valuationNodeColumns(node)}
+                        <fieldset class="field report-profit-loss-method-field">
+                          <legend>Price convention</legend>
+                          <div class="report-segmented-control report-profit-loss-method-control">
+                            {#each valuationPriceConventionRadioOptions as option (option.value)}
+                              <label>
+                                <input name={`valuationPriceConvention-${node.reportNodeID}`} type="radio" bind:group={node.valuationPriceConvention} value={option.value} />
+                                <span>{option.label}</span>
+                              </label>
+                            {/each}
+                          </div>
+                        </fieldset>
                         <div class="report-valuation-display-options" aria-label="Valuation display options">
                           <Toggle bind:checked={node.displayHoldings} class="report-valuation-toggle" label="Display Holdings" />
                           <Toggle bind:checked={node.colourBullet} class="report-valuation-toggle" label="Colour Bullet" />

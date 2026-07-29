@@ -98,6 +98,17 @@ public sealed record InstrumentValue : IModel
     }
 
     /// <summary>
+    /// Accrued interest per unit, present only for fixed income. It is an <see cref="InstrumentPrice"/>, so it
+    /// follows the price path exactly — scale it by quantity and convert it at the rate the price used, never
+    /// treat it as an already-scaled position amount.
+    /// </summary>
+    [JsonIgnore]
+    public InstrumentPrice? AccruedInterest =>
+        (Price, Income) is (InstrumentPriceFixedIncome, InstrumentIncomeFixedIncome fixedIncomeIncome)
+            ? fixedIncomeIncome.AccruedInterest
+            : null;
+
+    /// <summary>
     /// Fixed income quoted dirty: the clean quotes plus accrued interest. Derived rather than stored, because
     /// accrued interest moves with the valuation date. Null for every other price type.
     /// </summary>

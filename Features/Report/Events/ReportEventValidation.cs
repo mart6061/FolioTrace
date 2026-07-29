@@ -62,6 +62,9 @@ public static class ReportEventValidation
 
                 if (valuation.Columns?.Any(column => column.DisplayOrder < 1) == true)
                     messages.Add($"Report node '{valuation.ReportNodeID}' has a valuation column display order less than one.");
+
+                if (!Enum.IsDefined(valuation.ValuationPriceConvention))
+                    messages.Add($"Report node '{valuation.ReportNodeID}' has an unsupported valuation price convention.");
             }
             else if (node is ReportNodeTransactions transactions)
             {

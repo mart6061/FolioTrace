@@ -90,6 +90,7 @@ public static partial class ApiEndpointRegistration
             DateTime? auditDateTime,
             HoldingDateBasis? holdingDateBasis,
             InstrumentPriceBasis? instrumentPriceBasis,
+            ValuationPriceConvention? valuationPriceConvention,
             string? valuationCurrency,
             Guid? accountID,
             ValuationService valuationService) =>
@@ -104,6 +105,7 @@ public static partial class ApiEndpointRegistration
                 asAt,
                 holdingDateBasis ?? HoldingDateBasis.EventDateTime,
                 instrumentPriceBasis ?? InstrumentPriceBasis.Mid,
+                valuationPriceConvention ?? UserValuationPreferenceDefaults.ValuationPriceConvention,
                 currency,
                 account));
         });

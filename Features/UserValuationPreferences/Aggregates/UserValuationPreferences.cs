@@ -17,6 +17,8 @@ public sealed record UserValuationPreferences : IModel
 
     public HoldingDateBasis HoldingDateBasis { get; private set; }
 
+    public ValuationPriceConvention ValuationPriceConvention { get; private set; }
+
     public bool ShowZeroBalances { get; private set; }
 
     public bool HasStoredPreferences { get; private set; }
@@ -37,6 +39,7 @@ public sealed record UserValuationPreferences : IModel
         UserValuationDateOption? startValuationDateOption,
         UserValuationDateOption? endValuationDateOption,
         HoldingDateBasis holdingDateBasis,
+        ValuationPriceConvention valuationPriceConvention,
         bool showZeroBalances,
         bool hasStoredPreferences,
         EventDateTime valuationDateTime,
@@ -49,6 +52,7 @@ public sealed record UserValuationPreferences : IModel
         StartValuationDateOption = startValuationDateOption ?? UserValuationPreferenceDefaults.StartValuationDateOption;
         EndValuationDateOption = endValuationDateOption ?? valuationDateOption;
         HoldingDateBasis = holdingDateBasis;
+        ValuationPriceConvention = valuationPriceConvention;
         ShowZeroBalances = showZeroBalances;
         HasStoredPreferences = hasStoredPreferences;
         ValuationDateTime = valuationDateTime;
@@ -83,6 +87,7 @@ public sealed record UserValuationPreferences : IModel
         StartValuationDateOption = UserValuationPreferenceDefaults.StartValuationDateOption;
         EndValuationDateOption = UserValuationPreferenceDefaults.EndValuationDateOption;
         HoldingDateBasis = UserValuationPreferenceDefaults.HoldingDateBasis;
+        ValuationPriceConvention = UserValuationPreferenceDefaults.ValuationPriceConvention;
         ShowZeroBalances = UserValuationPreferenceDefaults.ShowZeroBalances;
         HasStoredPreferences = false;
         ValuationDateTime = valuationDateTime;
@@ -115,6 +120,7 @@ public sealed record UserValuationPreferences : IModel
         EndValuationDateOption = createdEvent.EndValuationDateOption ?? createdEvent.ValuationDateOption;
         ValuationDateOption = EndValuationDateOption;
         HoldingDateBasis = createdEvent.HoldingDateBasis;
+        ValuationPriceConvention = createdEvent.ValuationPriceConvention;
         ShowZeroBalances = createdEvent.ShowZeroBalances;
         HasStoredPreferences = true;
         UpdateProvenance(createdEvent);
@@ -126,6 +132,7 @@ public sealed record UserValuationPreferences : IModel
         EndValuationDateOption = modifiedEvent.EndValuationDateOption ?? modifiedEvent.ValuationDateOption;
         ValuationDateOption = EndValuationDateOption;
         HoldingDateBasis = modifiedEvent.HoldingDateBasis;
+        ValuationPriceConvention = modifiedEvent.ValuationPriceConvention;
         ShowZeroBalances = modifiedEvent.ShowZeroBalances;
         HasStoredPreferences = true;
         UpdateProvenance(modifiedEvent);

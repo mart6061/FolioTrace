@@ -2,10 +2,18 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "API", "--launch-profile", "https"],
+      "port": 7058,
+      "url": "https://localhost:7058"
+    },
+    {
       "name": "ui-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "UI", "run", "dev"],
-      "port": 5173
+      "port": 5173,
+      "url": "https://localhost:5173"
     }
   ]
 }

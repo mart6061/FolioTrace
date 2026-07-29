@@ -14,6 +14,7 @@ public sealed class ValuationService(
         AuditDateTime asOfDateTime,
         HoldingDateBasis holdingDateBasis,
         InstrumentPriceBasis instrumentPriceBasis,
+        ValuationPriceConvention valuationPriceConvention,
         Alpha3 valuationCurrency,
         AccountID? accountID = null)
     {
@@ -31,6 +32,7 @@ public sealed class ValuationService(
             asOfDateTime,
             holdingDateBasis,
             instrumentPriceBasis,
+            valuationPriceConvention,
             valuationCurrency,
             accounts,
             positions,

@@ -8,6 +8,7 @@ public sealed record UserValuationPreferencesRequest(
     string Reason,
     UserValuationDateOption ValuationDateOption,
     HoldingDateBasis HoldingDateBasis,
+    ValuationPriceConvention ValuationPriceConvention,
     bool ShowZeroBalances)
 {
     public UserValuationDateOption? StartValuationDateOption { get; init; }

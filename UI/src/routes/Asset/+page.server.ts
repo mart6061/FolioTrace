@@ -1,6 +1,6 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { getAccounts, getCurrencies, getValuations } from '$lib/server/api';
-import { normalizeHoldingDateBasis } from '$lib/valuationPreferences';
+import { normalizeHoldingDateBasis, normalizeValuationPriceConvention, valuationPriceConventionOptions } from '$lib/valuationPreferences';
 import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { Account, Currency, InstrumentPriceBasis, Valuations } from '$lib/types';
@@ -13,6 +13,7 @@ export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const holdingDateBasis = normalizeHoldingDateBasis(url.searchParams.get('holdingDateBasis'));
   const instrumentPriceBasis = normalizeInstrumentPriceBasis(url.searchParams.get('instrumentPriceBasis'));
+  const valuationPriceConvention = normalizeValuationPriceConvention(url.searchParams.get('valuationPriceConvention'));
   const assetViewMode = normalizeAssetViewMode(url.searchParams.get('assetViewMode'));
   const apiValuationDate = toApiDateTime(valuationDate);
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
@@ -33,7 +34,7 @@ export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
       currencies.items
     );
     const valuations = selectValuationAccounts(
-      await getValuations(fetch, apiValuationDate, apiAuditDateTime, holdingDateBasis, instrumentPriceBasis, valuationCurrency, accountID || null),
+      await getValuations(fetch, apiValuationDate, apiAuditDateTime, holdingDateBasis, instrumentPriceBasis, valuationPriceConvention, valuationCurrency, accountID || null),
       accountIDs
     );
 
@@ -48,6 +49,8 @@ export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
       holdingDateBasis,
       instrumentPriceBasis,
       instrumentPriceBasisOptions,
+      valuationPriceConvention,
+      valuationPriceConventionOptions,
       valuationCurrency,
       valuationDate,
       valuations
@@ -64,6 +67,8 @@ export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
       holdingDateBasis,
       instrumentPriceBasis,
       instrumentPriceBasisOptions,
+      valuationPriceConvention,
+      valuationPriceConventionOptions,
       valuationCurrency,
       valuationDate,
       valuations: null
@@ -117,15 +122,19 @@ function selectValuationAccounts(valuations: Valuations, accountIDs: string[]) {
 
   const selectedAccountIDSet = new Set(accountIDs);
   const accounts = valuations.accounts.filter((account) => selectedAccountIDSet.has(account.accountID));
+  // The final total and the accrued are summed; the clean subtotal is derived from them, the same way the
+  // backend does it, so the three cannot drift apart here either.
+  const summed = accounts.reduce((totals, account) => ({
+    bookValue: totals.bookValue + account.totals.bookValue,
+    accruedValue: totals.accruedValue + account.totals.accruedValue,
+    bookCost: totals.bookCost + account.totals.bookCost,
+    incompleteCount: totals.incompleteCount + account.totals.incompleteCount
+  }), { bookValue: 0, accruedValue: 0, bookCost: 0, incompleteCount: 0 });
 
   return {
     ...valuations,
     accountID: accountIDs.length === 1 ? accountIDs[0] : null,
     accounts,
-    totals: accounts.reduce((totals, account) => ({
-      bookValue: totals.bookValue + account.totals.bookValue,
-      bookCost: totals.bookCost + account.totals.bookCost,
-      incompleteCount: totals.incompleteCount + account.totals.incompleteCount
-    }), { bookValue: 0, bookCost: 0, incompleteCount: 0 })
+    totals: { ...summed, cleanValue: summed.bookValue - summed.accruedValue }
   };
 }

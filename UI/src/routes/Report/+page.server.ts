@@ -1,7 +1,7 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, startOfDayForInput, toApiDateTime } from '$lib/dates';
 import { getAccounts, getAssetAllocationMappings, getHoldingPositions, getHoldings, getInstruments, getProfitLosses, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
 import { requireCurrentUser } from '$lib/server/auth';
-import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, valuationEndDateFromOption, valuationStartDateFromOption } from '$lib/valuationPreferences';
+import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationPriceConvention, valuationEndDateFromOption, valuationStartDateFromOption } from '$lib/valuationPreferences';
 import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type {
@@ -22,6 +22,7 @@ import type {
   ReportProfitLossMethod,
   ReportValuationColumn,
   ReportValuationColumnKey,
+  ValuationPriceConvention,
   TransactionReferenceEvent,
   ValuationItem,
   ValuationSetting
@@ -35,7 +36,9 @@ const valuationColumnDefinitions: ReportValuationColumnDefinition[] = [
   { columnKey: 'ISIN', label: 'ISIN', numeric: false, valueType: 'Text' },
   { columnKey: 'Sedol', label: 'Sedol', numeric: false, valueType: 'Text' },
   { columnKey: 'QuotePrice', label: 'Quote Price', numeric: true, valueType: 'Money' },
+  { columnKey: 'AccruedInterest', label: 'Accrued', numeric: true, valueType: 'Money' },
   { columnKey: 'Quantity', label: 'Quantity', numeric: true, valueType: 'Quantity' },
+  { columnKey: 'CleanValue', label: 'Clean Value', numeric: true, valueType: 'Money' },
   { columnKey: 'BookValue', label: 'Book Value', numeric: true, valueType: 'Money' },
   { columnKey: 'BookValueDefault', label: 'Book Value (default)', numeric: true, valueType: 'Money' },
   { columnKey: 'BookValueFIFO', label: 'Book Value (FIFO)', numeric: true, valueType: 'Money' },
@@ -95,11 +98,16 @@ type ReportValuationAsset = {
   sedol: string;
   quantity: number;
   quotePrice: number | null;
+  /** Accrued interest for the position, in the valuation currency. */
+  accruedValue: number;
   weightPercent: number;
   targetPercent: number | null;
   targetMinPercent: number | null;
   targetMaxPercent: number | null;
   variancePercent: number | null;
+  /** The clean subtotal, derived from the final book value. */
+  cleanValue: number;
+  /** The final value. Always includes accrued interest, whichever convention the node displays. */
   bookValue: number;
   bookValueDefault: number;
   bookValueFIFO: number;
@@ -110,7 +118,9 @@ type ReportValuationAsset = {
 
 type ReportValuationSubtotal = {
   quantity: number;
+  accruedValue: number;
   weightPercent: number;
+  cleanValue: number;
   bookValue: number;
   bookValueDefault: number;
   bookValueFIFO: number;
@@ -140,11 +150,13 @@ type ReportValuationRow = {
   sedol: string;
   quantity: number;
   quotePrice: number | null;
+  accruedValue: number;
   weightPercent: number;
   targetPercent: number | null;
   targetMinPercent: number | null;
   targetMaxPercent: number | null;
   variancePercent: number | null;
+  cleanValue: number;
   bookValue: number;
   bookValueDefault: number;
   bookValueFIFO: number;
@@ -386,10 +398,13 @@ async function createReportDocument(
     .map((node) => node.assetAllocationID)
     .filter((assetAllocationID): assetAllocationID is string => Boolean(assetAllocationID)));
   const allocationByID = new Map(options.valuationSettings.map((setting) => [setting.assetAllocationID, setting]));
+  // Each valuation node states its own convention, so fetch once per distinct convention the report asks for
+  // — one call in practice, because a report rarely mixes them.
+  const conventions = reportValuationConventions(reportConfig.nodes);
   const [
     holdingPositions,
     instruments,
-    valuations,
+    valuationsByConvention,
     profitLosses,
     holdings,
     transactionEvents,
@@ -397,7 +412,10 @@ async function createReportDocument(
   ] = await Promise.all([
     getHoldingPositions(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.accountID),
     getInstruments(fetchApi, options.valuationDateTime, options.auditDateTime),
-    getValuations(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.instrumentPriceBasis, options.valuationCurrency, options.accountID),
+    Promise.all(conventions.map(async (convention) => [
+      convention,
+      await getValuations(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.instrumentPriceBasis, convention, options.valuationCurrency, options.accountID)
+    ] as const)),
     getProfitLosses(fetchApi, options.valuationDateTime, options.auditDateTime, options.holdingDateBasis, options.instrumentPriceBasis, options.accountID),
     getHoldings(fetchApi, options.valuationDateTime, options.auditDateTime, { accountID: options.accountID, includeInactive: true }),
     getTransactionEvents(fetchApi, { accountID: options.accountID, auditDateTime: options.auditDateTime, valuationDateTime: options.valuationDateTime }),
@@ -406,8 +424,12 @@ async function createReportDocument(
       mappings: (await getAssetAllocationMappings(fetchApi, options.valuationDateTime, options.auditDateTime, assetAllocationID, options.accountID)).items
     })))
   ]);
-  const valuationItems = valuations.accounts.find((account) => account.accountID === options.accountID)?.items ?? [];
-  const valuationsByHoldingID = new Map(valuationItems.map((item) => [item.holdingID, item]));
+  const valuationItemsByConvention = new Map<ValuationPriceConvention, Map<string, ValuationItem>>(
+    valuationsByConvention.map(([convention, valuations]) => [
+      convention,
+      new Map((valuations.accounts.find((account) => account.accountID === options.accountID)?.items ?? [])
+        .map((item) => [item.holdingID, item]))
+    ]));
   const profitLossItems = profitLosses.accounts.find((account) => account.accountID === options.accountID)?.items ?? [];
   const profitLossByHoldingID = new Map(profitLossItems.map((item) => [item.holdingID, item]));
   const holdingsByID = new Map(holdings.items.map((holding) => [holding.holdingID, holding]));
@@ -426,7 +448,7 @@ async function createReportDocument(
         node,
         holdingPositions.items,
         instrumentsByID,
-        valuationsByHoldingID,
+        valuationItemsByConvention,
         profitLossByHoldingID,
         options.bookCostBasis,
         cashGroups,
@@ -439,11 +461,24 @@ async function createReportDocument(
   };
 }
 
+/**
+ * The distinct conventions the report's valuation nodes ask for. Always includes the Clean default, so
+ * sections that have no convention of their own (profit and loss, pies) still have a valuation set to read.
+ */
+function reportValuationConventions(nodes: ReportNodeBase[]): ValuationPriceConvention[] {
+  const conventions = new Set<ValuationPriceConvention>([defaultValuationPriceConvention]);
+
+  for (const node of nodes)
+    conventions.add(normalizeValuationPriceConvention(node.valuationPriceConvention));
+
+  return [...conventions];
+}
+
 function createReportSection(
   node: ReportNodeBase,
   holdings: HoldingPosition[],
   instrumentsByID: Map<string, Instrument>,
-  valuationsByHoldingID: Map<string, ValuationItem>,
+  valuationsByConvention: Map<ValuationPriceConvention, Map<string, ValuationItem>>,
   profitLossByHoldingID: Map<string, ProfitLossItem>,
   bookCostBasis: ProfitLossMethod,
   cashGroups: ReportCashGroup[],
@@ -490,7 +525,11 @@ function createReportSection(
     };
   }
 
-  const mappedHoldings = mapHoldingMetrics(holdings, instrumentsByID, valuationsByHoldingID, profitLossByHoldingID, bookCostBasis);
+  const valuationPriceConvention = normalizeValuationPriceConvention(node.valuationPriceConvention);
+  const valuationsByHoldingID = valuationsByConvention.get(valuationPriceConvention)
+    ?? valuationsByConvention.get(defaultValuationPriceConvention)
+    ?? new Map<string, ValuationItem>();
+  const mappedHoldings = mapHoldingMetrics(holdings, instrumentsByID, valuationsByHoldingID, profitLossByHoldingID, bookCostBasis, valuationPriceConvention);
   const mappingByHoldingID = new Map(mappings.map((mapping) => [mapping.holdingID, mapping.nodeID]));
 
   if (sectionType === 'ProfitLoss') {
@@ -556,19 +595,22 @@ function mapHoldingMetrics(
   instrumentsByID: Map<string, Instrument>,
   valuationsByHoldingID: Map<string, ValuationItem>,
   profitLossByHoldingID: Map<string, ProfitLossItem>,
-  bookCostBasis: ProfitLossMethod
+  bookCostBasis: ProfitLossMethod,
+  valuationPriceConvention: ValuationPriceConvention
 ): ReportValuationAsset[] {
-  const totalBookValue = holdings.reduce((total, holding) => {
-    const valuation = valuationsByHoldingID.get(holding.holdingID);
-    return total + numberValue(valuation?.bookValue);
-  }, 0);
+  // Book value is the final value under either convention, so every subtotal, weight and pie slice below
+  // stays on the same number the screen totals to. The clean subtotal is derived from it.
+  const finalValue = (valuation: ValuationItem | undefined) =>
+    numberValue(valuation?.bookValue) + (valuationPriceConvention === 'Clean' ? numberValue(valuation?.accruedValue) : 0);
+  const totalBookValue = holdings.reduce((total, holding) => total + finalValue(valuationsByHoldingID.get(holding.holdingID)), 0);
 
   return holdings
     .map((holding) => {
       const valuation = valuationsByHoldingID.get(holding.holdingID);
       const profitLoss = profitLossByHoldingID.get(holding.holdingID);
       const instrument = instrumentsByID.get(valuation?.instrumentID ?? holding.instrumentID);
-      const bookValue = numberValue(valuation?.bookValue);
+      const accruedValue = numberValue(valuation?.accruedValue);
+      const bookValue = finalValue(valuation);
       const bookValueFIFO = profitLossMethodBookValue(profitLoss, 'FIFO', numberValue(valuation?.bookCost, holding.bookCost));
       const bookValueLIFO = profitLossMethodBookValue(profitLoss, 'LIFO', numberValue(valuation?.bookCost, holding.bookCost));
       const bookValueRunningAverage = profitLossMethodBookValue(profitLoss, 'RunningAverage', numberValue(valuation?.bookCost, holding.bookCost));
@@ -581,11 +623,13 @@ function mapHoldingMetrics(
         sedol: instrumentIdentifier(instrument, 'Sedol'),
         quantity: numberValue(valuation?.quantity, holding.quantity),
         quotePrice: nullableNumberValue(valuation?.quotePrice),
+        accruedValue,
         weightPercent: numberValue(valuation?.weightPercent, totalBookValue ? bookValue / totalBookValue * 100 : 0),
         targetPercent: null,
         targetMinPercent: null,
         targetMaxPercent: null,
         variancePercent: null,
+        cleanValue: bookValue - accruedValue,
         bookValue,
         bookValueDefault: bookValueForBasis(bookCostBasis, bookValueFIFO, bookValueLIFO, bookValueRunningAverage),
         bookValueFIFO,
@@ -693,11 +737,13 @@ function createValuationRows(
       sedol: '',
       quantity: total.quantity,
       quotePrice: null,
+      accruedValue: total.accruedValue,
       weightPercent: total.weightPercent,
       targetPercent: null,
       targetMinPercent: null,
       targetMaxPercent: null,
       variancePercent: null,
+      cleanValue: total.cleanValue,
       bookValue: total.bookValue,
       bookValueDefault: total.bookValueDefault,
       bookValueFIFO: total.bookValueFIFO,
@@ -757,11 +803,13 @@ function appendValuationRows(
         sedol: asset.sedol,
         quantity: asset.quantity,
         quotePrice: asset.quotePrice,
+        accruedValue: asset.accruedValue,
         weightPercent: asset.weightPercent,
         targetPercent: null,
         targetMinPercent: null,
         targetMaxPercent: null,
         variancePercent: null,
+        cleanValue: asset.cleanValue,
         bookValue: asset.bookValue,
         bookValueDefault: asset.bookValueDefault,
         bookValueFIFO: asset.bookValueFIFO,
@@ -846,7 +894,9 @@ function nodeSubTotal(
 function addSubtotals(left: ReportValuationSubtotal, right: ReportValuationSubtotal): ReportValuationSubtotal {
   return {
     quantity: left.quantity + right.quantity,
+    accruedValue: left.accruedValue + right.accruedValue,
     weightPercent: left.weightPercent + right.weightPercent,
+    cleanValue: left.cleanValue + right.cleanValue,
     bookValue: left.bookValue + right.bookValue,
     bookValueDefault: left.bookValueDefault + right.bookValueDefault,
     bookValueFIFO: left.bookValueFIFO + right.bookValueFIFO,
@@ -878,7 +928,9 @@ function nodeTarget(node: AssetAllocationNode, accountID: string) {
 function zeroSubtotal(): ReportValuationSubtotal {
   return {
     quantity: 0,
+    accruedValue: 0,
     weightPercent: 0,
+    cleanValue: 0,
     bookValue: 0,
     bookValueDefault: 0,
     bookValueFIFO: 0,
@@ -892,7 +944,9 @@ function zeroSubtotal(): ReportValuationSubtotal {
 
 function isZeroSubtotal(subtotal: ReportValuationSubtotal) {
   return subtotal.quantity === 0 &&
+    subtotal.accruedValue === 0 &&
     subtotal.weightPercent === 0 &&
+    subtotal.cleanValue === 0 &&
     subtotal.bookValue === 0 &&
     subtotal.bookValueDefault === 0 &&
     subtotal.bookValueFIFO === 0 &&

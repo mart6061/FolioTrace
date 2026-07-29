@@ -3,6 +3,7 @@ import { getFormString } from '$lib/server/forms';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { requireCurrentUser } from '$lib/server/auth';
+import { normalizeValuationPriceConvention } from '$lib/valuationPreferences';
 import {
   getAccounts,
   getApiBaseUrl,
@@ -206,6 +207,7 @@ function normalizeReportNode(value: unknown): ReportNodeRequest | null {
     node.colourBullet = readBoolean(record, true, 'colourBullet', 'ColourBullet');
     node.colourText = readBoolean(record, false, 'colourText', 'ColourText');
     node.displayHoldings = readBoolean(record, true, 'displayHoldings', 'DisplayHoldings');
+    node.valuationPriceConvention = normalizeValuationPriceConvention(readString(record, 'valuationPriceConvention', 'ValuationPriceConvention'));
 
     if (columnsResult.columns !== undefined)
       node.columns = columnsResult.columns;

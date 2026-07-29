@@ -1,4 +1,4 @@
-import type { HoldingDateBasis, UserValuationDateOption, UserValuationPreferences } from '$lib/types';
+import type { HoldingDateBasis, UserValuationDateOption, UserValuationPreferences, ValuationPriceConvention } from '$lib/types';
 import { endOfDayForInput, nowForInput, startOfDayForInput } from '$lib/dates';
 
 export type ValuationDateOptionDefinition = {
@@ -8,6 +8,11 @@ export type ValuationDateOptionDefinition = {
 
 export type HoldingDateBasisDefinition = {
   value: HoldingDateBasis;
+  label: string;
+};
+
+export type ValuationPriceConventionDefinition = {
+  value: ValuationPriceConvention;
   label: string;
 };
 
@@ -24,11 +29,17 @@ export const defaultValuationDateOption: UserValuationDateOption = 'TodayEndOfDa
 export const defaultStartValuationDateOption: UserValuationDateOption = 'TodayEndOfDay';
 export const defaultEndValuationDateOption: UserValuationDateOption = 'TodayEndOfDay';
 export const defaultHoldingDateBasis: HoldingDateBasis = 'EventDateTime';
+export const defaultValuationPriceConvention: ValuationPriceConvention = 'Clean';
 export const defaultShowZeroBalances = false;
 
 export const holdingDateBasisOptions: HoldingDateBasisDefinition[] = [
   { value: 'EventDateTime', label: 'Execution' },
   { value: 'SettlementDateTime', label: 'Settlement' }
+];
+
+export const valuationPriceConventionOptions: ValuationPriceConventionDefinition[] = [
+  { value: 'Clean', label: 'Clean' },
+  { value: 'Dirty', label: 'Dirty' }
 ];
 
 export function defaultUserValuationPreferences(userID = ''): UserValuationPreferences {
@@ -38,6 +49,7 @@ export function defaultUserValuationPreferences(userID = ''): UserValuationPrefe
     startValuationDateOption: defaultStartValuationDateOption,
     endValuationDateOption: defaultEndValuationDateOption,
     holdingDateBasis: defaultHoldingDateBasis,
+    valuationPriceConvention: defaultValuationPriceConvention,
     showZeroBalances: defaultShowZeroBalances,
     hasStoredPreferences: false,
     valuationDateTime: '',
@@ -53,6 +65,10 @@ export function normalizeValuationDateOption(value: string | null | undefined, f
 
 export function normalizeHoldingDateBasis(value: string | null | undefined): HoldingDateBasis {
   return value === 'SettlementDateTime' ? 'SettlementDateTime' : defaultHoldingDateBasis;
+}
+
+export function normalizeValuationPriceConvention(value: string | null | undefined): ValuationPriceConvention {
+  return value === 'Dirty' ? 'Dirty' : defaultValuationPriceConvention;
 }
 
 export function valuationStartDateFromOption(option: UserValuationDateOption, now = new Date()) {
