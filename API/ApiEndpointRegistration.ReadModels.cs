@@ -2,7 +2,6 @@ using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
-using API.Auth;
 using API.FoleoTrader;
 using API.TradeFiles;
 using Repository;
@@ -399,6 +398,9 @@ public static partial class ApiEndpointRegistration
     private static void MapUserEndpoints(this RouteGroupBuilder api)
     {
         var users = api.MapGroup("/Users").WithTags("Users");
+
+        users.MapGet("/Current", (ICurrentUserContext currentUserContext) =>
+            Results.Ok(currentUserContext.Current.ToResponse()));
 
         var getUsers = async (DateTime eventDateTime, DateTime? auditDateTime, UserService userService) =>
         {

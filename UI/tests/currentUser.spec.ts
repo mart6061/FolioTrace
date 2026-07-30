@@ -1,14 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { isCurrentUser } from '../src/lib/authTypes';
+import { isCurrentUser } from '../src/lib/currentUser';
 
 const validUser = {
   userID: 'user-1',
-  workosUserID: 'workos-1',
   email: 'person@example.com',
   displayName: 'Person'
 };
 
-test('accepts a well-formed session response', () => {
+test('accepts a well-formed current user response', () => {
   expect(isCurrentUser(validUser)).toBe(true);
 });
 
@@ -30,4 +29,9 @@ test('rejects non-object values', () => {
   expect(isCurrentUser(undefined)).toBe(false);
   expect(isCurrentUser('a string')).toBe(false);
   expect(isCurrentUser([])).toBe(false);
+});
+
+test('does not require an identity-provider-specific user ID', () => {
+  expect(isCurrentUser(validUser)).toBe(true);
+  expect(Object.keys(validUser)).toEqual(['userID', 'email', 'displayName']);
 });

@@ -1,5 +1,5 @@
 import { getInputPolicies } from '$lib/server/api';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import type { InputControlKind } from '$lib/types';
 import { json, type RequestHandler } from '@sveltejs/kit';
 

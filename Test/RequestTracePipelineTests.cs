@@ -92,7 +92,6 @@ public sealed class RequestTracePipelineTests
         var settings = await settingsService.GetAsync();
 
         Assert.Contains("/custom", settings.ExcludedPathPrefixes);
-        Assert.Contains("/Auth/Session", settings.ExcludedPathPrefixes);
         Assert.Contains("/Diagnostics/RequestTrace", settings.ExcludedPathPrefixes);
     }
 

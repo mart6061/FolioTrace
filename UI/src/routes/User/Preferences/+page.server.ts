@@ -4,7 +4,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention } from '$lib/valuationPreferences';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import {
   getApiBaseUrl,
   getUserBookmarks,

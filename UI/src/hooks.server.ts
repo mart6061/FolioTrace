@@ -2,7 +2,7 @@ import { redirect, type Handle, type HandleFetch } from '@sveltejs/kit';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { getApiBaseUrl } from '$lib/server/api';
 import { getApiReadiness } from '$lib/server/apiReadiness';
-import { isCurrentUser, type CurrentUser } from '$lib/authTypes';
+import { isCurrentUser, type CurrentUser } from '$lib/currentUser';
 
 const apiBaseUrl = getApiBaseUrl();
 const requestIdHeader = 'X-FolioTrace-Request-Id';
@@ -22,34 +22,23 @@ export const handle: Handle = async ({ event, resolve }) => {
     throw redirect(302, `${pendingUrl.pathname}${pendingUrl.search}`);
   }
 
-  let currentUser: CurrentUser | null;
+  let currentUser: CurrentUser;
   try {
-    currentUser = await getCurrentUser(event.fetch, event.request.headers.get('cookie'));
+    currentUser = await getCurrentUser(event.fetch);
   } catch (error) {
-    if (error instanceof ApiSessionError)
+    if (error instanceof CurrentUserError)
       return new Response(error.message, { status: error.status });
 
     throw error;
   }
 
-  if (currentUser) {
-    event.locals.currentUser = currentUser;
-    return resolve(event);
-  }
-
-  if (event.url.pathname.startsWith('/API/'))
-    return new Response('Authentication required.', { status: 401 });
-
-  throw redirect(302, getSsoUrl(event.url));
+  event.locals.currentUser = currentUser;
+  return resolve(event);
 };
 
 export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
   if (!isConfiguredApiUrl(request.url))
     return fetch(request);
-
-  const cookie = event.request.headers.get('cookie');
-  if (cookie)
-    request.headers.set('cookie', cookie);
 
   const downstreamRequestId = crypto.randomUUID();
   request.headers.set(requestIdHeader, downstreamRequestId);
@@ -58,50 +47,29 @@ export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
   return fetch(request);
 };
 
-async function getCurrentUser(fetchApi: typeof fetch, cookie: string | null) {
-  const headers = new Headers();
-  if (cookie)
-    headers.set('cookie', cookie);
-
+async function getCurrentUser(fetchApi: typeof fetch) {
   let response: Response;
   try {
-    response = await fetchApi(`${apiBaseUrl}/Auth/Session`, {
-      headers,
-      credentials: 'include'
-    });
+    response = await fetchApi(`${apiBaseUrl}/Users/Current`);
   } catch {
-    throw new ApiSessionError(
+    throw new CurrentUserError(
       503,
       `FolioTrace API is not reachable at ${apiBaseUrl}. Start the API and refresh the page.`
     );
   }
 
-  if (response.status === 401)
-    return null;
-
-  if (response.status === 429)
-    throw new ApiSessionError(429, 'Authentication is temporarily rate limited. Wait a few minutes before trying again.');
-
   if (!response.ok)
-    throw new ApiSessionError(response.status, `API session check returned ${response.status} ${response.statusText}`);
+    throw new CurrentUserError(response.status, `Current user request returned ${response.status} ${response.statusText}`);
 
   const body: unknown = await response.json();
   if (!isCurrentUser(body))
-    throw new ApiSessionError(502, 'API session response did not match the expected shape.');
+    throw new CurrentUserError(502, 'Current user response did not match the expected shape.');
 
   return body;
 }
 
-function getSsoUrl(url: URL) {
-  const ssoUrl = new URL(`${apiBaseUrl}/Auth/SSO`);
-  ssoUrl.searchParams.set('returnTo', `${url.pathname}${url.search}`);
-  return ssoUrl.toString();
-}
-
 function isPublicPath(pathname: string) {
-  return pathname === '/sign-out'
-    || pathname === '/auth/error'
-    || pathname === '/health'
+  return pathname === '/health'
     || pathname === '/StartPending'
     || pathname.startsWith('/_app/')
     || pathname.startsWith('/brand/')
@@ -113,7 +81,7 @@ function isConfiguredApiUrl(url: string) {
   return url.startsWith(`${apiBaseUrl}/`);
 }
 
-class ApiSessionError extends Error {
+class CurrentUserError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
   }

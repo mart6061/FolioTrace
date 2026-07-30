@@ -10,7 +10,7 @@ import {
   postAssetAllocationMappingSetEvent,
   type AssetAllocationMappingSetRequest
 } from '$lib/server/api';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import { defaultUserValuationPreferences, normalizeHoldingDateBasis } from '$lib/valuationPreferences';
 import { fail } from '@sveltejs/kit';
 import type { Account, AssetAllocationMapping, AssetAllocationNode, HoldingDateBasis, UserValuationDateOption, ValuationSetting } from '$lib/types';

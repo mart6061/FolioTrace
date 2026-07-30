@@ -2,7 +2,7 @@ import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/
 import { getFormString } from '$lib/server/forms';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import type { AssetAllocationMapping, AssetAllocationNode, HoldingPosition, ValuationSetting } from '$lib/types';
 import {
   getAccounts,

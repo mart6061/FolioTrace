@@ -1,6 +1,6 @@
 import { formatBookmarkType, normalizeBookmarkPath, normalizeBookmarkType } from '$lib/bookmarks';
 import { nowForInput, toApiDateTime } from '$lib/dates';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import {
   getUserBookmarks,
   postUserBookmarkCreatedEvent,

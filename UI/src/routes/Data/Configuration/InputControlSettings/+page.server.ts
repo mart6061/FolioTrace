@@ -1,7 +1,7 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
 import { getFormString } from '$lib/server/forms';
 import { fail } from '@sveltejs/kit';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import {
   getAccounts,
   getApiBaseUrl,

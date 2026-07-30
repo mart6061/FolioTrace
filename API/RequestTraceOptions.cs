@@ -33,7 +33,6 @@ public sealed class RequestTraceOptions
 
     public string[] ExcludedPathPrefixes { get; init; } =
     [
-        "/Auth/Session",
         "/Diagnostics/RequestTrace",
         "/openapi",
         "/swagger"

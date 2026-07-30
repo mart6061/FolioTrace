@@ -1,5 +1,5 @@
 import { clampFutureInputDateTime, dateInputToApiStartOfDay, todayEndForInput, toApiDateTime } from '$lib/dates';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import { getFormString } from '$lib/server/forms';
 import {
   getAccounts,

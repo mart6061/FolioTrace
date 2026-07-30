@@ -1,6 +1,6 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, startOfDayForInput, toApiDateTime } from '$lib/dates';
 import { getAccounts, getAssetAllocationMappings, getHoldingPositions, getHoldings, getInstruments, getProfitLosses, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationPriceConvention, valuationEndDateFromOption, valuationStartDateFromOption } from '$lib/valuationPreferences';
 import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';

@@ -2,7 +2,6 @@ using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
 using FolioTrace.Types;
-using API.Auth;
 using API.FoleoTrader;
 using API.TradeFiles;
 using Repository;

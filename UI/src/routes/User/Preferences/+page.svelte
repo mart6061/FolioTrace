@@ -410,7 +410,6 @@
     </form>
 
     <div class="data-panel menu-preference-save-card">
-      <a class="house-button house-button-secondary house-button-md" href="/sign-out">Sign out</a>
       <button class="house-button house-button-primary house-button-md" disabled={submitting} form="preferences-form" type="submit">
         {submitting ? 'Saving...' : 'Save'}
       </button>

@@ -1,4 +1,4 @@
-import type { CurrentUser } from '$lib/authTypes';
+import type { CurrentUser } from '$lib/currentUser';
 
 declare global {
   namespace App {

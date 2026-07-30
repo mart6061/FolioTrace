@@ -3,7 +3,7 @@ import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences } from '$lib/menuPreferences';
 import { defaultUserValuationPreferences } from '$lib/valuationPreferences';
 import { isPublicPagePath } from '$lib/publicRoutes';
-import { requireCurrentUser } from '$lib/server/auth';
+import { requireCurrentUser } from '$lib/server/currentUser';
 import { getApiBaseUrl, getSystemVersion, getUserBookmarks, getUserMenuPreferences, getUserValuationPreferences } from '$lib/server/api';
 import { getUiVersion } from '$lib/server/version';
 import type { LayoutServerLoad } from './$types';

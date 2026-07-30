@@ -1,4 +1,3 @@
-using API.Auth;
 using FolioTrace;
 using FolioTrace.Aggregates;
 using FolioTrace.Common;
@@ -121,28 +120,6 @@ public sealed class UserServiceTests
 
         Assert.Equal("Renamed", refreshed?.DisplayName);
         Assert.Equal(2, repository.LoadStreamCallCount);
-    }
-
-    [Fact]
-    public async Task EnsureUserAsync_SerializesConcurrentCreationForTheSameUser()
-    {
-        var repository = new FakeEventRepository();
-        var userService = new UserService(repository);
-        var identityService = new FolioTraceUserIdentityService(
-            repository,
-            userService,
-            @event =>
-            {
-                if (@event is IUserEvent userEvent)
-                    userService.Invalidate(userEvent);
-            });
-        var identity = new FolioTraceUserIdentity(UserID.Value, "user_123", "person@example.com", "Person", "org_123");
-
-        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => identityService.EnsureUserAsync(identity, CancellationToken.None)));
-
-        Assert.Equal(1, repository.Count<UserCreatedEvent>());
-        Assert.Equal(1, repository.Count<UserMenuPreferencesCreatedEvent>());
-        Assert.Equal(1, repository.Count<UserValuationPreferencesCreatedEvent>());
     }
 
     private static UserCreatedEvent CreateUserCreated(string displayName, EventDateTime eventDateTime, AuditDateTime auditDateTime) =>

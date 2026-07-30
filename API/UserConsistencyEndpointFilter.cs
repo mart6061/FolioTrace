@@ -2,19 +2,17 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace API.Auth;
+namespace API;
 
-public sealed class UserConsistencyEndpointFilter : IEndpointFilter
+public sealed class UserConsistencyEndpointFilter(ICurrentUserContext currentUserContext) : IEndpointFilter
 {
     private static readonly ConcurrentDictionary<Type, UserIDAccessor> UserIDAccessors = new();
 
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        var currentUser = AuthEndpointRegistration.CurrentUserFromPrincipal(context.HttpContext.User);
-        if (currentUser is null)
-            return Results.StatusCode(StatusCodes.Status401Unauthorized);
+        var currentUserID = currentUserContext.Current.UserID;
 
-        if (!QueryUserMatches(context.HttpContext.Request.Query, currentUser.UserID))
+        if (!QueryUserMatches(context.HttpContext.Request.Query, currentUserID))
             return Results.StatusCode(StatusCodes.Status403Forbidden);
 
         foreach (var argument in context.Arguments)
@@ -22,7 +20,7 @@ public sealed class UserConsistencyEndpointFilter : IEndpointFilter
             if (argument is null)
                 continue;
 
-            if (!ArgumentUserMatches(argument, currentUser.UserID))
+            if (!ArgumentUserMatches(argument, currentUserID))
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
         }
 

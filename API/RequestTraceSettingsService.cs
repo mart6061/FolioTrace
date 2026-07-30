@@ -77,7 +77,7 @@ public sealed class RequestTraceSettingsService(
 
     private static string[] EnsureRequiredExclusions(IEnumerable<string> excludedPathPrefixes) =>
         excludedPathPrefixes
-            .Concat(["/Auth/Session", "/Diagnostics/RequestTrace"])
+            .Concat(["/Diagnostics/RequestTrace"])
             .Where(prefix => !string.IsNullOrWhiteSpace(prefix))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();

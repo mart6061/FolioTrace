@@ -61,8 +61,7 @@ logged rather than swallowed/unobserved.
 
 ### 1.4 Move plaintext DB password out of source control
 **Problem:** `API/appsettings.Development.json:9-11` has a plaintext Postgres connection string/password
-checked in, despite `API.csproj` declaring a `UserSecretsId` for exactly this purpose. `WorkOS:ApiKey` is
-correctly left empty in the same file — the handling is inconsistent.
+checked in, despite `API.csproj` declaring a `UserSecretsId` for exactly this purpose.
 
 **Fix:** Remove the password from `appsettings.Development.json` (leave `ConnectionStrings:FolioTrace`
 empty or point at a placeholder), move the real local value into `dotnet user-secrets` for the API project,
@@ -268,14 +267,11 @@ with anything else.
 inputs → same outputs). Get a second reviewer on this PR specifically given the trading-correctness stakes
 (prorated allocation math, settlement dates) — don't just rely on automated tests.
 
-### 3.4 Resolve the FoleoTrader naming collision and stale WorkOSSsoClient filename
+### 3.4 Resolve the FoleoTrader naming collision
 **Problem:**
 - Two unrelated `FoleoTraderOptions` classes exist: `API/FoleoTrader/FoleoTraderOptions.cs` (FIX initiator
   config) and the sibling project's `FoleoTrader/FoleoTraderOptions.cs` (FIX acceptor/simulator config) —
   same name, different shape, different projects. Easy to edit the wrong one.
-- `API/Auth/WorkOSSsoClient.cs` actually defines `WorkOSAuthKitClient`/`IWorkOSAuthKitClient`, with
-  `IWorkOSSsoClient` kept only as a backwards-compat alias (per the comment in that file) — the filename is
-  stale from an incomplete SSO→AuthKit rename.
 
 **Fix:**
 - Rename `API/FoleoTrader/FoleoTraderOptions.cs`'s class to something more specific, e.g.
@@ -284,10 +280,6 @@ inputs → same outputs). Get a second reviewer on this PR specifically given th
   simulator project's version if it makes sense there too (e.g. `FoleoTraderAcceptorOptions`), or at least
   add a doc-comment on each class noting the other one exists in the sibling project, if a rename isn't
   wanted right now.
-- Rename `API/Auth/WorkOSSsoClient.cs` → `API/Auth/WorkOSAuthKitClient.cs` to match its actual class name.
-  If `IWorkOSSsoClient` is genuinely still needed for backwards compat, keep it but move it into the same
-  renamed file or a clearly-labeled `WorkOSAuthKitClient.Legacy.cs`, and add a `[Obsolete]` attribute with a
-  removal-target note if it's meant to go away eventually.
 
 **Verify:** `dotnet build` succeeds after each rename (compiler catches all references); `git grep` for the
 old type names returns nothing outside of comments explicitly documenting the rename history.
@@ -296,19 +288,10 @@ old type names returns nothing outside of comments explicitly documenting the re
 
 ## Not included in this plan (flagged for a human decision, not Codex)
 
-- **`WorkOSAuthKitClient` setting a global static `WorkOSConfiguration.WorkOSClient`** from its constructor
-  (`API/Auth/WorkOSSsoClient.cs:31-46`) — works today with a single singleton instance, but is a design
-  smell (implicit global mutable state) that may be intentional if the underlying WorkOS SDK requires it.
-  Needs a decision on whether the SDK has a non-static-config API before touching this.
 - **`TradeFileWorkbookGenerator` building the whole worksheet in one in-memory `StringBuilder`** and
   `/TradeFiles/{id}/File` loading the whole file into memory before serving it (no streaming, no HTTP range
   support) — only worth fixing if trade files are expected to grow large; confirm typical/max file size with
   product owner before prioritizing.
-- **`FolioTraceUserIdentityService.EnsureUserAsync` loading the full user event stream on every login** —
-  likely fine if `LoadStreamAsync` hits an in-memory cache (there's a `/Diagnostics/Memory` endpoint
-  suggesting these streams are cached), but confirm cache-hit behavior before treating this as a real
-  problem.
-
 ---
 
 ## Suggested execution order for Codex
