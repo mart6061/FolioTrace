@@ -14,6 +14,12 @@ public sealed class TradeFileConfirmationHostedService(TradeFileSimulator simula
             {
                 foreach (var file in simulator.Due())
                     try { await simulator.ConfirmNextAsync(file, stoppingToken); }
+                    catch (OperationCanceledException exception) when (!stoppingToken.IsCancellationRequested)
+                    {
+                        // HttpClient reports its own timeout as TaskCanceledException. That must be treated
+                        // as a failed callback; only cancellation requested by the host should leave the loop.
+                        logger.LogWarning(exception, "Timed out confirming ticket for TradeFile {TradeFileID}.", file.Request.TradeFileID);
+                    }
                     catch (Exception exception) when (exception is not OperationCanceledException)
                     {
                         logger.LogWarning(exception, "Unable to confirm ticket for TradeFile {TradeFileID}.", file.Request.TradeFileID);

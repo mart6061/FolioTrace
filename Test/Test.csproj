@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\API\API.csproj" />
     <ProjectReference Include="..\Features\Features.csproj" />
+    <ProjectReference Include="..\FoleoTrader\FoleoTrader.csproj" />
     <ProjectReference Include="..\Repository\Repository.csproj" />
   </ItemGroup>
 
