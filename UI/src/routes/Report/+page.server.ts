@@ -1,5 +1,6 @@
 import { clampFutureInputDateTime, endOfDayForInput, nowForInput, startOfDayForInput, toApiDateTime } from '$lib/dates';
-import { getAccounts, getAssetAllocationMappings, getHoldingPositions, getHoldings, getInstruments, getProfitLosses, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
+import { getAccounts, getAssetAllocationMappings, getEffectiveDateControlSettings, getHoldingPositions, getHoldings, getInstruments, getProfitLosses, getReportConfigs, getTransactionEvents, getUserValuationPreferences, getValuationSettings, getValuations } from '$lib/server/api';
+import { defaultDateControlConfiguration, defaultRangeOption, resolveRangeRule } from '$lib/dateRules';
 import { requireCurrentUser } from '$lib/server/currentUser';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationPriceConvention, valuationEndDateFromOption, valuationStartDateFromOption } from '$lib/valuationPreferences';
 import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
@@ -219,8 +220,12 @@ export const _loadReportPageData = async ({ fetch, locals, url }: ReportLoadEven
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
   const valuationPreferences = await loadValuationPreferences(fetch, currentUser.userID, apiAuditDateTime);
-  const defaultStartDate = valuationStartDateFromOption(valuationPreferences.startValuationDateOption ?? valuationPreferences.valuationDateOption ?? defaultStartValuationDateOption);
-  const defaultEndDate = valuationEndDateFromOption(valuationPreferences.endValuationDateOption ?? valuationPreferences.valuationDateOption ?? defaultEndValuationDateOption);
+  const effectiveDateControls = await loadEffectiveDateControls(fetch, currentUser.userID, apiAuditDateTime);
+  const defaultRangeRule = defaultRangeOption(effectiveDateControls.configuration)?.expression ?? 'range.bd.-1';
+  const resolvedDefaultRange = resolveRangeRule(defaultRangeRule, effectiveDateControls.configuration);
+  const defaultStartDate = resolvedDefaultRange.start;
+  const defaultEndDate = resolvedDefaultRange.end;
+  const dateRangeExpression = url.searchParams.has('valuationStartDate') || url.searchParams.has('valuationDate') ? '' : defaultRangeRule;
   const valuationRange = normalizeReportValuationRange(
     url.searchParams.get('valuationStartDate') || defaultStartDate,
     url.searchParams.get('valuationDate') || defaultEndDate
@@ -273,6 +278,7 @@ export const _loadReportPageData = async ({ fetch, locals, url }: ReportLoadEven
       reportConfigs: matchingReportConfigs,
       reportID,
       valuationStartDate,
+      dateRangeExpression,
       valuationDate,
       valuationPreferences
     };
@@ -290,11 +296,17 @@ export const _loadReportPageData = async ({ fetch, locals, url }: ReportLoadEven
       reportConfigs: [],
       reportID: '',
       valuationStartDate,
+      dateRangeExpression,
       valuationDate,
       valuationPreferences
     };
   }
 };
+
+async function loadEffectiveDateControls(fetchApi: typeof fetch, userID: string, auditDateTime: string | null) {
+  try { return await getEffectiveDateControlSettings(fetchApi, userID, toApiDateTime(nowForInput()), auditDateTime); }
+  catch { return { configuration: defaultDateControlConfiguration, source: 'Global' as const, lastEventID: '', lastAuditDateTime: '' }; }
+}
 
 export const load: PageServerLoad = ({ url }) => {
   const target = new URL('/Viewer', url);

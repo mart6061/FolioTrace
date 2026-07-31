@@ -2,9 +2,11 @@ import { clampFutureInputDateTime, nowForInput, toApiDateTime } from '$lib/dates
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences } from '$lib/menuPreferences';
 import { defaultUserValuationPreferences } from '$lib/valuationPreferences';
+import { defaultDateControlConfiguration } from '$lib/dateRules';
 import { isPublicPagePath } from '$lib/publicRoutes';
 import { requireCurrentUser } from '$lib/server/currentUser';
-import { getApiBaseUrl, getSystemVersion, getUserBookmarks, getUserMenuPreferences, getUserValuationPreferences } from '$lib/server/api';
+import { getApiBaseUrl, getDateControlSettings, getEffectiveDateControlSettings, getSystemVersion, getUserBookmarks, getUserDateControlSettings, getUserMenuPreferences, getUserValuationPreferences } from '$lib/server/api';
+import type { DateControlSettings, EffectiveDateControlSettings, UserDateControlSettings } from '$lib/types';
 import { getUiVersion } from '$lib/server/version';
 import type { LayoutServerLoad } from './$types';
 
@@ -22,6 +24,9 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
       apiBaseUrl: getApiBaseUrl(),
       apiVersion: 'unavailable',
       currentUser: null,
+      dateControlSettings: { configuration: defaultDateControlConfiguration, source: 'Global' as const, lastEventID: '', lastAuditDateTime: '' },
+      globalDateControlSettings: { configuration: defaultDateControlConfiguration },
+      userDateControlSettings: { configuration: { ...defaultDateControlConfiguration, dateOptions: [], rangeOptions: [] }, hasStoredConfiguration: false },
       menuPreferences: null,
       publicPage: true,
       userBookmarks: null,
@@ -35,6 +40,9 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
   let menuPreferences = defaultUserMenuPreferences(currentUser.userID);
   let userBookmarks = defaultUserBookmarks(currentUser.userID);
   let valuationPreferences = defaultUserValuationPreferences(currentUser.userID);
+  let dateControlSettings: EffectiveDateControlSettings = { configuration: defaultDateControlConfiguration, source: 'Global', lastEventID: '', lastAuditDateTime: '' };
+  let globalDateControlSettings: Partial<DateControlSettings> & Pick<DateControlSettings, 'configuration'> = { configuration: defaultDateControlConfiguration };
+  let userDateControlSettings: Partial<UserDateControlSettings> & Pick<UserDateControlSettings, 'configuration' | 'hasStoredConfiguration'> = { configuration: { ...defaultDateControlConfiguration, dateOptions: [], rangeOptions: [] }, hasStoredConfiguration: false };
 
   try {
     apiVersion = await getApiVersion(fetch);
@@ -45,10 +53,13 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
   try {
     const eventDateTime = toApiDateTime(nowForInput());
     const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
-    [menuPreferences, userBookmarks, valuationPreferences] = await Promise.all([
+    [menuPreferences, userBookmarks, valuationPreferences, dateControlSettings, globalDateControlSettings, userDateControlSettings] = await Promise.all([
       getUserMenuPreferences(fetch, currentUser.userID, eventDateTime, apiAuditDateTime),
       getUserBookmarks(fetch, currentUser.userID, eventDateTime, apiAuditDateTime),
-      getUserValuationPreferences(fetch, currentUser.userID, eventDateTime, apiAuditDateTime)
+      getUserValuationPreferences(fetch, currentUser.userID, eventDateTime, apiAuditDateTime),
+      getEffectiveDateControlSettings(fetch, currentUser.userID, eventDateTime, apiAuditDateTime),
+      getDateControlSettings(fetch, eventDateTime, apiAuditDateTime),
+      getUserDateControlSettings(fetch, currentUser.userID, eventDateTime, apiAuditDateTime)
     ]);
   } catch {
     menuPreferences = defaultUserMenuPreferences(currentUser.userID);
@@ -60,6 +71,9 @@ export const load: LayoutServerLoad = async ({ fetch, locals, url }) => {
     apiVersion,
     apiBaseUrl: getApiBaseUrl(),
     currentUser,
+    dateControlSettings,
+    globalDateControlSettings,
+    userDateControlSettings,
     menuPreferences,
     publicPage: false,
     userBookmarks,

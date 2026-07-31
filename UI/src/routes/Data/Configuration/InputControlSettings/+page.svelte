@@ -1,11 +1,12 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import DateControlConfigurationEditor from '$lib/components/DateControlConfigurationEditor.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import PageTitle from '$lib/components/page/PageTitle.svelte';
   import { Button, Select, TextInput, Toggle } from '$lib/components/forms';
   import { startOfDayForInput } from '$lib/dates';
-  import type { InputControlKind, InputControlSetting, InputControlSettingScope } from '$lib/types';
+  import type { DateControlConfiguration, InputControlKind, InputControlSetting, InputControlSettingScope } from '$lib/types';
 
   let { data, form } = $props();
 
@@ -26,6 +27,8 @@
   let draft = $state<InputControlSetting[]>([]);
   let loadedFrom = $state('');
   let submitting = $state(false);
+  let dateConfiguration = $state<DateControlConfiguration | undefined>();
+  let loadedDateConfiguration = $state('');
 
   // Reload the draft whenever the stored settings change, but leave unsaved edits alone in between.
   $effect(() => {
@@ -36,6 +39,13 @@
 
     loadedFrom = signature;
     draft = storedSettings.map((setting: InputControlSetting) => ({ ...setting }));
+  });
+
+  $effect(() => {
+    const signature = JSON.stringify(data.dateControlSettings?.configuration ?? null);
+    if (signature === loadedDateConfiguration) return;
+    loadedDateConfiguration = signature;
+    dateConfiguration = data.dateControlSettings?.configuration ? structuredClone(data.dateControlSettings.configuration) : undefined;
   });
 
   const settingsJson = $derived(JSON.stringify(draft));
@@ -257,6 +267,18 @@
           {/if}
         </p>
       </form>
+    </Card>
+
+    <Card subtitle="Shared choices used by every relative date and valuation-range picker. Dates resolve in each user's browser timezone." title="Date and Range Controls">
+      {#if dateConfiguration}
+        <form action="?/saveDateControls" method="POST" use:enhance>
+          <input name="configuration" type="hidden" value={JSON.stringify(dateConfiguration)} />
+          <DateControlConfigurationEditor bind:configuration={dateConfiguration} />
+          <div class="settings-actions"><Button type="submit" variant="primary">Save date controls</Button></div>
+        </form>
+      {:else}
+        <p class="settings-note">Date control settings could not be loaded.</p>
+      {/if}
     </Card>
   </section>
 </main>

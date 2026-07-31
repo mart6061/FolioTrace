@@ -17,6 +17,8 @@ public sealed record AggregateCacheClearResult(
     int UserValuationPreferences,
     int UserBookmarks,
     int InputControlSettings,
+    int DateControlSettings,
+    int UserDateControlSettings,
     int ValuationSettings,
     int AssetAllocationMappings,
     int ReportConfigs);

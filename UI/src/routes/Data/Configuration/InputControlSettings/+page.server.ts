@@ -6,10 +6,12 @@ import {
   getAccounts,
   getApiBaseUrl,
   getInputControlSettings,
+  getDateControlSettings,
   getInputPolicies,
-  postInputControlSettingsModifiedEvent
+  postInputControlSettingsModifiedEvent,
+  postDateControlSettingsModifiedEvent
 } from '$lib/server/api';
-import type { InputControlKind, InputControlSetting } from '$lib/types';
+import type { DateControlConfiguration, InputControlKind, InputControlSetting } from '$lib/types';
 import type { PageServerLoad, Actions } from './$types';
 
 const controlKinds: InputControlKind[] = ['Quantity', 'Money', 'Price', 'Percent'];
@@ -24,7 +26,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
   const previewAccountID = url.searchParams.get('previewAccountID') || '';
 
   try {
-    const [accounts, settings, policies] = await Promise.all([
+    const [accounts, settings, policies, dateControlSettings] = await Promise.all([
       getAccounts(fetch, eventDateTime, asOfDateTime),
       getInputControlSettings(fetch, eventDateTime, asOfDateTime),
       // Resolved alongside the stored rules so the page can show what actually wins, which is the part
@@ -36,7 +38,8 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
         currency: previewCurrency,
         eventDateTime,
         userID: currentUser?.userID
-      })
+      }),
+      getDateControlSettings(fetch, eventDateTime, asOfDateTime)
     ]);
 
     return {
@@ -48,6 +51,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       previewAccountID,
       previewCurrency,
       settings,
+      dateControlSettings,
       valuationDate
     };
   } catch (error) {
@@ -60,6 +64,7 @@ export const load: PageServerLoad = async ({ fetch, parent, url }) => {
       previewAccountID,
       previewCurrency,
       settings: null,
+      dateControlSettings: null,
       valuationDate
     };
   }
@@ -95,6 +100,19 @@ export const actions: Actions = {
         message: error instanceof Error ? error.message : 'Unable to save input control settings.',
         status: 'failure'
       });
+    }
+  },
+  saveDateControls: async ({ fetch, locals, request }) => {
+    const userID = requireCurrentUser(locals).userID;
+    const formData = await request.formData();
+    let configuration: DateControlConfiguration;
+    try { configuration = JSON.parse(getFormString(formData, 'configuration')) as DateControlConfiguration; }
+    catch { return fail(400, { message: 'Date control configuration is not valid JSON.', status: 'failure' }); }
+    try {
+      const result = await postDateControlSettingsModifiedEvent(fetch, userID, configuration);
+      return { eventID: result.eventID, message: 'Date and range control settings were saved.', status: 'success' };
+    } catch (error) {
+      return fail(502, { message: error instanceof Error ? error.message : 'Unable to save date control settings.', status: 'failure' });
     }
   }
 };

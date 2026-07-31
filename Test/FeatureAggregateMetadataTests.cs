@@ -13,6 +13,7 @@ public sealed class FeatureAggregateMetadataTests
             [nameof(Brokers)] = "Brokers",
             [nameof(Countries)] = "Countries",
             [nameof(Currencies)] = "Currencies",
+            [nameof(DateControlSettings)] = "Date control settings",
             [nameof(FXs)] = "Foreign exchange pairs",
             [nameof(FXRates)] = "Foreign exchange rates",
             [nameof(Instruments)] = "Instruments",

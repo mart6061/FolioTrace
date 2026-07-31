@@ -8,6 +8,7 @@
   import { formatBookmarkMenuUrl, formatBookmarkType } from '$lib/bookmarks';
   import { clampFutureInputDateTime, formatDisplayDateTime, nowForInput } from '$lib/dates';
   import { normalizeMenuPreferenceItems } from '$lib/menuPreferences';
+  import { setDateControlConfiguration } from '$lib/dateControlContext';
   import { applyDarkModePreference, readInitialDarkMode } from '$lib/themeMode';
   import '../app.css';
   import { onMount, tick } from 'svelte';
@@ -15,6 +16,7 @@
   import PreferencesPage from './User/Preferences/+page.svelte';
 
   let { children, data } = $props();
+  setDateControlConfiguration(() => data.dateControlSettings.configuration);
 
   const publicPage = $derived(Boolean(data.publicPage));
   const traceModeStorageKey = 'foliotrace.traceMode';
@@ -162,12 +164,15 @@
     apiVersion: data.apiVersion,
     auditDateTime,
     currentUser: data.currentUser!,
+    dateControlSettings: data.globalDateControlSettings,
+    globalDateControlSettings: data.globalDateControlSettings,
     error: '',
     eventDateTime: nowForInput(),
     menuPreferences: data.menuPreferences!,
     publicPage: false,
     uiVersion: data.uiVersion,
     userBookmarks: data.userBookmarks!,
+    userDateControlSettings: data.userDateControlSettings,
     valuationPreferences: data.valuationPreferences!
   });
 

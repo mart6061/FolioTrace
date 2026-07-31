@@ -3,6 +3,7 @@ import { getFormString } from '$lib/server/forms';
 import type { PageServerLoad, Actions } from './$types';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
+import { defaultDateControlConfiguration } from '$lib/dateRules';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention } from '$lib/valuationPreferences';
 import { requireCurrentUser } from '$lib/server/currentUser';
 import {
@@ -10,18 +11,23 @@ import {
   getUserBookmarks,
   getUserMenuPreferences,
   getUserValuationPreferences,
+  getDateControlSettings,
+  getUserDateControlSettings,
   postUserBookmarkDeletedEvent,
   postUserMenuPreferencesCreatedEvent,
   postUserMenuPreferencesModifiedEvent,
   postUserBookmarkDisplayOrderSetEvent,
   postUserValuationPreferencesCreatedEvent,
   postUserValuationPreferencesModifiedEvent,
+  postUserDateControlSettingsCreatedEvent,
+  postUserDateControlSettingsModifiedEvent,
+  postUserDateControlSettingsClearedEvent,
   type EventSubmissionResponse,
   type UserMenuPreferencesRequest,
   type UserValuationPreferencesRequest
 } from '$lib/server/api';
 import { fail } from '@sveltejs/kit';
-import type { UserBookmarkItem } from '$lib/types';
+import type { DateControlConfiguration, UserBookmarkItem, UserDateControlSettings } from '$lib/types';
 
 export const load: PageServerLoad = async ({ fetch, locals, url }) => {
   const currentUser = requireCurrentUser(locals);
@@ -31,10 +37,12 @@ export const load: PageServerLoad = async ({ fetch, locals, url }) => {
   const apiAuditDateTime = auditDateTime ? toApiDateTime(auditDateTime) : null;
 
   try {
-    const [menuPreferences, valuationPreferences, userBookmarks] = await Promise.all([
+    const [menuPreferences, valuationPreferences, userBookmarks, dateControlSettings, userDateControlSettings] = await Promise.all([
       getUserMenuPreferences(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime),
       getUserValuationPreferences(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime),
-      getUserBookmarks(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime)
+      getUserBookmarks(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime),
+      getDateControlSettings(fetch, apiEventDateTime, apiAuditDateTime),
+      getUserDateControlSettings(fetch, currentUser.userID, apiEventDateTime, apiAuditDateTime)
     ]);
 
     return {
@@ -44,6 +52,8 @@ export const load: PageServerLoad = async ({ fetch, locals, url }) => {
       eventDateTime,
       currentUser,
       menuPreferences,
+      dateControlSettings,
+      userDateControlSettings,
       userBookmarks,
       valuationPreferences
     };
@@ -55,6 +65,8 @@ export const load: PageServerLoad = async ({ fetch, locals, url }) => {
       eventDateTime,
       currentUser,
       menuPreferences: defaultUserMenuPreferences(currentUser.userID),
+      dateControlSettings: { configuration: defaultDateControlConfiguration },
+      userDateControlSettings: { configuration: { ...defaultDateControlConfiguration, dateOptions: [], rangeOptions: [] }, hasStoredConfiguration: false } as Pick<UserDateControlSettings, 'configuration' | 'hasStoredConfiguration'>,
       userBookmarks: defaultUserBookmarks(currentUser.userID),
       valuationPreferences: defaultUserValuationPreferences(currentUser.userID)
     };
@@ -173,6 +185,22 @@ export const actions: Actions = {
         message: error instanceof Error ? error.message : 'Unable to save preferences.',
         status: 'failure'
       });
+    }
+  },
+  saveDateControls: async ({ fetch, locals, request }) => {
+    const currentUser = requireCurrentUser(locals);
+    const formData = await request.formData();
+    const clear = getFormString(formData, 'clear') === 'true';
+    const stored = getFormString(formData, 'hasStoredConfiguration') === 'true';
+    try {
+      const result = clear
+        ? await postUserDateControlSettingsClearedEvent(fetch, currentUser.userID)
+        : stored
+          ? await postUserDateControlSettingsModifiedEvent(fetch, currentUser.userID, JSON.parse(getFormString(formData, 'configuration')) as DateControlConfiguration)
+          : await postUserDateControlSettingsCreatedEvent(fetch, currentUser.userID, JSON.parse(getFormString(formData, 'configuration')) as DateControlConfiguration);
+      return { eventID: result.eventID, intent: 'saveDateControls', message: clear ? 'Global date controls restored.' : 'Your date controls were saved.', status: 'success' };
+    } catch (error) {
+      return fail(502, { intent: 'saveDateControls', message: error instanceof Error ? error.message : 'Unable to save date controls.', status: 'failure' });
     }
   }
 };

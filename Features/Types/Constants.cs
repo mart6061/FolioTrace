@@ -57,6 +57,10 @@ public static class Constants
 
         public static readonly Guid InputControlSettingsStreamId = Guid.Parse("a6501be1-3d19-4765-b4ec-61bf3ec75c79");
 
+        public static readonly Guid DateControlSettingsStreamId = Guid.Parse("2c75a3c2-7d19-4664-944b-750cd05fd028");
+
+        public static readonly Guid UserDateControlSettingsStreamId = Guid.Parse("7e488ad9-e8d0-49d8-9bc5-4f7c6756eeb1");
+
         public static readonly EventID EmptyViewEventID = Guid.Parse("11111111-1111-4111-8111-111111111111");
 
         public static readonly EventDateTime EventDateTime = EventDateTimeBuilder.Create(DateTime.MinValue.AddTicks(1));

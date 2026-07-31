@@ -2,11 +2,14 @@
   import type { ComponentProps } from 'svelte';
   import { Card, MenuCardGroup, PageCard, PageTitle, SortableHeader, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import DateTimeRangeInput from '$lib/components/DateTimeRangeInput.svelte';
+  import DateControlConfigurationEditor from '$lib/components/DateControlConfigurationEditor.svelte';
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
   import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, ConfirmInput, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
-  import type { InputControlKind, InputControlPolicy } from '$lib/types';
+  import { cloneDateControlConfiguration, defaultRangeOption, resolveRangeRule } from '$lib/dateRules';
+  import type { DateControlConfiguration, InputControlKind, InputControlPolicy } from '$lib/types';
 
   let { data } = $props();
 
@@ -15,6 +18,15 @@
   let inputPolicyError = $state('');
   let instrumentPriceBasis = $state('Mid');
   let templateValuationDateOverride = $state<string | null>(null);
+  // svelte-ignore state_referenced_locally -- Ideas initializes editable demonstrations from page data
+  const initialIdeaRange = resolveRangeRule(defaultRangeOption(data.dateControlSettings.configuration)?.expression ?? 'range.bd.-1', data.dateControlSettings.configuration);
+  let templateRangeStart = $state(initialIdeaRange.start);
+  let templateRangeEnd = $state(initialIdeaRange.end);
+  // svelte-ignore state_referenced_locally
+  let templateRangeExpression = $state(defaultRangeOption(data.dateControlSettings.configuration)?.expression ?? 'range.bd.-1');
+  let templateDateExpression = $state('');
+  // svelte-ignore state_referenced_locally
+  let templateDateConfiguration = $state<DateControlConfiguration>(cloneDateControlConfiguration(data.dateControlSettings.configuration));
   let moneyDisplayValue = $state('');
   let moneyFormattedValue = $state('');
   let moneyValidationMessages = $state<string[]>([]);
@@ -67,6 +79,8 @@
     card: templateReference<ComponentProps<typeof Card>>('Card', ['actions', 'ariaLive', 'children', 'class', 'density', 'intent', 'role', 'subtitle', 'title']),
     complexSelect: templateReference<ComponentProps<typeof ComplexSelect>>('ComplexSelect', ['ariaLabel', 'class', 'compactBrand', 'confirmSelection', 'disabled', 'emptyText', 'id', 'minimumSelections', 'multiple', 'name', 'onchange', 'onclose', 'onopenchange', 'open', 'options', 'placeholder', 'searchPlaceholder', 'showClear', 'showSelectAll', 'summary', 'value', 'values']),
     dateTimeInput: templateReference<ComponentProps<typeof DateTimeInput>>('DateTimeInput', ['class', 'disabled', 'form', 'fullWidth', 'futureLimited', 'invalid', 'id', 'max', 'min', 'name', 'onchange', 'required', 'showShortcuts', 'shortcutMode', 'size', 'step', 'value']),
+    dateTimeRangeInput: templateReference<ComponentProps<typeof DateTimeRangeInput>>('DateTimeRangeInput', ['configuration', 'disabled', 'end', 'endName', 'form', 'fullWidth', 'invalid', 'onchange', 'relative', 'required', 'start', 'startName']),
+    dateControlConfigurationEditor: templateReference<ComponentProps<typeof DateControlConfigurationEditor>>('DateControlConfigurationEditor', ['configuration', 'inherited', 'oncustomize', 'readonly']),
     bookmarkButton: templateReference<ComponentProps<typeof BookmarkButton>>('BookmarkButton', []),
     themeModeControl: templateReference<ComponentProps<typeof ThemeModeControl>>('ThemeModeControl', ['class', 'label']),
     dropdown: templateReference<ComponentProps<typeof Dropdown>>('Dropdown', ['children', 'class', 'close', 'compactBrand', 'disabled', 'ontoggle', 'open', 'summary']),
@@ -816,11 +830,22 @@
     <PageCard title="Dates">
       <div class="template-control-grid">
         <Field class="template-date-field" controlId="ideas-valuation-date" label="Valuation Date">
-          <DateTimeInput id="ideas-valuation-date" fullWidth name="valuationDate" size="sm" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
+          <DateTimeInput bind:relative={templateDateExpression} id="ideas-valuation-date" fullWidth name="valuationDate" size="sm" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
           <span class="template-date-dev-value">Value: {templateValuationDate || '(empty)'}</span>
+          <span class="template-date-dev-value">Rule: {templateDateExpression || 'Custom'}</span>
           {@render showTemplateReference(templateReferences.dateTimeInput)}
         </Field>
+        <Field class="template-date-field template-wide-field" controlId="ideas-valuation-range" label="Valuation Range">
+          <DateTimeRangeInput bind:end={templateRangeEnd} bind:relative={templateRangeExpression} bind:start={templateRangeStart} endName="valuationDate" fullWidth startName="valuationStartDate" />
+          <span class="template-date-dev-value">{templateRangeStart} → {templateRangeEnd}</span>
+          <span class="template-date-dev-value">Rule: {templateRangeExpression || 'Custom'}</span>
+          {@render showTemplateReference(templateReferences.dateTimeRangeInput)}
+        </Field>
       </div>
+      <Card subtitle="The same editor is embedded in system settings and Me." title="Configuration editor">
+        <DateControlConfigurationEditor bind:configuration={templateDateConfiguration} />
+        {@render showTemplateReference(templateReferences.dateControlConfigurationEditor)}
+      </Card>
       {@render showTemplateReference(templateReferences.pageCard)}
     </PageCard>
 
