@@ -55,7 +55,11 @@ import type {
   RequestTraceSettings,
   Valuations,
   ValuationSettings,
-  ValuationSettingReferenceEvent
+  ValuationSettingReferenceEvent,
+  DateControlConfiguration,
+  DateControlSettings,
+  UserDateControlSettings,
+  EffectiveDateControlSettings
 } from '$lib/types';
 
 const fallbackApiBaseUrl = 'https://localhost:7058/API';
@@ -1506,6 +1510,58 @@ export async function getInputControlSettings(fetchApi: typeof fetch, eventDateT
 
   return apiFetch<InputControlSettings>(fetchApi, url);
 }
+
+export async function getDateControlSettings(fetchApi: typeof fetch, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/DateControlSettings/`);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  if (auditDateTime) url.searchParams.set('auditDateTime', auditDateTime);
+  return apiFetch<DateControlSettings>(fetchApi, url);
+}
+
+export async function getUserDateControlSettings(fetchApi: typeof fetch, userID: string, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/DateControlSettings/User`);
+  url.searchParams.set('userID', userID);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  if (auditDateTime) url.searchParams.set('auditDateTime', auditDateTime);
+  return apiFetch<UserDateControlSettings>(fetchApi, url);
+}
+
+export async function getEffectiveDateControlSettings(fetchApi: typeof fetch, userID: string, eventDateTime: string, auditDateTime: string | null) {
+  const url = new URL(`${getApiBaseUrl()}/DateControlSettings/Effective`);
+  url.searchParams.set('userID', userID);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  if (auditDateTime) url.searchParams.set('auditDateTime', auditDateTime);
+  return apiFetch<EffectiveDateControlSettings>(fetchApi, url);
+}
+
+async function postDateControlEvent(fetchApi: typeof fetch, route: string, userID: string, configuration?: DateControlConfiguration) {
+  const body: Record<string, unknown> = {
+    UserID: userID,
+    EventDateTime: new Date().toISOString(),
+    Reason: route.includes('Cleared') ? 'Clear user date control settings' : 'Modify date control settings'
+  };
+  if (configuration) body.Configuration = configuration;
+
+  const response = await fetchApi(`${getApiBaseUrl()}${route}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export const postDateControlSettingsModifiedEvent = (fetchApi: typeof fetch, userID: string, configuration: DateControlConfiguration) =>
+  postDateControlEvent(fetchApi, '/Events/DateControlSettings/DateControlSettingsModifiedEvent', userID, configuration);
+export const postUserDateControlSettingsCreatedEvent = (fetchApi: typeof fetch, userID: string, configuration: DateControlConfiguration) =>
+  postDateControlEvent(fetchApi, '/Events/UserDateControlSettings/UserDateControlSettingsCreatedEvent', userID, configuration);
+export const postUserDateControlSettingsModifiedEvent = (fetchApi: typeof fetch, userID: string, configuration: DateControlConfiguration) =>
+  postDateControlEvent(fetchApi, '/Events/UserDateControlSettings/UserDateControlSettingsModifiedEvent', userID, configuration);
+export const postUserDateControlSettingsClearedEvent = (fetchApi: typeof fetch, userID: string) =>
+  postDateControlEvent(fetchApi, '/Events/UserDateControlSettings/UserDateControlSettingsClearedEvent', userID);
 
 /**
  * The aggregate replaces its whole collection, so this posts the complete desired set rather than a delta.

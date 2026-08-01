@@ -33,6 +33,8 @@ public static partial class ApiEndpointRegistration
     private const string UserValuationPreferencesEventsRoute = "/API/Events/UserValuationPreferences";
     private const string UserBookmarksEventsRoute = "/API/Events/UserBookmarks";
     private const string InputControlSettingsEventsRoute = "/API/Events/InputControlSettings";
+    private const string DateControlSettingsEventsRoute = "/API/Events/DateControlSettings";
+    private const string UserDateControlSettingsEventsRoute = "/API/Events/UserDateControlSettings";
     private const string ValuationSettingEventsRoute = "/API/Events/ValuationSetting";
     private const string AssetAllocationMappingEventsRoute = "/API/Events/AssetAllocationMapping";
     private const string ReportEventsRoute = "/API/Events/Report";
@@ -72,6 +74,7 @@ public static partial class ApiEndpointRegistration
         applicationApi.MapUserValuationPreferencesEndpoints();
         applicationApi.MapUserBookmarksEndpoints();
         applicationApi.MapInputControlSettingsEndpoints();
+        applicationApi.MapDateControlSettingsEndpoints();
         applicationApi.MapInputPolicyEndpoints();
         applicationApi.MapAccountEventEndpoints();
         applicationApi.MapBrokerEventEndpoints();
@@ -90,6 +93,7 @@ public static partial class ApiEndpointRegistration
         applicationApi.MapUserValuationPreferencesEventEndpoints();
         applicationApi.MapUserBookmarksEventEndpoints();
         applicationApi.MapInputControlSettingsEventEndpoints();
+        applicationApi.MapDateControlSettingsEventEndpoints();
         applicationApi.MapValuationSettingEventEndpoints();
         applicationApi.MapAssetAllocationMappingEventEndpoints();
         applicationApi.MapReportEventEndpoints();

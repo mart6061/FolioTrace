@@ -8,7 +8,7 @@ namespace Repository;
 
 public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepository
 {
-    private const int TotalBuildSteps = 18;
+    private const int TotalBuildSteps = 19;
 
     /// <summary>
     /// Months of trading history. Kept in step with <see cref="SeedInstrumentData.ValueStartDate"/> so every
@@ -58,6 +58,7 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
         await CreateBrokerSetupEvents(progress, cancellationToken);
         await CreateAccountSetupEvents(progress, cancellationToken);
         await CreateInputControlSettingsSetupEvents(progress, cancellationToken);
+        await CreateDateControlSettingsSetupEvents(progress, cancellationToken);
         await CreateValuationSettingSetupEvents(progress, cancellationToken);
         await CreateReportSetupEvents(progress, cancellationToken);
         await CreateFXSetupEvents(progress, cancellationToken);
@@ -440,6 +441,25 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
                 settings).Value!
         ];
     }
+
+    private async Task CreateDateControlSettingsSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
+    {
+        var createdEvents = CreateInitialDateControlSettingsCreatedEvents();
+        progress("Date controls", $"Seeding {createdEvents.Count:N0} date control setting events.", 0, false);
+        await StoreEvents<DateControlSettings, DateControlSettingsCreatedEvent>(Constants.Initialisation.DateControlSettingsStreamId, createdEvents, cancellationToken);
+        progress("Date controls", $"Seeded {createdEvents.Count:N0} date control setting events.", createdEvents.Count, true);
+    }
+
+    public static IReadOnlyList<DateControlSettingsCreatedEvent> CreateInitialDateControlSettingsCreatedEvents() =>
+    [
+        DateControlSettingsCreatedEventBuilder.CreateSeed(
+            Guid.CreateGuid7(),
+            Constants.Initialisation.UserID,
+            EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(45)),
+            AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(45)),
+            Constants.Initialisation.Reason,
+            DateControlConfigurationDefaults.Create()).Value!
+    ];
 
     private async Task CreateValuationSettingSetupEvents(Action<string, string, int, bool> progress, CancellationToken cancellationToken)
     {
@@ -1831,6 +1851,7 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
             + CreateInitialAccountActiveModifiedEvents().Count
             + CreateInitialAccountIdentifierSetEvents().Count;
         var inputControlSettingEvents = CreateInitialInputControlSettingsCreatedEvents().Count;
+        var dateControlSettingEvents = CreateInitialDateControlSettingsCreatedEvents().Count;
         var valuationSettingEvents = CreateInitialAssetAllocationCreatedEvents().Count;
         var reportEvents = CreateInitialReportCreatedEvents().Count;
         var pairSeeds = SeedFXData.CreatePairSeeds();
@@ -1848,7 +1869,7 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
         var ticketSeed = CreateSeedTickets(instrumentSeeds, CreateInitialAccountCreatedEvents(), CreateInitialInstrumentCreatedEvents(instrumentSeeds), holdingCreatedEvents);
         var ticketEvents = ticketSeed.TicketEvents.Count + ticketSeed.HoldingEvents.Count + ticketSeed.TransactionEvents.Count;
 
-        return countryEvents + currencyEvents + brokerEvents + accountEvents + inputControlSettingEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents + ticketEvents;
+        return countryEvents + currencyEvents + brokerEvents + accountEvents + inputControlSettingEvents + dateControlSettingEvents + valuationSettingEvents + reportEvents + fxEvents + instrumentEvents + holdingEvents + transactionEvents + ticketEvents;
     }
 
     private sealed class SeedPositionState

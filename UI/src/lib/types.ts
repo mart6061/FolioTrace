@@ -115,6 +115,46 @@ export type UserValuationPreferences = {
   lastAuditDateTime: string;
 };
 
+export type DateControlOptionKind = 'Rule' | 'Custom' | 'Separator';
+
+export type DateRuleOption = {
+  optionID: string;
+  kind: DateControlOptionKind;
+  label: string;
+  expression: string | null;
+  displayOrder: number;
+  isDefault: boolean;
+};
+
+export type DateRangeRuleOption = DateRuleOption;
+
+export type DateControlConfiguration = {
+  financialYearStartMonth: number;
+  financialYearStartDay: number;
+  dateOptions: DateRuleOption[];
+  rangeOptions: DateRangeRuleOption[];
+};
+
+export type DateControlSettings = {
+  configuration: DateControlConfiguration;
+  valuationDateTime: string;
+  asOfDateTime: string;
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
+export type UserDateControlSettings = DateControlSettings & {
+  userID: string;
+  hasStoredConfiguration: boolean;
+};
+
+export type EffectiveDateControlSettings = {
+  configuration: DateControlConfiguration;
+  source: 'Global' | 'User';
+  lastEventID: string;
+  lastAuditDateTime: string;
+};
+
 export type UserBookmarkType = 'Base' | 'Query';
 
 export type UserBookmarkItem = {

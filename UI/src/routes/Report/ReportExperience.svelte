@@ -1,9 +1,8 @@
 <script lang="ts">
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
-  import DateTimeInput from '$lib/components/DateTimeInput.svelte';
+  import DateTimeRangeInput from '$lib/components/DateTimeRangeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import { ComplexSelect, type ComplexSelectOption } from '$lib/components/forms';
-  import { endOfDayForInput, startOfDayForInput } from '$lib/dates';
   import { downloadFile, htmlValue } from '$lib/export';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
   import { tick } from 'svelte';
@@ -190,6 +189,7 @@
     reportDocument: ReportDocument | null;
     reportID: string;
     valuationDate: string;
+    dateRangeExpression: string;
     valuationPreferences: UserValuationPreferences;
     valuationStartDate: string;
   };
@@ -220,6 +220,8 @@
   let valuationStartDate = $state(data.valuationStartDate);
   // svelte-ignore state_referenced_locally
   let valuationEndDate = $state(data.valuationDate);
+  // svelte-ignore state_referenced_locally
+  let dateRangeExpression = $state(data.dateRangeExpression);
   // svelte-ignore state_referenced_locally
   let selectedAccountID = $state(data.accountID);
   // svelte-ignore state_referenced_locally
@@ -334,24 +336,6 @@
 
   function pieLegendIndent(level: number) {
     return `${Math.max(0, Math.min(level - 1, 5)) * 0.75}rem`;
-  }
-
-  function handleValuationStartChange() {
-    valuationStartDate = startOfDayForInput(valuationStartDate);
-
-    if (new Date(valuationStartDate).getTime() > new Date(valuationEndDate).getTime())
-      valuationEndDate = endOfDayForInput(valuationStartDate);
-
-    submitFilterChange();
-  }
-
-  function handleValuationEndChange() {
-    valuationEndDate = endOfDayForInput(valuationEndDate);
-
-    if (new Date(valuationEndDate).getTime() < new Date(valuationStartDate).getTime())
-      valuationStartDate = startOfDayForInput(valuationEndDate);
-
-    submitFilterChange();
   }
 
   async function submitFilterChange() {
@@ -649,12 +633,7 @@
         <div class="report-filter-section report-filter-section-first report-valuation-date-grid">
           <label class="report-filter-title grid min-w-0 gap-1">
             Valuation period
-            <DateTimeInput bind:value={valuationStartDate} fullWidth name="valuationStartDate" onchange={handleValuationStartChange} step="1" />
-          </label>
-          <span class="report-valuation-date-separator">to</span>
-          <label class="report-filter-title grid min-w-0 gap-1">
-            <span class="sr-only">End date</span>
-            <DateTimeInput bind:value={valuationEndDate} fullWidth name="valuationDate" onchange={handleValuationEndChange} step="1" />
+            <DateTimeRangeInput bind:end={valuationEndDate} bind:relative={dateRangeExpression} bind:start={valuationStartDate} endName="valuationDate" fullWidth onchange={submitFilterChange} startName="valuationStartDate" />
           </label>
         </div>
 
@@ -1049,14 +1028,6 @@
     justify-content: start;
   }
 
-  .report-valuation-date-separator {
-    align-self: end;
-    color: var(--muted);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    padding-bottom: 0.5rem;
-  }
-
   .report-filter-title {
     color: var(--muted);
     font-size: var(--house-label-size);
@@ -1148,10 +1119,6 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .report-valuation-date-separator {
-      align-self: center;
-      padding-bottom: 0;
-    }
   }
 
   .price-basis-toggle {
@@ -1453,11 +1420,6 @@
   @media (max-width: 780px) {
     .report-valuation-date-grid {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .report-valuation-date-separator {
-      padding-bottom: 0;
-      justify-self: start;
     }
 
     .report-pie-layout {

@@ -6,10 +6,12 @@
   import { draggable, dropZone } from '$lib/actions/dragDrop';
   import { Toggle } from '$lib/components/forms';
   import ThemeModeControl from '$lib/components/ThemeModeControl.svelte';
+  import DateControlConfigurationEditor from '$lib/components/DateControlConfigurationEditor.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
-  import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention, holdingDateBasisOptions, valuationDateOptions, valuationPriceConventionOptions } from '$lib/valuationPreferences';
-  import type { HoldingDateBasis, UserBookmarkItem, UserValuationDateOption, ValuationPriceConvention } from '$lib/types';
+  import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention, holdingDateBasisOptions, valuationPriceConventionOptions } from '$lib/valuationPreferences';
+  import { cloneDateControlConfiguration } from '$lib/dateRules';
+  import type { DateControlConfiguration, HoldingDateBasis, UserBookmarkItem, UserValuationDateOption, ValuationPriceConvention } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   interface Props {
@@ -42,6 +44,10 @@
   let syncedValuationSignature = $state('');
   let syncedBookmarkSignature = $state('');
   let draggedBookmarkID = $state<string | null>(null);
+  // svelte-ignore state_referenced_locally -- server invalidation recreates the preferences data
+  let dateConfiguration = $state<DateControlConfiguration>(cloneDateControlConfiguration(data.userDateControlSettings.hasStoredConfiguration ? data.userDateControlSettings.configuration : data.dateControlSettings.configuration));
+  // svelte-ignore state_referenced_locally
+  let customizingDateControls = $state(Boolean(data.userDateControlSettings.hasStoredConfiguration));
   let dragOverBookmarkID = $state<string | null>(null);
   const menuPreferenceParentByID = new Map(menuPreferenceDefinitions.map((item) => [item.id, item.parentID]));
 
@@ -117,6 +123,11 @@
 
   function createVisibleByID() {
     return Object.fromEntries(normalizeMenuPreferenceItems(data.menuPreferences.items).map((item) => [item.menuItemID, item.visible]));
+  }
+
+  function customizeDateControls() {
+    dateConfiguration = cloneDateControlConfiguration(data.dateControlSettings.configuration);
+    customizingDateControls = true;
   }
 
   function createBookmarks() {
@@ -280,36 +291,10 @@
         <input type="hidden" name="originalHoldingDateBasis" value={originalHoldingDateBasis} />
         <input type="hidden" name="originalValuationPriceConvention" value={originalValuationPriceConvention} />
         <input type="hidden" name="originalShowZeroBalances" value={String(originalShowZeroBalances)} />
+        <input type="hidden" name="startValuationDateOption" value={startValuationDateOption} />
+        <input type="hidden" name="endValuationDateOption" value={endValuationDateOption} />
 
         <div class="menu-preference-list">
-          <label class="menu-preference-row">
-            <span>Valuation Start</span>
-            <select
-              class="menu-preference-select"
-              name="startValuationDateOption"
-              value={startValuationDateOption}
-              onchange={(event) => startValuationDateOption = normalizeValuationDateOption(event.currentTarget.value, defaultStartValuationDateOption)}
-            >
-              {#each valuationDateOptions as option (option.value)}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </label>
-
-          <label class="menu-preference-row">
-            <span>Valuation End</span>
-            <select
-              class="menu-preference-select"
-              name="endValuationDateOption"
-              value={endValuationDateOption}
-              onchange={(event) => endValuationDateOption = normalizeValuationDateOption(event.currentTarget.value, defaultEndValuationDateOption)}
-            >
-              {#each valuationDateOptions as option (option.value)}
-                <option value={option.value}>{option.label}</option>
-              {/each}
-            </select>
-          </label>
-
           <label class="menu-preference-row">
             <span>Holding Date Basis</span>
             <select
@@ -406,6 +391,20 @@
             {/each}
           </div>
         {/if}
+      </div>
+    </form>
+
+    <form class="data-panel menu-preference-card" method="POST" action="/User/Preferences?/saveDateControls" use:enhance>
+      <h2 class="menu-preference-title">Date and Range Controls</h2>
+      {#if displayedForm?.intent === 'saveDateControls'}
+        <Card class="mb-4" density="compact" intent={displayedForm.status === 'success' ? 'success' : 'error'}>{displayedForm.message}</Card>
+      {/if}
+      <input name="configuration" type="hidden" value={JSON.stringify(dateConfiguration)} />
+      <input name="hasStoredConfiguration" type="hidden" value={String(data.userDateControlSettings.hasStoredConfiguration)} />
+      <DateControlConfigurationEditor bind:configuration={dateConfiguration} inherited={!customizingDateControls} oncustomize={customizeDateControls} />
+      <div class="date-control-actions">
+        {#if customizingDateControls}<button class="house-button house-button-primary house-button-md" type="submit">Save date controls</button>{/if}
+        {#if data.userDateControlSettings.hasStoredConfiguration}<button class="house-button house-button-secondary house-button-md" name="clear" type="submit" value="true">Restore global settings</button>{/if}
       </div>
     </form>
 
