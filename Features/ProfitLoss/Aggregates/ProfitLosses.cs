@@ -41,7 +41,8 @@ public sealed record ProfitLosses : IAggregate
         FXRates fxRates,
         IReadOnlyList<ITransactionEvent> transactionEvents,
         InstrumentPriceBasis instrumentPriceBasis = InstrumentPriceBasis.Mid,
-        AccountID? accountID = null)
+        AccountID? accountID = null,
+        HoldingID? holdingID = null)
     {
         ValuationDateTime = valuationDateTime;
         AsOfDateTime = asOfDateTime;
@@ -50,6 +51,7 @@ public sealed record ProfitLosses : IAggregate
         var movements = TransactionEventSelector.GetActiveMovements(transactionEvents, asOfDateTime)
             .Where(movement => IsIncluded(movement, valuationDateTime, holdingDateBasis))
             .Where(movement => accountID is null || movement.AccountID == accountID)
+            .Where(movement => holdingID is null || movement.HoldingID == holdingID)
             .ToList();
         var latestSource = LatestSource(accounts, holdings, instruments, instrumentValues, fxRates, movements);
         LastEventID = latestSource.EventID;
@@ -75,6 +77,7 @@ public sealed record ProfitLosses : IAggregate
                 fxRates,
                 instrumentPriceBasis,
                 holdingDateBasis,
+                holdingID is not null,
                 valuationDateTime))
             .OrderBy(item => item.AccountName)
             .ThenBy(item => item.HoldingKind)
@@ -92,6 +95,7 @@ public sealed record ProfitLosses : IAggregate
                     AccountID = account.AccountID,
                     AccountName = account.Name,
                     BookCurrency = account.BookCurrency,
+                    DefaultMethod = account.BookCostBasis,
                     Items = accountItems,
                     Totals = BuildTotals(accountItems)
                 };
@@ -111,6 +115,7 @@ public sealed record ProfitLosses : IAggregate
         FXRates fxRates,
         InstrumentPriceBasis instrumentPriceBasis,
         HoldingDateBasis holdingDateBasis,
+        bool includeRows,
         EventDateTime valuationDateTime)
     {
         var orderedMovements = movements
@@ -128,9 +133,25 @@ public sealed record ProfitLosses : IAggregate
         var localPrice = optionExpired ? 0m : instrumentValue?.SelectPrice(instrumentPriceBasis, IncludeAccruedInterest)?.Amount;
         var bookPrice = optionExpired ? 0m : SelectBookPrice(localPrice, priceCurrency, account.BookCurrency, fxRates);
         var marketValue = optionExpired ? 0m : bookPrice.HasValue ? quantity * contractMultiplier * bookPrice.Value : (decimal?)null;
-        var methodValues = Enum.GetValues<ProfitLossMethod>()
+        var calculations = Enum.GetValues<ProfitLossMethod>()
             .Select(method => CalculateMethod(orderedMovements, method, marketValue, quantity, localPrice.HasValue, bookPrice.HasValue, priceCurrency, account.BookCurrency))
             .ToList();
+        var methodValues = calculations.Select(calculation => calculation.Value).ToList();
+        var rows = includeRows
+            ? orderedMovements.Select(movement => new ProfitLossMovement
+            {
+                EventID = movement.EventID,
+                TransactionType = TransactionEventSelector.IsCredit(movement) ? "Credit" : "Debit",
+                DisplayDateTime = MovementDate(movement, movement.SettlementDateTime, holdingDateBasis),
+                Quantity = movement.Quantity.Value,
+                BookCost = movement.BookCost.Value,
+                Methods = calculations.Select(calculation => new ProfitLossMovementMethodValue
+                {
+                    Method = calculation.Value.Method,
+                    RealizedPnL = calculation.RealizedByEventID.GetValueOrDefault(movement.EventID.Value)
+                }).ToList()
+            }).ToList()
+            : [];
 
         return new ProfitLossItem
         {
@@ -150,11 +171,12 @@ public sealed record ProfitLosses : IAggregate
             BookPrice = bookPrice,
             MarketValue = marketValue,
             BookCost = bookCost,
-            Methods = methodValues
+            Methods = methodValues,
+            Rows = rows
         };
     }
 
-    private static ProfitLossMethodValue CalculateMethod(
+    private static ProfitLossMethodCalculation CalculateMethod(
         IReadOnlyList<ITransactionMovementEvent> movements,
         ProfitLossMethod method,
         decimal? marketValue,
@@ -167,6 +189,7 @@ public sealed record ProfitLosses : IAggregate
         var complete = true;
         var reasons = new List<string>();
         var realized = 0m;
+        var realizedByEventID = new Dictionary<Guid, decimal?>();
 
         if (method == ProfitLossMethod.RunningAverage)
         {
@@ -176,6 +199,7 @@ public sealed record ProfitLosses : IAggregate
             {
                 if (TransactionEventSelector.IsCredit(movement))
                 {
+                    realizedByEventID[movement.EventID.Value] = null;
                     quantity += movement.Quantity.Value;
                     cost += movement.BookCost.Value;
                     continue;
@@ -194,12 +218,16 @@ public sealed record ProfitLosses : IAggregate
 
                 var consumedQuantity = Math.Min(disposeQuantity, Math.Max(availableQuantity, 0m));
                 var consumedCost = availableQuantity == 0m ? 0m : cost / availableQuantity * consumedQuantity;
-                realized += movement.BookCost.Value - consumedCost;
+                var movementRealized = movement.BookCost.Value - consumedCost;
+                realized += movementRealized;
+                realizedByEventID[movement.EventID.Value] = decimal.Round(movementRealized, 8);
                 quantity -= disposeQuantity;
                 cost -= consumedCost;
             }
 
-            return BuildMethodValue(method, realized, marketValue, cost, finalQuantity, complete, reasons, hasPrice, hasBookPrice, priceCurrency, bookCurrency);
+            return new ProfitLossMethodCalculation(
+                BuildMethodValue(method, realized, marketValue, cost, finalQuantity, complete, reasons, hasPrice, hasBookPrice, priceCurrency, bookCurrency),
+                realizedByEventID);
         }
 
         var lots = new List<ProfitLossLot>();
@@ -207,6 +235,7 @@ public sealed record ProfitLosses : IAggregate
         {
             if (TransactionEventSelector.IsCredit(movement))
             {
+                realizedByEventID[movement.EventID.Value] = null;
                 lots.Add(new ProfitLossLot(movement.Quantity.Value, movement.BookCost.Value));
                 continue;
             }
@@ -216,6 +245,7 @@ public sealed record ProfitLosses : IAggregate
 
             var remainingDisposeQuantity = movement.Quantity.Value;
             var proceedsRemaining = movement.BookCost.Value;
+            var movementRealized = 0m;
             while (remainingDisposeQuantity > 0m)
             {
                 if (lots.Count == 0)
@@ -223,6 +253,7 @@ public sealed record ProfitLosses : IAggregate
                     complete = false;
                     reasons.Add("Short position or over-disposal handling is incomplete in v1.");
                     realized += proceedsRemaining;
+                    movementRealized += proceedsRemaining;
                     break;
                 }
 
@@ -233,6 +264,7 @@ public sealed record ProfitLosses : IAggregate
                 var proceeds = proceedsRemaining * quantityRatio;
                 var consumedCost = lot.Cost * consumedQuantity / lot.Quantity;
                 realized += proceeds - consumedCost;
+                movementRealized += proceeds - consumedCost;
 
                 remainingDisposeQuantity -= consumedQuantity;
                 proceedsRemaining -= proceeds;
@@ -242,10 +274,13 @@ public sealed record ProfitLosses : IAggregate
                 else
                     lots[lotIndex] = new ProfitLossLot(remainingLotQuantity, lot.Cost - consumedCost);
             }
+            realizedByEventID[movement.EventID.Value] = decimal.Round(movementRealized, 8);
         }
 
         var remainingCost = lots.Sum(lot => lot.Cost);
-        return BuildMethodValue(method, realized, marketValue, remainingCost, finalQuantity, complete, reasons, hasPrice, hasBookPrice, priceCurrency, bookCurrency);
+        return new ProfitLossMethodCalculation(
+            BuildMethodValue(method, realized, marketValue, remainingCost, finalQuantity, complete, reasons, hasPrice, hasBookPrice, priceCurrency, bookCurrency),
+            realizedByEventID);
     }
 
     private static ProfitLossMethodValue BuildMethodValue(
@@ -383,4 +418,8 @@ public sealed record ProfitLosses : IAggregate
     }
 
     private sealed record ProfitLossLot(decimal Quantity, decimal Cost);
+
+    private sealed record ProfitLossMethodCalculation(
+        ProfitLossMethodValue Value,
+        IReadOnlyDictionary<Guid, decimal?> RealizedByEventID);
 }

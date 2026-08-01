@@ -149,7 +149,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
     [Fact]
     public async Task RunAsync_PersistsSnapshots_ForBoundariesInTheWarmTier()
     {
-        var (coordinator, snapshotRepository) = await CreateCoordinatorWithSnapshots(new AggregateMaintenanceOptions
+        var (coordinator, snapshotRepository, profitLossService) = await CreateCoordinatorWithSnapshots(new AggregateMaintenanceOptions
         {
             Enabled = true,
             EventTriggerCount = 100,
@@ -167,14 +167,34 @@ public sealed class AggregateMaintenanceCoordinatorTests
         Assert.Contains("InstrumentValues", aggregateKinds);
         Assert.Contains("Tickets", aggregateKinds);
         Assert.Contains("HoldingPositions", aggregateKinds);
+        Assert.Contains("ProfitLoss", aggregateKinds);
         var diagnostics = coordinator.GetDiagnostics();
         Assert.True(diagnostics.LastFailedAggregates == 0, string.Join(Environment.NewLine, diagnostics.RecentErrors));
+
+        var profitLossSnapshot = snapshotRepository.Snapshots
+            .Where(snapshot => snapshot.AggregateKind == "ProfitLoss" && snapshot.Variant == HoldingDateBasis.EventDateTime.ToString())
+            .OrderByDescending(snapshot => snapshot.ValuationDateTime)
+            .First();
+        profitLossService.InvalidateAll();
+        var rebuilt = await profitLossService.Get(EventDateTimeBuilder.Create(profitLossSnapshot.ValuationDateTime), HoldingDateBasis.EventDateTime);
+        var rebuiltItems = rebuilt.Accounts.SelectMany(account => account.Items).ToList();
+        Assert.NotEmpty(rebuiltItems);
+        Assert.All(rebuiltItems, item => Assert.Equal(3, item.Methods.Count));
+        var holdingDetails = await profitLossService.GetHolding(
+            EventDateTimeBuilder.Create(profitLossSnapshot.ValuationDateTime),
+            HoldingDateBasis.EventDateTime,
+            InstrumentPriceBasis.Mid,
+            rebuiltItems[0].HoldingID);
+        Assert.NotNull(holdingDetails);
+        Assert.NotEmpty(holdingDetails.Rows);
+        Assert.True(profitLossService.GetDiagnostics().SnapshotVerifiedCount > 0);
+        Assert.Equal(0, profitLossService.GetDiagnostics().SnapshotMismatchCount);
     }
 
     [Fact]
     public async Task RunAsync_DoesNotPersistSnapshots_ForBoundariesInTheHotTier()
     {
-        var (coordinator, snapshotRepository) = await CreateCoordinatorWithSnapshots(new AggregateMaintenanceOptions
+        var (coordinator, snapshotRepository, _) = await CreateCoordinatorWithSnapshots(new AggregateMaintenanceOptions
         {
             Enabled = true,
             EventTriggerCount = 100,
@@ -191,7 +211,7 @@ public sealed class AggregateMaintenanceCoordinatorTests
     private static async Task<AggregateMaintenanceCoordinator> CreateCoordinator(AggregateMaintenanceOptions? options = null) =>
         (await CreateCoordinatorWithSnapshots(options)).Coordinator;
 
-    private static async Task<(AggregateMaintenanceCoordinator Coordinator, FakeAggregateSnapshotRepository SnapshotRepository)> CreateCoordinatorWithSnapshots(AggregateMaintenanceOptions? options = null)
+    private static async Task<(AggregateMaintenanceCoordinator Coordinator, FakeAggregateSnapshotRepository SnapshotRepository, ProfitLossService ProfitLossService)> CreateCoordinatorWithSnapshots(AggregateMaintenanceOptions? options = null)
     {
         options ??= new AggregateMaintenanceOptions
         {
@@ -217,6 +237,15 @@ public sealed class AggregateMaintenanceCoordinatorTests
         var instrumentValueService = new InstrumentValueService(eventRepository, snapshotRepository: snapshotRepository, instrumentService: instrumentService);
         var ticketService = new TicketService(eventRepository, snapshotRepository: snapshotRepository);
         var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, snapshotRepository);
+        var profitLossService = new ProfitLossService(
+            eventRepository,
+            accountService,
+            holdingService,
+            instrumentService,
+            instrumentValueService,
+            fxRateService,
+            snapshotRepository,
+            verificationOptions: new ProfitLossSnapshotVerificationOptions { Enabled = true, SampleRate = 1.0 });
 
         var coordinator = new AggregateMaintenanceCoordinator(
             options,
@@ -228,12 +257,13 @@ public sealed class AggregateMaintenanceCoordinatorTests
             fxRateService,
             holdingService,
             holdingPositionService,
+            profitLossService,
             instrumentService,
             instrumentValueService,
             new AggregateUpdateNotificationService(),
             ticketService);
 
-        return (coordinator, snapshotRepository);
+        return (coordinator, snapshotRepository, profitLossService);
     }
 
     private sealed class TestEventRepository : IEventRepository

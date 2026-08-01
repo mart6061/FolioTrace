@@ -13,6 +13,7 @@ public sealed class AggregateMaintenanceCoordinator(
     FXRateService fxRateService,
     HoldingService holdingService,
     HoldingPositionService holdingPositionService,
+    ProfitLossService profitLossService,
     InstrumentService instrumentService,
     InstrumentValueService instrumentValueService,
     AggregateUpdateNotificationService notificationService,
@@ -124,6 +125,8 @@ public sealed class AggregateMaintenanceCoordinator(
                     await WarmAggregate("Tickets", valuationDate, ticketService.IsCached, ticketService.Get, result);
                 await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.EventDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
                 await WarmAggregate("HoldingPositions", valuationDate, HoldingDateBasis.SettlementDateTime, holdingPositionService.IsCached, holdingPositionService.Get, result);
+                await WarmAggregate("ProfitLoss", valuationDate, HoldingDateBasis.EventDateTime, profitLossService.IsCached, (date, basis) => profitLossService.Get(date, basis), result);
+                await WarmAggregate("ProfitLoss", valuationDate, HoldingDateBasis.SettlementDateTime, profitLossService.IsCached, (date, basis) => profitLossService.Get(date, basis), result);
 
                 if (IsSnapshotEligible(valuationDate))
                 {
@@ -135,6 +138,8 @@ public sealed class AggregateMaintenanceCoordinator(
                         await SnapshotAggregate("Tickets", valuationDate, ticketService.Get, ticketService.PersistSnapshotAsync, result);
                     await SnapshotHoldingPositions(valuationDate, HoldingDateBasis.EventDateTime, result);
                     await SnapshotHoldingPositions(valuationDate, HoldingDateBasis.SettlementDateTime, result);
+                    await SnapshotProfitLoss(valuationDate, HoldingDateBasis.EventDateTime, result);
+                    await SnapshotProfitLoss(valuationDate, HoldingDateBasis.SettlementDateTime, result);
                 }
             }
 
@@ -263,6 +268,19 @@ public sealed class AggregateMaintenanceCoordinator(
         {
             result.FailedAggregates++;
             result.Errors.Add($"HoldingPositions snapshot {valuationDate.Value:O} {holdingDateBasis}: {exception.Message}");
+        }
+    }
+
+    private async Task SnapshotProfitLoss(EventDateTime valuationDate, HoldingDateBasis holdingDateBasis, AggregateMaintenanceRunResult result)
+    {
+        try
+        {
+            await profitLossService.PersistSnapshotAsync(valuationDate, holdingDateBasis);
+        }
+        catch (Exception exception)
+        {
+            result.FailedAggregates++;
+            result.Errors.Add($"ProfitLoss snapshot {valuationDate.Value:O} {holdingDateBasis}: {exception.Message}");
         }
     }
 

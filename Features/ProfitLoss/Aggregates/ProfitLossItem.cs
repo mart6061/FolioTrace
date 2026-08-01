@@ -37,4 +37,6 @@ public sealed record ProfitLossItem
     public required decimal BookCost { get; init; }
 
     public required IReadOnlyList<ProfitLossMethodValue> Methods { get; init; }
+
+    public required IReadOnlyList<ProfitLossMovement> Rows { get; init; }
 }

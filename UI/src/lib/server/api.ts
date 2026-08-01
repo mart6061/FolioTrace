@@ -15,6 +15,7 @@ import type {
   FXRateHistoryEvent,
   FXs,
   Holding,
+  HoldingProfitLossDetails,
   Holdings,
   HoldingPositions,
   HoldingKind,
@@ -776,6 +777,26 @@ export async function getProfitLosses(
     url.searchParams.set('accountID', accountID);
 
   return apiFetch<ProfitLosses>(fetchApi, url);
+}
+
+export async function getHoldingProfitLoss(
+  fetchApi: typeof fetch,
+  holdingID: string,
+  eventDateTime: string,
+  auditDateTime: string | null,
+  holdingDateBasis: HoldingDateBasis,
+  instrumentPriceBasis: InstrumentPriceBasis
+) {
+  const url = new URL(`${getApiBaseUrl()}/ProfitLoss/Holding`);
+  url.searchParams.set('holdingID', holdingID);
+  url.searchParams.set('eventDateTime', eventDateTime);
+  url.searchParams.set('holdingDateBasis', holdingDateBasis);
+  url.searchParams.set('instrumentPriceBasis', instrumentPriceBasis);
+
+  if (auditDateTime)
+    url.searchParams.set('auditDateTime', auditDateTime);
+
+  return apiFetch<HoldingProfitLossDetails>(fetchApi, url);
 }
 
 export async function getCurrencies(
