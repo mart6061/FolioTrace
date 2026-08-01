@@ -7,6 +7,14 @@ namespace FolioTrace.Aggregates;
 public enum ReportValuationColumnKey
 {
     InstrumentName,
+    OptionType,
+    Underlying,
+    Strike,
+    Expiry,
+    ExerciseStyle,
+    SettlementType,
+    ContractMultiplier,
+    ExpiryStatus,
     ISIN,
     Sedol,
     QuotePrice,

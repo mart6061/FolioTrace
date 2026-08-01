@@ -66,11 +66,24 @@ public sealed class TradeFileWorkbookGenerator
         TradeFileColumn.ISIN => TextCell(column, row, ticket.ISIN),
         TradeFileColumn.Sedol => TextCell(column, row, ticket.Sedol),
         TradeFileColumn.Currency => TextCell(column, row, ticket.Currency.Value),
+        TradeFileColumn.SecurityType => TextCell(column, row, ticket.Option is null ? string.Empty : "OPT"),
+        TradeFileColumn.OptionType => TextCell(column, row, ticket.Option?.OptionType.ToString() ?? string.Empty),
+        TradeFileColumn.UnderlyingInstrumentID => TextCell(column, row, ticket.Option?.UnderlyingInstrumentID.Value.ToString() ?? string.Empty),
+        TradeFileColumn.UnderlyingSymbol => TextCell(column, row, ticket.Option?.UnderlyingSymbol ?? string.Empty),
+        TradeFileColumn.UnderlyingISIN => TextCell(column, row, ticket.Option is { UnderlyingSecurityIDSource: "4" } option ? option.UnderlyingSecurityID : string.Empty),
+        TradeFileColumn.StrikePrice => OptionalNumberCell(column, row, ticket.Option?.StrikePrice.Amount),
+        TradeFileColumn.StrikeCurrency => TextCell(column, row, ticket.Option?.StrikePrice.Currency.Value ?? string.Empty),
+        TradeFileColumn.ExpirationDate => TextCell(column, row, ticket.Option?.ExpirationDate.Value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty),
+        TradeFileColumn.ExerciseStyle => TextCell(column, row, ticket.Option?.ExerciseStyle.ToString() ?? string.Empty),
+        TradeFileColumn.SettlementType => TextCell(column, row, ticket.Option?.SettlementType.ToString() ?? string.Empty),
+        TradeFileColumn.ContractMultiplier => OptionalNumberCell(column, row, ticket.Option?.ContractMultiplier.Value),
+        TradeFileColumn.GrossPremium => NumberCell(column, row, decimal.Round(ticket.Quantity * ticket.Price.Amount * (ticket.Option?.ContractMultiplier.Value ?? 1m), 8, MidpointRounding.AwayFromZero)),
         _ => TextCell(column, row, string.Empty)
     };
 
     private static string TextCell(int column, int row, string value) => "<c r='" + Column(column) + row + "' t='inlineStr'><is><t>" + SecurityElement.Escape(value) + "</t></is></c>";
     private static string NumberCell(int column, int row, decimal value) => "<c r='" + Column(column) + row + "'><v>" + value.ToString(CultureInfo.InvariantCulture) + "</v></c>";
+    private static string OptionalNumberCell(int column, int row, decimal? value) => value is null ? TextCell(column, row, string.Empty) : NumberCell(column, row, value.Value);
     private static string Column(int index) { var result = string.Empty; for (index++; index > 0; index = (index - 1) / 26) result = (char)('A' + (index - 1) % 26) + result; return result; }
     private static void Write(ZipArchive archive, string path, string content) { using var writer = new StreamWriter(archive.CreateEntry(path, CompressionLevel.Fastest).Open(), new UTF8Encoding(false)); writer.Write(content); }
 }

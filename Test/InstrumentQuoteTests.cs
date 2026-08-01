@@ -46,6 +46,18 @@ public sealed class InstrumentQuoteTests
     }
 
     [Fact]
+    public void Option_SelectsQuoteLastAndFallsBackFromNavToMid()
+    {
+        var option = new InstrumentPriceOption(Quote(4.9m, 5m, 5.1m), new InstrumentPrice(4.75m));
+
+        Assert.Equal(4.9m, option.Select(InstrumentPriceBasis.Bid).Amount);
+        Assert.Equal(5m, option.Select(InstrumentPriceBasis.Mid).Amount);
+        Assert.Equal(5.1m, option.Select(InstrumentPriceBasis.Ask).Amount);
+        Assert.Equal(4.75m, option.Select(InstrumentPriceBasis.Last).Amount);
+        Assert.Equal(5m, option.Select(InstrumentPriceBasis.NAV).Amount);
+    }
+
+    [Fact]
     public void Add_DerivesDirtyQuoteAndPreservesOrdering()
     {
         var dirty = Quote(99m, 100m, 101m).Add(new InstrumentPrice(1.25m));

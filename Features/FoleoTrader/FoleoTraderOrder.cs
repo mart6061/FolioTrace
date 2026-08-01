@@ -15,6 +15,7 @@ public sealed record FoleoTraderOrder(
     string SecurityID,
     string SecurityIDSource,
     string Symbol,
+    OptionExecutionDetails? Option,
     string? LastExecID,
     string? LastError,
     DateTime SubmittedAt,

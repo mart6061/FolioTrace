@@ -23,6 +23,14 @@
 
   const valuationColumnDefinitions: { key: ReportValuationColumnKey; label: string }[] = [
     { key: 'InstrumentName', label: 'Instrument Name' },
+    { key: 'OptionType', label: 'Option Type' },
+    { key: 'Underlying', label: 'Underlying' },
+    { key: 'Strike', label: 'Strike' },
+    { key: 'Expiry', label: 'Expiry' },
+    { key: 'ExerciseStyle', label: 'Exercise Style' },
+    { key: 'SettlementType', label: 'Settlement Type' },
+    { key: 'ContractMultiplier', label: 'Contract Multiplier' },
+    { key: 'ExpiryStatus', label: 'Expiry Status' },
     { key: 'ISIN', label: 'ISIN' },
     { key: 'Sedol', label: 'Sedol' },
     { key: 'QuotePrice', label: 'Quote Price' },

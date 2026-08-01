@@ -322,7 +322,7 @@ export type InstrumentPriceSetRequest = {
   reason: string;
   instrumentID: string;
   currency: string;
-  priceType: 'InstrumentPriceEquity' | 'InstrumentPriceFixedIncome';
+  priceType: 'InstrumentPriceEquity' | 'InstrumentPriceFixedIncome' | 'InstrumentPriceOption';
   bid?: number | null;
   mid?: number | null;
   ask?: number | null;
@@ -330,6 +330,19 @@ export type InstrumentPriceSetRequest = {
   last?: number | null;
   /** Equity only. */
   nav?: number | null;
+};
+
+export type InstrumentTermsOptionSetRequest = {
+  eventDateTime: string;
+  instrumentID: string;
+  optionType: 'Call' | 'Put';
+  underlyingInstrumentID: string;
+  strikePrice: number;
+  strikeCurrency: string;
+  expirationDate: string;
+  exerciseStyle: 'American' | 'European';
+  settlementType: 'Physical' | 'Cash';
+  contractMultiplier: number;
 };
 
 export type InstrumentAccruedInterestSetRequest = {
@@ -1475,6 +1488,12 @@ export async function postInstrumentPriceSetEvent(fetchApi: typeof fetch, reques
         $type: 'InstrumentPriceFixedIncome',
         CleanQuote: quote
       }
+    : request.priceType === 'InstrumentPriceOption'
+      ? {
+          $type: 'InstrumentPriceOption',
+          Quote: quote,
+          Last: price(request.last)
+        }
     : {
         $type: 'InstrumentPriceEquity',
         Quote: quote,
@@ -1733,6 +1752,36 @@ export async function postInstrumentTermsEquitySetEvent(fetchApi: typeof fetch, 
       InstrumentID: instrumentID,
       Terms: {
         $type: 'InstrumentTermsEquity'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(readApiError(errorText) || `API returned ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as EventSubmissionResponse;
+}
+
+export async function postInstrumentTermsOptionSetEvent(fetchApi: typeof fetch, request: InstrumentTermsOptionSetRequest, userID: string) {
+  const response = await fetchApi(`${getApiBaseUrl()}/Events/Instrument/InstrumentTermsSetEvent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      UserID: userID,
+      EventDateTime: request.eventDateTime,
+      Reason: `Set option terms ${request.instrumentID}`,
+      InstrumentID: request.instrumentID,
+      Terms: {
+        $type: 'InstrumentTermsOption',
+        OptionType: request.optionType,
+        UnderlyingInstrumentID: request.underlyingInstrumentID,
+        StrikePrice: { Amount: request.strikePrice, Currency: request.strikeCurrency },
+        ExpirationDate: request.expirationDate,
+        ExerciseStyle: request.exerciseStyle,
+        SettlementType: request.settlementType,
+        ContractMultiplier: request.contractMultiplier
       }
     })
   });

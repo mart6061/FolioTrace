@@ -745,13 +745,19 @@ public static partial class ApiEndpointRegistration
                 cancellationToken));
 
         instrumentEvents.MapPost($"/{nameof(InstrumentTermsSetEvent)}", async (IEventRepository eventRepository, AggregateCacheInvalidationService cacheInvalidationService, InstrumentTermsSetRequest request, CancellationToken cancellationToken) =>
-            await EventEndpointFactory.CreateAndAppend(
-                Constants.Initialisation.InstrumentsStreamId,
-                InstrumentEventsRoute,
-                eventRepository,
-                cacheInvalidationService,
-                () => InstrumentTermsSetEventBuilder.Create(request),
-                cancellationToken));
+        {
+            var result = InstrumentTermsSetEventBuilder.Create(request);
+            if (!result.IsValid || result.Value is null)
+                return Results.BadRequest(result);
+
+            var validationErrors = await ValidateInstrumentTermsEvent(result.Value, eventRepository, cancellationToken);
+            if (validationErrors.Count > 0)
+                return Results.BadRequest(Result<InstrumentTermsSetEvent>.Invalid(validationErrors));
+
+            await eventRepository.AppendAsync(Constants.Initialisation.InstrumentsStreamId, result.Value, cancellationToken);
+            cacheInvalidationService.Invalidate(result.Value);
+            return Results.Accepted(InstrumentEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(InstrumentEventsRoute, result.Value));
+        });
     }
 
     private static void MapInstrumentPriceEventEndpoints(this RouteGroupBuilder api)
@@ -778,7 +784,7 @@ public static partial class ApiEndpointRegistration
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
-            var validationErrors = await ValidateInstrumentValueEvent(result.Value.InstrumentID, result.Value.EventDateTime, result.Value.AuditDateTime, eventRepository, cancellationToken);
+            var validationErrors = await ValidateInstrumentPriceEvent(result.Value.InstrumentID, result.Value.EventDateTime, result.Value.AuditDateTime, result.Value.Price, eventRepository, cancellationToken);
             if (validationErrors.Count > 0)
                 return Results.BadRequest(Result<InstrumentPriceSetEvent>.Invalid(validationErrors));
 
@@ -809,7 +815,7 @@ public static partial class ApiEndpointRegistration
             if (!result.IsValid || result.Value is null)
                 return Results.BadRequest(result);
 
-            var validationErrors = await ValidateInstrumentValueEvent(result.Value.InstrumentID, result.Value.EventDateTime, result.Value.AuditDateTime, eventRepository, cancellationToken);
+            var validationErrors = await ValidateInstrumentIncomeEvent(result.Value.InstrumentID, result.Value.EventDateTime, result.Value.AuditDateTime, result.Value.Income, eventRepository, cancellationToken);
             if (validationErrors.Count > 0)
                 return Results.BadRequest(Result<InstrumentIncomeSetEvent>.Invalid(validationErrors));
 

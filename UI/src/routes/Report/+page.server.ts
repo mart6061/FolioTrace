@@ -15,6 +15,7 @@ import type {
   HoldingPosition,
   Instrument,
   InstrumentPriceBasis,
+  InstrumentTermsOption,
   ProfitLossItem,
   ProfitLossMethod,
   ReportConfig,
@@ -34,6 +35,14 @@ const reportPalette = ['#0f766e', '#2563eb', '#db2777', '#ca8a04', '#7c3aed', '#
 type ReportLoadEvent = Pick<ServerLoadEvent, 'fetch' | 'locals' | 'url'>;
 const valuationColumnDefinitions: ReportValuationColumnDefinition[] = [
   { columnKey: 'InstrumentName', label: 'Instrument Name', numeric: false, valueType: 'Text' },
+  { columnKey: 'OptionType', label: 'Option Type', numeric: false, valueType: 'Text' },
+  { columnKey: 'Underlying', label: 'Underlying', numeric: false, valueType: 'Text' },
+  { columnKey: 'Strike', label: 'Strike', numeric: true, valueType: 'Money' },
+  { columnKey: 'Expiry', label: 'Expiry', numeric: false, valueType: 'Text' },
+  { columnKey: 'ExerciseStyle', label: 'Exercise Style', numeric: false, valueType: 'Text' },
+  { columnKey: 'SettlementType', label: 'Settlement Type', numeric: false, valueType: 'Text' },
+  { columnKey: 'ContractMultiplier', label: 'Multiplier', numeric: true, valueType: 'Quantity' },
+  { columnKey: 'ExpiryStatus', label: 'Expiry Status', numeric: false, valueType: 'Text' },
   { columnKey: 'ISIN', label: 'ISIN', numeric: false, valueType: 'Text' },
   { columnKey: 'Sedol', label: 'Sedol', numeric: false, valueType: 'Text' },
   { columnKey: 'QuotePrice', label: 'Quote Price', numeric: true, valueType: 'Money' },
@@ -95,6 +104,15 @@ type ReportValuationAsset = {
   holdingID: string;
   name: string;
   instrumentName: string;
+  optionType?: string;
+  underlying?: string;
+  strikePrice?: number;
+  strikeCurrency?: string;
+  expiry?: string;
+  exerciseStyle?: string;
+  settlementType?: string;
+  contractMultiplier?: number;
+  expiryStatus?: string;
   isin: string;
   sedol: string;
   quantity: number;
@@ -147,6 +165,15 @@ type ReportValuationRow = {
   colour: string;
   name: string;
   instrumentName: string;
+  optionType?: string;
+  underlying?: string;
+  strikePrice?: number;
+  strikeCurrency?: string;
+  expiry?: string;
+  exerciseStyle?: string;
+  settlementType?: string;
+  contractMultiplier?: number;
+  expiryStatus?: string;
   isin: string;
   sedol: string;
   quantity: number;
@@ -621,6 +648,13 @@ function mapHoldingMetrics(
       const valuation = valuationsByHoldingID.get(holding.holdingID);
       const profitLoss = profitLossByHoldingID.get(holding.holdingID);
       const instrument = instrumentsByID.get(valuation?.instrumentID ?? holding.instrumentID);
+      const option = instrument?.terms && '$type' in instrument.terms && instrument.terms.$type === 'InstrumentTermsOption'
+        ? instrument.terms as InstrumentTermsOption
+        : null;
+      const underlying = option ? instrumentsByID.get(option.underlyingInstrumentID) : null;
+      const optionDescriptor = option
+        ? `${option.optionType} · ${option.strikePrice.currency} ${formatCompactNumber(option.strikePrice.amount)} · ${formatOptionDate(option.expirationDate)}`
+        : '';
       const accruedValue = numberValue(valuation?.accruedValue);
       const bookValue = finalValue(valuation);
       const bookValueFIFO = profitLossMethodBookValue(profitLoss, 'FIFO', numberValue(valuation?.bookCost, holding.bookCost));
@@ -630,7 +664,16 @@ function mapHoldingMetrics(
       return {
         holdingID: holding.holdingID,
         name: valuation?.name || valuation?.instrumentName || holding.instrumentName || holding.name,
-        instrumentName: valuation?.instrumentName || holding.instrumentName,
+        instrumentName: `${valuation?.instrumentName || holding.instrumentName}${optionDescriptor ? ` · ${optionDescriptor}` : ''}`,
+        optionType: option?.optionType,
+        underlying: underlying?.name ?? option?.underlyingInstrumentID,
+        strikePrice: option?.strikePrice.amount,
+        strikeCurrency: option?.strikePrice.currency,
+        expiry: option?.expirationDate,
+        exerciseStyle: option?.exerciseStyle,
+        settlementType: option?.settlementType,
+        contractMultiplier: option?.contractMultiplier,
+        expiryStatus: option ? (valuation?.option?.expired ? 'Expired' : 'Active') : undefined,
         isin: instrumentIdentifier(instrument, 'ISIN'),
         sedol: instrumentIdentifier(instrument, 'Sedol'),
         quantity: numberValue(valuation?.quantity, holding.quantity),
@@ -655,6 +698,17 @@ function mapHoldingMetrics(
 
 function profitLossMethodBookValue(profitLoss: ProfitLossItem | undefined, method: ProfitLossMethod, fallback: number) {
   return numberValue(profitLoss?.methods.find((value) => value.method === method)?.bookValue, fallback);
+}
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 8 }).format(value);
+}
+
+function formatOptionDate(value: string) {
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC', year: 'numeric' });
 }
 
 function bookValueForBasis(bookCostBasis: ProfitLossMethod, fifo: number, lifo: number, runningAverage: number) {
@@ -811,6 +865,15 @@ function appendValuationRows(
         colour,
         name: asset.name,
         instrumentName: asset.instrumentName,
+        optionType: asset.optionType,
+        underlying: asset.underlying,
+        strikePrice: asset.strikePrice,
+        strikeCurrency: asset.strikeCurrency,
+        expiry: asset.expiry,
+        exerciseStyle: asset.exerciseStyle,
+        settlementType: asset.settlementType,
+        contractMultiplier: asset.contractMultiplier,
+        expiryStatus: asset.expiryStatus,
         isin: asset.isin,
         sedol: asset.sedol,
         quantity: asset.quantity,

@@ -89,8 +89,10 @@ public sealed record InstrumentValues : IAggregate
             var incomeEvent = incomeDelta as InstrumentIncomeSetEvent;
             var price = priceEvent?.Price ?? prior?.Price;
             var income = incomeEvent?.Income ?? prior?.Income;
+            if (price is InstrumentPriceOption)
+                income = null;
             var priceDate = priceEvent?.EventDateTime ?? prior?.PriceValuationDateTime;
-            if (price is null || income is null || !IsValidValuePair(price, income))
+            if (!IsValidValue(price, income))
             {
                 price = null;
                 income = null;
@@ -119,7 +121,13 @@ public sealed record InstrumentValues : IAggregate
 
     private static InstrumentValuePair CreateValuePair(IInstrumentPriceEvent? priceEvent, IInstrumentIncomeEvent? incomeEvent)
     {
-        if (priceEvent is not InstrumentPriceSetEvent priceSetEvent || incomeEvent is not InstrumentIncomeSetEvent incomeSetEvent)
+        if (priceEvent is not InstrumentPriceSetEvent priceSetEvent)
+            return InstrumentValuePair.Empty;
+
+        if (priceSetEvent.Price is InstrumentPriceOption)
+            return new InstrumentValuePair(priceSetEvent.Price, priceSetEvent.EventDateTime, null);
+
+        if (incomeEvent is not InstrumentIncomeSetEvent incomeSetEvent)
             return InstrumentValuePair.Empty;
 
         if (!IsValidValuePair(priceSetEvent.Price, incomeSetEvent.Income))
@@ -136,6 +144,11 @@ public sealed record InstrumentValues : IAggregate
             (InstrumentPriceEquity, InstrumentIncomeEquity) => true,
             _ => false
         };
+
+    private static bool IsValidValue(IInstrumentPrice? price, IInstrumentIncome? income) =>
+        price is InstrumentPriceOption
+            ? income is null
+            : price is not null && income is not null && IsValidValuePair(price, income);
 
     private static Dictionary<InstrumentID, TEvent> LatestByInstrument<TEvent>(IEnumerable<TEvent> events, EventDateTime valuationDateTime, AuditDateTime asOfDateTime)
         where TEvent : IEventBase

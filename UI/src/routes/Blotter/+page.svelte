@@ -8,7 +8,7 @@
   import { BrokerDropdown, ComplexSelect, TicketDropdown, type ComplexSelectOption } from '$lib/components/forms';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import { dateForInput, dateTimeForInput, formatDisplayDateTime, formatShortDate, formatTableDateTime, nextWorkingDayDateForInput, nowForInput, toApiDateTime } from '$lib/dates';
-  import type { Account, Broker, FoleoTraderOrder, Holding, InputControlPolicy, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
+  import type { Account, Broker, FoleoTraderOrder, Holding, InputControlPolicy, Instrument, InstrumentPriceCash, InstrumentPriceEquity, InstrumentPriceFixedIncome, InstrumentPriceOption, InstrumentTermsOption, InstrumentValue, Ticket, TicketReferenceEvent, TicketSide, TicketStage, TradeFileStatus } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
   type TicketEditContext = 'Proposal' | 'Trade';
@@ -63,6 +63,8 @@
   let proposalQuantityDrafts = $state<Record<string, string>>({});
   let tradeQuantityDrafts = $state<Record<string, string>>({});
   let tradeSettlementAmountDrafts = $state<Record<string, string>>({});
+  let tradeSettlementAmountOverrides = $state<Record<string, boolean>>({});
+  let tradePriceDrafts = $state<Record<number, string>>({});
   let tradeCashHoldingDrafts = $state<Record<string, string>>({});
   let tradeDateTimeDrafts = $state<Record<number, string>>({});
   let settlementDateDrafts = $state<Record<number, string>>({});
@@ -95,7 +97,7 @@
   const createTicketInstrumentOptions = $derived<ComplexSelectOption[]>(sortedInstruments.map((instrument) => ({
     id: instrument.instrumentID,
     name: instrument.name,
-    meta: `${instrument.formalName} - ${instrument.priceCurrency}`,
+    meta: [instrument.formalName, instrument.priceCurrency, optionSummary(optionTerms(instrument))].filter(Boolean).join(' - '),
     search: `${instrument.instrumentID} ${instrument.name} ${instrument.formalName} ${instrument.priceCurrency} ${instrument.exchange} ${instrument.cfi}`
   })));
   const asOfSummary = $derived(data.auditDateTime && data.tickets ? formatDisplayDateTime(data.tickets.asOfDateTime) : 'now');
@@ -224,11 +226,26 @@
     const sedol = instrumentIdentifier(instrument, 'Sedol');
     const category = cfiCategory(instrument?.cfi);
 
+    const option = optionTerms(instrument);
     return [
       isin ? { label: 'ISIN', value: isin } : null,
       sedol ? { label: 'SEDOL', value: sedol } : null,
-      category ? { label: 'CFI Category', value: category } : null
+      category ? { label: 'CFI Category', value: category } : null,
+      option ? { label: 'Option', value: optionSummary(option) } : null,
+      option ? { label: 'Underlying', value: instrumentName(option.underlyingInstrumentID) } : null,
+      option ? { label: 'Exercise / settlement', value: `${option.exerciseStyle} / ${option.settlementType}` } : null
     ].filter((item): item is { label: string; value: string } => item !== null);
+  }
+
+  function optionTerms(instrument: Instrument | null): InstrumentTermsOption | null {
+    const terms = instrument?.terms;
+    return terms && '$type' in terms && terms.$type === 'InstrumentTermsOption' ? terms as InstrumentTermsOption : null;
+  }
+
+  function optionSummary(option: InstrumentTermsOption | null) {
+    return option
+      ? `${option.optionType} ${option.strikePrice.currency} ${decimalText(option.strikePrice.amount)} ${option.expirationDate} x${decimalText(option.contractMultiplier)}`
+      : '';
   }
 
   function resolveInstrumentInput(value: string) {
@@ -329,7 +346,11 @@
   }
 
   function equityPrice(price: InstrumentValue['price']): InstrumentPriceEquity | null {
-    return price && 'quote' in price ? price : null;
+    return price && 'nav' in price ? price : null;
+  }
+
+  function optionPrice(price: InstrumentValue['price']): InstrumentPriceOption | null {
+    return price && 'quote' in price && 'last' in price && !('nav' in price) ? price : null;
   }
 
   function fixedIncomePrice(price: InstrumentValue['price']): InstrumentPriceFixedIncome | null {
@@ -415,6 +436,11 @@
     if (fixedIncome)
       return fixedIncome.cleanQuote.mid.amount ?? null;
 
+    const option = optionPrice(instrument?.price);
+
+    if (option)
+      return option.quote.mid.amount ?? null;
+
     const cash = cashPrice(instrument?.price);
 
     return cash?.price.amount ?? null;
@@ -497,7 +523,34 @@
       return draft;
 
     const allocation = ticket.tradeAllocations.find((item) => item.accountID === accountID);
-    return quantityText(allocation?.settlementAmount);
+    if (allocation)
+      return quantityText(allocation.settlementAmount);
+
+    return optionTerms(findInstrument(ticket.instrumentID))
+      ? quantityText(expectedOptionPremium(ticket, parseDecimalInput(tradeQuantityInputValue(ticket, accountID))))
+      : '';
+  }
+
+  function tradePriceInputValue(ticket: Ticket) {
+    return tradePriceDrafts[ticket.ticketNumber] ?? priceText(ticket.tradePrice, ticket.tradeCurrency);
+  }
+
+  function expectedOptionPremium(ticket: Ticket, quantity: number, price = parseDecimalInput(tradePriceInputValue(ticket))) {
+    const multiplier = optionTerms(findInstrument(ticket.instrumentID))?.contractMultiplier;
+    return multiplier && quantity > 0 && price > 0
+      ? Math.round(quantity * price * multiplier * 100000000) / 100000000
+      : 0;
+  }
+
+  function refreshOptionSettlementDrafts(ticket: Ticket) {
+    if (!optionTerms(findInstrument(ticket.instrumentID)))
+      return;
+
+    for (const accountID of ticket.accountIDs) {
+      const key = tradeDraftKey(ticket.ticketNumber, accountID);
+      if (!tradeSettlementAmountOverrides[key])
+        tradeSettlementAmountDrafts[key] = quantityText(expectedOptionPremium(ticket, parseDecimalInput(tradeQuantityInputValue(ticket, accountID))));
+    }
   }
 
   function liveTradeAllocationTotal(ticket: Ticket) {
@@ -558,12 +611,20 @@
     proposalQuantityDrafts[proposalQuantityDraftKey(ticketNumber, accountID)] = value;
   }
 
-  function updateTradeQuantityDraft(ticketNumber: number, accountID: string, value: string) {
-    tradeQuantityDrafts[tradeDraftKey(ticketNumber, accountID)] = value;
+  function updateTradeQuantityDraft(ticket: Ticket, accountID: string, value: string) {
+    tradeQuantityDrafts[tradeDraftKey(ticket.ticketNumber, accountID)] = value;
+    refreshOptionSettlementDrafts(ticket);
   }
 
   function updateTradeSettlementAmountDraft(ticketNumber: number, accountID: string, value: string) {
-    tradeSettlementAmountDrafts[tradeDraftKey(ticketNumber, accountID)] = value;
+    const key = tradeDraftKey(ticketNumber, accountID);
+    tradeSettlementAmountDrafts[key] = value;
+    tradeSettlementAmountOverrides[key] = true;
+  }
+
+  function updateTradePriceDraft(ticket: Ticket, value: string) {
+    tradePriceDrafts[ticket.ticketNumber] = value;
+    refreshOptionSettlementDrafts(ticket);
   }
 
   function updateTradeCashHoldingDraft(ticketNumber: number, accountID: string, event: Event) {
@@ -833,6 +894,7 @@
       const tradeDateTime = ticket.tradeDateTime ? dateTimeForInput(ticket.tradeDateTime) : nowForInput();
       tradeDateTimeDrafts[ticket.ticketNumber] = tradeDateTime;
       settlementDateDrafts[ticket.ticketNumber] = ticket.settlementDateTime ? dateForInput(ticket.settlementDateTime) : nextWorkingDayDateForInput(tradeDateTime);
+      tradePriceDrafts[ticket.ticketNumber] = priceText(ticket.tradePrice, ticket.tradeCurrency);
     }
     cancelTicketCancellation();
   }
@@ -849,6 +911,7 @@
     if (editingTicket.ticketNumber) {
       delete tradeDateTimeDrafts[editingTicket.ticketNumber];
       delete settlementDateDrafts[editingTicket.ticketNumber];
+      delete tradePriceDrafts[editingTicket.ticketNumber];
     }
     editingTicket = { ticketNumber: 0, context: '' };
   }
@@ -1644,7 +1707,7 @@
                       <label class="field">
                         <span>Traded price ({ticket.tradeCurrency})</span>
                         {#if tradeInputActive && canEditTrade(ticket)}
-                          <PriceInput bare class="ticket-term-input" currency={ticket.tradeCurrency} form={saveFormID} label="Traded price" name="tradedPrice" policy={pricePolicy} size="sm" value={priceText(ticket.tradePrice, ticket.tradeCurrency)} />
+                        <PriceInput bare class="ticket-term-input" currency={ticket.tradeCurrency} form={saveFormID} label="Traded price" name="tradedPrice" policy={pricePolicy} size="sm" bind:value={() => tradePriceInputValue(ticket), (next) => updateTradePriceDraft(ticket, next)} />
                         {:else}
                           <span class="ticket-readonly-value">{formattedDisplay(priceText(ticket.tradePrice, ticket.tradeCurrency))}</span>
                         {/if}
@@ -1652,7 +1715,7 @@
                       <label class="field">
                         <span>Trade date/time</span>
                         {#if tradeInputActive && canEditTrade(ticket)}
-                          <DateTimeInput class="ticket-term-input" form={saveFormID} fullWidth name="tradeDateTime" onchange={(event) => updateTradeDateTimeDraft(ticket.ticketNumber, event)} required showShortcuts={false} step="1" value={tradeDateTimeInputValue(ticket)} />
+                          <DateTimeInput class="ticket-term-input" form={saveFormID} fullWidth name="tradeDateTime" onchange={(event) => updateTradeDateTimeDraft(ticket.ticketNumber, event)} required step="1" value={tradeDateTimeInputValue(ticket)} />
                         {:else}
                           <span class="ticket-readonly-value">{tradeDateDisplay(ticket)}</span>
                         {/if}
@@ -1684,8 +1747,11 @@
                             </div>
                             <input form={saveFormID} type="hidden" name="tradeAllocationAccountID" value={accountID} disabled={!tradeInputActive || !canEditTrade(ticket)} />
                             {#if tradeInputActive && canEditTrade(ticket)}
-                              <QuantityInput bare form={saveFormID} label="Trade quantity" name={`tradeQuantity-${accountID}`} policy={quantityPolicy} size="sm" bind:value={() => tradeQuantityInputValue(ticket, accountID), (next) => updateTradeQuantityDraft(ticket.ticketNumber, accountID, next)} />
+                              <QuantityInput bare form={saveFormID} label="Trade quantity" name={`tradeQuantity-${accountID}`} policy={quantityPolicy} size="sm" bind:value={() => tradeQuantityInputValue(ticket, accountID), (next) => updateTradeQuantityDraft(ticket, accountID, next)} />
                               <MoneyInput bare currency={ticket.tradeCurrency} form={saveFormID} label="Settlement amount" name={`tradeSettlementAmount-${accountID}`} policy={moneyPolicyFor(ticket.tradeCurrency)} size="sm" bind:value={() => tradeSettlementAmountInputValue(ticket, accountID), (next) => updateTradeSettlementAmountDraft(ticket.ticketNumber, accountID, next)} />
+                              {#if optionTerms(ticketInstrument)}
+                                <span class="text-xs text-slate-500">Expected premium {priceText(expectedOptionPremium(ticket, parseDecimalInput(tradeQuantityInputValue(ticket, accountID))), ticket.tradeCurrency)}</span>
+                              {/if}
                               <select form={saveFormID} class="input trade-cash-holding-select" name={`tradeCashHoldingID-${accountID}`} value={selectedCashHoldingID} disabled={cashHoldings.length === 0} onchange={(event) => updateTradeCashHoldingDraft(ticket.ticketNumber, accountID, event)} required>
                                 <option value="">Cash holding</option>
                                 {#each cashHoldings as holding (holding.holdingID)}
@@ -1777,7 +1843,7 @@
                         {/each}
                       </select>
                       <QuantityInput bare label="Fill quantity" name="fillQuantity" policy={quantityPolicy} required size="sm" />
-                      <MoneyInput bare currency={ticket.tradeCurrency} label="Fill settlement amount" name="fillSettlementAmount" policy={moneyPolicyFor(ticket.tradeCurrency)} required size="sm" />
+                      <MoneyInput bare currency={ticket.tradeCurrency} label="Fill settlement amount" name="fillSettlementAmount" policy={moneyPolicyFor(ticket.tradeCurrency)} required size="sm" value={optionTerms(ticketInstrument) ? priceText(expectedOptionPremium(ticket, savedFillRemaining, ticket.tradePrice ?? 0), ticket.tradeCurrency) : ''} />
                       <input class="input" name="fillNote" placeholder="Note" />
                       <button class="house-button house-button-secondary house-button-sm" type="submit" disabled={activeBrokers.length === 0 || savedFillRemaining <= 0 || savedFillSettlementAmountRemaining <= 0 || ticket.tradePrice == null}>Add fill</button>
                     {:else}

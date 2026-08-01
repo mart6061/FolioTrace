@@ -171,6 +171,7 @@
     localAccruedInterest?: number | null;
     accruedValue: number | null;
     name: string;
+    option?: ValuationItem['option'];
     priceCurrency: string;
     quantity: number;
     quotePrice?: number | null;
@@ -334,6 +335,7 @@
       accruedValue: number;
       accruesInterest: boolean;
       name: string;
+      option?: ValuationItem['option'];
       priceCurrency: string;
       quantity: number;
       quotePrice?: number | null;
@@ -358,6 +360,7 @@
           accruedValue: 0,
           accruesInterest: false,
           name: item.name,
+          option: item.option,
           priceCurrency: item.priceCurrency,
           quantity: 0,
           valuationCurrency: item.valuationCurrency
@@ -420,6 +423,7 @@
         localAccruedInterest: group.localAccruedInterest,
         accruedValue: group.accruesInterest ? group.accruedValue : null,
         name: group.name,
+        option: group.option,
         priceCurrency: group.priceCurrency,
         quantity: group.quantity,
         quotePrice: group.quotePrice,
@@ -440,6 +444,11 @@
       instrumentName: item.instrumentName || item.name || '',
       ticker
     };
+  }
+
+  function optionSummary(option: NonNullable<ValuationItem['option']>) {
+    const status = option.expired ? 'Expired' : 'Active';
+    return `${option.optionType} ${option.strikeCurrency} ${formatNumber(option.strikePrice)} · ${option.expirationDate} · ×${formatNumber(option.contractMultiplier)} · ${status}`;
   }
 
   function inferredTicker(item: { holdingName?: string | null; instrumentName: string; name?: string | null }) {
@@ -863,6 +872,9 @@
                           <span class="asset-ticker">{itemDisplay.ticker}</span>
                         {/if}
                       </div>
+                      {#if item.option}
+                        <div class="text-xs text-slate-500">{optionSummary(item.option)} · {item.option.exerciseStyle} · {item.option.settlementType} · {item.option.underlyingInstrumentName}</div>
+                      {/if}
                       <button class="asset-detail-link" onclick={() => toggleAggregateDetail(item.assetID)} type="button">
                         {item.holdingCount} holding{item.holdingCount === 1 ? '' : 's'} | {item.accountCount} account{item.accountCount === 1 ? '' : 's'}
                       </button>
@@ -998,6 +1010,9 @@
                             <span class="asset-ticker">{itemDisplay.ticker}</span>
                           {/if}
                         </div>
+                        {#if item.option}
+                          <div class="text-xs text-slate-500">{optionSummary(item.option)} · {item.option.exerciseStyle} · {item.option.settlementType} · {item.option.underlyingInstrumentName}</div>
+                        {/if}
                       </td>
                       <td class="px-3 py-2 text-slate-700">{holdingKindLabel(item.holdingKind)}</td>
                       <td class="px-3 py-2 text-right font-mono">{formatNumber(item.quantity)}</td>

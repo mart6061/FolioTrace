@@ -171,7 +171,7 @@ public static partial class ApiEndpointRegistration
         return Results.Accepted(TicketEventsRoute, EventEndpointFactory.CreateAcceptedEventResponse(TicketEventsRoute, result.Value));
     }
 
-    private static async Task<IReadOnlyList<string>> ValidateInstrumentValueEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<string>> ValidateInstrumentPriceEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IInstrumentPrice price, IEventRepository eventRepository, CancellationToken cancellationToken)
     {
         var instrumentEvents = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
         var instruments = new Instruments(eventDateTime, auditDateTime, instrumentEvents.ToList());
@@ -179,9 +179,61 @@ public static partial class ApiEndpointRegistration
         if (instrument is null)
             return [$"No matching Instrument found for InstrumentID '{instrumentID}'."];
 
-        return instrument.CFI.IsEquity || instrument.CFI.IsDebt
-            ? []
-            : [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}'. Only equity and fixed income instruments support editable v1 price and income events."];
+        if (instrument.CFI.IsEquity && price is InstrumentPriceEquity)
+            return [];
+        if (instrument.CFI.IsDebt && price is InstrumentPriceFixedIncome)
+            return [];
+        if (instrument.CFI.IsOption && instrument.Terms is InstrumentTermsOption && price is InstrumentPriceOption)
+            return [];
+
+        return [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}' and terms '{instrument.Terms?.TermsType ?? "None"}', which are incompatible with price type '{price.PriceType}'."];
+    }
+
+    private static async Task<IReadOnlyList<string>> ValidateInstrumentIncomeEvent(InstrumentID instrumentID, EventDateTime eventDateTime, AuditDateTime auditDateTime, IInstrumentIncome income, IEventRepository eventRepository, CancellationToken cancellationToken)
+    {
+        var instrumentEvents = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
+        var instrument = new Instruments(eventDateTime, auditDateTime, instrumentEvents.ToList()).Items.SingleOrDefault(item => item.InstrumentID == instrumentID);
+        if (instrument is null)
+            return [$"No matching Instrument found for InstrumentID '{instrumentID}'."];
+
+        if (instrument.CFI.IsEquity && income is InstrumentIncomeEquity)
+            return [];
+        if (instrument.CFI.IsDebt && income is InstrumentIncomeFixedIncome)
+            return [];
+
+        return [$"Instrument '{instrumentID}' has CFI '{instrument.CFI.Value}', which is incompatible with income type '{income.IncomeType}'."];
+    }
+
+    private static async Task<IReadOnlyList<string>> ValidateInstrumentTermsEvent(InstrumentTermsSetEvent termsEvent, IEventRepository eventRepository, CancellationToken cancellationToken)
+    {
+        var instrumentEvents = await eventRepository.LoadStreamAsync<IInstrumentEvent>(Constants.Initialisation.InstrumentsStreamId, cancellationToken);
+        var instruments = new Instruments(termsEvent.EventDateTime, termsEvent.AuditDateTime, instrumentEvents.ToList());
+        var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == termsEvent.InstrumentID);
+        if (instrument is null)
+            return [$"No matching Instrument found for InstrumentID '{termsEvent.InstrumentID}'."];
+
+        if (termsEvent.Terms is not InstrumentTermsOption option)
+            return [];
+
+        var errors = new List<string>();
+        if (!instrument.CFI.IsOption)
+            errors.Add($"Instrument '{instrument.InstrumentID}' must have an option CFI before option terms can be set.");
+        if (instrument.CFI.GroupCode == 'C' && option.OptionType != OptionType.Call)
+            errors.Add("Call option CFI group 'OC' requires OptionType Call.");
+        if (instrument.CFI.GroupCode == 'P' && option.OptionType != OptionType.Put)
+            errors.Add("Put option CFI group 'OP' requires OptionType Put.");
+        if (instrument.CFI.GroupCode is not ('C' or 'P'))
+            errors.Add($"Option CFI group '{instrument.CFI.GroupCode}' is not supported; use OC for calls or OP for puts.");
+        if (option.UnderlyingInstrumentID == instrument.InstrumentID)
+            errors.Add("An option cannot reference itself as its underlying instrument.");
+
+        var underlying = instruments.Items.SingleOrDefault(item => item.InstrumentID == option.UnderlyingInstrumentID);
+        if (underlying is null)
+            errors.Add($"No matching underlying Instrument found for InstrumentID '{option.UnderlyingInstrumentID}'.");
+        else if (underlying.CFI.IsOption)
+            errors.Add("Options on options are not supported.");
+
+        return errors;
     }
 
     private static async Task<Accounts?> TryGetAccounts(EventDateTime eventDateTime, AuditDateTime auditDateTime, IEventRepository eventRepository, CancellationToken cancellationToken)

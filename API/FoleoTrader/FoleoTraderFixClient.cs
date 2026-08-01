@@ -98,6 +98,27 @@ public sealed class FoleoTraderFixClient : MessageCracker, IApplication, IHosted
         message.Set(new SecurityID(order.SecurityID));
         message.Set(new SecurityIDSource(order.SecurityIDSource));
 
+        if (!string.IsNullOrWhiteSpace(order.CFI))
+            message.SetField(new StringField(Tags.CFICode, order.CFI));
+
+        if (order.Option is { } option)
+        {
+            message.SetField(new StringField(Tags.SecurityType, "OPT"));
+            message.SetField(new IntField(Tags.PutOrCall, option.OptionType == OptionType.Call ? 1 : 0));
+            message.SetField(new DecimalField(Tags.StrikePrice, option.StrikePrice.Amount));
+            message.SetField(new StringField(Tags.StrikeCurrency, option.StrikePrice.Currency.Value));
+            message.SetField(new StringField(Tags.MaturityDate, option.ExpirationDate.Value!.Value.ToString("yyyyMMdd")));
+            message.SetField(new DecimalField(Tags.ContractMultiplier, option.ContractMultiplier.Value));
+            message.SetField(new CharField(Tags.SettlMethod, option.SettlementType == OptionSettlementType.Cash ? 'C' : 'P'));
+            message.SetField(new IntField(Tags.ExerciseStyle, option.ExerciseStyle == OptionExerciseStyle.European ? 0 : 1));
+            message.SetField(new StringField(Tags.UnderlyingSymbol, option.UnderlyingSymbol));
+            if (!string.IsNullOrWhiteSpace(option.UnderlyingSecurityID))
+            {
+                message.SetField(new StringField(Tags.UnderlyingSecurityID, option.UnderlyingSecurityID));
+                message.SetField(new StringField(Tags.UnderlyingSecurityIDSource, option.UnderlyingSecurityIDSource));
+            }
+        }
+
         if (!Session.SendToTarget(message, session))
             throw new InvalidOperationException("FoleoTrader FIX order was not sent because the session is not logged on.");
 

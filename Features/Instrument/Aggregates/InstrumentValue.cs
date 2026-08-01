@@ -90,6 +90,9 @@ public sealed record InstrumentValue : IModel
         if (price is null && income is null)
             return;
 
+        if (price is InstrumentPriceOption && income is null)
+            return;
+
         if (price is null || income is null)
             throw new ArgumentException("Instrument value price and income must both be provided, or both be omitted.");
 
@@ -131,6 +134,7 @@ public sealed record InstrumentValue : IModel
             InstrumentPriceFixedIncome fixedIncome => includeAccruedInterest
                 ? DirtyQuote?.Select(basis)
                 : fixedIncome.CleanQuote.Select(basis),
+            InstrumentPriceOption option => option.Select(basis),
             _ => null
         };
 

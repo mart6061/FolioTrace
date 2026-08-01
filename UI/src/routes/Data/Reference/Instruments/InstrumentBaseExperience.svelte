@@ -7,7 +7,7 @@
   import Card from '$lib/components/page/Card.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
   import { csvValue, downloadFile, htmlValue } from '$lib/export';
-  import type { InstrumentReferenceEvent } from '$lib/types';
+  import type { Instrument, InstrumentReferenceEvent, InstrumentTermsOption } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   type RenderMode = 'full' | 'filter' | 'body';
@@ -25,6 +25,7 @@
   let filterText = $state('');
   let debouncedFilterText = $state('');
   let addingInstrument = $state(false);
+  let createInstrumentCFI = $state('ESVUFR');
   let editingInstrumentID = $state('');
   let submittingIdentifierKey = $state('');
   let submittingInstrumentID = $state('');
@@ -192,11 +193,23 @@
 
   function startAdd() {
     editingInstrumentID = '';
+    createInstrumentCFI = 'ESVUFR';
     addingInstrument = true;
   }
 
   function cancelAdd() {
     addingInstrument = false;
+  }
+
+  function optionTerms(instrument: Instrument): InstrumentTermsOption | null {
+    const terms = instrument.terms;
+    return terms && '$type' in terms && terms.$type === 'InstrumentTermsOption'
+      ? terms as InstrumentTermsOption
+      : null;
+  }
+
+  function nonOptionUnderlyingInstruments(excludeInstrumentID = '') {
+    return (data.instruments?.items ?? []).filter((instrument) => instrument.instrumentID !== excludeInstrumentID && !instrument.cfi.startsWith('O'));
   }
 
   const enhanceInstrumentCreate: SubmitFunction = () => {
@@ -425,6 +438,18 @@
                       <span>Formal name</span>
                       <input class="house-control house-control-sm house-control-full" form="instrument-create" name="formalName" type="text" value={createValue('formalName')} />
                     </label>
+                    {#if createInstrumentCFI.startsWith('O')}
+                      <div class="mt-2 grid gap-2 border-t border-slate-200 pt-2 sm:grid-cols-2">
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Option type</span><select class="house-control house-control-sm" form="instrument-create" name="optionType" required><option value="Call">Call</option><option value="Put">Put</option></select></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Underlying</span><select class="house-control house-control-sm" form="instrument-create" name="underlyingInstrumentID" required><option value="">Select underlying</option>{#each nonOptionUnderlyingInstruments() as underlying (underlying.instrumentID)}<option value={underlying.instrumentID}>{underlying.name}</option>{/each}</select></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Strike</span><input class="house-control house-control-sm" form="instrument-create" min="0.00000001" name="strikePrice" required step="0.00000001" type="number" /></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Strike currency</span><input class="house-control house-control-sm font-mono uppercase" form="instrument-create" maxlength="3" minlength="3" name="strikeCurrency" required /></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Expiration date</span><input class="house-control house-control-sm" form="instrument-create" name="expirationDate" required type="date" /></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Exercise style</span><select class="house-control house-control-sm" form="instrument-create" name="exerciseStyle" required><option value="American">American</option><option value="European">European</option></select></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Settlement</span><select class="house-control house-control-sm" form="instrument-create" name="settlementType" required><option value="Physical">Physical</option><option value="Cash">Cash</option></select></label>
+                        <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create"><span>Contract multiplier</span><input class="house-control house-control-sm" form="instrument-create" min="0.00000001" name="contractMultiplier" required step="0.00000001" type="number" value="100" /></label>
+                      </div>
+                    {/if}
                   </td>
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
@@ -441,7 +466,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="instrument-create">
                       <span>CFI</span>
-                      <input class="house-control house-control-sm w-24 font-mono uppercase" form="instrument-create" maxlength="6" minlength="6" name="cfi" required type="text" value={createValue('cfi') || 'ESVUFR'} />
+                      <input bind:value={createInstrumentCFI} class="house-control house-control-sm w-24 font-mono uppercase" form="instrument-create" maxlength="6" minlength="6" name="cfi" required type="text" />
                     </label>
                   </td>
                   <td class="px-3 py-2">
@@ -484,6 +509,7 @@
 
               {#each rows as instrument (instrument.instrumentID)}
                 {#if editingInstrumentID === instrument.instrumentID}
+                  {@const terms = optionTerms(instrument)}
                   <tr class="bg-teal-50/30 align-top">
                     <td class="px-3 py-2">
                       {#if instrument.logo?.svg}
@@ -553,6 +579,18 @@
                         <span>CFI</span>
                         <input class="house-control house-control-sm w-24 font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} maxlength="6" minlength="6" name="cfi" required type="text" value={editValue(instrument.instrumentID, 'cfi') ?? instrument.cfi} />
                       </label>
+                      {#if terms}
+                        <div class="mt-2 grid min-w-64 gap-2 border-t border-slate-200 pt-2">
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Option type</span><select class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} name="optionType" value={terms.optionType} required><option value="Call">Call</option><option value="Put">Put</option></select></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Underlying</span><select class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} name="underlyingInstrumentID" value={terms.underlyingInstrumentID} required>{#each nonOptionUnderlyingInstruments(instrument.instrumentID) as underlying (underlying.instrumentID)}<option value={underlying.instrumentID}>{underlying.name}</option>{/each}</select></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Strike</span><input class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} min="0.00000001" name="strikePrice" required step="0.00000001" type="number" value={terms.strikePrice.amount} /></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Strike currency</span><input class="house-control house-control-sm font-mono uppercase" form={`instrument-edit-${instrument.instrumentID}`} maxlength="3" minlength="3" name="strikeCurrency" required value={terms.strikePrice.currency} /></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Expiration date</span><input class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} name="expirationDate" required type="date" value={terms.expirationDate} /></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Exercise style</span><select class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} name="exerciseStyle" value={terms.exerciseStyle} required><option value="American">American</option><option value="European">European</option></select></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Settlement</span><select class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} name="settlementType" value={terms.settlementType} required><option value="Physical">Physical</option><option value="Cash">Cash</option></select></label>
+                          <label class="grid gap-1 text-xs font-medium text-slate-600"><span>Contract multiplier</span><input class="house-control house-control-sm" form={`instrument-edit-${instrument.instrumentID}`} min="0.00000001" name="contractMultiplier" required step="0.00000001" type="number" value={terms.contractMultiplier} /></label>
+                        </div>
+                      {/if}
                     </td>
                     <td class="px-3 py-2">
                       <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-edit-${instrument.instrumentID}`}>
@@ -597,6 +635,10 @@
                     <td class="px-3 py-2">
                       <div class="font-medium text-slate-950">{instrument.name}</div>
                       <div class="text-xs text-slate-500">{instrument.formalName}</div>
+                      {#if optionTerms(instrument)}
+                        {@const option = optionTerms(instrument)!}
+                        <div class="mt-1 text-xs text-slate-600">{option.optionType} · {option.strikePrice.currency} {option.strikePrice.amount} · {option.expirationDate} · {option.exerciseStyle} · {option.settlementType} · x{option.contractMultiplier}</div>
+                      {/if}
                       {#if instrument.identifiers.length}
                         <div class="mt-2 flex max-w-xl flex-wrap gap-1.5">
                           {#each instrument.identifiers as identifier (`${identifier.type}-${identifier.value}`)}

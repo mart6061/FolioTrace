@@ -10,6 +10,7 @@ import {
   postInstrumentIdentifierUnsetEvent,
   postInstrumentModifiedEvent,
   postInstrumentTermsEquitySetEvent,
+  postInstrumentTermsOptionSetEvent,
   type InstrumentCreatedRequest,
   type InstrumentIdentifierSetRequest,
   type InstrumentIdentifierUnsetRequest,
@@ -94,7 +95,10 @@ export const actions: Actions = {
           reason: `Set ticker ${ticker}`
         }, currentUser.userID);
 
-      await postInstrumentTermsEquitySetEvent(fetch, instrumentRequest.eventDateTime, instrumentID, currentUser.userID);
+      if (cfi.startsWith('E'))
+        await postInstrumentTermsEquitySetEvent(fetch, instrumentRequest.eventDateTime, instrumentID, currentUser.userID);
+      else if (cfi.startsWith('O'))
+        await postInstrumentTermsOptionSetEvent(fetch, readOptionTerms(formData, instrumentRequest.eventDateTime, instrumentID), currentUser.userID);
 
       return {
         eventID: result.eventID,
@@ -152,6 +156,9 @@ export const actions: Actions = {
       };
 
       const result = await postInstrumentModifiedEvent(fetch, instrumentRequest, currentUser.userID);
+
+      if (cfi.startsWith('O'))
+        await postInstrumentTermsOptionSetEvent(fetch, readOptionTerms(formData, instrumentRequest.eventDateTime, instrumentID), currentUser.userID);
 
       return {
         eventID: result.eventID,
@@ -266,4 +273,35 @@ export const actions: Actions = {
 function normaliseIdentifierType(value: string): InstrumentIdentifierSetRequest['identifierType'] | '' {
   const match = identifierTypes.find((identifierType) => identifierType.toLocaleLowerCase() === value.toLocaleLowerCase());
   return match ?? '';
+}
+
+function readOptionTerms(formData: FormData, eventDateTime: string, instrumentID: string) {
+  const optionType = getFormString(formData, 'optionType');
+  const underlyingInstrumentID = getFormString(formData, 'underlyingInstrumentID');
+  const strikePrice = Number.parseFloat(getFormString(formData, 'strikePrice'));
+  const strikeCurrency = getFormString(formData, 'strikeCurrency').toUpperCase();
+  const expirationDate = getFormString(formData, 'expirationDate');
+  const exerciseStyle = getFormString(formData, 'exerciseStyle');
+  const settlementType = getFormString(formData, 'settlementType');
+  const contractMultiplier = Number.parseFloat(getFormString(formData, 'contractMultiplier'));
+
+  if ((optionType !== 'Call' && optionType !== 'Put') ||
+      !underlyingInstrumentID || !Number.isFinite(strikePrice) || strikePrice <= 0 || !strikeCurrency || !expirationDate ||
+      (exerciseStyle !== 'American' && exerciseStyle !== 'European') ||
+      (settlementType !== 'Physical' && settlementType !== 'Cash') ||
+      !Number.isFinite(contractMultiplier) || contractMultiplier <= 0)
+    throw new Error('Option type, underlying, positive strike, strike currency, expiry, exercise style, settlement type, and positive multiplier are required.');
+
+  return {
+    eventDateTime,
+    instrumentID,
+    optionType,
+    underlyingInstrumentID,
+    strikePrice,
+    strikeCurrency,
+    expirationDate,
+    exerciseStyle,
+    settlementType,
+    contractMultiplier
+  } as const;
 }

@@ -15,13 +15,14 @@
     InstrumentPriceCash,
     InstrumentPriceEquity,
     InstrumentPriceFixedIncome,
+    InstrumentPriceOption,
     InstrumentValueHistoryEvent,
     InstrumentValue,
     InputControlPolicy
   } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
-  type SectionKey = 'cash' | 'equity' | 'fixedIncome' | 'unknown';
+  type SectionKey = 'cash' | 'equity' | 'fixedIncome' | 'option' | 'unknown';
 
   type InstrumentValueSection = {
     key: SectionKey;
@@ -54,6 +55,7 @@
     cash: false,
     equity: false,
     fixedIncome: false,
+    option: false,
     unknown: false
   });
 
@@ -106,11 +108,26 @@
   );
 
   function currency(instrument: InstrumentValue) {
-    return instrument.exchange === 'XTKS' ? 'JPY' : instrument.exchange === 'XNAS' ? 'USD' : instrument.exchange === 'XSWX' ? 'CHF' : instrument.exchange === 'XLON' || instrument.exchange === 'CASH' ? 'GBP' : 'EUR';
+    return instrument.priceCurrency;
   }
 
   function equityPrice(price: InstrumentValue['price']): InstrumentPriceEquity | null {
-    return price && 'quote' in price ? price : null;
+    return price && 'nav' in price ? price : null;
+  }
+
+  function optionPrice(price: InstrumentValue['price']): InstrumentPriceOption | null {
+    return price && 'quote' in price && 'last' in price && !('nav' in price) ? price : null;
+  }
+
+  function editableOptionPrice(instrument: InstrumentValue): InstrumentPriceOption | null {
+    return optionPrice(instrument.price) ?? (instrument.cfi.startsWith('O')
+      ? {
+          $type: 'InstrumentPriceOption',
+          quote: { bid: { amount: null }, mid: { amount: null }, ask: { amount: null } },
+          last: { amount: null },
+          priceType: 'InstrumentPriceOption'
+        }
+      : null);
   }
 
   function fixedIncomePrice(price: InstrumentValue['price']): InstrumentPriceFixedIncome | null {
@@ -142,6 +159,9 @@
 
     if (price.$type)
       return price.$type;
+
+    if (optionPrice(price))
+      return 'InstrumentPriceOption';
 
     if (equityPrice(price))
       return 'InstrumentPriceEquity';
@@ -178,6 +198,9 @@
   }
 
   function sectionKey(instrument: InstrumentValue): SectionKey {
+    if (instrument.cfi.startsWith('O'))
+      return 'option';
+
     const pair = `${priceType(instrument.price)}|${incomeType(instrument.income)}`;
 
     if (pair === 'InstrumentPriceCash|InstrumentIncomeCash')
@@ -189,6 +212,9 @@
     if (pair === 'InstrumentPriceEquity|InstrumentIncomeEquity')
       return 'equity';
 
+    if (pair === 'InstrumentPriceOption|No income')
+      return 'option';
+
     return 'unknown';
   }
 
@@ -197,6 +223,7 @@
       cash: [],
       equity: [],
       fixedIncome: [],
+      option: [],
       unknown: []
     };
 
@@ -226,6 +253,13 @@
         rows: grouped.equity
       },
       {
+        key: 'option',
+        title: 'Options',
+        priceType: 'InstrumentPriceOption',
+        incomeType: 'None',
+        rows: grouped.option
+      },
+      {
         key: 'unknown',
         title: 'Unpaired or unavailable values',
         priceType: 'Other',
@@ -246,6 +280,10 @@
   }
 
   function priceSummary(instrument: InstrumentValue) {
+    const option = optionPrice(instrument.price);
+    if (option)
+      return `Bid ${money(option.quote.bid.amount)} | Mid ${money(option.quote.mid.amount)} | Ask ${money(option.quote.ask.amount)} | Last ${money(option.last.amount)}`;
+
     const equity = equityPrice(instrument.price);
     if (equity)
       return `Bid ${money(equity.quote.bid.amount)} | Mid ${money(equity.quote.mid.amount)} | Ask ${money(equity.quote.ask.amount)} | Last ${money(equity.last.amount)} | NAV ${money(equity.nav.amount)}`;
@@ -510,8 +548,9 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                       {#each section.rows as instrument}
-                        {#if editingInstrumentID === instrument.instrumentID && (equityPrice(instrument.price) || fixedIncomePrice(instrument.price))}
-                          {@const currentPrice = equityPrice(instrument.price)}
+                        {#if editingInstrumentID === instrument.instrumentID && (equityPrice(instrument.price) || editableOptionPrice(instrument) || fixedIncomePrice(instrument.price))}
+                          {@const currentOptionPrice = editableOptionPrice(instrument)}
+                          {@const currentPrice = equityPrice(instrument.price) ?? currentOptionPrice}
                           {@const currentFixedIncomePrice = fixedIncomePrice(instrument.price)}
                           <tr class="bg-teal-50/30 align-top">
                             <td class="px-3 py-2">
@@ -522,7 +561,7 @@
                               <form id={`instrument-price-edit-${instrument.instrumentID}`} action="?/setInstrumentPrice" method="POST" use:enhance={enhancePrice}>
                                 <input name="instrumentID" type="hidden" value={instrument.instrumentID} />
                                 <input name="currency" type="hidden" value={currency(instrument)} />
-                                <input name="priceType" type="hidden" value={currentFixedIncomePrice ? 'InstrumentPriceFixedIncome' : 'InstrumentPriceEquity'} />
+                                <input name="priceType" type="hidden" value={currentFixedIncomePrice ? 'InstrumentPriceFixedIncome' : currentOptionPrice ? 'InstrumentPriceOption' : 'InstrumentPriceEquity'} />
                               </form>
                               <div class="font-medium text-slate-950">{instrument.name}</div>
                               <div class="font-mono text-xs text-slate-500">{ticker(instrument)}</div>
@@ -657,20 +696,12 @@
                                       value={String(currentPrice?.last.amount ?? '')}
                                     />
                                   </label>
-                                  <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
-                                    <span>NAV</span>
-                                    <PriceInput
-                                      bare
-                                      class="instrument-price-input"
-                                      currency={currency(instrument)}
-                                      form={`instrument-price-edit-${instrument.instrumentID}`}
-                                      label="NAV"
-                                      name="nav"
-                                      policy={pricePolicy}
-                                      size="sm"
-                                      value={String(currentPrice?.nav.amount ?? '')}
-                                    />
-                                  </label>
+                                  {#if currentPrice && 'nav' in currentPrice}
+                                    <label class="grid gap-1 text-xs font-medium text-slate-600" form={`instrument-price-edit-${instrument.instrumentID}`}>
+                                      <span>NAV</span>
+                                      <PriceInput bare class="instrument-price-input" currency={currency(instrument)} form={`instrument-price-edit-${instrument.instrumentID}`} label="NAV" name="nav" policy={pricePolicy} size="sm" value={String(currentPrice.nav.amount ?? '')} />
+                                    </label>
+                                  {/if}
                                 </div>
                               {/if}
 
@@ -707,7 +738,7 @@
                                 <button class="house-button house-button-secondary house-button-sm" onclick={() => toggleHistory(instrument)} type="button">
                                   {openHistoryInstrumentID === instrument.instrumentID ? 'Hide' : 'History'}
                                 </button>
-                                {#if equityPrice(instrument.price) || fixedIncomePrice(instrument.price)}
+                                {#if equityPrice(instrument.price) || editableOptionPrice(instrument) || fixedIncomePrice(instrument.price)}
                                   <button class="house-button house-button-secondary house-button-sm" onclick={() => editingInstrumentID = instrument.instrumentID} type="button">Edit</button>
                                 {/if}
                               </div>

@@ -63,8 +63,29 @@ public sealed class TradeFileWorkflowService(
 
             var isin = instrument.Identifiers.SingleOrDefault(item => item.Type == InstrumentIdentifierType.ISIN)?.Value ?? string.Empty;
             var sedol = instrument.Identifiers.SingleOrDefault(item => item.Type == InstrumentIdentifierType.Sedol)?.Value ?? string.Empty;
+            OptionExecutionDetails? option = null;
+            if (instrument.CFI.IsOption)
+            {
+                if (instrument.Terms is not InstrumentTermsOption terms)
+                    throw new ArgumentException($"Ticket {ticketNumber.Value} requires complete option terms.");
+                var underlying = instruments.Items.SingleOrDefault(item => item.InstrumentID == terms.UnderlyingInstrumentID)
+                    ?? throw new ArgumentException($"The underlying instrument for ticket {ticketNumber.Value} was not found.");
+                var underlyingIsin = underlying.Identifiers.SingleOrDefault(item => item.Type == InstrumentIdentifierType.ISIN)?.Value ?? string.Empty;
+                var underlyingTicker = underlying.Identifiers.SingleOrDefault(item => item.Type == InstrumentIdentifierType.Ticker)?.Value ?? string.Empty;
+                option = new(
+                    terms.OptionType,
+                    terms.UnderlyingInstrumentID,
+                    string.IsNullOrWhiteSpace(underlyingTicker) ? underlying.Name : underlyingTicker,
+                    string.IsNullOrWhiteSpace(underlyingIsin) ? underlyingTicker : underlyingIsin,
+                    string.IsNullOrWhiteSpace(underlyingIsin) ? "8" : "4",
+                    terms.StrikePrice,
+                    terms.ExpirationDate,
+                    terms.ExerciseStyle,
+                    terms.SettlementType,
+                    terms.ContractMultiplier);
+            }
 
-            snapshots.Add(new(ticket.TicketNumber, isin, sedol, ticket.ProposalAllocations.Sum(item => item.Quantity), ticket.ProposalTargetPrice, ticket.TradeCurrency));
+            snapshots.Add(new(ticket.TicketNumber, isin, sedol, ticket.ProposalAllocations.Sum(item => item.Quantity), ticket.ProposalTargetPrice, ticket.TradeCurrency, instrument.CFI.Value, option));
         }
 
         var tradeFileID = new TradeFileID(Guid.CreateGuid7());
@@ -222,8 +243,9 @@ public sealed class TradeFileWorkflowService(
         var holdings = await holdingsTask;
         var instruments = await instrumentsTask;
         var ticket = tickets.Find(ticketNumber) ?? throw new ArgumentException("Ticket was not found.");
-        var tradeEvent = CreateTradeEvent(ticket, tickets, holdings, instruments, confirmation.Quantity, confirmation.Price, eventDate, requested.UserID, confirmation.ConfirmationID);
-        var settlementAmount = decimal.Round(confirmation.Quantity * confirmation.Price, 8, MidpointRounding.AwayFromZero);
+        var multiplier = snapshot.Option?.ContractMultiplier.Value ?? 1m;
+        var tradeEvent = CreateTradeEvent(ticket, tickets, holdings, instruments, confirmation.Quantity, confirmation.Price, multiplier, eventDate, requested.UserID, confirmation.ConfirmationID);
+        var settlementAmount = decimal.Round(confirmation.Quantity * confirmation.Price * multiplier, 8, MidpointRounding.AwayFromZero);
         var fillResult = TicketEventBuilder.AddFill(new TicketTradeFillRequest(
             requested.UserID,
             eventDate,
@@ -250,12 +272,12 @@ public sealed class TradeFileWorkflowService(
         cacheInvalidationService.Invalidate([.. tradeFileEvents, tradeEvent, fillResult.Value, inProgress]);
     }
 
-    private static ITicket CreateTradeEvent(Ticket ticket, Tickets tickets, Holdings holdings, Instruments instruments, decimal quantity, decimal price, EventDateTime eventDate, UserID userID, Guid confirmationID)
+    private static ITicket CreateTradeEvent(Ticket ticket, Tickets tickets, Holdings holdings, Instruments instruments, decimal quantity, decimal price, decimal contractMultiplier, EventDateTime eventDate, UserID userID, Guid confirmationID)
     {
         var proposalTotal = ticket.ProposalAllocations.Sum(item => item.Quantity);
         if (proposalTotal <= 0m) throw new InvalidOperationException("Proposal allocations are required.");
         var quantities = ticket.ProposalAllocations.Select(item => decimal.Round(quantity * item.Quantity / proposalTotal, 8, MidpointRounding.AwayFromZero)).ToList();
-        var settlementTotal = decimal.Round(quantity * price, 8, MidpointRounding.AwayFromZero);
+        var settlementTotal = decimal.Round(quantity * price * contractMultiplier, 8, MidpointRounding.AwayFromZero);
         var settlements = FoleoTraderFillAllocator.ProrateAmountByQuantities(settlementTotal, quantities, 8);
         var allocations = ticket.ProposalAllocations.Select((allocation, index) => new TicketTradeAllocation(
             allocation.AccountID,

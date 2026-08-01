@@ -68,4 +68,18 @@ public sealed class InstrumentPriceJsonConverterTests
         Assert.True(document.RootElement.TryGetProperty("quote", out _));
         Assert.False(document.RootElement.TryGetProperty("bid", out _));
     }
+
+    [Fact]
+    public void SerializeAndDeserialize_OptionPrice_PreservesQuoteAndLast()
+    {
+        IInstrumentPrice original = new InstrumentPriceOption(
+            new InstrumentQuote(new InstrumentPrice(4.9m), new InstrumentPrice(5m), new InstrumentPrice(5.1m)),
+            new InstrumentPrice(4.75m));
+
+        var json = JsonSerializer.Serialize(original, JsonOptions);
+        var price = Assert.IsType<InstrumentPriceOption>(JsonSerializer.Deserialize<IInstrumentPrice>(json, JsonOptions));
+
+        Assert.Equal(original, price);
+        Assert.Contains("InstrumentPriceOption", json);
+    }
 }

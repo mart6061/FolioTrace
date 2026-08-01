@@ -11,7 +11,9 @@ public sealed record FoleoTraderFixOrder(
     string Currency,
     string SecurityID,
     string SecurityIDSource,
-    string Symbol);
+    string Symbol,
+    string CFI,
+    OptionExecutionDetails? Option);
 
 public sealed record FoleoTraderExecutionReport(
     string ClOrdID,

@@ -122,8 +122,8 @@ async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request, 
   if ((Number.isFinite(bid) && Number.isFinite(mid) && bid > mid) || (Number.isFinite(mid) && Number.isFinite(ask) && mid > ask))
     return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Quotes must be ordered bid <= mid <= ask.', status: 'failure' });
 
-  if (priceType !== 'InstrumentPriceEquity' && priceType !== 'InstrumentPriceFixedIncome')
-    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Only equity and fixed income price edits are supported.', status: 'failure' });
+  if (priceType !== 'InstrumentPriceEquity' && priceType !== 'InstrumentPriceFixedIncome' && priceType !== 'InstrumentPriceOption')
+    return fail(400, { instrumentID, intent: 'setInstrumentPrice', message: 'Only equity, fixed income, and option price edits are supported.', status: 'failure' });
 
   try {
     const priceRequest: InstrumentPriceSetRequest = {
@@ -140,8 +140,11 @@ async function postPriceEvent(fetch: typeof globalThis.fetch, request: Request, 
     priceRequest.mid = optional(mid);
     priceRequest.ask = optional(ask);
 
-    if (priceType === 'InstrumentPriceEquity') {
+    if (priceType === 'InstrumentPriceEquity' || priceType === 'InstrumentPriceOption') {
       priceRequest.last = optional(last);
+    }
+
+    if (priceType === 'InstrumentPriceEquity') {
       priceRequest.nav = optional(nav);
     }
 

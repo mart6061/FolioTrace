@@ -36,6 +36,9 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
     [EventProperty(Description = "Symbol")]
     public string Symbol { get; init; } = string.Empty;
 
+    [EventProperty(Description = "Option")]
+    public OptionExecutionDetails? Option { get; init; }
+
     private FoleoTraderOrderSubmittedEvent()
         : this(null!, null!, null!, null!, string.Empty, null!, null!, string.Empty, TicketSide.Buy, 0m, null!, null!, string.Empty, string.Empty, string.Empty)
     {
@@ -56,7 +59,8 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
         Alpha3 currency,
         string securityID,
         string securityIDSource,
-        string symbol)
+        string symbol,
+        OptionExecutionDetails? option = null)
         : base(eventID, userID, eventDateTime, auditDateTime, reason)
     {
         TicketNumber = ticketNumber;
@@ -69,6 +73,7 @@ public sealed record FoleoTraderOrderSubmittedEvent : EventBase, IFoleoTraderOrd
         SecurityID = securityID;
         SecurityIDSource = securityIDSource;
         Symbol = symbol;
+        Option = option;
     }
 
     public override string Type => nameof(FoleoTraderOrderSubmittedEvent);
