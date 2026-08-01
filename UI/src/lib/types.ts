@@ -337,6 +337,19 @@ export type ValuationItem = {
   fxDisplayPair?: string | null;
   fxRate?: number | null;
   quantity: number;
+  contractMultiplier: number;
+  option?: {
+    optionType: OptionType;
+    underlyingInstrumentID: string;
+    underlyingInstrumentName: string;
+    strikePrice: number;
+    strikeCurrency: string;
+    expirationDate: string;
+    exerciseStyle: OptionExerciseStyle;
+    settlementType: OptionSettlementType;
+    contractMultiplier: number;
+    expired: boolean;
+  } | null;
   localPrice?: number | null;
   quotePrice?: number | null;
   /** Accrued interest per unit, in the price currency. Null where nothing accrues. */
@@ -472,6 +485,14 @@ export type ReportChartPieLevel = 1 | 2 | 3;
 
 export type ReportValuationColumnKey =
   | 'InstrumentName'
+  | 'OptionType'
+  | 'Underlying'
+  | 'Strike'
+  | 'Expiry'
+  | 'ExerciseStyle'
+  | 'SettlementType'
+  | 'ContractMultiplier'
+  | 'ExpiryStatus'
   | 'ISIN'
   | 'Sedol'
   | 'QuotePrice'
@@ -665,6 +686,29 @@ export type InstrumentPriceCash = {
   priceType?: string;
 };
 
+export type InstrumentPriceOption = {
+  $type?: 'InstrumentPriceOption';
+  quote: InstrumentQuote;
+  last: InstrumentPrice;
+  priceType?: string;
+};
+
+export type OptionType = 'Call' | 'Put';
+export type OptionExerciseStyle = 'American' | 'European';
+export type OptionSettlementType = 'Physical' | 'Cash';
+
+export type InstrumentTermsOption = {
+  $type?: 'InstrumentTermsOption';
+  optionType: OptionType;
+  underlyingInstrumentID: string;
+  strikePrice: Money;
+  expirationDate: string;
+  exerciseStyle: OptionExerciseStyle;
+  settlementType: OptionSettlementType;
+  contractMultiplier: number;
+  termsType?: string;
+};
+
 export type InstrumentIncomeEquity = {
   $type?: 'InstrumentIncomeEquity';
   dividendAmount: InstrumentPrice;
@@ -702,7 +746,7 @@ export type Instrument = {
   priceCountry: string;
   priceCurrency: string;
   identifiers: InstrumentIdentifier[];
-  terms?: unknown;
+  terms?: InstrumentTermsOption | Record<string, unknown> | null;
   valuationDateTime: string;
   asOfDateTime: string;
   lastEventID: string;
@@ -718,7 +762,7 @@ export type Instruments = {
 };
 
 export type InstrumentValue = Instrument & {
-  price?: InstrumentPriceEquity | InstrumentPriceFixedIncome | InstrumentPriceCash | null;
+  price?: InstrumentPriceEquity | InstrumentPriceFixedIncome | InstrumentPriceCash | InstrumentPriceOption | null;
   priceValuationDateTime?: string | null;
   income?: InstrumentIncomeEquity | InstrumentIncomeFixedIncome | InstrumentIncomeCash | null;
 };

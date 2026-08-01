@@ -70,6 +70,7 @@ public sealed record FoleoTraderOrders : IAggregate
                     submitted.SecurityID,
                     submitted.SecurityIDSource,
                     submitted.Symbol,
+                    submitted.Option,
                     null,
                     null,
                     submitted.AuditDateTime.Value,

@@ -19,6 +19,14 @@ import type { ReportChartPieLevel, ReportChartType, ReportNodePageOrientation, R
 
 const valuationColumnKeys: ReportValuationColumnKey[] = [
   'InstrumentName',
+  'OptionType',
+  'Underlying',
+  'Strike',
+  'Expiry',
+  'ExerciseStyle',
+  'SettlementType',
+  'ContractMultiplier',
+  'ExpiryStatus',
   'ISIN',
   'Sedol',
   'QuotePrice',

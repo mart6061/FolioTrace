@@ -6,4 +6,5 @@ public sealed record FoleoTraderOrderValidationResult(
     Instrument? Instrument,
     string SecurityID,
     string SecurityIDSource,
-    string Symbol);
+    string Symbol,
+    OptionExecutionDetails? Option);

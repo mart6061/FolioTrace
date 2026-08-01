@@ -6,6 +6,60 @@ namespace Test;
 public sealed class ValuationBuilderTests
 {
     [Fact]
+    public void Valuations_ScalesOptionContractsAndZerosThemAfterExpiryDay()
+    {
+        var accountID = AccountIDBuilder.Create();
+        var underlyingID = InstrumentIDBuilder.Create();
+        var optionID = InstrumentIDBuilder.Create();
+        var holdingID = HoldingIDBuilder.Create();
+        var outflowHoldingID = HoldingIDBuilder.Create();
+        var accounts = CreateAccounts(accountID);
+        var optionTerms = new InstrumentTermsOption(
+            OptionType.Call,
+            underlyingID,
+            new Money(100m, new Alpha3("GBP")),
+            new InstrumentDate(new DateOnly(2026, 6, 18)),
+            OptionExerciseStyle.European,
+            OptionSettlementType.Cash,
+            new ContractMultiplier(100m));
+        var instrumentEvents = new IInstrumentEvent[]
+        {
+            CreateInstrument(underlyingID, "Underlying"),
+            CreateInstrument(optionID, "Underlying 100 Call", "OCXXXX"),
+            InstrumentTermsSetEventBuilder.CreateSeed(CreateEventID(), UserID, ValuationDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), "Set option terms", optionID, optionTerms).Value!
+        };
+        var instruments = new Instruments(ValuationDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)), instrumentEvents.ToList());
+        var holdings = new Holdings(ValuationDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)),
+            [CreateAssetHolding(holdingID, accountID, optionID, "Option position"), CreateOutflowHolding(outflowHoldingID, accountID, optionID)]);
+        var transactions = TransactionBuilder.Create(
+            new TransactionSetRequest(UserID, ValuationDate, SettlementDateTimeBuilder.Create(ValuationDate.Value.AddDays(1)), "Book option",
+                [CreateTransactionLeg(holdingID, optionID, accountID, 3m, 750m)],
+                [CreateTransactionLeg(outflowHoldingID, optionID, accountID, 3m, 750m)]), holdings).Value!.Cast<ITransactionEvent>().ToList();
+        var asOf = AuditDateTimeBuilder.Create();
+        var positions = new HoldingPositions(ValuationDate, asOf, holdings, accounts, instruments, transactions);
+        var price = InstrumentPriceSetEventBuilder.CreateSeed(CreateEventID(), UserID, ValuationDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(3)), "Set option price", optionID,
+            new InstrumentPriceOption(new InstrumentQuote(new InstrumentPrice(2.4m), new InstrumentPrice(2.5m), new InstrumentPrice(2.6m)), new InstrumentPrice(2.45m))).Value!;
+        var values = new InstrumentValues(ValuationDate, asOf, instrumentEvents.ToList(), [price], []);
+        var fxRates = new FXRates(ValuationDate, asOf, [], []);
+
+        var active = new Valuations(ValuationDate, asOf, HoldingDateBasis.EventDateTime, InstrumentPriceBasis.Mid,
+            ValuationPriceConvention.Dirty, new Alpha3("GBP"), accounts, positions, values, fxRates);
+        var expiredDate = EventDateTimeBuilder.Create(new DateTime(2026, 6, 19, 12, 0, 0, DateTimeKind.Utc));
+        var expired = new Valuations(expiredDate, asOf, HoldingDateBasis.EventDateTime, InstrumentPriceBasis.Mid,
+            ValuationPriceConvention.Dirty, new Alpha3("GBP"), accounts, positions, values, fxRates);
+
+        var activeItem = Assert.Single(active.Accounts.Single().Items);
+        Assert.Equal(100m, activeItem.ContractMultiplier);
+        Assert.Equal(750m, activeItem.BookValue);
+        Assert.False(activeItem.Option!.Expired);
+        var expiredItem = Assert.Single(expired.Accounts.Single().Items);
+        Assert.Equal(0m, expiredItem.BookValue);
+        Assert.Equal(0m, expiredItem.LocalPrice);
+        Assert.True(expiredItem.Option!.Expired);
+        Assert.True(expiredItem.Complete);
+    }
+
+    [Fact]
     public void Valuations_CalculatesWeightAsShareOfTotalBookValue()
     {
         var accountID = AccountIDBuilder.Create();

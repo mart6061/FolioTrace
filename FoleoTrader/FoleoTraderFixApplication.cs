@@ -50,6 +50,7 @@ public sealed class FoleoTraderFixApplication(FoleoTraderMessageMonitor monitor,
         var securityID = order.IsSetField(Tags.SecurityID) ? order.GetString(Tags.SecurityID) : string.Empty;
         var securityIDSource = order.IsSetField(Tags.SecurityIDSource) ? order.GetString(Tags.SecurityIDSource) : string.Empty;
         var currency = order.IsSetField(Tags.Currency) ? order.GetString(Tags.Currency) : string.Empty;
+        var contractMultiplier = order.IsSetField(Tags.ContractMultiplier) ? order.GetDecimal(Tags.ContractMultiplier) : 1m;
         var wholeQuantity = (int)Math.Min(quantity, int.MaxValue);
         var fillCount = Math.Min(Random.Shared.Next(1, 5), wholeQuantity);
         var remaining = wholeQuantity;
@@ -84,7 +85,7 @@ public sealed class FoleoTraderFixApplication(FoleoTraderMessageMonitor monitor,
             report.Set(new AvgPx(lastPx));
             report.Set(new OrderQty(quantity));
             report.Set(new Price(price));
-            report.Set(new GrossTradeAmt(decimal.Round(lastQty * lastPx, 8)));
+            report.Set(new GrossTradeAmt(decimal.Round(lastQty * lastPx * contractMultiplier, 8)));
 
             if (!string.IsNullOrWhiteSpace(symbol))
                 report.Set(new Symbol(symbol));

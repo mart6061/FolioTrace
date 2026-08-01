@@ -33,18 +33,50 @@ public sealed class FoleoTraderOrderService(IEventRepository eventRepository)
         var securityID = string.Empty;
         var securityIDSource = string.Empty;
         var symbol = string.Empty;
+        OptionExecutionDetails? option = null;
 
         if (ticket is null)
         {
             messages.Add($"No matching ticket found for TicketNumber '{request.TicketNumber.Value}'.");
-            return new(messages, null, null, securityID, securityIDSource, symbol);
+            return new(messages, null, null, securityID, securityIDSource, symbol, null);
         }
 
         instrument = instruments.Items.FirstOrDefault(item => item.InstrumentID == ticket.InstrumentID);
         if (instrument is null)
             messages.Add($"No matching instrument found for InstrumentID '{ticket.InstrumentID.Value}'.");
-        else if (!instrument.CFI.IsEquity && !instrument.CFI.IsDebt)
-            messages.Add("FoleoTrader only supports equity and fixed interest instruments.");
+        else if (!instrument.CFI.IsEquity && !instrument.CFI.IsDebt && !instrument.CFI.IsOption)
+            messages.Add("FoleoTrader only supports equity, fixed interest, and vanilla option instruments.");
+        else if (instrument.CFI.IsOption)
+        {
+            if (instrument.Terms is not InstrumentTermsOption terms)
+            {
+                messages.Add("Option terms are required before sending to FoleoTrader.");
+            }
+            else
+            {
+                var underlying = instruments.Items.FirstOrDefault(item => item.InstrumentID == terms.UnderlyingInstrumentID);
+                if (underlying is null)
+                {
+                    messages.Add("The option underlying instrument was not found.");
+                }
+                else
+                {
+                    var underlyingIsin = underlying.Identifiers.FirstOrDefault(identifier => identifier.Type == InstrumentIdentifierType.ISIN)?.Value ?? string.Empty;
+                    var underlyingTicker = underlying.Identifiers.FirstOrDefault(identifier => identifier.Type == InstrumentIdentifierType.Ticker)?.Value ?? string.Empty;
+                    option = new OptionExecutionDetails(
+                        terms.OptionType,
+                        terms.UnderlyingInstrumentID,
+                        string.IsNullOrWhiteSpace(underlyingTicker) ? underlying.Name : underlyingTicker,
+                        string.IsNullOrWhiteSpace(underlyingIsin) ? underlyingTicker : underlyingIsin,
+                        string.IsNullOrWhiteSpace(underlyingIsin) ? "8" : "4",
+                        terms.StrikePrice,
+                        terms.ExpirationDate,
+                        terms.ExerciseStyle,
+                        terms.SettlementType,
+                        terms.ContractMultiplier);
+                }
+            }
+        }
 
         if (ticket.Stage != TicketStage.Trade)
             messages.Add("Ticket must be in Trade stage.");
@@ -73,7 +105,7 @@ public sealed class FoleoTraderOrderService(IEventRepository eventRepository)
                 messages.Add("Instrument needs an ISIN or ticker identifier before sending to FoleoTrader.");
         }
 
-        return new(messages, ticket, instrument, securityID, securityIDSource, symbol);
+        return new(messages, ticket, instrument, securityID, securityIDSource, symbol, option);
     }
 
     public FoleoTraderTradeResult CreateProratedTradeEvent(
@@ -109,12 +141,15 @@ public sealed class FoleoTraderOrderService(IEventRepository eventRepository)
             .Where(allocation => allocation.Quantity > 0m)
             .ToList();
 
+        var multiplier = instruments.Items.FirstOrDefault(item => item.InstrumentID == ticket.InstrumentID)?.Terms is InstrumentTermsOption optionTerms
+            ? optionTerms.ContractMultiplier.Value
+            : 1m;
         var request = new TicketTradeRequest(
             Constants.Initialisation.UserID,
             eventDateTime,
             $"FoleoTrader FIX trade allocation {execID}",
             ticketNumber,
-            new Price(Round(totalSettlementAmount / totalQuantity)),
+            new Price(Round(totalSettlementAmount / totalQuantity / multiplier)),
             eventDateTime,
             NextWorkingDaySettlement(eventDateTime),
             allocations);

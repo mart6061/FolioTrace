@@ -18,6 +18,8 @@ public sealed record ValuationItem
     public string? FXDisplayPair { get; init; }
     public decimal? FXRate { get; init; }
     public required decimal Quantity { get; init; }
+    public decimal ContractMultiplier { get; init; } = 1m;
+    public OptionValuationDetails? Option { get; init; }
     public decimal? LocalPrice { get; init; }
     public decimal? QuotePrice { get; init; }
 

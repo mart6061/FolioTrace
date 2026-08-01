@@ -65,7 +65,7 @@ public sealed record Valuations : IAggregate
         var unweightedItems = positions.Items
             .Where(position => position.IncludeInValuation)
             .Where(position => accountLookup.ContainsKey(position.AccountID.Value))
-            .Select(position => BuildItem(position, instrumentLookup.GetValueOrDefault(position.InstrumentID.Value), fxRates, instrumentPriceBasis, valuationPriceConvention, valuationCurrency))
+            .Select(position => BuildItem(position, instrumentLookup.GetValueOrDefault(position.InstrumentID.Value), instrumentLookup, fxRates, instrumentPriceBasis, valuationPriceConvention, valuationCurrency, valuationDateTime))
             .ToList();
         // Weights are shares of the final total, which includes accrued interest under either convention. A
         // position's share of the portfolio is not a display choice.
@@ -102,17 +102,25 @@ public sealed record Valuations : IAggregate
     private static ValuationItem BuildItem(
         HoldingPosition position,
         InstrumentValue? instrument,
+        IReadOnlyDictionary<Guid, InstrumentValue> instruments,
         FXRates fxRates,
         InstrumentPriceBasis instrumentPriceBasis,
         ValuationPriceConvention valuationPriceConvention,
-        Alpha3 valuationCurrency)
+        Alpha3 valuationCurrency,
+        EventDateTime valuationDateTime)
     {
         var priceCurrency = instrument?.PriceCurrency ?? Alpha3Builder.Create("GBP");
-        var localPrice = instrument?.SelectPrice(instrumentPriceBasis, valuationPriceConvention == ValuationPriceConvention.Dirty)?.Amount;
+        var optionTerms = instrument?.Terms as InstrumentTermsOption;
+        var expired = optionTerms?.ExpirationDate.Value is DateOnly expirationDate
+            && expirationDate < DateOnly.FromDateTime(valuationDateTime.Value);
+        var contractMultiplier = optionTerms?.ContractMultiplier.Value ?? 1m;
+        var localPrice = expired
+            ? 0m
+            : instrument?.SelectPrice(instrumentPriceBasis, valuationPriceConvention == ValuationPriceConvention.Dirty)?.Amount;
         var fxSelection = SelectFX(fxRates, priceCurrency, valuationCurrency, instrumentPriceBasis);
-        var complete = localPrice.HasValue && fxSelection.FXRate.HasValue;
-        var quotePrice = complete ? localPrice.GetValueOrDefault() * fxSelection.FXRate.GetValueOrDefault() : (decimal?)null;
-        var bookValue = quotePrice.HasValue ? position.Quantity * quotePrice.Value : (decimal?)null;
+        var complete = expired || localPrice.HasValue && fxSelection.FXRate.HasValue;
+        var quotePrice = expired ? 0m : complete ? localPrice.GetValueOrDefault() * fxSelection.FXRate.GetValueOrDefault() : (decimal?)null;
+        var bookValue = quotePrice.HasValue ? position.Quantity * contractMultiplier * quotePrice.Value : (decimal?)null;
         // Accrued interest is per unit, like a price, so it takes the price path: scaled by quantity and
         // converted at fxSelection — the rate the price itself used, never a fresh lookup.
         var localAccruedInterest = instrument?.AccruedInterest?.Amount;
@@ -137,6 +145,20 @@ public sealed record Valuations : IAggregate
             FXDisplayPair = fxSelection.FXDisplayPair,
             FXRate = fxSelection.FXRate,
             Quantity = position.Quantity,
+            ContractMultiplier = contractMultiplier,
+            Option = optionTerms?.ExpirationDate.Value is DateOnly optionExpirationDate
+                ? new OptionValuationDetails(
+                    optionTerms.OptionType,
+                    optionTerms.UnderlyingInstrumentID,
+                    instruments.GetValueOrDefault(optionTerms.UnderlyingInstrumentID.Value)?.Name ?? optionTerms.UnderlyingInstrumentID.Value.ToString(),
+                    optionTerms.StrikePrice.Amount,
+                    optionTerms.StrikePrice.Currency,
+                    optionExpirationDate,
+                    optionTerms.ExerciseStyle,
+                    optionTerms.SettlementType,
+                    contractMultiplier,
+                    expired)
+                : null,
             LocalPrice = localPrice,
             QuotePrice = quotePrice,
             LocalAccruedInterest = localAccruedInterest,
@@ -145,7 +167,7 @@ public sealed record Valuations : IAggregate
             WeightPercent = null,
             BookCost = position.BookCost,
             Complete = complete,
-            IncompleteReason = incompleteReason
+            IncompleteReason = expired ? null : incompleteReason
         };
     }
 

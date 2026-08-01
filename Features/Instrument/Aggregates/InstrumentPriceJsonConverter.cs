@@ -36,6 +36,7 @@ internal sealed class InstrumentPriceJsonConverter : JsonConverter<IInstrumentPr
             nameof(InstrumentPriceEquity) => root.Deserialize<InstrumentPriceEquity>(options),
             nameof(InstrumentPriceFixedIncome) => root.Deserialize<InstrumentPriceFixedIncome>(options),
             nameof(InstrumentPriceCash) => root.Deserialize<InstrumentPriceCash>(options),
+            nameof(InstrumentPriceOption) => root.Deserialize<InstrumentPriceOption>(options),
             _ => throw new JsonException($"Unsupported instrument price type '{type ?? "<missing>"}'.")
         };
     }
@@ -52,6 +53,9 @@ internal sealed class InstrumentPriceJsonConverter : JsonConverter<IInstrumentPr
                 break;
             case InstrumentPriceCash cash:
                 WriteWithType(writer, cash, nameof(InstrumentPriceCash), options);
+                break;
+            case InstrumentPriceOption option:
+                WriteWithType(writer, option, nameof(InstrumentPriceOption), options);
                 break;
             default:
                 throw new JsonException($"Unsupported instrument price type '{value.GetType().Name}'.");

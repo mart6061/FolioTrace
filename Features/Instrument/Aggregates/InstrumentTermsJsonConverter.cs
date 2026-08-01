@@ -24,6 +24,7 @@ internal sealed class InstrumentTermsJsonConverter : JsonConverter<IInstrumentTe
         {
             nameof(InstrumentTermsEquity) => root.Deserialize<InstrumentTermsEquity>(options) ?? new InstrumentTermsEquity(),
             nameof(InstrumentTermsBond) => root.Deserialize<InstrumentTermsBond>(options),
+            nameof(InstrumentTermsOption) => root.Deserialize<InstrumentTermsOption>(options),
             _ => throw new JsonException($"Unsupported instrument terms type '{type}'.")
         };
     }
@@ -37,6 +38,9 @@ internal sealed class InstrumentTermsJsonConverter : JsonConverter<IInstrumentTe
                 break;
             case InstrumentTermsBond bond:
                 WriteWithType(writer, bond, nameof(InstrumentTermsBond), options);
+                break;
+            case InstrumentTermsOption option:
+                WriteWithType(writer, option, nameof(InstrumentTermsOption), options);
                 break;
             default:
                 throw new JsonException($"Unsupported instrument terms type '{value.GetType().Name}'.");

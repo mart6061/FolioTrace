@@ -10,5 +10,17 @@ public enum TradeFileColumn
     Sedol,
     Quantity,
     Price,
-    Currency
+    Currency,
+    SecurityType,
+    OptionType,
+    UnderlyingInstrumentID,
+    UnderlyingSymbol,
+    UnderlyingISIN,
+    StrikePrice,
+    StrikeCurrency,
+    ExpirationDate,
+    ExerciseStyle,
+    SettlementType,
+    ContractMultiplier,
+    GrossPremium
 }

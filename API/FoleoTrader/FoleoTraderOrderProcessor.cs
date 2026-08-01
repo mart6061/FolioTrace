@@ -61,7 +61,8 @@ public sealed class FoleoTraderOrderProcessor(
             ticket.TradeCurrency,
             validation.SecurityID,
             validation.SecurityIDSource,
-            validation.Symbol);
+            validation.Symbol,
+            validation.Option);
 
         await eventRepository.AppendWorkflowAsync(new Dictionary<Guid, IReadOnlyList<IAuditEventBase>>
         {
@@ -81,7 +82,9 @@ public sealed class FoleoTraderOrderProcessor(
                 ticket.TradeCurrency.Value,
                 validation.SecurityID,
                 validation.SecurityIDSource,
-                validation.Symbol),
+                validation.Symbol,
+                validation.Instrument.CFI.Value,
+                validation.Option),
                 fixMethod,
                 cancellationToken);
         }
@@ -171,7 +174,8 @@ public sealed class FoleoTraderOrderProcessor(
 
             var fillID = Guid.CreateGuid7();
             var brokerLEI = submittedOrder?.BrokerLEI ?? new LegalEntityIdentifier(options.BrokerLEI);
-            var settlementAmount = report.GrossTradeAmt > 0m ? Round(report.GrossTradeAmt) : Round(report.LastQty * report.LastPx);
+            var multiplier = submittedOrder?.Option?.ContractMultiplier.Value ?? 1m;
+            var settlementAmount = report.GrossTradeAmt > 0m ? Round(report.GrossTradeAmt) : Round(report.LastQty * report.LastPx * multiplier);
             var execution = new FoleoTraderExecutionReceivedEvent(
                 Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,

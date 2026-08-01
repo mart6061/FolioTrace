@@ -24,6 +24,10 @@ public sealed record ProfitLossItem
 
     public required decimal Quantity { get; init; }
 
+    public decimal ContractMultiplier { get; init; } = 1m;
+
+    public bool OptionExpired { get; init; }
+
     public decimal? LocalPrice { get; init; }
 
     public decimal? BookPrice { get; init; }

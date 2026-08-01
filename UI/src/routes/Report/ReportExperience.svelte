@@ -66,6 +66,15 @@
     holdingID: string;
     name: string;
     instrumentName: string;
+    optionType?: string;
+    underlying?: string;
+    strikePrice?: number;
+    strikeCurrency?: string;
+    expiry?: string;
+    exerciseStyle?: string;
+    settlementType?: string;
+    contractMultiplier?: number;
+    expiryStatus?: string;
     isin: string;
     sedol: string;
     quantity: number;
@@ -115,6 +124,15 @@
     colour: string;
     name: string;
     instrumentName: string;
+    optionType?: string;
+    underlying?: string;
+    strikePrice?: number;
+    strikeCurrency?: string;
+    expiry?: string;
+    exerciseStyle?: string;
+    settlementType?: string;
+    contractMultiplier?: number;
+    expiryStatus?: string;
     isin: string;
     sedol: string;
     quantity: number;
@@ -330,6 +348,13 @@
     }).format(date);
   }
 
+  function formatOptionDate(value: string) {
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isNaN(date.getTime())
+      ? value
+      : new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC', year: 'numeric' }).format(date);
+  }
+
   function valuationIndent(level: number) {
     return `${Math.max(0, Math.min(level - 1, 5)) * 0.8}rem`;
   }
@@ -392,6 +417,22 @@
     switch (column.columnKey) {
       case 'InstrumentName':
         return row.instrumentName;
+      case 'OptionType':
+        return row.optionType ?? '';
+      case 'Underlying':
+        return row.underlying ?? '';
+      case 'Strike':
+        return row.strikePrice === undefined ? '' : formatMoney(row.strikePrice, row.strikeCurrency ?? currency);
+      case 'Expiry':
+        return row.expiry ? formatOptionDate(row.expiry) : '';
+      case 'ExerciseStyle':
+        return row.exerciseStyle ?? '';
+      case 'SettlementType':
+        return row.settlementType ?? '';
+      case 'ContractMultiplier':
+        return row.contractMultiplier === undefined ? '' : formatQuantity(row.contractMultiplier);
+      case 'ExpiryStatus':
+        return row.expiryStatus ?? '';
       case 'ISIN':
         return row.isin;
       case 'Sedol':

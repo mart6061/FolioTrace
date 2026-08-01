@@ -74,7 +74,8 @@ public sealed record ProfitLosses : IAggregate
                 instrumentDefinitionLookup.GetValueOrDefault(group.First().InstrumentID.Value),
                 fxRates,
                 instrumentPriceBasis,
-                holdingDateBasis))
+                holdingDateBasis,
+                valuationDateTime))
             .OrderBy(item => item.AccountName)
             .ThenBy(item => item.HoldingKind)
             .ThenBy(item => item.HoldingName)
@@ -109,7 +110,8 @@ public sealed record ProfitLosses : IAggregate
         Instrument? instrumentDefinition,
         FXRates fxRates,
         InstrumentPriceBasis instrumentPriceBasis,
-        HoldingDateBasis holdingDateBasis)
+        HoldingDateBasis holdingDateBasis,
+        EventDateTime valuationDateTime)
     {
         var orderedMovements = movements
             .OrderBy(movement => MovementDate(movement, movement.SettlementDateTime, holdingDateBasis))
@@ -119,9 +121,13 @@ public sealed record ProfitLosses : IAggregate
         var quantity = orderedMovements.Sum(SignedQuantity);
         var bookCost = orderedMovements.Sum(SignedBookCost);
         var priceCurrency = instrumentValue?.PriceCurrency ?? instrumentDefinition?.PriceCurrency ?? Alpha3Builder.Create("GBP");
-        var localPrice = instrumentValue?.SelectPrice(instrumentPriceBasis, IncludeAccruedInterest)?.Amount;
-        var bookPrice = SelectBookPrice(localPrice, priceCurrency, account.BookCurrency, fxRates);
-        var marketValue = bookPrice.HasValue ? quantity * bookPrice.Value : (decimal?)null;
+        var optionTerms = instrumentDefinition?.Terms as InstrumentTermsOption;
+        var optionExpired = optionTerms?.ExpirationDate.Value is DateOnly expirationDate
+            && expirationDate < DateOnly.FromDateTime(valuationDateTime.Value);
+        var contractMultiplier = optionTerms?.ContractMultiplier.Value ?? 1m;
+        var localPrice = optionExpired ? 0m : instrumentValue?.SelectPrice(instrumentPriceBasis, IncludeAccruedInterest)?.Amount;
+        var bookPrice = optionExpired ? 0m : SelectBookPrice(localPrice, priceCurrency, account.BookCurrency, fxRates);
+        var marketValue = optionExpired ? 0m : bookPrice.HasValue ? quantity * contractMultiplier * bookPrice.Value : (decimal?)null;
         var methodValues = Enum.GetValues<ProfitLossMethod>()
             .Select(method => CalculateMethod(orderedMovements, method, marketValue, quantity, localPrice.HasValue, bookPrice.HasValue, priceCurrency, account.BookCurrency))
             .ToList();
@@ -138,6 +144,8 @@ public sealed record ProfitLosses : IAggregate
             InstrumentName = instrumentValue?.Name ?? instrumentDefinition?.Name ?? holding.Name,
             PriceCurrency = priceCurrency,
             Quantity = quantity,
+            ContractMultiplier = contractMultiplier,
+            OptionExpired = optionExpired,
             LocalPrice = localPrice,
             BookPrice = bookPrice,
             MarketValue = marketValue,
