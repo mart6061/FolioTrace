@@ -150,15 +150,33 @@ public static partial class ApiEndpointRegistration
             ProfitLossService profitLossService) =>
         {
             var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
-            var asAt = GetAsAt(auditDateTime);
             var account = accountID.HasValue ? AccountIDBuilder.Create(accountID.Value) : null;
+            var dateBasis = holdingDateBasis ?? HoldingDateBasis.EventDateTime;
+            var priceBasis = instrumentPriceBasis ?? InstrumentPriceBasis.Mid;
+            var result = auditDateTime.HasValue
+                ? await profitLossService.Get(valuationDate, GetAsAt(auditDateTime), dateBasis, priceBasis, account)
+                : await profitLossService.Get(valuationDate, dateBasis, priceBasis, account);
 
-            return Results.Ok(await profitLossService.Get(
-                valuationDate,
-                asAt,
-                holdingDateBasis ?? HoldingDateBasis.EventDateTime,
-                instrumentPriceBasis ?? InstrumentPriceBasis.Mid,
-                account));
+            return Results.Ok(result);
+        });
+
+        profitLoss.MapGet("/Holding", async (
+            Guid holdingID,
+            DateTime eventDateTime,
+            DateTime? auditDateTime,
+            HoldingDateBasis? holdingDateBasis,
+            InstrumentPriceBasis? instrumentPriceBasis,
+            ProfitLossService profitLossService) =>
+        {
+            var valuationDate = EventDateTimeBuilder.Create(eventDateTime);
+            var holding = HoldingIDBuilder.Create(holdingID);
+            var dateBasis = holdingDateBasis ?? HoldingDateBasis.EventDateTime;
+            var priceBasis = instrumentPriceBasis ?? InstrumentPriceBasis.Mid;
+            var result = auditDateTime.HasValue
+                ? await profitLossService.GetHolding(valuationDate, GetAsAt(auditDateTime), dateBasis, priceBasis, holding)
+                : await profitLossService.GetHolding(valuationDate, dateBasis, priceBasis, holding);
+
+            return result is null ? Results.NotFound() : Results.Ok(result);
         });
     }
 

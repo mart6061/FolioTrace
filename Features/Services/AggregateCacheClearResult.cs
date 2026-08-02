@@ -9,6 +9,7 @@ public sealed record AggregateCacheClearResult(
     int FXRates,
     int Holdings,
     int HoldingPositions,
+    int ProfitLoss,
     int Instruments,
     int InstrumentValues,
     int Tickets,

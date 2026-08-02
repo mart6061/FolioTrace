@@ -13,6 +13,10 @@ public sealed class AggregateMaintenanceHostedService(
         {
             await readinessState.WaitUntilReadyAsync(stoppingToken);
 
+            // Let the host finish starting Kestrel before the potentially expensive warm/snapshot pass. The
+            // work still starts immediately, but it must not delay the API listener becoming available.
+            await Task.Yield();
+
             if (!options.Enabled)
                 return;
 

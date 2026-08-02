@@ -37,11 +37,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AggregateMaintenanceCoordinator>();
         services.AddSingleton<AggregateUpdateNotificationService>();
         services.AddSingleton<IAggregateCacheInvalidator<AccountCreatedEvent>>(provider => new AggregateCacheInvalidator<AccountCreatedEvent>(@event =>
-            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountModifiedEvent>>(provider => new AggregateCacheInvalidator<AccountModifiedEvent>(@event =>
-            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountActiveSetEvent>>(provider => new AggregateCacheInvalidator<AccountActiveSetEvent>(@event =>
-            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountDisplayOrderSetEvent>>(provider => new AggregateCacheInvalidator<AccountDisplayOrderSetEvent>(@event =>
             provider.GetRequiredService<AccountService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<AccountIdentifierSetEvent>>(provider => new AggregateCacheInvalidator<AccountIdentifierSetEvent>(@event =>
@@ -55,33 +55,40 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAggregateCacheInvalidator<CurrencyCreatedEvent>>(provider => new AggregateCacheInvalidator<CurrencyCreatedEvent>(provider.GetRequiredService<CurrencyService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<CurrencyModifiedEvent>>(provider => new AggregateCacheInvalidator<CurrencyModifiedEvent>(provider.GetRequiredService<CurrencyService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<FXCreatedEvent>>(provider => new AggregateCacheInvalidator<FXCreatedEvent>(@event =>
-            provider.GetRequiredService<FXService>().Invalidate(@event) + provider.GetRequiredService<FXRateService>().Invalidate(@event)));
+            provider.GetRequiredService<FXService>().Invalidate(@event) + provider.GetRequiredService<FXRateService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<FXActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<FXActiveModifiedEvent>(@event =>
-            provider.GetRequiredService<FXService>().Invalidate(@event) + provider.GetRequiredService<FXRateService>().Invalidate(@event)));
-        services.AddSingleton<IAggregateCacheInvalidator<FXRateSetEvent>>(provider => new AggregateCacheInvalidator<FXRateSetEvent>(provider.GetRequiredService<FXRateService>().Invalidate));
+            provider.GetRequiredService<FXService>().Invalidate(@event) + provider.GetRequiredService<FXRateService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<FXRateSetEvent>>(provider => new AggregateCacheInvalidator<FXRateSetEvent>(@event =>
+            provider.GetRequiredService<FXRateService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<IFoleoTraderOrderEvent>>(provider => new AggregateCacheInvalidator<IFoleoTraderOrderEvent>(provider.GetRequiredService<FoleoTraderOrderService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IHoldingEvent>>(provider => new AggregateCacheInvalidator<IHoldingEvent>(@event =>
-            provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<HoldingActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<HoldingActiveModifiedEvent>(@event =>
-            provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<HoldingService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentCreatedEvent>>(provider => new AggregateCacheInvalidator<InstrumentCreatedEvent>(@event =>
-            provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentModifiedEvent>>(provider => new AggregateCacheInvalidator<InstrumentModifiedEvent>(@event =>
-            provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentActiveModifiedEvent>>(provider => new AggregateCacheInvalidator<InstrumentActiveModifiedEvent>(@event =>
-            provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event)));
+            provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentIdentifierSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentIdentifierSetEvent>(@event =>
             provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentIdentifierUnsetEvent>>(provider => new AggregateCacheInvalidator<InstrumentIdentifierUnsetEvent>(@event =>
             provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<InstrumentTermsSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentTermsSetEvent>(@event =>
             provider.GetRequiredService<InstrumentService>().Invalidate(@event) + provider.GetRequiredService<InstrumentValueService>().Invalidate(@event)));
-        services.AddSingleton<IAggregateCacheInvalidator<InstrumentPriceSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentPriceSetEvent>(provider.GetRequiredService<InstrumentValueService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<InstrumentIncomeSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentIncomeSetEvent>(provider.GetRequiredService<InstrumentValueService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<TransactionCreditEvent>>(provider => new AggregateCacheInvalidator<TransactionCreditEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<TransactionDebitEvent>>(provider => new AggregateCacheInvalidator<TransactionDebitEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<TransactionBookCostAdjustedEvent>>(provider => new AggregateCacheInvalidator<TransactionBookCostAdjustedEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
-        services.AddSingleton<IAggregateCacheInvalidator<TransactionCancellationEvent>>(provider => new AggregateCacheInvalidator<TransactionCancellationEvent>(provider.GetRequiredService<HoldingPositionService>().Invalidate));
+        services.AddSingleton<IAggregateCacheInvalidator<InstrumentPriceSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentPriceSetEvent>(@event =>
+            provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<InstrumentIncomeSetEvent>>(provider => new AggregateCacheInvalidator<InstrumentIncomeSetEvent>(@event =>
+            provider.GetRequiredService<InstrumentValueService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<TransactionCreditEvent>>(provider => new AggregateCacheInvalidator<TransactionCreditEvent>(@event =>
+            provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<TransactionDebitEvent>>(provider => new AggregateCacheInvalidator<TransactionDebitEvent>(@event =>
+            provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<TransactionBookCostAdjustedEvent>>(provider => new AggregateCacheInvalidator<TransactionBookCostAdjustedEvent>(@event =>
+            provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
+        services.AddSingleton<IAggregateCacheInvalidator<TransactionCancellationEvent>>(provider => new AggregateCacheInvalidator<TransactionCancellationEvent>(@event =>
+            provider.GetRequiredService<HoldingPositionService>().Invalidate(@event) + provider.GetRequiredService<ProfitLossService>().Invalidate(@event)));
         services.AddSingleton<IAggregateCacheInvalidator<ITicket>>(provider => new AggregateCacheInvalidator<ITicket>(provider.GetRequiredService<TicketService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserEvent>>(provider => new AggregateCacheInvalidator<IUserEvent>(provider.GetRequiredService<UserService>().Invalidate));
         services.AddSingleton<IAggregateCacheInvalidator<IUserMenuPreferencesEvent>>(provider => new AggregateCacheInvalidator<IUserMenuPreferencesEvent>(provider.GetRequiredService<UserMenuPreferencesService>().Invalidate));

@@ -18,8 +18,10 @@
     Currency,
     HoldingDateBasis,
     HoldingHistoryEvent,
+    HoldingProfitLossDetails,
     InstrumentPriceBasis,
     ProfitLossMethod,
+    ReportProfitLossMethod,
     TransactionReferenceEvent,
     ValuationItem,
     Valuations,
@@ -44,36 +46,8 @@
     valuations: Valuations | null;
   };
   type ExperienceRenderMode = 'full' | 'filter' | 'body';
-  type AssetProfitLossRow = {
-    rowID: string;
-    transactionType: 'Credit' | 'Debit';
-    instrumentName: string;
-    displayDateTime: string;
-    quantity: number;
-    bookCost: number;
-    realizedPnL: number | null;
-  };
-  type AssetProfitLossSummary = {
-    bookValue: number;
-    complete: boolean;
-    incompleteReason: string | null;
-    realizedPnL: number;
-    totalPnL: number | null;
-    unrealizedPnL: number | null;
-  };
-  type AssetProfitLossDetails = {
-    accountID: string;
-    currency: string;
-    holdingID: string;
-    holdingName: string;
-    instrumentName: string;
-    method: ProfitLossMethod;
-    methodLabel: string;
-    rows: AssetProfitLossRow[];
-    summary: AssetProfitLossSummary | null;
-  };
   type AssetProfitLossState = {
-    details: AssetProfitLossDetails | null;
+    details: HoldingProfitLossDetails | null;
     error: string;
     loading: boolean;
   };
@@ -96,6 +70,7 @@
 
   const valuationDependencyKinds: AggregateKind[] = [
     'HoldingPositions',
+    'ProfitLoss',
     'Holdings',
     'InstrumentValues',
     'FXs',
@@ -114,6 +89,13 @@
   let expandedAggregateAssetID = $state('');
   let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
   let profitLossByHoldingID = $state<Record<string, AssetProfitLossState>>({});
+  let profitLossMethodByHoldingID = $state<Record<string, ReportProfitLossMethod>>({});
+  const profitLossMethodOptions = [
+    { value: 'Default', label: 'Default' },
+    { value: 'FIFO', label: 'FIFO' },
+    { value: 'LIFO', label: 'LIFO' },
+    { value: 'RunningAverage', label: 'Weighted avg' }
+  ];
 
   const valuations = $derived(data.valuations);
   const accounts = $derived(data.accounts?.items ?? []);
@@ -547,6 +529,7 @@
     if (openProfitLossHoldingID === item.holdingID) {
       openProfitLossHoldingID = '';
       delete profitLossByHoldingID[item.holdingID];
+      delete profitLossMethodByHoldingID[item.holdingID];
       return;
     }
 
@@ -564,7 +547,6 @@
 
     try {
       const profitLossUrl = new URL('/Asset/ProfitLoss', window.location.origin);
-      profitLossUrl.searchParams.set('accountID', item.accountID);
       profitLossUrl.searchParams.set('holdingID', item.holdingID);
       profitLossUrl.searchParams.set('holdingDateBasis', data.holdingDateBasis);
       profitLossUrl.searchParams.set('instrumentPriceBasis', data.instrumentPriceBasis);
@@ -579,10 +561,11 @@
         throw new Error(`Profit/Loss request returned ${response.status} ${response.statusText}`);
 
       profitLossByHoldingID[item.holdingID] = {
-        details: await response.json() as AssetProfitLossDetails,
+        details: await response.json() as HoldingProfitLossDetails,
         error: '',
         loading: false
       };
+      profitLossMethodByHoldingID[item.holdingID] = 'Default';
     } catch (error) {
       profitLossByHoldingID[item.holdingID] = {
         details: null,
@@ -590,6 +573,24 @@
         loading: false
       };
     }
+  }
+
+  function selectedProfitLossMethod(holdingID: string) {
+    return profitLossMethodByHoldingID[holdingID] ?? 'Default';
+  }
+
+  function resolvedProfitLossMethod(details: HoldingProfitLossDetails, holdingID: string) {
+    const selected = selectedProfitLossMethod(holdingID);
+    return selected === 'Default' ? details.defaultMethod : selected;
+  }
+
+  function selectProfitLossMethod(holdingID: string, event: Event) {
+    profitLossMethodByHoldingID[holdingID] = (event.currentTarget as HTMLInputElement).value as ReportProfitLossMethod;
+  }
+
+  function profitLossMethodLabel(selected: ReportProfitLossMethod, resolved: ProfitLossMethod) {
+    const label = resolved === 'RunningAverage' ? 'Weighted average' : resolved;
+    return selected === 'Default' ? `Default (${label})` : label;
   }
 
   function moneyTone(value: number | null | undefined) {
@@ -1116,21 +1117,35 @@
                           {:else if profitLoss?.error}
                             <Card density="compact" intent="error">{profitLoss.error}</Card>
                           {:else if profitLoss?.details}
+                            {@const selectedMethod = selectedProfitLossMethod(item.holdingID)}
+                            {@const resolvedMethod = resolvedProfitLossMethod(profitLoss.details, item.holdingID)}
+                            {@const summary = profitLoss.details.methods.find((method) => method.method === resolvedMethod) ?? null}
                             <section class="asset-pnl-card" aria-label={`Profit/Loss for ${itemDisplay.instrumentName}`}>
                               <header class="asset-pnl-header">
                                 <div>
                                   <h3>Profit/Loss</h3>
-                                  <p>{profitLoss.details.methodLabel}</p>
+                                  <p>{profitLossMethodLabel(selectedMethod, resolvedMethod)}</p>
                                 </div>
-                                {#if profitLoss.details.summary}
-                                  <div class={`asset-pnl-total ${moneyTone(profitLoss.details.summary.totalPnL)}`}>
-                                    {formatMoney(profitLoss.details.summary.totalPnL, profitLoss.details.currency)}
-                                  </div>
-                                {/if}
+                                <div class="asset-pnl-header-actions">
+                                  <PillGroup
+                                    ariaLabel="Profit/Loss book cost method"
+                                    class="asset-pnl-methods"
+                                    compact
+                                    name={`profitLossMethod-${item.holdingID}`}
+                                    onchange={(event) => selectProfitLossMethod(item.holdingID, event)}
+                                    options={profitLossMethodOptions}
+                                    value={selectedMethod}
+                                  />
+                                  {#if summary}
+                                    <div class={`asset-pnl-total ${moneyTone(summary.totalPnL)}`}>
+                                      {formatMoney(summary.totalPnL, profitLoss.details.currency)}
+                                    </div>
+                                  {/if}
+                                </div>
                               </header>
 
-                              {#if profitLoss.details.summary && !profitLoss.details.summary.complete && profitLoss.details.summary.incompleteReason}
-                                <Card density="compact" intent="warning">{profitLoss.details.summary.incompleteReason}</Card>
+                              {#if summary && !summary.complete && summary.incompleteReason}
+                                <Card density="compact" intent="warning">{summary.incompleteReason}</Card>
                               {/if}
 
                               <div class="asset-pnl-table-wrap">
@@ -1146,19 +1161,20 @@
                                   </thead>
                                   <tbody>
                                     {#if profitLoss.details.rows.length}
-                                      {#each profitLoss.details.rows as row (row.rowID)}
+                                      {#each profitLoss.details.rows as row (row.eventID)}
+                                        {@const rowRealizedPnL = row.methods.find((method) => method.method === resolvedMethod)?.realizedPnL ?? null}
                                         <tr>
                                           <td>
                                             <div class="asset-pnl-instrument">
-                                              <span>{row.instrumentName || profitLoss.details.instrumentName || itemDisplay.instrumentName}</span>
+                                              <span>{profitLoss.details.instrumentName || itemDisplay.instrumentName}</span>
                                               <small>{row.transactionType}</small>
                                             </div>
                                           </td>
                                           <td>{formatTableDateTime(row.displayDateTime)}</td>
                                           <td class="text-right font-mono">{formatNumber(row.quantity)}</td>
                                           <td class="text-right font-mono">{formatMoney(row.bookCost, profitLoss.details.currency)}</td>
-                                          <td class={`text-right font-mono font-semibold ${moneyTone(row.realizedPnL)}`}>
-                                            {formatMoney(row.realizedPnL, profitLoss.details.currency)}
+                                          <td class={`text-right font-mono font-semibold ${moneyTone(rowRealizedPnL)}`}>
+                                            {formatMoney(rowRealizedPnL, profitLoss.details.currency)}
                                           </td>
                                         </tr>
                                       {/each}
@@ -1168,23 +1184,23 @@
                                       </tr>
                                     {/if}
 
-                                    {#if profitLoss.details.summary}
+                                    {#if summary}
                                       <tr class="asset-pnl-summary-row">
                                         <th scope="row" colspan="4">Realised PnL</th>
-                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.realizedPnL)}`}>
-                                          {formatMoney(profitLoss.details.summary.realizedPnL, profitLoss.details.currency)}
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(summary.realizedPnL)}`}>
+                                          {formatMoney(summary.realizedPnL, profitLoss.details.currency)}
                                         </td>
                                       </tr>
                                       <tr class="asset-pnl-summary-row">
                                         <th scope="row" colspan="4">Unrealised PnL</th>
-                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.unrealizedPnL)}`}>
-                                          {formatMoney(profitLoss.details.summary.unrealizedPnL, profitLoss.details.currency)}
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(summary.unrealizedPnL)}`}>
+                                          {formatMoney(summary.unrealizedPnL, profitLoss.details.currency)}
                                         </td>
                                       </tr>
                                       <tr class="asset-pnl-summary-row asset-pnl-summary-total">
                                         <th scope="row" colspan="4">Total PnL</th>
-                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.totalPnL)}`}>
-                                          {formatMoney(profitLoss.details.summary.totalPnL, profitLoss.details.currency)}
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(summary.totalPnL)}`}>
+                                          {formatMoney(summary.totalPnL, profitLoss.details.currency)}
                                         </td>
                                       </tr>
                                     {/if}
@@ -1591,6 +1607,17 @@
     font-size: 0.75rem;
     font-weight: 620;
     line-height: 1.25;
+  }
+
+  .asset-pnl-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  :global(.asset-pnl-methods.house-pill-group) {
+    width: fit-content;
   }
 
   .asset-pnl-total {

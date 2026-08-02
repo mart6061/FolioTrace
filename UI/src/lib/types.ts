@@ -248,6 +248,31 @@ export type ProfitLossMethodValue = {
   incompleteReason?: string | null;
 };
 
+export type ProfitLossMovementMethodValue = {
+  method: ProfitLossMethod;
+  realizedPnL?: number | null;
+};
+
+export type ProfitLossMovement = {
+  eventID: string;
+  transactionType: 'Credit' | 'Debit';
+  displayDateTime: string;
+  quantity: number;
+  bookCost: number;
+  methods: ProfitLossMovementMethodValue[];
+};
+
+export type HoldingProfitLossDetails = {
+  accountID: string;
+  currency: string;
+  holdingID: string;
+  holdingName: string;
+  instrumentName: string;
+  defaultMethod: ProfitLossMethod;
+  methods: ProfitLossMethodValue[];
+  rows: ProfitLossMovement[];
+};
+
 export type ProfitLossItem = {
   accountID: string;
   accountName: string;
@@ -264,12 +289,14 @@ export type ProfitLossItem = {
   marketValue?: number | null;
   bookCost: number;
   methods: ProfitLossMethodValue[];
+  rows: ProfitLossMovement[];
 };
 
 export type AccountProfitLoss = {
   accountID: string;
   accountName: string;
   bookCurrency: string;
+  defaultMethod: ProfitLossMethod;
   items: ProfitLossItem[];
   totals: ProfitLossMethodValue[];
 };
@@ -1100,6 +1127,15 @@ export type MemoryDiagnostics = {
     positionCount: number;
     estimatedMemoryBytes: number;
   };
+  profitLossService?: {
+    cacheEntryCount: number;
+    holdingCount: number;
+    estimatedMemoryBytes: number;
+    snapshotVerifiedCount: number;
+    snapshotMismatchCount: number;
+    lastSnapshotMismatchAtUtc: string | null;
+    lastSnapshotMismatchDetails: string | null;
+  };
   instrumentService?: {
     cacheEntryCount: number;
     instrumentCount: number;
@@ -1271,6 +1307,7 @@ export type AggregateKind =
   | 'FoleoTraderOrders'
   | 'Holdings'
   | 'HoldingPositions'
+  | 'ProfitLoss'
   | 'Instruments'
   | 'InstrumentValues'
   | 'ReportConfigs'

@@ -10,6 +10,8 @@ public sealed record AccountProfitLoss
 
     public required Alpha3 BookCurrency { get; init; }
 
+    public required ProfitLossMethod DefaultMethod { get; init; }
+
     public required IReadOnlyList<ProfitLossItem> Items { get; init; }
 
     public required IReadOnlyList<ProfitLossMethodValue> Totals { get; init; }
