@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
-  import { Card, MenuCardGroup, PageCard, PageTitle, SortableHeader, TableTools, type MenuCardItem } from '$lib/components/page';
+  import { Card, MenuCardGroup, PageCard, PageTitle, PageTitleSizeControl, SortableHeader, TableExportActions, TableTools, type MenuCardItem } from '$lib/components/page';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import DateTimeRangeInput from '$lib/components/DateTimeRangeInput.svelte';
   import DateControlConfigurationEditor from '$lib/components/DateControlConfigurationEditor.svelte';
@@ -9,6 +9,7 @@
   import { AccountDropdown, BrokerDropdown, Button, ComplexSelect, ConfirmInput, Dropdown, Field, HoldingDropdown, MoneyInput, PercentInput, PillGroup, PriceInput, QuantityInput, Select, TextArea, TextInput, TicketDropdown, Toggle, type ComplexSelectOption, type PillOption } from '$lib/components/forms';
   import { toApiDateTime } from '$lib/dates';
   import { cloneDateControlConfiguration, defaultRangeOption, resolveRangeRule } from '$lib/dateRules';
+  import type { TableExportDefinition } from '$lib/export';
   import type { DateControlConfiguration, InputControlKind, InputControlPolicy } from '$lib/types';
 
   let { data } = $props();
@@ -60,8 +61,11 @@
   let selectedTicketNumbers = $state<number[]>([]);
   let selectedPolicyCurrency = $state('GBP');
   let pageHeaderMinimized = $state(false);
+  let explorerPageHeaderMinimized = $state(false);
   let selectedTemplateCard = $state('filter-card');
   let tableTemplateFilter = $state('');
+  let tableTemplateSortKey = $state<'name' | 'type' | 'status'>('name');
+  let tableTemplateSortDirection = $state<1 | -1>(1);
   let tableToolStatus = $state('Use the table tools to act on this reusable container.');
   type TemplateReference = {
     name: string;
@@ -78,9 +82,9 @@
     button: templateReference<ComponentProps<typeof Button>>('Button', ['children', 'class', 'disabled', 'fullWidth', 'onclick', 'size', 'type', 'variant']),
     card: templateReference<ComponentProps<typeof Card>>('Card', ['actions', 'ariaLive', 'children', 'class', 'density', 'intent', 'role', 'subtitle', 'title']),
     complexSelect: templateReference<ComponentProps<typeof ComplexSelect>>('ComplexSelect', ['ariaLabel', 'class', 'compactBrand', 'confirmSelection', 'disabled', 'emptyText', 'id', 'minimumSelections', 'multiple', 'name', 'onchange', 'onclose', 'onopenchange', 'open', 'options', 'placeholder', 'searchPlaceholder', 'showClear', 'showSelectAll', 'summary', 'value', 'values']),
-    dateTimeInput: templateReference<ComponentProps<typeof DateTimeInput>>('DateTimeInput', ['class', 'disabled', 'form', 'fullWidth', 'futureLimited', 'invalid', 'id', 'max', 'min', 'name', 'onchange', 'required', 'showShortcuts', 'shortcutMode', 'size', 'step', 'value']),
+    dateTimeInput: templateReference<ComponentProps<typeof DateTimeInput>>('DateTimeInput', ['class', 'disabled', 'form', 'fullWidth', 'futureLimited', 'invalid', 'id', 'max', 'min', 'name', 'onchange', 'required', 'size', 'step', 'value']),
     dateTimeRangeInput: templateReference<ComponentProps<typeof DateTimeRangeInput>>('DateTimeRangeInput', ['configuration', 'disabled', 'end', 'endName', 'form', 'fullWidth', 'invalid', 'onchange', 'relative', 'required', 'start', 'startName']),
-    dateControlConfigurationEditor: templateReference<ComponentProps<typeof DateControlConfigurationEditor>>('DateControlConfigurationEditor', ['configuration', 'inherited', 'oncustomize', 'readonly']),
+    dateControlConfigurationEditor: templateReference<ComponentProps<typeof DateControlConfigurationEditor>>('DateControlConfigurationEditor', ['configuration', 'inherited', 'oncustomize', 'readonly', 'showFinancialYearSettings']),
     bookmarkButton: templateReference<ComponentProps<typeof BookmarkButton>>('BookmarkButton', []),
     themeModeControl: templateReference<ComponentProps<typeof ThemeModeControl>>('ThemeModeControl', ['class', 'label']),
     dropdown: templateReference<ComponentProps<typeof Dropdown>>('Dropdown', ['children', 'class', 'close', 'compactBrand', 'disabled', 'ontoggle', 'open', 'summary']),
@@ -93,10 +97,12 @@
     priceInput: templateReference<ComponentProps<typeof PriceInput>>('PriceInput', ['class', 'currency', 'disabled', 'displayValue', 'formattedValue', 'id', 'label', 'name', 'policy', 'required', 'size', 'validationMessages', 'value']),
     pageCard: templateReference<ComponentProps<typeof PageCard>>('PageCard', ['accent', 'title', 'subtitle', 'actions', 'children']),
     pageTitle: templateReference<ComponentProps<typeof PageTitle>>('PageTitle', ['kicker', 'title', 'description', 'details', 'minimized', 'bookmark', 'filter']),
+    pageTitleSizeControl: templateReference<ComponentProps<typeof PageTitleSizeControl>>('PageTitleSizeControl', ['minimized']),
     pillGroup: templateReference<ComponentProps<typeof PillGroup>>('PillGroup', ['ariaLabel', 'class', 'compact', 'id', 'mode', 'name', 'onchange', 'options', 'value', 'values']),
     quantityInput: templateReference<ComponentProps<typeof QuantityInput>>('QuantityInput', ['class', 'disabled', 'displayValue', 'formattedValue', 'id', 'label', 'name', 'policy', 'required', 'size', 'validationMessages', 'value']),
     sortableHeader: templateReference<ComponentProps<typeof SortableHeader>>('SortableHeader', ['activeKey', 'buttonClass', 'children', 'class', 'direction', 'onsort', 'sortKey']),
-    tableTools: templateReference<ComponentProps<typeof TableTools>>('TableTools', ['filterText', 'filterLabel', 'placeholder', 'onadd', 'onexportjson', 'onexportcsv', 'onexportxlsx', 'onprint']),
+    tableExportActions: templateReference<ComponentProps<typeof TableExportActions>>('TableExportActions', ['definition', 'inline']),
+    tableTools: templateReference<ComponentProps<typeof TableTools>>('TableTools', ['filterText', 'filterLabel', 'placeholder', 'onadd', 'exportDefinition', 'onprint']),
     select: templateReference<ComponentProps<typeof Select>>('Select', ['children', 'class', 'disabled', 'fullWidth', 'id', 'invalid', 'name', 'required', 'size', 'value']),
     textArea: templateReference<ComponentProps<typeof TextArea>>('TextArea', ['class', 'disabled', 'fullWidth', 'id', 'invalid', 'name', 'placeholder', 'required', 'rows', 'size', 'value']),
     textInput: templateReference<ComponentProps<typeof TextInput>>('TextInput', ['class', 'disabled', 'fullWidth', 'id', 'invalid', 'name', 'placeholder', 'required', 'size', 'type', 'value']),
@@ -113,7 +119,8 @@
     { category: 'Numeric', id: 'moneyInput', label: 'Money input', reference: templateReferences.moneyInput },
     { category: 'Numeric', id: 'priceInput', label: 'Price input', reference: templateReferences.priceInput },
     { category: 'Numeric', id: 'percentInput', label: 'Percent input', reference: templateReferences.percentInput },
-    { category: 'Date', id: 'dateTimeInput', label: 'Date and time input', reference: templateReferences.dateTimeInput },
+    { category: 'Date', id: 'dateTimePicker', label: 'Datetime picker', reference: templateReferences.dateTimeInput },
+    { category: 'Date', id: 'dateTimeRangePicker', label: 'Datetime range picker', reference: templateReferences.dateTimeRangeInput },
     { category: 'Selection', id: 'select', label: 'Select', reference: templateReferences.select },
     { category: 'Selection', id: 'toggle', label: 'Toggle', reference: templateReferences.toggle },
     { category: 'Selection', id: 'pillGroup', label: 'Pill group', reference: templateReferences.pillGroup },
@@ -127,7 +134,9 @@
     { category: 'Form structure', id: 'dropdown', label: 'Dropdown shell', reference: templateReferences.dropdown },
     { category: 'Form structure', id: 'confirmInput', label: 'Confirm input', reference: templateReferences.confirmInput },
     { category: 'Page chrome', id: 'pageTitle', label: 'Page title', reference: templateReferences.pageTitle },
+    { category: 'Page chrome', id: 'pageTitleSizeControl', label: 'Expand / collapse', reference: templateReferences.pageTitleSizeControl },
     { category: 'Page chrome', id: 'sortableHeader', label: 'Sortable header', reference: templateReferences.sortableHeader },
+    { category: 'Page chrome', id: 'tableExportActions', label: 'Table export actions', reference: templateReferences.tableExportActions },
     { category: 'Page chrome', id: 'bookmarkButton', label: 'Bookmark button', reference: templateReferences.bookmarkButton },
     { category: 'Page chrome', id: 'themeModeControl', label: 'Theme mode control', reference: templateReferences.themeModeControl }
   ] as const;
@@ -271,7 +280,27 @@
   ];
   const filteredTableTemplateRows = $derived(tableTemplateRows.filter((row) =>
     `${row.name} ${row.type} ${row.status}`.toLowerCase().includes(tableTemplateFilter.trim().toLowerCase())
-  ));
+  ).sort((left, right) => tableTemplateSortDirection * left[tableTemplateSortKey].localeCompare(right[tableTemplateSortKey])));
+  const tableTemplateExport = $derived<TableExportDefinition>({
+    fileName: 'ideas-table-template',
+    sheetName: 'Ideas table',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'type', label: 'Type' },
+      { key: 'status', label: 'Status' }
+    ],
+    rows: filteredTableTemplateRows
+  });
+  const explorerSortedRows = $derived([...tableTemplateRows].sort((left, right) => explorerSortDirection * left[explorerSortKey].localeCompare(right[explorerSortKey])));
+  const explorerTableExport = $derived<TableExportDefinition>({
+    fileName: 'ideas-sortable-header-template',
+    sheetName: 'Sortable header',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'type', label: 'Type' }
+    ],
+    rows: explorerSortedRows
+  });
   const displayModeOptions = [
     { label: 'Discrete', value: 'Discrete' },
     { label: 'Aggregate', value: 'Aggregate' }
@@ -372,6 +401,15 @@
   function showTableToolStatus(action: string) {
     const rowCount = filteredTableTemplateRows.length;
     tableToolStatus = `${action} selected for ${rowCount} visible row${rowCount === 1 ? '' : 's'}.`;
+  }
+
+  function setTableTemplateSort(key: 'name' | 'type' | 'status') {
+    if (tableTemplateSortKey === key) {
+      tableTemplateSortDirection = tableTemplateSortDirection === 1 ? -1 : 1;
+      return;
+    }
+    tableTemplateSortKey = key;
+    tableTemplateSortDirection = 1;
   }
 
   $effect(() => {
@@ -499,9 +537,25 @@
               <Field controlId="ideas-explorer-pill-group" label="Pill group">
                 <PillGroup ariaLabel="Explorer view mode" bind:value={explorerPillValue} compact id="ideas-explorer-pill-group" name="explorerPillGroup" options={displayModeOptions} />
               </Field>
-            {:else if selectedInputTemplateID === 'dateTimeInput'}
-              <Field controlId="ideas-explorer-date-time" label="Date and time input">
-                <DateTimeInput id="ideas-explorer-date-time" fullWidth name="explorerDateTime" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
+            {:else if selectedInputTemplateID === 'dateTimePicker'}
+              <Field class="template-date-field" controlId="ideas-explorer-date-time" label="Datetime picker">
+                <DateTimeInput bind:relative={templateDateExpression} id="ideas-explorer-date-time" fullWidth name="explorerDateTime" step="1" bind:value={() => templateValuationDate, setTemplateValuationDate} />
+                <span class="template-date-dev-value">Value: {templateValuationDate || '(empty)'}</span>
+                <span class="template-date-dev-value">Rule: {templateDateExpression || 'Custom'}</span>
+              </Field>
+            {:else if selectedInputTemplateID === 'dateTimeRangePicker'}
+              <Field class="template-date-field template-wide-field" controlId="explorerRangeStart-input" label="Datetime range picker">
+                <DateTimeRangeInput
+                  bind:end={templateRangeEnd}
+                  bind:relative={templateRangeExpression}
+                  bind:start={templateRangeStart}
+                  endName="explorerRangeEnd"
+                  fullWidth
+                  startName="explorerRangeStart"
+                />
+                <span class="template-date-dev-value">Start: {templateRangeStart || '(empty)'}</span>
+                <span class="template-date-dev-value">End: {templateRangeEnd || '(empty)'}</span>
+                <span class="template-date-dev-value">Rule: {templateRangeExpression || 'Custom'}</span>
               </Field>
             {:else if selectedInputTemplateID === 'quantityInput'}
               <QuantityInput label="Quantity input" name="explorerQuantity" policy={quantityPolicy} bind:displayValue={quantityDisplayValue} bind:formattedValue={quantityFormattedValue} bind:validationMessages={quantityValidationMessages} bind:value={quantityValue} />
@@ -559,8 +613,17 @@
                   hand-rolling a header. Live examples sit at the top of this page and on Input Control Settings.
                 </p>
               </div>
+            {:else if selectedInputTemplateID === 'pageTitleSizeControl'}
+              <div class="input-template-chrome-demo">
+                <PageTitleSizeControl bind:minimized={explorerPageHeaderMinimized} />
+                <p class="template-copy">
+                  The shared <code>page-title-template-size</code> control toggles between expanded and collapsed page-header states.
+                  Bind <code>minimized</code> to the same state passed to <code>PageTitle</code>.
+                </p>
+              </div>
             {:else if selectedInputTemplateID === 'sortableHeader'}
               <div class="input-template-chrome-demo">
+                <TableExportActions definition={explorerTableExport} />
                 <table class="template-table">
                   <thead>
                     <tr>
@@ -569,7 +632,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {#each [...tableTemplateRows].sort((left, right) => explorerSortDirection * left[explorerSortKey].localeCompare(right[explorerSortKey])) as row (row.name)}
+                    {#each explorerSortedRows as row (row.name)}
                       <tr><td>{row.name}</td><td>{row.type}</td></tr>
                     {/each}
                   </tbody>
@@ -578,6 +641,11 @@
                   Renders the cell as well as the button, because <code>aria-sort</code> belongs on the column header
                   rather than the control inside it. Clicking the active column reverses it.
                 </p>
+              </div>
+            {:else if selectedInputTemplateID === 'tableExportActions'}
+              <div class="input-template-chrome-demo">
+                <TableExportActions definition={tableTemplateExport} />
+                <p class="template-copy">Downloads the supplied visible rows as normalized JSON, UTF-8 CSV, or a genuine XLSX workbook. Use it directly for nested tables, or pass the same definition to <code>TableTools</code>.</p>
               </div>
             {:else if selectedInputTemplateID === 'confirmInput'}
               <div class="input-template-chrome-demo">
@@ -632,18 +700,20 @@
       {/snippet}
       <TableTools
         bind:filterText={tableTemplateFilter}
+        exportDefinition={tableTemplateExport}
         filterLabel="Filter template rows"
         placeholder="Filter template rows..."
         onadd={() => showTableToolStatus('Add')}
-        onexportjson={() => showTableToolStatus('JSON export')}
-        onexportcsv={() => showTableToolStatus('CSV export')}
-        onexportxlsx={() => showTableToolStatus('XLSX export')}
         onprint={() => showTableToolStatus('Print')}
       />
       {@render showTemplateReference(templateReferences.tableTools)}
       <div class="template-table-wrap overflow-x-auto">
         <table class="template-table">
-          <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+          <thead><tr>
+            <SortableHeader activeKey={tableTemplateSortKey} direction={tableTemplateSortDirection} onsort={setTableTemplateSort} sortKey="name">Name</SortableHeader>
+            <SortableHeader activeKey={tableTemplateSortKey} direction={tableTemplateSortDirection} onsort={setTableTemplateSort} sortKey="type">Type</SortableHeader>
+            <SortableHeader activeKey={tableTemplateSortKey} direction={tableTemplateSortDirection} onsort={setTableTemplateSort} sortKey="status">Status</SortableHeader>
+          </tr></thead>
           <tbody>
             {#each filteredTableTemplateRows as row (row.name)}
               <tr><td>{row.name}</td><td>{row.type}</td><td>{row.status}</td></tr>
@@ -1227,7 +1297,6 @@
   }
 
   :global(.template-page.template-page .house-control),
-  :global(.template-page.template-page .datetime-input-control-embedded),
   :global(.template-page.template-page .table-filter input) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
     background: var(--panel);
@@ -1266,13 +1335,13 @@
     margin-inline: -1rem;
   }
 
-  .template-table th,
+  :global(.template-table th),
   .template-table td {
     border-bottom: 1px solid var(--line);
     padding: 0.55rem 0.7rem;
   }
 
-  .template-table th {
+  :global(.template-table th) {
     background: var(--panel-muted);
     color: var(--muted);
     font-size: 0.7rem;

@@ -3,10 +3,11 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
-  import Card from '$lib/components/page/Card.svelte';
+  import { Card, PageCard, SortableHeader, TableExportActions, TableTools } from '$lib/components/page';
   import { ComplexSelect, Field, PillGroup, type ComplexSelectOption } from '$lib/components/forms';
   import { formatTableDateTime, toApiDateTime } from '$lib/dates';
   import { holdingDateBasisOptions, valuationPriceConventionOptions } from '$lib/valuationPreferences';
+  import type { TableExportDefinition } from '$lib/export';
   import { tick } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import type {
@@ -18,8 +19,10 @@
     Currency,
     HoldingDateBasis,
     HoldingHistoryEvent,
+    HoldingProfitLossDetails,
     InstrumentPriceBasis,
     ProfitLossMethod,
+    ReportProfitLossMethod,
     TransactionReferenceEvent,
     ValuationItem,
     Valuations,
@@ -34,6 +37,7 @@
     assetViewMode: 'Discrete' | 'Aggregate';
     auditDateTime: string;
     currencies: Currencies | null;
+    dateExpression: string;
     error: string;
     holdingDateBasis: HoldingDateBasis;
     instrumentPriceBasis: InstrumentPriceBasis;
@@ -44,36 +48,8 @@
     valuations: Valuations | null;
   };
   type ExperienceRenderMode = 'full' | 'filter' | 'body';
-  type AssetProfitLossRow = {
-    rowID: string;
-    transactionType: 'Credit' | 'Debit';
-    instrumentName: string;
-    displayDateTime: string;
-    quantity: number;
-    bookCost: number;
-    realizedPnL: number | null;
-  };
-  type AssetProfitLossSummary = {
-    bookValue: number;
-    complete: boolean;
-    incompleteReason: string | null;
-    realizedPnL: number;
-    totalPnL: number | null;
-    unrealizedPnL: number | null;
-  };
-  type AssetProfitLossDetails = {
-    accountID: string;
-    currency: string;
-    holdingID: string;
-    holdingName: string;
-    instrumentName: string;
-    method: ProfitLossMethod;
-    methodLabel: string;
-    rows: AssetProfitLossRow[];
-    summary: AssetProfitLossSummary | null;
-  };
   type AssetProfitLossState = {
-    details: AssetProfitLossDetails | null;
+    details: HoldingProfitLossDetails | null;
     error: string;
     loading: boolean;
   };
@@ -96,6 +72,7 @@
 
   const valuationDependencyKinds: AggregateKind[] = [
     'HoldingPositions',
+    'ProfitLoss',
     'Holdings',
     'InstrumentValues',
     'FXs',
@@ -110,10 +87,24 @@
   let holdingBasis: HoldingDateBasis = $derived(data.holdingDateBasis);
   let priceBasis: InstrumentPriceBasis = $derived(data.instrumentPriceBasis);
   let priceConvention: ValuationPriceConvention = $derived(data.valuationPriceConvention);
+  let dateExpression = $derived(data.dateExpression);
   let valuationCurrency = $derived(data.valuationCurrency);
+  let aggregateTableFilter = $state('');
+  let accountTableFilters = $state<Record<string, string>>({});
+  let aggregateSortKey = $state<AssetSortKey>('name');
+  let aggregateSortDirection = $state<1 | -1>(1);
+  let accountSortKeys = $state<Record<string, AssetSortKey>>({});
+  let accountSortDirections = $state<Record<string, 1 | -1>>({});
   let expandedAggregateAssetID = $state('');
   let historyByHoldingID = $state<Record<string, { events: HoldingHistoryEvent[]; error: string; loading: boolean }>>({});
   let profitLossByHoldingID = $state<Record<string, AssetProfitLossState>>({});
+  let profitLossMethodByHoldingID = $state<Record<string, ReportProfitLossMethod>>({});
+  const profitLossMethodOptions = [
+    { value: 'Default', label: 'Default' },
+    { value: 'FIFO', label: 'FIFO' },
+    { value: 'LIFO', label: 'LIFO' },
+    { value: 'RunningAverage', label: 'Weighted avg' }
+  ];
 
   const valuations = $derived(data.valuations);
   const accounts = $derived(data.accounts?.items ?? []);
@@ -128,7 +119,14 @@
     tone: account.active ? undefined : 'alert'
   })));
   const selectedBookCurrencies = $derived(selectedBookCurrencyList());
-  const aggregateRows = $derived.by(() => valuations ? aggregateAssetRows(valuations.accounts) : []);
+  const aggregateWeightedAccounts = $derived.by(() => valuations ? reweightAccounts(valuations.accounts) : []);
+  const discreteWeightedAccounts = $derived.by(() => valuations ? reweightDiscreteAccounts(valuations.accounts) : []);
+  const aggregateRows = $derived.by(() => aggregateAssetRows(aggregateWeightedAccounts));
+  const filteredAggregateRows = $derived.by(() => sortAssetRows(
+    filterAssetRows(aggregateRows, aggregateTableFilter),
+    aggregateSortKey,
+    aggregateSortDirection
+  ));
   const aggregateBookCostUnavailable = $derived(displayMode === 'Aggregate' && selectedBookCurrencies.length > 1);
   const displayModeOptions = [
     { label: 'Discrete', value: 'Discrete' },
@@ -177,6 +175,25 @@
     quotePrice?: number | null;
     valuationCurrency: string;
     weightPercent: number | null;
+  };
+  type AssetSortKey = 'name' | 'kind' | 'quantity' | 'weight' | 'localPrice' | 'fx' | 'quotePrice' | 'bookValue' | 'bookCost' | 'status';
+  type SortableAssetRow = {
+    bookCost?: number | null;
+    bookValue?: number | null;
+    complete: boolean;
+    fxDisplayPair?: string | null;
+    fxPair?: string | null;
+    fxRate?: number | null;
+    holdingKind: string;
+    holdingName?: string | null;
+    instrumentName: string;
+    localPrice?: number | null;
+    name?: string | null;
+    priceCurrency?: string | null;
+    quantity: number;
+    quotePrice?: number | null;
+    valuationCurrency?: string | null;
+    weightPercent?: number | null;
   };
 
   function formatNumber(value: number | null | undefined, digits = 4) {
@@ -272,6 +289,76 @@
       : accounts;
 
     return [...new Set(selectedAccounts.map((account) => account.bookCurrency).filter(Boolean))];
+  }
+
+  function finalItemValue(item: ValuationItem) {
+    return (item.bookValue ?? 0) + (showAccrued ? item.accruedValue ?? 0 : 0);
+  }
+
+  function reconcileWeightPercentages(values: Array<number | null>) {
+    const total = values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+    if (!Number.isFinite(total) || total === 0)
+      return values.map(() => null);
+
+    const weighted = values
+      .map((value, index) => value === null ? null : {
+        index,
+        rawBasisPoints: value / total * 10_000
+      })
+      .filter((entry): entry is { index: number; rawBasisPoints: number } => entry !== null)
+      .map((entry) => ({
+        ...entry,
+        basisPoints: Math.round(entry.rawBasisPoints),
+        remainder: entry.rawBasisPoints - Math.round(entry.rawBasisPoints)
+      }));
+
+    let adjustment = 10_000 - weighted.reduce((sum, entry) => sum + entry.basisPoints, 0);
+    const adjustmentOrder = [...weighted].sort((left, right) =>
+      adjustment > 0
+        ? right.remainder - left.remainder
+        : left.remainder - right.remainder
+    );
+
+    for (let index = 0; adjustment !== 0 && adjustmentOrder.length; index = (index + 1) % adjustmentOrder.length) {
+      const step = adjustment > 0 ? 1 : -1;
+      adjustmentOrder[index].basisPoints += step;
+      adjustment -= step;
+    }
+
+    const byIndex = new Map(weighted.map((entry) => [entry.index, entry.basisPoints / 100]));
+    return values.map((value, index) => value === null ? null : byIndex.get(index) ?? null);
+  }
+
+  function reweightAccounts(accountValuations: AccountValuation[]) {
+    const itemValues = accountValuations.flatMap((account) =>
+      account.items.map((item) => item.bookValue === null || item.bookValue === undefined ? null : finalItemValue(item))
+    );
+    const weights = reconcileWeightPercentages(itemValues);
+    let weightIndex = 0;
+
+    return accountValuations.map((account) => ({
+      ...account,
+      items: account.items.map((item) => ({
+        ...item,
+        weightPercent: weights[weightIndex++]
+      }))
+    }));
+  }
+
+  function reweightDiscreteAccounts(accountValuations: AccountValuation[]) {
+    return accountValuations.map((account) => {
+      const weights = reconcileWeightPercentages(
+        account.items.map((item) => item.bookValue === null || item.bookValue === undefined ? null : finalItemValue(item))
+      );
+
+      return {
+        ...account,
+        items: account.items.map((item, index) => ({
+          ...item,
+          weightPercent: weights[index]
+        }))
+      };
+    });
   }
 
   async function submitFilterChange() {
@@ -398,7 +485,7 @@
       group.bookValue + (showAccrued ? group.accruedValue : 0);
     const totalBookValue = [...groups.values()].reduce((total, group) => total + finalValue(group), 0);
 
-    return [...groups.entries()]
+    const rows = [...groups.entries()]
       .map(([assetID, group]) => ({
         assetID,
         accountCount: group.accountIDs.size,
@@ -431,6 +518,9 @@
         weightPercent: totalBookValue > 0 ? finalValue(group) / totalBookValue * 100 : null
       }))
       .sort((left, right) => left.name.localeCompare(right.name));
+
+    const weights = reconcileWeightPercentages(rows.map((row) => row.weightPercent));
+    return rows.map((row, index) => ({ ...row, weightPercent: weights[index] }));
   }
 
   function toggleAggregateDetail(assetID: string) {
@@ -446,9 +536,190 @@
     };
   }
 
-  function optionSummary(option: NonNullable<ValuationItem['option']>) {
-    const status = option.expired ? 'Expired' : 'Active';
-    return `${option.optionType} ${option.strikeCurrency} ${formatNumber(option.strikePrice)} · ${option.expirationDate} · ×${formatNumber(option.contractMultiplier)} · ${status}`;
+  function filterAssetRows<T extends { holdingKind: string; holdingName?: string | null; instrumentName: string; name?: string | null }>(items: T[], filter: string) {
+    const normalizedFilter = filter.trim().toLowerCase();
+    if (!normalizedFilter)
+      return items;
+
+    return items.filter((item) => {
+      const display = assetDisplayName(item);
+      return [display.instrumentName, display.ticker, item.holdingName, item.name, holdingKindLabel(item.holdingKind)]
+        .filter(Boolean)
+        .some((value) => value?.toLowerCase().includes(normalizedFilter));
+    });
+  }
+
+  function filteredAccountItems(account: AccountValuation) {
+    return sortAssetRows(
+      filterAssetRows(account.items, accountTableFilters[account.accountID] ?? ''),
+      accountSortKey(account.accountID),
+      accountSortDirection(account.accountID)
+    );
+  }
+
+  function setAggregateSort(nextSortKey: AssetSortKey) {
+    if (aggregateSortKey === nextSortKey) {
+      aggregateSortDirection = aggregateSortDirection === 1 ? -1 : 1;
+      return;
+    }
+
+    aggregateSortKey = nextSortKey;
+    aggregateSortDirection = 1;
+  }
+
+  function accountSortKey(accountID: string) {
+    return accountSortKeys[accountID] ?? 'name';
+  }
+
+  function accountSortDirection(accountID: string) {
+    return accountSortDirections[accountID] ?? 1;
+  }
+
+  function setAccountSort(accountID: string, nextSortKey: AssetSortKey) {
+    if (accountSortKey(accountID) === nextSortKey) {
+      accountSortDirections[accountID] = accountSortDirection(accountID) === 1 ? -1 : 1;
+      return;
+    }
+
+    accountSortKeys[accountID] = nextSortKey;
+    accountSortDirections[accountID] = 1;
+  }
+
+  function sortAssetRows<T extends SortableAssetRow>(items: T[], sortKey: AssetSortKey, direction: 1 | -1) {
+    return [...items].sort((left, right) => {
+      let comparison = 0;
+
+      switch (sortKey) {
+        case 'kind':
+          comparison = holdingKindLabel(left.holdingKind).localeCompare(holdingKindLabel(right.holdingKind));
+          break;
+        case 'quantity':
+          comparison = compareNullableNumbers(left.quantity, right.quantity, direction);
+          break;
+        case 'weight':
+          comparison = compareNullableNumbers(left.weightPercent, right.weightPercent, direction);
+          break;
+        case 'localPrice':
+          comparison = compareNullableNumbers(left.localPrice, right.localPrice, direction);
+          break;
+        case 'fx':
+          comparison = compareNullableNumbers(left.fxRate, right.fxRate, direction);
+          break;
+        case 'quotePrice':
+          comparison = compareNullableNumbers(left.quotePrice, right.quotePrice, direction);
+          break;
+        case 'bookValue':
+          comparison = compareNullableNumbers(left.bookValue, right.bookValue, direction);
+          break;
+        case 'bookCost':
+          comparison = compareNullableNumbers(left.bookCost, right.bookCost, direction);
+          break;
+        case 'status':
+          comparison = direction * (Number(left.complete) - Number(right.complete));
+          break;
+        case 'name':
+        default:
+          comparison = direction * assetDisplayName(left).instrumentName.localeCompare(assetDisplayName(right).instrumentName);
+          break;
+      }
+
+      if (comparison !== 0)
+        return comparison;
+
+      return assetDisplayName(left).instrumentName.localeCompare(assetDisplayName(right).instrumentName);
+    });
+  }
+
+  function compareNullableNumbers(left: number | null | undefined, right: number | null | undefined, direction: 1 | -1) {
+    const leftValid = left !== null && left !== undefined && Number.isFinite(left);
+    const rightValid = right !== null && right !== undefined && Number.isFinite(right);
+
+    if (!leftValid && !rightValid)
+      return 0;
+    if (!leftValid)
+      return 1;
+    if (!rightValid)
+      return -1;
+
+    return direction * (left - right);
+  }
+
+  const assetExportColumns: TableExportDefinition['columns'] = [
+    { key: 'name', label: 'Name' },
+    { key: 'kind', label: 'Kind' },
+    { key: 'quantity', label: 'Quantity', kind: 'number', numberFormat: '#,##0.########' },
+    { key: 'weightPercent', label: 'Weight %', kind: 'number', numberFormat: '0.00' },
+    { key: 'localPrice', label: 'Local price', kind: 'number', numberFormat: '#,##0.########' },
+    { key: 'priceCurrency', label: 'Price currency' },
+    { key: 'fxRate', label: 'FX rate', kind: 'number', numberFormat: '0.00000000' },
+    { key: 'fxPair', label: 'FX pair' },
+    { key: 'quotePrice', label: 'Quote price', kind: 'number', numberFormat: '#,##0.########' },
+    { key: 'bookValue', label: 'Book value', kind: 'number', numberFormat: '#,##0.00' },
+    { key: 'bookCost', label: 'Book cost', kind: 'number', numberFormat: '#,##0.00' },
+    { key: 'valuationCurrency', label: 'Valuation currency' },
+    { key: 'status', label: 'Status' }
+  ];
+
+  function assetExportDefinition(fileName: string, sheetName: string, rows: SortableAssetRow[], totals: ValuationTotals, bookCostUnavailable = false): TableExportDefinition {
+    return {
+      fileName,
+      sheetName,
+      columns: assetExportColumns,
+      rows: rows.map((item) => {
+        const display = assetDisplayName(item);
+        return {
+          name: display.ticker ? `${display.instrumentName}: ${display.ticker}` : display.instrumentName,
+          kind: holdingKindLabel(item.holdingKind),
+          quantity: item.quantity,
+          weightPercent: item.weightPercent,
+          localPrice: item.localPrice,
+          priceCurrency: item.priceCurrency ?? '',
+          fxRate: item.fxRate,
+          fxPair: item.fxDisplayPair ?? item.fxPair ?? '',
+          quotePrice: item.quotePrice,
+          bookValue: item.bookValue,
+          bookCost: bookCostUnavailable ? null : item.bookCost,
+          valuationCurrency: item.valuationCurrency ?? '',
+          status: item.complete ? 'Complete' : statusDetail(item)
+        };
+      }),
+      summaryRows: [{
+        name: 'Total',
+        weightPercent: rows.length ? 100 : null,
+        bookValue: totals.bookValue,
+        bookCost: bookCostUnavailable ? null : totals.bookCost,
+        valuationCurrency: data.valuationCurrency,
+        status: totals.incompleteCount ? `${totals.incompleteCount} incomplete` : 'Complete'
+      }]
+    };
+  }
+
+  function profitLossExportDefinition(details: HoldingProfitLossDetails, resolvedMethod: ProfitLossMethod, summary: HoldingProfitLossDetails['methods'][number] | null): TableExportDefinition {
+    return {
+      fileName: `${details.holdingName}-profit-loss`,
+      sheetName: 'Profit Loss',
+      columns: [
+        { key: 'instrument', label: 'Instrument' },
+        { key: 'transactionType', label: 'Transaction type' },
+        { key: 'date', label: 'Date', kind: 'datetime', numberFormat: 'dd mmm yyyy hh:mm:ss' },
+        { key: 'quantity', label: 'Quantity', kind: 'number', numberFormat: '#,##0.########' },
+        { key: 'bookCost', label: `Book cost (${details.currency})`, kind: 'number', numberFormat: '#,##0.00' },
+        { key: 'pnl', label: `PnL (${details.currency})`, kind: 'number', numberFormat: '#,##0.00' }
+      ],
+      rows: details.rows.map((row) => ({
+        instrument: details.instrumentName,
+        transactionType: row.transactionType,
+        date: row.displayDateTime,
+        quantity: row.quantity,
+        bookCost: row.bookCost,
+        pnl: row.methods.find((method) => method.method === resolvedMethod)?.realizedPnL ?? null
+      })),
+      summaryRows: summary ? [
+        { instrument: 'Realised PnL', pnl: summary.realizedPnL },
+        { instrument: 'Unrealised PnL', pnl: summary.unrealizedPnL },
+        { instrument: 'Total PnL', pnl: summary.totalPnL }
+      ] : []
+    };
   }
 
   function inferredTicker(item: { holdingName?: string | null; instrumentName: string; name?: string | null }) {
@@ -547,6 +818,7 @@
     if (openProfitLossHoldingID === item.holdingID) {
       openProfitLossHoldingID = '';
       delete profitLossByHoldingID[item.holdingID];
+      delete profitLossMethodByHoldingID[item.holdingID];
       return;
     }
 
@@ -564,7 +836,6 @@
 
     try {
       const profitLossUrl = new URL('/Asset/ProfitLoss', window.location.origin);
-      profitLossUrl.searchParams.set('accountID', item.accountID);
       profitLossUrl.searchParams.set('holdingID', item.holdingID);
       profitLossUrl.searchParams.set('holdingDateBasis', data.holdingDateBasis);
       profitLossUrl.searchParams.set('instrumentPriceBasis', data.instrumentPriceBasis);
@@ -579,10 +850,11 @@
         throw new Error(`Profit/Loss request returned ${response.status} ${response.statusText}`);
 
       profitLossByHoldingID[item.holdingID] = {
-        details: await response.json() as AssetProfitLossDetails,
+        details: await response.json() as HoldingProfitLossDetails,
         error: '',
         loading: false
       };
+      profitLossMethodByHoldingID[item.holdingID] = 'Default';
     } catch (error) {
       profitLossByHoldingID[item.holdingID] = {
         details: null,
@@ -590,6 +862,37 @@
         loading: false
       };
     }
+  }
+
+  function optionSummary(option: ValuationItem['option']) {
+    if (!option)
+      return '';
+
+    const expiry = new Date(`${option.expirationDate}T00:00:00Z`).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      timeZone: 'UTC',
+      year: 'numeric'
+    });
+    return `${option.optionType} · ${option.strikeCurrency} ${formatNumber(option.strikePrice, 8)} · ${expiry} · x${formatNumber(option.contractMultiplier, 8)}${option.expired ? ' · Expired' : ''}`;
+  }
+
+  function selectedProfitLossMethod(holdingID: string) {
+    return profitLossMethodByHoldingID[holdingID] ?? 'Default';
+  }
+
+  function resolvedProfitLossMethod(details: HoldingProfitLossDetails, holdingID: string) {
+    const selected = selectedProfitLossMethod(holdingID);
+    return selected === 'Default' ? details.defaultMethod : selected;
+  }
+
+  function selectProfitLossMethod(holdingID: string, event: Event) {
+    profitLossMethodByHoldingID[holdingID] = (event.currentTarget as HTMLInputElement).value as ReportProfitLossMethod;
+  }
+
+  function profitLossMethodLabel(selected: ReportProfitLossMethod, resolved: ProfitLossMethod) {
+    const label = resolved === 'RunningAverage' ? 'Weighted average' : resolved;
+    return selected === 'Default' ? `Default (${label})` : label;
   }
 
   function moneyTone(value: number | null | undefined) {
@@ -719,11 +1022,11 @@
         {#if data.auditDateTime}
           <input name="auditDateTime" type="hidden" value={data.auditDateTime} />
         {/if}
+        <input name="dateExpression" type="hidden" value={dateExpression} />
 
-        <label class="asset-filter-field asset-filter-date grid min-w-0 gap-1 text-sm font-medium text-slate-700">
-          Valuation date
-          <DateTimeInput fullWidth name="valuationDate" onchange={submitFilterChange} step="1" value={data.valuationDate} />
-        </label>
+        <Field class="asset-filter-field asset-filter-date" controlId="asset-valuation-date" label="Valuation date">
+          <DateTimeInput bind:relative={dateExpression} id="asset-valuation-date" fullWidth name="valuationDate" onchange={submitFilterChange} step="1" value={data.valuationDate} />
+        </Field>
 
         <div class="asset-filter-field asset-filter-account grid min-w-0 gap-1 text-sm font-medium text-slate-700">
           Account
@@ -833,35 +1136,39 @@
       {/each}
 
       {#if displayMode === 'Aggregate'}
-        <section class="house-card grid gap-3" style="border-top: 3px solid var(--brand-green)">
-          <div class="house-card-header">
-            <div>
-              <h2 class="house-heading">Aggregate assets</h2>
-              <p class="house-muted text-sm">{aggregateRows.length} assets across {valuations.accounts.length} accounts</p>
-            </div>
+          <PageCard subtitle={`${filteredAggregateRows.length} of ${aggregateRows.length} assets across ${aggregateWeightedAccounts.length} accounts`} title="Aggregate assets">
+          {#snippet actions()}
             <div class="text-right text-sm">
               {@render totalsSummary(valuations.totals, valuations.valuationCurrency, aggregateBookCostUnavailable)}
             </div>
-          </div>
+          {/snippet}
 
-          <div class="overflow-x-auto">
+          <TableTools
+            bind:filterText={aggregateTableFilter}
+            exportDefinition={assetExportDefinition('aggregate-assets', 'Aggregate assets', filteredAggregateRows, valuations.totals, aggregateBookCostUnavailable)}
+            filterLabel="Filter aggregate assets"
+            placeholder="Filter aggregate assets..."
+            onprint={() => window.print()}
+          />
+
+          <div class="asset-table-wrap overflow-x-auto">
             <table class="asset-table min-w-full divide-y divide-slate-200 text-sm">
               <thead class="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
                 <tr>
-                  <th class="px-3 py-2">Name</th>
-                  <th class="px-3 py-2">Kind</th>
-                  <th class="px-3 py-2 text-right">Quantity</th>
-                  <th class="px-3 py-2 text-right">Weight %</th>
-                  <th class="asset-price-column px-3 py-2 text-right">Local price</th>
-                  <th class="asset-currency-column px-3 py-2 text-right">FX</th>
-                  <th class="asset-price-column px-3 py-2 text-right">Quote price</th>
-                  <th class="px-3 py-2 text-right">Book value</th>
-                  <th class="px-3 py-2 text-right">Book cost</th>
-                  <th class="px-3 py-2 text-right">Status</th>
+                  <SortableHeader activeKey={aggregateSortKey} class="px-3 py-2" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="name">Name</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} class="px-3 py-2" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="kind">Kind</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="quantity">Quantity</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="weight">Weight %</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="asset-price-column px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="localPrice">Local price</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="asset-currency-column px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="fx">FX</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="asset-price-column px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="quotePrice">Quote price</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="bookValue">Book value</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="bookCost">Book cost</SortableHeader>
+                  <SortableHeader activeKey={aggregateSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={aggregateSortDirection} onsort={setAggregateSort} sortKey="status">Status</SortableHeader>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
-                {#each aggregateRows as item (item.assetID)}
+                {#each filteredAggregateRows as item (item.assetID)}
                   {@const itemDisplay = assetDisplayName(item)}
                   <tr class={accountRowClass(item)}>
                     <td class="px-3 py-2">
@@ -965,54 +1272,64 @@
                     {/each}
                   {/if}
                 {/each}
+                {#if filteredAggregateRows.length === 0}
+                  <tr><td class="asset-table-empty" colspan="10">No aggregate assets match this filter.</td></tr>
+                {/if}
               </tbody>
             </table>
           </div>
-        </section>
+        </PageCard>
       {:else}
-        {#each valuations.accounts as account (account.accountID)}
-          <section class="house-card grid gap-3" style="border-top: 3px solid var(--brand-green)">
-            <div class="house-card-header">
-              <div>
-                <h2 class="house-heading">{account.accountName}</h2>
-                <p class="house-muted text-sm">Book currency {account.bookCurrency} | Valuation currency {account.valuationCurrency}</p>
-              </div>
+        {#each discreteWeightedAccounts as account (account.accountID)}
+          {@const filteredItems = filteredAccountItems(account)}
+          {@const currentSortKey = accountSortKey(account.accountID)}
+          {@const currentSortDirection = accountSortDirection(account.accountID)}
+          <PageCard subtitle={`Book currency ${account.bookCurrency} | Valuation currency ${account.valuationCurrency}`} title={account.accountName}>
+            {#snippet actions()}
               <div class="text-right text-sm">
                 {@render totalsSummary(account.totals, account.valuationCurrency)}
               </div>
-            </div>
+            {/snippet}
 
-            <div class="overflow-x-auto">
+            <TableTools
+              bind:filterText={() => accountTableFilters[account.accountID] ?? '', (value) => accountTableFilters[account.accountID] = value}
+              exportDefinition={assetExportDefinition(`${account.accountName}-assets`, account.accountName, filteredItems, account.totals)}
+              filterLabel={`Filter ${account.accountName} assets`}
+              placeholder="Filter assets..."
+              onprint={() => window.print()}
+            />
+
+            <div class="asset-table-wrap overflow-x-auto">
               <table class="asset-table min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
                   <tr>
-                    <th class="px-3 py-2">Name</th>
-                    <th class="px-3 py-2">Kind</th>
-                    <th class="px-3 py-2 text-right">Quantity</th>
-                    <th class="px-3 py-2 text-right">Weight %</th>
-                    <th class="asset-price-column px-3 py-2 text-right">Local price</th>
-                    <th class="asset-currency-column px-3 py-2 text-right">FX</th>
-                    <th class="asset-price-column px-3 py-2 text-right">Quote price</th>
-                    <th class="px-3 py-2 text-right">Book value</th>
-                    <th class="px-3 py-2 text-right">Book cost</th>
+                    <SortableHeader activeKey={currentSortKey} class="px-3 py-2" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="name">Name</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} class="px-3 py-2" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="kind">Kind</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="quantity">Quantity</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="weight">Weight %</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="asset-price-column px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="localPrice">Local price</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="asset-currency-column px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="fx">FX</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="asset-price-column px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="quotePrice">Quote price</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="bookValue">Book value</SortableHeader>
+                    <SortableHeader activeKey={currentSortKey} buttonClass="ml-auto" class="px-3 py-2 text-right" direction={currentSortDirection} onsort={(key) => setAccountSort(account.accountID, key)} sortKey="bookCost">Book cost</SortableHeader>
                     <th class="px-3 py-2 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
-                  {#each account.items as item (item.holdingID)}
+                  {#each filteredItems as item (item.holdingID)}
                     {@const itemDisplay = assetDisplayName(item)}
                     <tr class={accountRowClass(item)}>
                       <td class="px-3 py-2">
-                        <div class="asset-name-title">
+                      <div class="asset-name-title">
                           <span>{itemDisplay.instrumentName}</span>
                           {#if itemDisplay.ticker}
                             <span class="asset-name-separator">:</span>
                             <span class="asset-ticker">{itemDisplay.ticker}</span>
                           {/if}
-                        </div>
-                        {#if item.option}
-                          <div class="text-xs text-slate-500">{optionSummary(item.option)} · {item.option.exerciseStyle} · {item.option.settlementType} · {item.option.underlyingInstrumentName}</div>
-                        {/if}
+                      </div>
+                      {#if item.option}
+                        <div class="text-xs text-slate-500">{optionSummary(item.option)} · {item.option.exerciseStyle} · {item.option.settlementType} · {item.option.underlyingInstrumentName}</div>
+                      {/if}
                       </td>
                       <td class="px-3 py-2 text-slate-700">{holdingKindLabel(item.holdingKind)}</td>
                       <td class="px-3 py-2 text-right font-mono">{formatNumber(item.quantity)}</td>
@@ -1116,21 +1433,36 @@
                           {:else if profitLoss?.error}
                             <Card density="compact" intent="error">{profitLoss.error}</Card>
                           {:else if profitLoss?.details}
+                            {@const selectedMethod = selectedProfitLossMethod(item.holdingID)}
+                            {@const resolvedMethod = resolvedProfitLossMethod(profitLoss.details, item.holdingID)}
+                            {@const summary = profitLoss.details.methods.find((method) => method.method === resolvedMethod) ?? null}
                             <section class="asset-pnl-card" aria-label={`Profit/Loss for ${itemDisplay.instrumentName}`}>
                               <header class="asset-pnl-header">
                                 <div>
                                   <h3>Profit/Loss</h3>
-                                  <p>{profitLoss.details.methodLabel}</p>
+                                  <p>{profitLossMethodLabel(selectedMethod, resolvedMethod)}</p>
                                 </div>
-                                {#if profitLoss.details.summary}
-                                  <div class={`asset-pnl-total ${moneyTone(profitLoss.details.summary.totalPnL)}`}>
-                                    {formatMoney(profitLoss.details.summary.totalPnL, profitLoss.details.currency)}
-                                  </div>
-                                {/if}
+                                <div class="asset-pnl-header-actions">
+                                  <TableExportActions definition={profitLossExportDefinition(profitLoss.details, resolvedMethod, summary)} />
+                                  <PillGroup
+                                    ariaLabel="Profit/Loss book cost method"
+                                    class="asset-pnl-methods"
+                                    compact
+                                    name={`profitLossMethod-${item.holdingID}`}
+                                    onchange={(event) => selectProfitLossMethod(item.holdingID, event)}
+                                    options={profitLossMethodOptions}
+                                    value={selectedMethod}
+                                  />
+                                  {#if summary}
+                                    <div class={`asset-pnl-total ${moneyTone(summary.totalPnL)}`}>
+                                      {formatMoney(summary.totalPnL, profitLoss.details.currency)}
+                                    </div>
+                                  {/if}
+                                </div>
                               </header>
 
-                              {#if profitLoss.details.summary && !profitLoss.details.summary.complete && profitLoss.details.summary.incompleteReason}
-                                <Card density="compact" intent="warning">{profitLoss.details.summary.incompleteReason}</Card>
+                              {#if summary && !summary.complete && summary.incompleteReason}
+                                <Card density="compact" intent="warning">{summary.incompleteReason}</Card>
                               {/if}
 
                               <div class="asset-pnl-table-wrap">
@@ -1146,19 +1478,20 @@
                                   </thead>
                                   <tbody>
                                     {#if profitLoss.details.rows.length}
-                                      {#each profitLoss.details.rows as row (row.rowID)}
+                                      {#each profitLoss.details.rows as row (row.eventID)}
+                                        {@const rowRealizedPnL = row.methods.find((method) => method.method === resolvedMethod)?.realizedPnL ?? null}
                                         <tr>
                                           <td>
                                             <div class="asset-pnl-instrument">
-                                              <span>{row.instrumentName || profitLoss.details.instrumentName || itemDisplay.instrumentName}</span>
+                                              <span>{profitLoss.details.instrumentName || itemDisplay.instrumentName}</span>
                                               <small>{row.transactionType}</small>
                                             </div>
                                           </td>
                                           <td>{formatTableDateTime(row.displayDateTime)}</td>
                                           <td class="text-right font-mono">{formatNumber(row.quantity)}</td>
                                           <td class="text-right font-mono">{formatMoney(row.bookCost, profitLoss.details.currency)}</td>
-                                          <td class={`text-right font-mono font-semibold ${moneyTone(row.realizedPnL)}`}>
-                                            {formatMoney(row.realizedPnL, profitLoss.details.currency)}
+                                          <td class={`text-right font-mono font-semibold ${moneyTone(rowRealizedPnL)}`}>
+                                            {formatMoney(rowRealizedPnL, profitLoss.details.currency)}
                                           </td>
                                         </tr>
                                       {/each}
@@ -1168,23 +1501,23 @@
                                       </tr>
                                     {/if}
 
-                                    {#if profitLoss.details.summary}
+                                    {#if summary}
                                       <tr class="asset-pnl-summary-row">
                                         <th scope="row" colspan="4">Realised PnL</th>
-                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.realizedPnL)}`}>
-                                          {formatMoney(profitLoss.details.summary.realizedPnL, profitLoss.details.currency)}
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(summary.realizedPnL)}`}>
+                                          {formatMoney(summary.realizedPnL, profitLoss.details.currency)}
                                         </td>
                                       </tr>
                                       <tr class="asset-pnl-summary-row">
                                         <th scope="row" colspan="4">Unrealised PnL</th>
-                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.unrealizedPnL)}`}>
-                                          {formatMoney(profitLoss.details.summary.unrealizedPnL, profitLoss.details.currency)}
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(summary.unrealizedPnL)}`}>
+                                          {formatMoney(summary.unrealizedPnL, profitLoss.details.currency)}
                                         </td>
                                       </tr>
                                       <tr class="asset-pnl-summary-row asset-pnl-summary-total">
                                         <th scope="row" colspan="4">Total PnL</th>
-                                        <td class={`text-right font-mono font-semibold ${moneyTone(profitLoss.details.summary.totalPnL)}`}>
-                                          {formatMoney(profitLoss.details.summary.totalPnL, profitLoss.details.currency)}
+                                        <td class={`text-right font-mono font-semibold ${moneyTone(summary.totalPnL)}`}>
+                                          {formatMoney(summary.totalPnL, profitLoss.details.currency)}
                                         </td>
                                       </tr>
                                     {/if}
@@ -1197,10 +1530,13 @@
                       </tr>
                     {/if}
                   {/each}
+                  {#if filteredItems.length === 0}
+                    <tr><td class="asset-table-empty" colspan="10">No assets match this filter.</td></tr>
+                  {/if}
                 </tbody>
               </table>
             </div>
-          </section>
+          </PageCard>
         {/each}
       {/if}
     {/if}
@@ -1297,7 +1633,7 @@
 
   .asset-filter-viewer-form {
     display: grid;
-    grid-template-columns: var(--house-datetime-width) minmax(20rem, 1fr) minmax(10.75rem, 11.25rem);
+    grid-template-columns: calc(var(--house-datetime-width) + 2.05rem) minmax(20rem, 25rem) minmax(10.75rem, 11.25rem);
     gap: 1rem 1.15rem;
     align-items: end;
   }
@@ -1321,9 +1657,10 @@
   .asset-filter-viewer-form .asset-filter-secondary-row {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(10rem, 14rem);
+    grid-template-columns: 12rem 11rem 11rem 9.5rem;
     gap: 0.85rem;
     align-items: end;
+    justify-content: start;
   }
 
   :global(.page-header:has(.asset-account-select .complex-select-menu)) {
@@ -1593,6 +1930,17 @@
     line-height: 1.25;
   }
 
+  .asset-pnl-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  :global(.asset-pnl-methods.house-pill-group) {
+    width: fit-content;
+  }
+
   .asset-pnl-total {
     flex: 0 0 auto;
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
@@ -1679,6 +2027,16 @@
 
   .asset-table {
     min-width: 66rem;
+  }
+
+  .asset-table-wrap {
+    margin-inline: -1rem;
+  }
+
+  .asset-table-empty {
+    color: var(--muted);
+    padding: 1rem;
+    text-align: center;
   }
 
   .asset-price-column {

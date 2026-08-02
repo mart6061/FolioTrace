@@ -1,7 +1,9 @@
 <script lang="ts">
   import AggregateUpdateWatcher from '$lib/components/AggregateUpdateWatcher.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { formatDisplayDateTime, formatTableDateTime } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { Instrument } from '$lib/types';
 
   let { data, renderMode = 'full' } = $props();
@@ -18,6 +20,18 @@
   const showBody = $derived(renderMode !== 'filter');
   const asOfSummary = $derived(data.auditDateTime && data.instruments ? formatDisplayDateTime(data.instruments.asOfDateTime) : 'now');
   const cfiRows = $derived(createCfiRows(data.instruments?.items ?? []));
+  const cfiExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'cfi-reference',
+    sheetName: 'CFI reference',
+    columns: [
+      { key: 'code', label: 'CFI' },
+      { key: 'category', label: 'Category' },
+      { key: 'instrumentCount', label: 'Instruments', kind: 'number' },
+      { key: 'examples', label: 'Examples' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: cfiRows.map((row) => ({ ...row, examples: row.examples.join(', ') }))
+  }));
 
   function cfiCategory(code: string) {
     switch (code.charAt(0).toUpperCase()) {
@@ -85,6 +99,7 @@
       </div>
 
       <div class="data-panel">
+        <div class="flex justify-end border-b border-slate-200 p-2"><TableExportActions definition={cfiExportDefinition} /></div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">

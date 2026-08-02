@@ -2,8 +2,10 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeRangeInput from '$lib/components/DateTimeRangeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { ComplexSelect, type ComplexSelectOption } from '$lib/components/forms';
   import { downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition, TableExportRow } from '$lib/export';
   import { holdingDateBasisOptions } from '$lib/valuationPreferences';
   import { tick } from 'svelte';
   import type {
@@ -470,6 +472,92 @@
     }
   }
 
+  function valuationExportDefinition(section: ReportDocumentSection): TableExportDefinition {
+    return {
+      fileName: `${data.reportDocument?.name ?? 'report'}-${section.name}`,
+      sheetName: section.name,
+      columns: [
+        { key: 'name', label: 'Name' },
+        ...section.valuationColumns.map((column) => ({
+          key: column.columnKey,
+          label: column.label,
+          kind: column.numeric ? 'number' as const : 'text' as const
+        }))
+      ],
+      rows: section.valuationRows
+        .filter((row) => row.rowType !== 'Group' || !section.valuationDisplayHoldings)
+        .map((row) => ({
+          name: row.name,
+          ...Object.fromEntries(section.valuationColumns.map((column) => [column.columnKey, valuationColumnRawValue(row, column)]))
+        }))
+    };
+  }
+
+  function valuationColumnRawValue(row: ReportValuationRow, column: ReportValuationColumn) {
+    const keys: Partial<Record<ReportValuationColumnKey, keyof ReportValuationRow>> = {
+      InstrumentName: 'instrumentName', OptionType: 'optionType', Underlying: 'underlying', Strike: 'strikePrice',
+      Expiry: 'expiry', ExerciseStyle: 'exerciseStyle', SettlementType: 'settlementType', ContractMultiplier: 'contractMultiplier',
+      ExpiryStatus: 'expiryStatus', ISIN: 'isin', Sedol: 'sedol', QuotePrice: 'quotePrice', AccruedInterest: 'accruedValue',
+      Quantity: 'quantity', CleanValue: 'cleanValue', BookValue: 'bookValue', BookValueDefault: 'bookValueDefault',
+      BookValueFIFO: 'bookValueFIFO', BookValueLIFO: 'bookValueLIFO', BookValueRunningAverage: 'bookValueRunningAverage',
+      BookCost: 'bookCost', Weight: 'weightPercent', Target: 'targetPercent', Min: 'targetMinPercent', Max: 'targetMaxPercent'
+    };
+    const key = keys[column.columnKey];
+    return key ? row[key] as string | number | null | undefined : '';
+  }
+
+  function cashExportDefinition(section: ReportDocumentSection, group: ReportCashGroup): TableExportDefinition {
+    return {
+      fileName: `${data.reportDocument?.name ?? 'report'}-${section.name}-${group.name}`,
+      sheetName: group.name,
+      columns: [
+        { key: 'displayDateTime', label: 'Date', kind: 'datetime' },
+        { key: 'name', label: 'Name' },
+        { key: 'quantity', label: 'Quantity', kind: 'number' }
+      ],
+      rows: group.rows,
+      summaryRows: [{ name: 'Total', quantity: group.totalQuantity }]
+    };
+  }
+
+  function transactionExportDefinition(section: ReportDocumentSection): TableExportDefinition {
+    return {
+      fileName: `${data.reportDocument?.name ?? 'report'}-${section.name}`,
+      sheetName: section.name,
+      columns: [
+        { key: 'displayDateTime', label: 'Date', kind: 'datetime' },
+        { key: 'transactionType', label: 'Type' },
+        { key: 'holdingName', label: 'Holding' },
+        { key: 'instrumentName', label: 'Instrument' },
+        { key: 'quantity', label: 'Quantity', kind: 'number' },
+        { key: 'bookCost', label: 'Book cost', kind: 'number' }
+      ],
+      rows: section.transactionRows
+    };
+  }
+
+  function profitLossExportDefinition(section: ReportDocumentSection): TableExportDefinition {
+    const rows: TableExportRow[] = section.profitLossRows.map((row) => ({
+      ...row,
+      status: row.complete ? 'Complete' : row.incompleteReason || 'Incomplete'
+    }));
+    return {
+      fileName: `${data.reportDocument?.name ?? 'report'}-${section.name}`,
+      sheetName: section.name,
+      columns: [
+        { key: 'holdingName', label: 'Holding' },
+        { key: 'instrumentName', label: 'Instrument' },
+        { key: 'quantity', label: 'Quantity', kind: 'number' },
+        { key: 'bookValue', label: 'Book value', kind: 'number' },
+        { key: 'realizedPnL', label: 'Realised P/L', kind: 'number' },
+        { key: 'unrealizedPnL', label: 'Unrealised P/L', kind: 'number' },
+        { key: 'totalPnL', label: 'Total P/L', kind: 'number' },
+        { key: 'status', label: 'Status' }
+      ],
+      rows
+    };
+  }
+
   function reportDefaultPageRule() {
     const sections = data.reportDocument?.sections ?? [];
     const orientations = sections.map((section) => section.pageOrientation);
@@ -797,6 +885,7 @@
                 {/if}
               {:else if section.sectionType === 'Valuation'}
                 {#if section.valuationRows.length}
+                  <div class="report-table-export"><TableExportActions definition={valuationExportDefinition(section)} /></div>
                   <table class="report-valuation-table">
                     <thead>
                       <tr>
@@ -858,6 +947,7 @@
                         <h3 class="report-cash-group-title">
                           <span>{group.name}</span>
                           <span class="report-cash-group-total">{formatQuantity(group.totalQuantity)}</span>
+                          <TableExportActions definition={cashExportDefinition(section, group)} />
                         </h3>
                         <table class="report-cash-table">
                           <thead>
@@ -885,6 +975,7 @@
                 {/if}
               {:else if section.sectionType === 'Transactions'}
                 {#if section.transactionRows.length}
+                  <div class="report-table-export"><TableExportActions definition={transactionExportDefinition(section)} /></div>
                   <table class="report-transaction-table">
                     <thead>
                       <tr>
@@ -915,6 +1006,7 @@
               {:else if section.sectionType === 'ProfitLoss'}
                 {#if section.profitLossRows.length}
                   <p class="report-profit-loss-method">Method: {section.profitLossMethodLabel}</p>
+                  <div class="report-table-export"><TableExportActions definition={profitLossExportDefinition(section)} /></div>
                   <table class="report-profit-loss-table">
                     <thead>
                       <tr>

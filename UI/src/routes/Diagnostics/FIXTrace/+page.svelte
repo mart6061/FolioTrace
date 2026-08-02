@@ -2,7 +2,9 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { formatDateTime } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { FIXOperation } from '$lib/types';
 
   let { data } = $props();
@@ -120,6 +122,42 @@
           value
         };
       });
+  }
+
+  const operationsExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: `fix-trace-page-${page}`,
+    sheetName: `FIX trace page ${page}`,
+    columns: [
+      { key: 'recordedAtUtc', label: 'Recorded', kind: 'datetime' },
+      { key: 'direction', label: 'Direction' },
+      { key: 'channel', label: 'Channel' },
+      { key: 'msgType', label: 'Msg' },
+      { key: 'msgSeqNum', label: 'Seq', kind: 'number' },
+      { key: 'orderReference', label: 'Order / Exec' },
+      { key: 'counterparty', label: 'Counterparty' }
+    ],
+    rows: operations.map((operation) => ({
+      recordedAtUtc: operation.recordedAtUtc,
+      direction: operation.direction,
+      channel: operation.channel,
+      msgType: operation.msgType,
+      msgSeqNum: operation.msgSeqNum,
+      orderReference: orderReference(operation),
+      counterparty: counterparty(operation)
+    }))
+  }));
+
+  function fieldsExportDefinition(operation: FIXOperation): TableExportDefinition {
+    return {
+      fileName: `fix-${operation.eventID}-fields`,
+      sheetName: 'FIX fields',
+      columns: [
+        { key: 'tag', label: 'Tag' },
+        { key: 'name', label: 'Name' },
+        { key: 'value', label: 'Value' }
+      ],
+      rows: operationFields(operation)
+    };
   }
 </script>
 
@@ -243,6 +281,7 @@
       </div>
 
       <div class="data-panel">
+        <div class="flex justify-end border-b border-slate-200 p-2"><TableExportActions definition={operationsExportDefinition} /></div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -431,7 +470,10 @@
     </section>
 
     <section>
-      <h2 class="text-sm font-semibold text-slate-950">Fields</h2>
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold text-slate-950">Fields</h2>
+        <TableExportActions definition={fieldsExportDefinition(operation)} />
+      </div>
       <div class="mt-2 overflow-x-auto rounded-md border border-slate-200 bg-white">
         <table class="min-w-full divide-y divide-slate-200 text-xs">
           <thead class="bg-slate-50 text-left font-semibold uppercase tracking-wide text-slate-600">

@@ -5,9 +5,10 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { PriceInput } from '$lib/components/forms';
   import { formatDisplayDateTime, formatShortDate, formatTableDateTime, isSameInputDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import type { FXRate, FXRateHistoryEvent, InputControlPolicy } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -90,74 +91,32 @@
       : '';
   }
 
-  function rateExportRows() {
-    return rows.map((fx) => {
+  const rateExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'fx-rates',
+    sheetName: 'FX rates',
+    columns: [
+      { key: 'pair', label: 'Pair' },
+      { key: 'displayPair', label: 'Display pair' },
+      { key: 'active', label: 'Active', kind: 'boolean' },
+      { key: 'bid', label: 'Bid', kind: 'number' },
+      { key: 'mid', label: 'Mid', kind: 'number' },
+      { key: 'ask', label: 'Ask', kind: 'number' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: rows.map((fx) => {
       const rate = ratesByPair.get(fx.pair);
 
       return {
-        active: fx.active ? 'Active' : 'Inactive',
-        ask: rate ? formatPrice(rate.price.ask) : '',
-        bid: rate ? formatPrice(rate.price.bid) : '',
+        active: fx.active,
+        ask: rate?.price.ask,
+        bid: rate?.price.bid,
         displayPair: fx.displayPair,
-        lastAuditDateTime: rate?.lastAuditDateTime ?? '',
-        mid: rate ? formatPrice(rate.price.mid) : '',
+        lastAuditDateTime: rate?.lastAuditDateTime,
+        mid: rate?.price.mid,
         pair: fx.pair
       };
-    });
-  }
-
-  function exportJson() {
-    downloadFile('fx-rates.json', JSON.stringify(rateExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const rows = rateExportRows();
-    const header = ['Pair', 'Display pair', 'Active', 'Bid', 'Mid', 'Ask', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...rows.map((row) =>
-        [row.pair, row.displayPair, row.active, row.bid, row.mid, row.ask, row.lastAuditDateTime]
-          .map(csvValue)
-          .join(',')
-      )
-    ];
-
-    downloadFile('fx-rates.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = rateExportRows();
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Pair</th>
-            <th>Display pair</th>
-            <th>Active</th>
-            <th>Bid</th>
-            <th>Mid</th>
-            <th>Ask</th>
-            <th>Last audit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${htmlValue(row.pair)}</td>
-              <td>${htmlValue(row.displayPair)}</td>
-              <td>${htmlValue(row.active)}</td>
-              <td>${htmlValue(row.bid)}</td>
-              <td>${htmlValue(row.mid)}</td>
-              <td>${htmlValue(row.ask)}</td>
-              <td>${htmlValue(row.lastAuditDateTime)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    downloadFile('fx-rates.xls', html, 'application/vnd.ms-excel');
-  }
+    })
+  }));
 
   function printTable() {
     window.print();
@@ -295,27 +254,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter FX rates</span>
-            <input bind:value={filterText} placeholder="Filter FX rates..." type="search" />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Export FX rates to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" /></svg>
-            </button>
-            <button aria-label="Export FX rates to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg>
-            </button>
-            <button aria-label="Export FX rates to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" /></svg>
-            </button>
-            <button aria-label="Print FX rates" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" /></svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter FX rates" placeholder="Filter FX rates..." exportDefinition={rateExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">

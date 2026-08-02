@@ -6,8 +6,9 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import SortableHeader from '$lib/components/page/SortableHeader.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import type { CurrencyReferenceEvent } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -113,62 +114,24 @@
   }
 
 
-  function currencyExportRows() {
-    return sortedCurrencies.map((currency) => ({
+  const currencyExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'currencies',
+    sheetName: 'Currencies',
+    columns: [
+      { key: 'currency', label: 'Currency', kind: 'text' },
+      { key: 'alphabeticCode', label: 'Alphabetic code', kind: 'text' },
+      { key: 'numericCode', label: 'Numeric code', kind: 'text' },
+      { key: 'decimalPlace', label: 'Decimal places', kind: 'number' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: sortedCurrencies.map((currency) => ({
       alphabeticCode: currency.alphabeticCode,
       currency: currency.name,
-      decimalPlace: currency.decimalPlace.toString(),
+      decimalPlace: currency.decimalPlace,
       lastAuditDateTime: currency.lastAuditDateTime,
       numericCode: currency.numericCode.toString().padStart(3, '0')
-    }));
-  }
-
-  function exportJson() {
-    downloadFile('currencies.json', JSON.stringify(currencyExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const rows = currencyExportRows();
-    const header = ['Currency', 'Alphabetic code', 'Numeric code', 'Decimal places', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...rows.map((row) =>
-        [row.currency, row.alphabeticCode, row.numericCode, row.decimalPlace, row.lastAuditDateTime].map(csvValue).join(',')
-      )
-    ];
-
-    downloadFile('currencies.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = currencyExportRows();
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Currency</th>
-            <th>Alphabetic code</th>
-            <th>Numeric code</th>
-            <th>Decimal places</th>
-            <th>Last audit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${htmlValue(row.currency)}</td>
-              <td>${htmlValue(row.alphabeticCode)}</td>
-              <td>${htmlValue(row.numericCode)}</td>
-              <td>${htmlValue(row.decimalPlace)}</td>
-              <td>${htmlValue(row.lastAuditDateTime)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    downloadFile('currencies.xls', html, 'application/vnd.ms-excel');
-  }
+    }))
+  }));
 
   function printTable() {
     window.print();
@@ -355,30 +318,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter currencies</span>
-            <input bind:value={filterText} placeholder="Filter currencies..." type="search" />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add currency" onclick={startAdd} title="Add currency" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
-            <button aria-label="Export currencies to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" /></svg>
-            </button>
-            <button aria-label="Export currencies to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg>
-            </button>
-            <button aria-label="Export currencies to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" /></svg>
-            </button>
-            <button aria-label="Print currencies" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" /></svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter currencies" placeholder="Filter currencies..." onadd={startAdd} exportDefinition={currencyExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">

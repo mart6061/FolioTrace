@@ -3,7 +3,9 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import { Button, Field, Select, TextInput, Toggle } from '$lib/components/forms';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { Account, Holding, HoldingKind, Instrument, ProfitLossMethod, ValuationSetting } from '$lib/types';
 
   let { data, form } = $props();
@@ -70,6 +72,26 @@
   const selectedMissingNominals = $derived(selectedAccount ? missingNominalKinds(selectedHoldings) : []);
   const selectedHasCapitalAccount = $derived(Boolean(selectedAccount && hasCapitalAccount(selectedAccount, selectedHoldings)));
   const needsRequiredHoldings = $derived(selectedMissingNominals.length > 0 || !selectedHasCapitalAccount);
+  const holdingsExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: `${selectedAccount?.name ?? 'account'}-holdings`,
+    sheetName: 'Account holdings',
+    columns: [
+      { key: 'kind', label: 'Kind' },
+      { key: 'name', label: 'Name' },
+      { key: 'instrument', label: 'Instrument' },
+      { key: 'active', label: 'Status', kind: 'boolean' },
+      { key: 'default', label: 'Default', kind: 'boolean' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: selectedHoldings.map((holding) => ({
+      kind: holdingKindLabel(holding.holdingKind),
+      name: holding.name,
+      instrument: instrumentName(holding.instrumentID),
+      active: holding.active,
+      default: holding.default,
+      lastAuditDateTime: holding.lastAuditDateTime
+    }))
+  }));
 
   function holdingsForAccount(accountID: string) {
     return holdings
@@ -402,6 +424,7 @@
               <h2>Holdings</h2>
               <p>{selectedHoldings.length} holdings on this account</p>
             </div>
+            <TableExportActions definition={holdingsExportDefinition} />
           </div>
 
           <div class="table-wrap">
@@ -562,7 +585,7 @@
           <form class="tool-form" method="POST" action="?/createAccount">
             <div class="form-grid">
               <Field label="Start date" required>
-                <DateTimeInput fullWidth name="eventDateTime" required showShortcuts={true} value={defaultEventDate} />
+                <DateTimeInput fullWidth name="eventDateTime" required value={defaultEventDate} />
               </Field>
               <Field label="Book currency" required>
                 <Select fullWidth name="bookCurrency" required>

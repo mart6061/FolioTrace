@@ -2,8 +2,8 @@
   import { cloneDateControlConfiguration, describeDateExpression, describeRangeExpression, resolveDateRule, resolveRangeRule } from '$lib/dateRules';
   import type { DateControlConfiguration, DateRangeRuleOption, DateRuleOption } from '$lib/types';
 
-  type Props = { configuration?: DateControlConfiguration; inherited?: boolean; oncustomize?: () => void; readonly?: boolean };
-  let { configuration = $bindable(), inherited = false, oncustomize, readonly = false }: Props = $props();
+  type Props = { configuration?: DateControlConfiguration; inherited?: boolean; oncustomize?: () => void; readonly?: boolean; showFinancialYearSettings?: boolean };
+  let { configuration = $bindable(), inherited = false, oncustomize, readonly = false, showFinancialYearSettings = true }: Props = $props();
   let tab = $state<'dates' | 'ranges'>('dates');
   let period = $state('day'); let offset = $state(0); let boundary = $state('end'); let atTime = $state('17:00');
   let rangeShape = $state<'aligned' | 'rolling'>('aligned'); let rangePeriod = $state('month'); let rangeDirection = $state('last'); let rangeCount = $state(7);
@@ -49,11 +49,13 @@
     <button aria-selected={tab === 'ranges'} onclick={() => tab = 'ranges'} role="tab" type="button">Date ranges</button>
   </div>
   {#if configuration}
-    <div class="fy-row">
-      <strong>Financial year starts</strong>
-      <label>Month <input class="house-control house-control-sm" disabled={readonly || inherited} max="12" min="1" onchange={(event) => setFinancialYear('financialYearStartMonth', Number(event.currentTarget.value))} type="number" value={configuration.financialYearStartMonth} /></label>
-      <label>Day <input class="house-control house-control-sm" disabled={readonly || inherited} max="31" min="1" onchange={(event) => setFinancialYear('financialYearStartDay', Number(event.currentTarget.value))} type="number" value={configuration.financialYearStartDay} /></label>
-    </div>
+    {#if showFinancialYearSettings}
+      <div class="fy-row">
+        <span class="fy-title">Financial year starts</span>
+        <label>Month <input class="house-control house-control-sm" disabled={readonly || inherited} max="12" min="1" onchange={(event) => setFinancialYear('financialYearStartMonth', Number(event.currentTarget.value))} type="number" value={configuration.financialYearStartMonth} /></label>
+        <label>Day <input class="house-control house-control-sm" disabled={readonly || inherited} max="31" min="1" onchange={(event) => setFinancialYear('financialYearStartDay', Number(event.currentTarget.value))} type="number" value={configuration.financialYearStartDay} /></label>
+      </div>
+    {/if}
     {#if !readonly && !inherited}
       <div class="builder">
         {#if tab === 'dates'}
@@ -75,10 +77,26 @@
           <div class="separator-row"><hr /><span>Separator</span>{#if !readonly && !inherited}<button aria-label="Remove separator" onclick={() => remove(index)} type="button">×</button>{/if}</div>
         {:else}
           <div class="option-row">
-            <input aria-label="Default choice" checked={item.isDefault} disabled={readonly || inherited} name={`default-${tab}`} onchange={() => setDefault(index)} type="radio" />
             <input aria-label="Choice label" class="house-control house-control-sm" disabled={readonly || inherited} onchange={(event) => rename(index, event.currentTarget.value)} value={item.label} />
             <div class="rule-preview"><code>{item.expression ?? 'native date input'}</code><small>{preview(item)}</small></div>
-            {#if !readonly && !inherited}<div class="row-actions"><button aria-label="Move up" disabled={index === 0} onclick={() => move(index, -1)} type="button">↑</button><button aria-label="Move down" disabled={index === list.length - 1} onclick={() => move(index, 1)} type="button">↓</button><button aria-label="Add separator after" onclick={() => addSeparator(index)} type="button">—</button><button aria-label="Remove choice" onclick={() => remove(index)} type="button">×</button></div>{/if}
+            {#if !readonly && !inherited}
+              <div class="row-actions">
+                <button
+                  aria-label={item.isDefault ? 'Default choice' : `Set ${item.label} as default`}
+                  aria-pressed={item.isDefault}
+                  class="default-control"
+                  disabled={item.isDefault}
+                  onclick={() => setDefault(index)}
+                  type="button"
+                >{item.isDefault ? 'Default' : 'Set default'}</button>
+                <button aria-label="Move up" class="row-action-button" disabled={index === 0} onclick={() => move(index, -1)} type="button">↑</button>
+                <button aria-label="Move down" class="row-action-button" disabled={index === list.length - 1} onclick={() => move(index, 1)} type="button">↓</button>
+                <button aria-label="Add separator after" class="row-action-button" onclick={() => addSeparator(index)} type="button">—</button>
+                <button aria-label="Remove choice" class="row-action-button" onclick={() => remove(index)} type="button">×</button>
+              </div>
+            {:else if item.isDefault}
+              <span class="default-control default-control-readonly">Default</span>
+            {/if}
           </div>
         {/if}
       {/each}
@@ -88,19 +106,29 @@
 </section>
 
 <style>
-  .date-rule-editor { display: grid; gap: .8rem; }
+  .date-rule-editor { display: grid; gap: .5rem; }
   .inheritance-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem; border: 1px solid #8dc9b4; border-radius: .45rem; background: #edf9f4; color: #176448; }
-  .date-rule-tabs { display: flex; border-bottom: 1px solid var(--house-border); }
-  .date-rule-tabs button { padding: .55rem .9rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: inherit; cursor: pointer; }
-  .date-rule-tabs button[aria-selected='true'] { border-color: #267a5c; font-weight: 700; }
-  .fy-row,.builder { display: flex; align-items: end; flex-wrap: wrap; gap: .65rem; padding: .65rem; border: 1px solid var(--house-border); border-radius: .4rem; }
-  .fy-row label,.builder label { display: grid; gap: .2rem; font-size: .8rem; }
-  .fy-row input { width: 5rem; }.builder input,.builder select { min-width: 7rem; }
-  .builder code { align-self: center; opacity: .75; }
-  .option-list { display: grid; gap: .35rem; }
-  .option-row { display: grid; grid-template-columns: auto minmax(9rem, 1fr) minmax(15rem, 2fr) auto; align-items: center; gap: .55rem; padding: .45rem; border: 1px solid var(--house-border); border-radius: .35rem; }
-  .rule-preview { display: grid; gap: .1rem; min-width: 0; }.rule-preview code,.rule-preview small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.rule-preview small { opacity: .7; }
-  .row-actions { display: flex; }.row-actions button,.separator-row button { min-width: 1.8rem; border: 1px solid var(--house-border); background: var(--house-surface); color: inherit; cursor: pointer; }
-  .separator-row { display: flex; align-items: center; gap: .5rem; color: var(--house-muted); font-size: .75rem; }.separator-row hr { flex: 1; border: 0; border-top: 1px solid var(--house-border); }
-  @media (max-width: 700px) { .option-row { grid-template-columns: auto 1fr auto; }.rule-preview { grid-column: 2 / -1; } }
+  .date-rule-tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .date-rule-tabs button { padding: .4rem .7rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: inherit; cursor: pointer; }
+  .date-rule-tabs button[aria-selected='true'] { border-color: var(--accent); font-weight: 700; }
+  .fy-row,.builder { display: flex; flex-wrap: wrap; gap: .45rem; padding: .45rem; border: 1px solid var(--line); border-radius: .4rem; }
+  .fy-row { align-items: center; }
+  .builder { align-items: end; }
+  .fy-title { color: var(--muted); font-size: var(--control-font-sm); font-weight: 400; line-height: 1.2; white-space: nowrap; }
+  .fy-row label,.builder label { display: grid; gap: .15rem; color: var(--muted); font-size: var(--control-font-sm); font-weight: 400; }
+  .builder label { grid-template-rows: auto var(--control-h-sm); }
+  .fy-row input { width: 4.5rem; }.builder input,.builder select { min-width: 7rem; }
+  .builder input,.builder select,.builder > button { height: var(--control-h-sm); min-height: var(--control-h-sm); box-sizing: border-box; }
+  .builder select.house-control.house-control-sm { height: var(--control-h-sm); min-height: var(--control-h-sm); padding-block: .25rem; }
+  .builder code { display: flex; min-height: var(--control-h-sm); align-items: center; align-self: end; opacity: .75; line-height: 1; }
+  .option-list { display: grid; gap: .25rem; }
+  .option-row { display: grid; grid-template-columns: minmax(9rem, 1fr) minmax(15rem, 2fr) auto; align-items: center; gap: .6rem; padding: .35rem; border: 1px solid var(--line); border-radius: .35rem; }
+  .rule-preview { display: flex; align-items: baseline; gap: .45rem; min-width: 0; }.rule-preview code,.rule-preview small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.rule-preview small { opacity: .7; }
+  .row-actions { display: flex; align-items: center; gap: .3rem; }
+  .row-action-button,.separator-row button { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 2.25rem; min-width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid var(--line); border-radius: var(--house-radius-sm); background: var(--panel); color: inherit; cursor: pointer; }
+  .default-control { display: inline-flex; align-items: center; justify-content: center; min-height: 1.5rem; border: 1px solid var(--accent); border-radius: 999px; padding: 0 .55rem; background: transparent; color: var(--accent); font-size: .7rem; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; }
+  .default-control[aria-pressed='true'],.default-control-readonly { background: var(--accent); color: #fff; cursor: default; }
+  .row-action-button:disabled { cursor: not-allowed; opacity: .45; }
+  .separator-row { display: flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .75rem; }.separator-row hr { flex: 1; border: 0; border-top: 1px solid var(--line); }
+  @media (max-width: 700px) { .option-row { grid-template-columns: minmax(0, 1fr) auto; }.rule-preview { grid-column: 1 / -1; }.row-actions { grid-column: 1 / -1; justify-content: flex-end; } }
 </style>

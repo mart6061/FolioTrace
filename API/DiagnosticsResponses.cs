@@ -1,6 +1,6 @@
 namespace API;
 
-public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, AccountServiceDiagnosticsResponse AccountService, BrokerServiceDiagnosticsResponse BrokerService, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService, HoldingServiceDiagnosticsResponse HoldingService, HoldingPositionServiceDiagnosticsResponse HoldingPositionService, InstrumentServiceDiagnosticsResponse InstrumentService, InstrumentValueServiceDiagnosticsResponse InstrumentValueService, UserServiceDiagnosticsResponse UserService, SseDiagnosticsResponse Sse, AggregateMaintenanceDiagnosticsResponse AggregateMaintenance);
+public sealed record MemoryDiagnosticsResponse(EventCacheDiagnosticsResponse EventCache, AccountServiceDiagnosticsResponse AccountService, BrokerServiceDiagnosticsResponse BrokerService, CountryServiceDiagnosticsResponse CountryService, CurrencyServiceDiagnosticsResponse CurrencyService, FXServiceDiagnosticsResponse FXService, FXRateServiceDiagnosticsResponse FXRateService, HoldingServiceDiagnosticsResponse HoldingService, HoldingPositionServiceDiagnosticsResponse HoldingPositionService, ProfitLossServiceDiagnosticsResponse ProfitLossService, InstrumentServiceDiagnosticsResponse InstrumentService, InstrumentValueServiceDiagnosticsResponse InstrumentValueService, UserServiceDiagnosticsResponse UserService, SseDiagnosticsResponse Sse, AggregateMaintenanceDiagnosticsResponse AggregateMaintenance);
 
 public sealed record EventCacheDiagnosticsResponse(bool IsLoaded, int StreamCount, int EventCount, long EstimatedMemoryBytes, int UnprocessedEventCount, IReadOnlyList<UnprocessedEventDiagnosticsResponse> RecentUnprocessedEvents);
 
@@ -23,6 +23,15 @@ public sealed record HoldingServiceDiagnosticsResponse(int CacheEntryCount, int 
 public sealed record HoldingPositionServiceDiagnosticsResponse(
     int CacheEntryCount,
     int PositionCount,
+    long EstimatedMemoryBytes,
+    int SnapshotVerifiedCount,
+    int SnapshotMismatchCount,
+    DateTime? LastSnapshotMismatchAtUtc,
+    string? LastSnapshotMismatchDetails);
+
+public sealed record ProfitLossServiceDiagnosticsResponse(
+    int CacheEntryCount,
+    int HoldingCount,
     long EstimatedMemoryBytes,
     int SnapshotVerifiedCount,
     int SnapshotMismatchCount,

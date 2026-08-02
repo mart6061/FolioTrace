@@ -9,6 +9,7 @@ public sealed class AggregateCacheClearService(
     FXRateService fxRateService,
     HoldingService holdingService,
     HoldingPositionService holdingPositionService,
+    ProfitLossService profitLossService,
     InstrumentService instrumentService,
     InstrumentValueService instrumentValueService,
     TicketService ticketService,
@@ -33,6 +34,7 @@ public sealed class AggregateCacheClearService(
         var fxRates = fxRateService.InvalidateAll();
         var holdings = holdingService.InvalidateAll();
         var holdingPositions = holdingPositionService.InvalidateAll();
+        var profitLoss = profitLossService.InvalidateAll();
         var instruments = instrumentService.InvalidateAll();
         var instrumentValues = instrumentValueService.InvalidateAll();
         var tickets = ticketService.InvalidateAll();
@@ -47,6 +49,6 @@ public sealed class AggregateCacheClearService(
         var assetAllocationMappings = assetAllocationMappingService.InvalidateAll();
         var reportConfigs = reportConfigService.InvalidateAll();
 
-        return new AggregateCacheClearResult(accounts, brokers, countries, currencies, fxs, fxRates, holdings, holdingPositions, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks, inputControlSettings, dateControlSettings, userDateControlSettings, valuationSettings, assetAllocationMappings, reportConfigs);
+        return new AggregateCacheClearResult(accounts, brokers, countries, currencies, fxs, fxRates, holdings, holdingPositions, profitLoss, instruments, instrumentValues, tickets, users, userMenuPreferences, userValuationPreferences, userBookmarks, inputControlSettings, dateControlSettings, userDateControlSettings, valuationSettings, assetAllocationMappings, reportConfigs);
     }
 }

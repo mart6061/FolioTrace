@@ -81,7 +81,7 @@ public static partial class ApiEndpointRegistration
     {
         var diagnostics = api.MapGroup("/Diagnostics").WithTags("Diagnostics");
 
-        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, AccountService accountService, BrokerService brokerService, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, HoldingService holdingService, HoldingPositionService holdingPositionService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, UserService userService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
+        diagnostics.MapGet("/Memory", (IEventRepository eventRepository, AccountService accountService, BrokerService brokerService, CountryService countryService, CurrencyService currencyService, FXService fxService, FXRateService fxRateService, HoldingService holdingService, HoldingPositionService holdingPositionService, ProfitLossService profitLossService, InstrumentService instrumentService, InstrumentValueService instrumentValueService, UserService userService, AggregateUpdateNotificationService notificationService, AggregateMaintenanceCoordinator aggregateMaintenanceCoordinator) =>
         {
             var repositoryDiagnostics = eventRepository.GetCacheDiagnostics();
             var accountDiagnostics = accountService.GetDiagnostics();
@@ -92,6 +92,7 @@ public static partial class ApiEndpointRegistration
             var fxRateDiagnostics = fxRateService.GetDiagnostics();
             var holdingDiagnostics = holdingService.GetDiagnostics();
             var holdingPositionDiagnostics = holdingPositionService.GetDiagnostics();
+            var profitLossDiagnostics = profitLossService.GetDiagnostics();
             var instrumentDiagnostics = instrumentService.GetDiagnostics();
             var instrumentValueDiagnostics = instrumentValueService.GetDiagnostics();
             var userDiagnostics = userService.GetDiagnostics();
@@ -144,6 +145,14 @@ public static partial class ApiEndpointRegistration
                     holdingPositionDiagnostics.SnapshotMismatchCount,
                     holdingPositionDiagnostics.LastSnapshotMismatchAtUtc,
                     holdingPositionDiagnostics.LastSnapshotMismatchDetails),
+                new ProfitLossServiceDiagnosticsResponse(
+                    profitLossDiagnostics.CacheEntryCount,
+                    profitLossDiagnostics.HoldingCount,
+                    profitLossDiagnostics.EstimatedMemoryBytes,
+                    profitLossDiagnostics.SnapshotVerifiedCount,
+                    profitLossDiagnostics.SnapshotMismatchCount,
+                    profitLossDiagnostics.LastSnapshotMismatchAtUtc,
+                    profitLossDiagnostics.LastSnapshotMismatchDetails),
                 new InstrumentServiceDiagnosticsResponse(
                     instrumentDiagnostics.CacheEntryCount,
                     instrumentDiagnostics.InstrumentCount,

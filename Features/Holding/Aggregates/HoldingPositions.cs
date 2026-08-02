@@ -199,13 +199,14 @@ public sealed record HoldingPositions : IAggregate
             if (!accountById.TryGetValue(holding.AccountID.Value, out var account))
                 throw new InvalidOperationException($"No matching Account found for AccountID '{holding.AccountID}'.");
 
-            if (!instrumentById.TryGetValue(holding.InstrumentID.Value, out var instrument))
-                throw new InvalidOperationException($"No matching Instrument found for InstrumentID '{holding.InstrumentID}'.");
+            var instrumentName = instrumentById.TryGetValue(holding.InstrumentID.Value, out var instrument)
+                ? instrument.Name
+                : holding.Name;
 
             items.Add(new HoldingPosition(
                 holding,
                 account.Name,
-                instrument.Name,
+                instrumentName,
                 quantity,
                 bookCost,
                 valuationDateTime,

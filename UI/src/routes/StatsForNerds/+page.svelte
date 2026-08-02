@@ -404,6 +404,17 @@
           </article>
 
           <article class="metric-card">
+            <span class="metric-label">Profit/Loss Service</span>
+            <strong>{formatCount(data.memoryDiagnostics?.profitLossService?.holdingCount)}</strong>
+            <span>{formatCount(data.memoryDiagnostics?.profitLossService?.cacheEntryCount)} cached views</span>
+            <span>{formatBytes(data.memoryDiagnostics?.profitLossService?.estimatedMemoryBytes)} estimated memory</span>
+            <span>
+              {formatCount(data.memoryDiagnostics?.profitLossService?.snapshotVerifiedCount)} snapshots verified,
+              {formatCount(data.memoryDiagnostics?.profitLossService?.snapshotMismatchCount)} mismatches
+            </span>
+          </article>
+
+          <article class="metric-card">
             <span class="metric-label">SSE</span>
             <strong>{formatCount(data.memoryDiagnostics?.sse?.activeSubscriberCount)}</strong>
             <span>{formatCount(data.memoryDiagnostics?.sse?.publishedNotificationCount)} notifications published</span>

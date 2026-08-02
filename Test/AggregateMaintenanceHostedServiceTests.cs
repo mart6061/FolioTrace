@@ -56,6 +56,8 @@ public sealed class AggregateMaintenanceHostedServiceTests
         var instrumentService = new InstrumentService(eventRepository);
         var instrumentValueService = new InstrumentValueService(eventRepository);
         var holdingPositionService = new HoldingPositionService(eventRepository, holdingService, accountService, instrumentService, new FakeAggregateSnapshotRepository());
+        var snapshotRepository = new FakeAggregateSnapshotRepository();
+        var profitLossService = new ProfitLossService(eventRepository, accountService, holdingService, instrumentService, instrumentValueService, fxRateService, snapshotRepository);
 
         var coordinator = new AggregateMaintenanceCoordinator(
             options,
@@ -67,6 +69,7 @@ public sealed class AggregateMaintenanceHostedServiceTests
             fxRateService,
             holdingService,
             holdingPositionService,
+            profitLossService,
             instrumentService,
             instrumentValueService,
             new AggregateUpdateNotificationService());

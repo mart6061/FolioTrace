@@ -7,7 +7,9 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import SortableHeader from '$lib/components/page/SortableHeader.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { formatDisplayDateTime, formatTableDateTime, toApiDateTime } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { InputControlPolicy, ValuationSetting, ValuationSettingReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
   import ValuationNodeEditor from './ValuationNodeEditor.svelte';
@@ -91,6 +93,29 @@
       }
     })
   );
+
+  const allocationsExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'asset-allocations',
+    sheetName: 'Asset allocations',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'active', label: 'Status', kind: 'boolean' },
+      { key: 'accounts', label: 'Accounts' },
+      { key: 'visibleNodes', label: 'Visible nodes', kind: 'number' },
+      { key: 'totalNodes', label: 'Total nodes', kind: 'number' },
+      { key: 'nodes', label: 'Nodes' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: sortedAllocations.map((allocation) => ({
+      name: allocation.name,
+      active: allocation.active,
+      accounts: allocation.accountIDs.map(accountName).join(', '),
+      visibleNodes: visibleNodeCount(allocation),
+      totalNodes: allocation.nodes.length,
+      nodes: editingAllocationID === allocation.assetAllocationID ? editNodesJsonByID[allocation.assetAllocationID] : nodesJsonForEdit(allocation),
+      lastAuditDateTime: allocation.lastAuditDateTime
+    }))
+  }));
 
   function setSort(nextSortKey: SortKey) {
     if (sortKey === nextSortKey) {
@@ -388,6 +413,7 @@
             <button aria-label="Add asset allocation" onclick={startAdd} title="Add asset allocation" type="button">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
             </button>
+            <TableExportActions definition={allocationsExportDefinition} inline />
           </div>
         </div>
 

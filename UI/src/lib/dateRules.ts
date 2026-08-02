@@ -41,6 +41,14 @@ export function cloneDateControlConfiguration(value: DateControlConfiguration): 
   return { ...value, dateOptions: value.dateOptions.map((item) => ({ ...item })), rangeOptions: value.rangeOptions.map((item) => ({ ...item })) };
 }
 
+export function useGlobalFinancialYear(configuration: DateControlConfiguration, globalConfiguration: DateControlConfiguration): DateControlConfiguration {
+  return {
+    ...cloneDateControlConfiguration(configuration),
+    financialYearStartMonth: globalConfiguration.financialYearStartMonth,
+    financialYearStartDay: globalConfiguration.financialYearStartDay
+  };
+}
+
 export function selectableDateOptions(configuration: DateControlConfiguration) {
   return [...configuration.dateOptions].filter((item) => item.kind !== 'Separator').sort((a, b) => a.displayOrder - b.displayOrder);
 }

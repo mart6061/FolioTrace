@@ -5,8 +5,9 @@
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import type { Instrument, InstrumentReferenceEvent, InstrumentTermsOption } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -138,9 +139,25 @@
     return values?.[key];
   }
 
-  function instrumentExportRows() {
-    return rows.map((instrument) => ({
-      active: instrument.active ? 'Active' : 'Inactive',
+  const instrumentExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'instruments',
+    sheetName: 'Instruments',
+    columns: [
+      { key: 'instrumentID', label: 'Instrument ID' },
+      { key: 'name', label: 'Name' },
+      { key: 'formalName', label: 'Formal name' },
+      { key: 'ticker', label: 'Ticker' },
+      { key: 'identifiers', label: 'Identifiers' },
+      { key: 'exchange', label: 'Exchange' },
+      { key: 'cfi', label: 'CFI' },
+      { key: 'priceCountry', label: 'Price country' },
+      { key: 'priceCurrency', label: 'Price currency' },
+      { key: 'incomeCountry', label: 'Income country' },
+      { key: 'active', label: 'Active', kind: 'boolean' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: rows.map((instrument) => ({
+      active: instrument.active,
       cfi: instrument.cfi,
       exchange: instrument.exchange,
       formalName: instrument.formalName,
@@ -152,31 +169,8 @@
       priceCountry: instrument.priceCountry,
       priceCurrency: instrument.priceCurrency,
       ticker: ticker(instrument)
-    }));
-  }
-
-  function exportJson() {
-    downloadFile('instruments.json', JSON.stringify(instrumentExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const header = ['Instrument ID', 'Name', 'Formal name', 'Ticker', 'Identifiers', 'Exchange', 'CFI', 'Price country', 'Price currency', 'Income country', 'Active', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...instrumentExportRows().map((row) =>
-        [row.instrumentID, row.name, row.formalName, row.ticker, row.identifiers, row.exchange, row.cfi, row.priceCountry, row.priceCurrency, row.incomeCountry, row.active, row.lastAuditDateTime]
-          .map(csvValue)
-          .join(',')
-      )
-    ];
-    downloadFile('instruments.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = instrumentExportRows();
-    const html = `<table><thead><tr><th>Instrument ID</th><th>Name</th><th>Formal name</th><th>Ticker</th><th>Identifiers</th><th>Exchange</th><th>CFI</th><th>Price country</th><th>Price currency</th><th>Income country</th><th>Active</th><th>Last audit</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${htmlValue(row.instrumentID)}</td><td>${htmlValue(row.name)}</td><td>${htmlValue(row.formalName)}</td><td>${htmlValue(row.ticker)}</td><td>${htmlValue(row.identifiers)}</td><td>${htmlValue(row.exchange)}</td><td>${htmlValue(row.cfi)}</td><td>${htmlValue(row.priceCountry)}</td><td>${htmlValue(row.priceCurrency)}</td><td>${htmlValue(row.incomeCountry)}</td><td>${htmlValue(row.active)}</td><td>${htmlValue(row.lastAuditDateTime)}</td></tr>`).join('')}</tbody></table>`;
-    downloadFile('instruments.xls', html, 'application/vnd.ms-excel');
-  }
+    }))
+  }));
 
   function printTable() {
     window.print();
@@ -384,30 +378,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter instruments</span>
-            <input bind:value={filterText} placeholder="Filter instruments..." type="search" />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add instrument" onclick={startAdd} title="Add instrument" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
-            <button aria-label="Export instruments to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" /></svg>
-            </button>
-            <button aria-label="Export instruments to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg>
-            </button>
-            <button aria-label="Export instruments to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" /></svg>
-            </button>
-            <button aria-label="Print instruments" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" /></svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter instruments" placeholder="Filter instruments..." onadd={startAdd} exportDefinition={instrumentExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">
