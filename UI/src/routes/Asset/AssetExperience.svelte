@@ -864,19 +864,6 @@
     }
   }
 
-  function optionSummary(option: ValuationItem['option']) {
-    if (!option)
-      return '';
-
-    const expiry = new Date(`${option.expirationDate}T00:00:00Z`).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      timeZone: 'UTC',
-      year: 'numeric'
-    });
-    return `${option.optionType} · ${option.strikeCurrency} ${formatNumber(option.strikePrice, 8)} · ${expiry} · x${formatNumber(option.contractMultiplier, 8)}${option.expired ? ' · Expired' : ''}`;
-  }
-
   function selectedProfitLossMethod(holdingID: string) {
     return profitLossMethodByHoldingID[holdingID] ?? 'Default';
   }
@@ -1443,7 +1430,6 @@
                                   <p>{profitLossMethodLabel(selectedMethod, resolvedMethod)}</p>
                                 </div>
                                 <div class="asset-pnl-header-actions">
-                                  <TableExportActions definition={profitLossExportDefinition(profitLoss.details, resolvedMethod, summary)} />
                                   <PillGroup
                                     ariaLabel="Profit/Loss book cost method"
                                     class="asset-pnl-methods"
