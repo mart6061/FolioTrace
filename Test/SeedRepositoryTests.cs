@@ -53,6 +53,21 @@ public sealed class SeedRepositoryTests
         Assert.True(earliest >= firstPriceDate, $"Earliest transaction {earliest:u} precedes the first seeded price {firstPriceDate:u}.");
     }
 
+    [Fact]
+    public void SeedData_CreatesReferencedInstrumentsBeforeHoldings()
+    {
+        var instrumentCreatedAtByID = SeedRepository.CreateInitialInstrumentCreatedEvents()
+            .ToDictionary(@event => @event.InstrumentID.Value, @event => @event.EventDateTime.Value);
+
+        Assert.All(SeedRepository.CreateInitialHoldingCreatedEvents(), holding =>
+        {
+            Assert.True(instrumentCreatedAtByID.TryGetValue(holding.InstrumentID.Value, out var instrumentCreatedAt),
+                $"Holding '{holding.HoldingID}' references missing InstrumentID '{holding.InstrumentID}'.");
+            Assert.True(instrumentCreatedAt <= holding.EventDateTime.Value,
+                $"Holding '{holding.HoldingID}' predates InstrumentID '{holding.InstrumentID}'.");
+        });
+    }
+
     private static Dictionary<Guid, List<Guid>> SeedAssetHoldingsByInstrument()
     {
         var byInstrument = new Dictionary<Guid, List<Guid>>();

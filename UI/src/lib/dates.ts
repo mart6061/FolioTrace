@@ -127,6 +127,21 @@ export function formatDisplayDateTime(value: string) {
   }).format(date);
 }
 
+export function formatDisplayDateTimeRange(start: string, end: string) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const sameDate = startDate.getFullYear() === endDate.getFullYear()
+    && startDate.getMonth() === endDate.getMonth()
+    && startDate.getDate() === endDate.getDate();
+
+  if (!sameDate)
+    return `${formatDisplayDateTime(start)} → ${formatDisplayDateTime(end)}`;
+
+  const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(startDate);
+  const timeFormatter = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
+  return `${date}, ${timeFormatter.format(startDate)} → ${timeFormatter.format(endDate)}`;
+}
+
 export function formatTableDateTime(value: string) {
   const date = new Date(value);
 

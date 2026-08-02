@@ -4,8 +4,9 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
   type RenderMode = 'full' | 'filter' | 'body';
@@ -40,67 +41,26 @@
     })
   );
 
-  function fxExportRows() {
-    return filteredFXs.map((fx) => ({
-      active: fx.active ? 'Active' : 'Inactive',
+  const fxExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'fxs',
+    sheetName: 'FXs',
+    columns: [
+      { key: 'pair', label: 'Pair', kind: 'text' },
+      { key: 'displayPair', label: 'Display pair', kind: 'text' },
+      { key: 'baseCurrency', label: 'Base', kind: 'text' },
+      { key: 'quoteCurrency', label: 'Quote', kind: 'text' },
+      { key: 'active', label: 'Active', kind: 'boolean' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: filteredFXs.map((fx) => ({
+      active: fx.active,
       baseCurrency: fx.baseCurrency,
       displayPair: fx.displayPair,
       lastAuditDateTime: fx.lastAuditDateTime,
       pair: fx.pair,
       quoteCurrency: fx.quoteCurrency
-    }));
-  }
-
-  function exportJson() {
-    downloadFile('fxs.json', JSON.stringify(fxExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const rows = fxExportRows();
-    const header = ['Pair', 'Display pair', 'Base', 'Quote', 'Active', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...rows.map((row) =>
-        [row.pair, row.displayPair, row.baseCurrency, row.quoteCurrency, row.active, row.lastAuditDateTime]
-          .map(csvValue)
-          .join(',')
-      )
-    ];
-
-    downloadFile('fxs.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = fxExportRows();
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Pair</th>
-            <th>Display pair</th>
-            <th>Base</th>
-            <th>Quote</th>
-            <th>Active</th>
-            <th>Last audit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${htmlValue(row.pair)}</td>
-              <td>${htmlValue(row.displayPair)}</td>
-              <td>${htmlValue(row.baseCurrency)}</td>
-              <td>${htmlValue(row.quoteCurrency)}</td>
-              <td>${htmlValue(row.active)}</td>
-              <td>${htmlValue(row.lastAuditDateTime)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    downloadFile('fxs.xls', html, 'application/vnd.ms-excel');
-  }
+    }))
+  }));
 
   function printTable() {
     window.print();
@@ -199,30 +159,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter FXs</span>
-            <input bind:value={filterText} placeholder="Filter FXs..." type="search" />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add FX" onclick={startAdd} title="Add FX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
-            <button aria-label="Export FXs to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" /></svg>
-            </button>
-            <button aria-label="Export FXs to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg>
-            </button>
-            <button aria-label="Export FXs to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" /></svg>
-            </button>
-            <button aria-label="Print FXs" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" /></svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter FXs" placeholder="Filter FXs..." onadd={startAdd} exportDefinition={fxExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">

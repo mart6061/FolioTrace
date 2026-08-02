@@ -7,8 +7,10 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import SortableHeader from '$lib/components/page/SortableHeader.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import type { AccountReferenceEvent, Holding, HoldingHistoryEvent, HoldingKind, Instrument, ProfitLossMethod, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from './$types';
 
@@ -305,65 +307,26 @@
     return profitLossMethodOptions.find((option) => option.value === value)?.label ?? 'FIFO';
   }
 
-  function accountExportRows() {
-    return sortedAccounts.map((account) => ({
+  const accountExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'accounts',
+    sheetName: 'Accounts',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'formalName', label: 'Formal name' },
+      { key: 'bookCurrency', label: 'Book currency' },
+      { key: 'bookCostBasis', label: 'Book cost basis' },
+      { key: 'active', label: 'Status', kind: 'boolean' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: sortedAccounts.map((account) => ({
       name: account.name,
       formalName: account.formalName,
       bookCurrency: account.bookCurrency,
       bookCostBasis: profitLossMethodLabel(account.bookCostBasis),
-      status: account.active ? 'Active' : 'Inactive',
+      active: account.active,
       lastAuditDateTime: account.lastAuditDateTime
-    }));
-  }
-
-  function exportJson() {
-    downloadFile('accounts.json', JSON.stringify(accountExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const rows = accountExportRows();
-    const header = ['Name', 'Formal name', 'Book currency', 'Book cost basis', 'Status', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...rows.map((row) =>
-        [row.name, row.formalName, row.bookCurrency, row.bookCostBasis, row.status, row.lastAuditDateTime].map(csvValue).join(',')
-      )
-    ];
-
-    downloadFile('accounts.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = accountExportRows();
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Formal name</th>
-            <th>Book currency</th>
-            <th>Book cost basis</th>
-            <th>Status</th>
-            <th>Last audit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${htmlValue(row.name)}</td>
-              <td>${htmlValue(row.formalName)}</td>
-              <td>${htmlValue(row.bookCurrency)}</td>
-              <td>${htmlValue(row.bookCostBasis)}</td>
-              <td>${htmlValue(row.status)}</td>
-              <td>${htmlValue(row.lastAuditDateTime)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    downloadFile('accounts.xls', html, 'application/vnd.ms-excel');
-  }
+    }))
+  }));
 
   function printTable() {
     window.print();
@@ -1091,6 +1054,21 @@
       }, 0);
   }
 
+  function transactionSubtotalsExportDefinition(accountName: string, rows: ReturnType<typeof currencyTransactionSubtotals>): TableExportDefinition {
+    return {
+      fileName: `${accountName}-transaction-subtotals`,
+      sheetName: 'Transaction subtotals',
+      columns: [
+        { key: 'currency', label: 'Currency' },
+        { key: 'setCount', label: 'Distinct sets', kind: 'number' },
+        { key: 'creditTotal', label: 'Credit', kind: 'number' },
+        { key: 'debitTotal', label: 'Debit', kind: 'number' },
+        { key: 'netTotal', label: 'Credit - Debit', kind: 'number' }
+      ],
+      rows
+    };
+  }
+
   function formatWholeQuantity(value: number) {
     return value.toLocaleString(undefined, {
       maximumFractionDigits: 0,
@@ -1236,44 +1214,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter accounts</span>
-            <input
-              bind:value={filterText}
-              placeholder="Filter accounts..."
-              type="search"
-            />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add account" onclick={startAdd} title="Add account" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-            <button aria-label="Export accounts to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" />
-              </svg>
-            </button>
-            <button aria-label="Export accounts to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M4 4h16v16H4zM4 10h16M10 4v16" />
-              </svg>
-            </button>
-            <button aria-label="Export accounts to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" />
-              </svg>
-            </button>
-            <button aria-label="Print accounts" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter accounts" placeholder="Filter accounts..." onadd={startAdd} exportDefinition={accountExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -1737,6 +1678,7 @@
                       <div class="grid gap-3">
                         <div class="flex items-center justify-between gap-3">
                           <h2 class="text-sm font-semibold text-slate-950">Transactions</h2>
+                          <TableExportActions definition={transactionSubtotalsExportDefinition(account.name, rowCurrencySubtotals)} />
                           <span class="text-xs text-slate-500">{rowTransactionCards.length} sets · {rowActiveTransactionMovements.length} active movements</span>
                         </div>
 

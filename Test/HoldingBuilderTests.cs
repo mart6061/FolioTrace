@@ -320,6 +320,36 @@ public sealed class HoldingBuilderTests
     }
 
     [Fact]
+    public void HoldingPositions_PreservesPositionWhenInstrumentDefinitionIsMissing()
+    {
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments();
+        var cashHoldingID = HoldingIDBuilder.Create();
+        var inflowHoldingID = HoldingIDBuilder.Create();
+        var holdings = CreateHoldings(accounts, instruments, CreateCashHolding(cashHoldingID, true), CreateNonValuationHolding(inflowHoldingID, typeof(HoldingNominalInflow)));
+        var transactionEvents = TransactionBuilder.Create(new TransactionSetRequest(
+            UserID,
+            EventDate,
+            SettlementDate,
+            "Cash deposit",
+            [CreateTransactionLeg(cashHoldingID, CashInstrumentID, 100m, 100m)],
+            [CreateTransactionLeg(inflowHoldingID, CashInstrumentID, 100m, 100m)]), holdings).Value!.Cast<ITransactionEvent>().ToList();
+        var missingInstruments = new Instruments(EventDate, AuditDate, []);
+
+        var positions = new HoldingPositions(
+            EventDateTimeBuilder.Create(EventDate.Value.AddDays(1)),
+            AuditDateTimeBuilder.Create(DateTime.UtcNow),
+            holdings,
+            accounts,
+            missingInstruments,
+            transactionEvents);
+
+        var position = Assert.Single(positions.Items);
+        Assert.Equal(cashHoldingID, position.HoldingID);
+        Assert.Equal("Capital", position.InstrumentName);
+    }
+
+    [Fact]
     public void HoldingPositions_CanUseSettlementDateBasis()
     {
         var accounts = CreateAccounts();

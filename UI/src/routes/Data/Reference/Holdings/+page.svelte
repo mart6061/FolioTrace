@@ -6,7 +6,9 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import SortableHeader from '$lib/components/page/SortableHeader.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { EventPropertyDetail, Holding, HoldingHistoryEvent, HoldingKind, TransactionReferenceEvent } from '$lib/types';
   import type { SubmitFunction } from '@sveltejs/kit';
 
@@ -123,6 +125,33 @@
       .filter(Boolean)
       .join(' / ') || '-';
   }
+
+  const holdingsExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'holdings',
+    sheetName: 'Holdings',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'type', label: 'Type' },
+      { key: 'bankAccount', label: 'Bank account' },
+      { key: 'account', label: 'Account' },
+      { key: 'instrument', label: 'Instrument' },
+      { key: 'default', label: 'Default', kind: 'boolean' },
+      { key: 'includeInValuation', label: 'Valuation', kind: 'boolean' },
+      { key: 'active', label: 'Status', kind: 'boolean' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: sortedHoldings.map((holding) => ({
+      name: displayName(holding),
+      type: holdingKindLabel(holding.holdingKind),
+      bankAccount: isBankHolding(holding) ? bankSummary(holding) : '',
+      account: accountsByID.get(holding.accountID) ?? holding.accountID,
+      instrument: instrumentsByID.get(holding.instrumentID) ?? holding.instrumentID,
+      default: holding.default,
+      includeInValuation: holding.includeInValuation,
+      active: holding.active,
+      lastAuditDateTime: holding.lastAuditDateTime
+    }))
+  }));
 
   function startEdit(holdingID: string) {
     addingHolding = false;
@@ -473,18 +502,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter holdings</span>
-            <input bind:value={filterText} placeholder="Filter holdings..." type="search" />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add holding" onclick={startAdd} title="Add holding" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter holdings" placeholder="Filter holdings..." onadd={startAdd} exportDefinition={holdingsExportDefinition} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">

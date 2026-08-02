@@ -84,6 +84,25 @@ public sealed record ProfitLosses : IAggregate
             .ThenBy(item => item.HoldingName)
             .ToList();
 
+        if (holdingID is not null
+            && !items.Any(item => item.HoldingID == holdingID)
+            && holdingLookup.TryGetValue(holdingID.Value, out var selectedHolding)
+            && selectedHolding.IncludeInValuation
+            && accountLookup.TryGetValue(selectedHolding.AccountID.Value, out var selectedAccount))
+        {
+            items.Add(BuildItem(
+                [],
+                selectedHolding,
+                selectedAccount,
+                instrumentLookup.GetValueOrDefault(selectedHolding.InstrumentID.Value),
+                instrumentDefinitionLookup.GetValueOrDefault(selectedHolding.InstrumentID.Value),
+                fxRates,
+                instrumentPriceBasis,
+                holdingDateBasis,
+                true,
+                valuationDateTime));
+        }
+
         Accounts = accountLookup.Values
             .OrderBy(account => account.DisplayOrder.Value)
             .ThenBy(account => account.Name)

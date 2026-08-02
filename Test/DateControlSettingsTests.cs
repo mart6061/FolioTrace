@@ -1,5 +1,6 @@
 using FolioTrace.Aggregates;
 using FolioTrace.Types;
+using Services;
 
 namespace Test;
 
@@ -79,5 +80,19 @@ public sealed class DateControlSettingsTests
         Assert.False(after.HasStoredConfiguration);
         Assert.Empty(after.Configuration.DateOptions);
         Assert.Empty(after.Configuration.RangeOptions);
+    }
+
+    [Fact]
+    public void EffectiveUserConfiguration_UsesGlobalFinancialYearStart()
+    {
+        var global = DateControlConfigurationDefaults.Create() with { FinancialYearStartMonth = 1, FinancialYearStartDay = 2 };
+        var user = DateControlConfigurationDefaults.Create() with { FinancialYearStartMonth = 7, FinancialYearStartDay = 8 };
+
+        var effective = EffectiveDateControlSettingsService.UseGlobalFinancialYear(user, global);
+
+        Assert.Equal(1, effective.FinancialYearStartMonth);
+        Assert.Equal(2, effective.FinancialYearStartDay);
+        Assert.Equal(user.DateOptions, effective.DateOptions);
+        Assert.Equal(user.RangeOptions, effective.RangeOptions);
     }
 }

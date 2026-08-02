@@ -1659,13 +1659,16 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
         progress("Instrument income", $"Seeded {incomeEvents.Count:N0} instrument income events.", incomeEvents.Count, true);
     }
 
+    internal static IReadOnlyList<InstrumentCreatedEvent> CreateInitialInstrumentCreatedEvents() =>
+        CreateInitialInstrumentCreatedEvents(SeedInstrumentData.CreateInstrumentSeeds());
+
     private static IReadOnlyList<InstrumentCreatedEvent> CreateInitialInstrumentCreatedEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds) =>
         instrumentSeeds
             .Select(seed => InstrumentCreatedEventBuilder.CreateSeed(
                 Guid.CreateGuid7(),
                 Constants.Initialisation.UserID,
-                EventDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1)),
-                AuditDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(1)),
+                EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(2)),
+                AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(2)),
                 Constants.Initialisation.Reason,
                 seed.InstrumentID,
                 seed.Name,
@@ -1681,8 +1684,8 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
 
     private static IReadOnlyList<InstrumentIdentifierSetEvent> CreateInitialInstrumentIdentifierSetEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds)
     {
-        var eventDateTime = EventDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(5));
-        var auditDateTime = AuditDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(6));
+        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(3));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(3));
         var events = new List<InstrumentIdentifierSetEvent>();
 
         foreach (var seed in instrumentSeeds)
@@ -1711,8 +1714,8 @@ public sealed class SeedRepository(IEventRepository eventRepository) : ISeedRepo
 
     private static IReadOnlyList<InstrumentTermsSetEvent> CreateInitialInstrumentTermsSetEvents(IReadOnlyList<InstrumentSeed> instrumentSeeds)
     {
-        var eventDateTime = EventDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(10));
-        var auditDateTime = AuditDateTimeBuilder.Create(SeedInstrumentData.ValueStartDate.AddDays(-1).AddMinutes(11));
+        var eventDateTime = EventDateTimeBuilder.Create(Constants.Initialisation.EventDateTime.Value.AddTicks(4));
+        var auditDateTime = AuditDateTimeBuilder.Create(Constants.Initialisation.AuditDateTime.Value.AddTicks(4));
 
         return instrumentSeeds
             .Where(seed => seed.Terms is not null)

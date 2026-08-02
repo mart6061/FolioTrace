@@ -4,8 +4,10 @@
   import DateControlConfigurationEditor from '$lib/components/DateControlConfigurationEditor.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import PageTitle from '$lib/components/page/PageTitle.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { Button, Select, TextInput, Toggle } from '$lib/components/forms';
   import { startOfDayForInput } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { DateControlConfiguration, InputControlKind, InputControlSetting, InputControlSettingScope } from '$lib/types';
 
   let { data, form } = $props();
@@ -59,6 +61,24 @@
       .filter(({ setting }) => setting.scope === selectedScope
         && (selectedScope !== 'Account' || (setting.accountID ?? '') === selectedAccountID))
   );
+  const settingsExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: `input-control-settings-${selectedScope.toLocaleLowerCase()}`,
+    sheetName: 'Input control settings',
+    columns: [
+      { key: 'controlKind', label: 'Kind' },
+      { key: 'decimalPlaces', label: 'Decimals', kind: 'number' },
+      { key: 'minValue', label: 'Min', kind: 'number' },
+      { key: 'maxValue', label: 'Max', kind: 'number' },
+      { key: 'formatPattern', label: 'Format' },
+      { key: 'allowNegative', label: 'Negative', kind: 'boolean' },
+      { key: 'scope', label: 'Scope' },
+      { key: 'accountID', label: 'Account' }
+    ],
+    rows: visibleRows.map(({ setting }) => ({
+      ...setting,
+      accountID: accounts.find((account) => account.accountID === setting.accountID)?.name ?? setting.accountID
+    }))
+  }));
   const duplicateKeys = $derived.by(() => {
     const seen = new Map<string, number>();
 
@@ -181,6 +201,7 @@
               </Select>
             </label>
           {/if}
+          <TableExportActions definition={settingsExportDefinition} />
         </div>
 
         <div class="settings-table-wrap overflow-x-auto">

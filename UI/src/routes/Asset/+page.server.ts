@@ -1,4 +1,5 @@
 import { clampFutureInputDateTime, todayEndForInput, toApiDateTime } from '$lib/dates';
+import { defaultDateOption, resolveDateRule, selectableDateOptions } from '$lib/dateRules';
 import { getAccounts, getCurrencies, getValuations } from '$lib/server/api';
 import { normalizeHoldingDateBasis, normalizeValuationPriceConvention, valuationPriceConventionOptions } from '$lib/valuationPreferences';
 import { redirect, type ServerLoadEvent } from '@sveltejs/kit';
@@ -6,10 +7,25 @@ import type { PageServerLoad } from './$types';
 import type { Account, Currency, InstrumentPriceBasis, Valuations } from '$lib/types';
 
 const instrumentPriceBasisOptions: InstrumentPriceBasis[] = ['Mid', 'Bid', 'Ask', 'NAV'];
-type AssetLoadEvent = Pick<ServerLoadEvent, 'fetch' | 'url'>;
+type AssetLoadEvent = Pick<ServerLoadEvent, 'fetch' | 'parent' | 'url'>;
 
-export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
-  const valuationDate = url.searchParams.get('valuationDate') || todayEndForInput();
+export const _loadAssetPageData = async ({ fetch, parent, url }: AssetLoadEvent) => {
+  const { dateControlSettings } = await parent();
+  const defaultDateExpression = defaultDateOption(dateControlSettings.configuration)?.expression ?? '';
+  const defaultValuationDate = defaultDateExpression
+    ? resolveDateRule(defaultDateExpression, dateControlSettings.configuration).value
+    : todayEndForInput();
+  const configuredDateExpressions = new Set(
+    selectableDateOptions(dateControlSettings.configuration)
+      .flatMap((option) => option.expression ? [option.expression] : [])
+  );
+  const requestedDateExpression = url.searchParams.get('dateExpression')?.trim() ?? '';
+  const dateExpression = configuredDateExpressions.has(requestedDateExpression)
+    ? requestedDateExpression
+    : url.searchParams.has('valuationDate') ? '' : defaultDateExpression;
+  const valuationDate = dateExpression
+    ? resolveDateRule(dateExpression, dateControlSettings.configuration).value
+    : url.searchParams.get('valuationDate') || defaultValuationDate;
   const auditDateTime = clampFutureInputDateTime(url.searchParams.get('auditDateTime') || '');
   const holdingDateBasis = normalizeHoldingDateBasis(url.searchParams.get('holdingDateBasis'));
   const instrumentPriceBasis = normalizeInstrumentPriceBasis(url.searchParams.get('instrumentPriceBasis'));
@@ -45,6 +61,7 @@ export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
       assetViewMode,
       auditDateTime,
       currencies,
+      dateExpression,
       error: '',
       holdingDateBasis,
       instrumentPriceBasis,
@@ -63,6 +80,7 @@ export const _loadAssetPageData = async ({ fetch, url }: AssetLoadEvent) => {
       assetViewMode,
       auditDateTime,
       currencies: null,
+      dateExpression,
       error: error instanceof Error ? error.message : 'Unable to load valuations.',
       holdingDateBasis,
       instrumentPriceBasis,

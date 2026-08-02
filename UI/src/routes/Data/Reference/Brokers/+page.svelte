@@ -6,8 +6,9 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import SortableHeader from '$lib/components/page/SortableHeader.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import { PercentInput } from '$lib/components/forms';
   import type { BrokerReferenceEvent, InputControlPolicy } from '$lib/types';
   import type { SubmitFunction } from '@sveltejs/kit';
@@ -145,69 +146,30 @@
     return typeof value === 'boolean' ? value : fallback;
   }
 
-  function brokerExportRows() {
-    return sortedBrokers.map((broker) => ({
-      active: broker.active ? 'Active' : 'Inactive',
+  const brokerExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'brokers',
+    sheetName: 'Brokers',
+    columns: [
+      { key: 'broker', label: 'Broker' },
+      { key: 'lei', label: 'LEI' },
+      { key: 'commission', label: 'Commission', kind: 'number', numberFormat: '0.0000%' },
+      { key: 'active', label: 'Status', kind: 'boolean' },
+      { key: 'approvedDateTime', label: 'Approved', kind: 'datetime' },
+      { key: 'nextReview', label: 'Next review', kind: 'datetime' },
+      { key: 'notes', label: 'Notes' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: sortedBrokers.map((broker) => ({
+      active: broker.active,
       approvedDateTime: broker.approvedDateTime,
       broker: broker.name,
-      commission: formatFeeRate(broker.commission),
+      commission: broker.commission,
       lastAuditDateTime: broker.lastAuditDateTime,
       lei: broker.lei,
       nextReview: broker.nextReview,
       notes: broker.notes
-    }));
-  }
-
-  function exportJson() {
-    downloadFile('brokers.json', JSON.stringify(brokerExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const rows = brokerExportRows();
-    const header = ['Broker', 'LEI', 'Commission', 'Status', 'Approved', 'Next review', 'Notes', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...rows.map((row) =>
-        [row.broker, row.lei, row.commission, row.active, row.approvedDateTime, row.nextReview, row.notes, row.lastAuditDateTime].map(csvValue).join(',')
-      )
-    ];
-
-    downloadFile('brokers.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = brokerExportRows();
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Broker</th>
-            <th>LEI</th>
-            <th>Commission</th>
-            <th>Status</th>
-            <th>Approved</th>
-            <th>Next review</th>
-            <th>Last audit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${htmlValue(row.broker)}</td>
-              <td>${htmlValue(row.lei)}</td>
-              <td>${htmlValue(row.commission)}</td>
-              <td>${htmlValue(row.active)}</td>
-              <td>${htmlValue(row.approvedDateTime)}</td>
-              <td>${htmlValue(row.nextReview)}</td>
-              <td>${htmlValue(row.lastAuditDateTime)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    downloadFile('brokers.xls', html, 'application/vnd.ms-excel');
-  }
+    }))
+  }));
 
   function printTable() {
     window.print();
@@ -421,30 +383,7 @@
       </div>
 
       <div class="data-panel" style="--house-panel-top: var(--brand-green)">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter brokers</span>
-            <input bind:value={filterText} placeholder="Filter brokers..." type="search" />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add broker" onclick={startAdd} title="Add broker" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </button>
-            <button aria-label="Export brokers to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" /></svg>
-            </button>
-            <button aria-label="Export brokers to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg>
-            </button>
-            <button aria-label="Export brokers to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" /></svg>
-            </button>
-            <button aria-label="Print brokers" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" /></svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter brokers" placeholder="Filter brokers..." onadd={startAdd} exportDefinition={brokerExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">

@@ -51,6 +51,39 @@ public sealed class ProfitLossBuilderTests
     }
 
     [Fact]
+    public void ProfitLosses_ReturnsZeroDetailsForRequestedHoldingWithoutMovements()
+    {
+        var asOfDate = AuditDateTimeBuilder.Create();
+        var profitLosses = new ProfitLosses(
+            ValuationDate,
+            asOfDate,
+            HoldingDateBasis.EventDateTime,
+            CreateAccounts(),
+            CreateHoldings(),
+            CreateInstruments(),
+            CreateInstrumentValues(),
+            new FXRates(ValuationDate, asOfDate, [], []),
+            [],
+            holdingID: AssetHoldingID);
+
+        var account = Assert.Single(profitLosses.Accounts);
+        var item = Assert.Single(account.Items);
+        Assert.Equal(AssetHoldingID, item.HoldingID);
+        Assert.Equal(0m, item.Quantity);
+        Assert.Equal(0m, item.BookCost);
+        Assert.Equal(0m, item.MarketValue);
+        Assert.Empty(item.Rows);
+        Assert.All(item.Methods, method =>
+        {
+            Assert.Equal(0m, method.RealizedPnL);
+            Assert.Equal(0m, method.BookValue);
+            Assert.Equal(0m, method.UnrealizedPnL);
+            Assert.Equal(0m, method.TotalPnL);
+            Assert.True(method.Complete);
+        });
+    }
+
+    [Fact]
     public void ProfitLosses_UsesAdjustedBookCostForLotMethods()
     {
         var accounts = CreateAccounts();

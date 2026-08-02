@@ -6,8 +6,9 @@
   import HistoryEventsCard from '$lib/components/HistoryEventsCard.svelte';
   import Card from '$lib/components/page/Card.svelte';
   import SortableHeader from '$lib/components/page/SortableHeader.svelte';
+  import TableTools from '$lib/components/page/TableTools.svelte';
   import { formatDisplayDateTime, formatTableDateTime, startOfDayForInput, toApiDateTime } from '$lib/dates';
-  import { csvValue, downloadFile, htmlValue } from '$lib/export';
+  import type { TableExportDefinition } from '$lib/export';
   import type { CountryReferenceEvent } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -113,62 +114,24 @@
   }
 
 
-  function countryExportRows() {
-    return sortedCountries.map((country) => ({
+  const countryExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: 'countries',
+    sheetName: 'Countries',
+    columns: [
+      { key: 'country', label: 'Country', kind: 'text' },
+      { key: 'alpha2', label: 'Alpha-2', kind: 'text' },
+      { key: 'alpha3', label: 'Alpha-3', kind: 'text' },
+      { key: 'numeric', label: 'Numeric', kind: 'text' },
+      { key: 'lastAuditDateTime', label: 'Last audit', kind: 'datetime' }
+    ],
+    rows: sortedCountries.map((country) => ({
       country: country.name,
       alpha2: country.alpha2,
       alpha3: country.alpha3,
       numeric: country.numeric.toString().padStart(3, '0'),
       lastAuditDateTime: country.lastAuditDateTime
-    }));
-  }
-
-  function exportJson() {
-    downloadFile('countries.json', JSON.stringify(countryExportRows(), null, 2), 'application/json');
-  }
-
-  function exportCsv() {
-    const rows = countryExportRows();
-    const header = ['Country', 'Alpha-2', 'Alpha-3', 'Numeric', 'Last audit'];
-    const lines = [
-      header.map(csvValue).join(','),
-      ...rows.map((row) =>
-        [row.country, row.alpha2, row.alpha3, row.numeric, row.lastAuditDateTime].map(csvValue).join(',')
-      )
-    ];
-
-    downloadFile('countries.csv', lines.join('\r\n'), 'text/csv');
-  }
-
-  function exportXlsx() {
-    const rows = countryExportRows();
-    const html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Country</th>
-            <th>Alpha-2</th>
-            <th>Alpha-3</th>
-            <th>Numeric</th>
-            <th>Last audit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${htmlValue(row.country)}</td>
-              <td>${htmlValue(row.alpha2)}</td>
-              <td>${htmlValue(row.alpha3)}</td>
-              <td>${htmlValue(row.numeric)}</td>
-              <td>${htmlValue(row.lastAuditDateTime)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    downloadFile('countries.xls', html, 'application/vnd.ms-excel');
-  }
+    }))
+  }));
 
   function printTable() {
     window.print();
@@ -362,44 +325,7 @@
       </div>
 
       <div class="data-panel">
-        <div class="table-toolbar">
-          <label class="table-filter">
-            <span class="sr-only">Filter countries</span>
-            <input
-              bind:value={filterText}
-              placeholder="Filter countries..."
-              type="search"
-            />
-          </label>
-
-          <div class="table-actions" aria-label="Table actions">
-            <button aria-label="Add country" onclick={startAdd} title="Add country" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-            <button aria-label="Export countries to JSON" onclick={exportJson} title="Export JSON" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M8 4 4 8l4 4M16 4l4 4-4 4M14 3l-4 18" />
-              </svg>
-            </button>
-            <button aria-label="Export countries to CSV" onclick={exportCsv} title="Export CSV" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M4 4h16v16H4zM4 10h16M10 4v16" />
-              </svg>
-            </button>
-            <button aria-label="Export countries to XLSX" onclick={exportXlsx} title="Export XLSX" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12l3 5M11 12l-3 5M14 12h3M14 15h3M14 18h3" />
-              </svg>
-            </button>
-            <button aria-label="Print countries" onclick={printTable} title="Print" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TableTools bind:filterText filterLabel="Filter countries" placeholder="Filter countries..." onadd={startAdd} exportDefinition={countryExportDefinition} onprint={printTable} />
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">

@@ -10,7 +10,7 @@
   import Card from '$lib/components/page/Card.svelte';
   import { menuPreferenceDefinitions, normalizeMenuPreferenceItems } from '$lib/menuPreferences';
   import { defaultEndValuationDateOption, defaultHoldingDateBasis, defaultShowZeroBalances, defaultStartValuationDateOption, defaultValuationPriceConvention, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention, holdingDateBasisOptions, valuationPriceConventionOptions } from '$lib/valuationPreferences';
-  import { cloneDateControlConfiguration } from '$lib/dateRules';
+  import { cloneDateControlConfiguration, useGlobalFinancialYear } from '$lib/dateRules';
   import type { DateControlConfiguration, HoldingDateBasis, UserBookmarkItem, UserValuationDateOption, ValuationPriceConvention } from '$lib/types';
   import type { ActionData, PageData, SubmitFunction } from './$types';
 
@@ -44,10 +44,11 @@
   let syncedValuationSignature = $state('');
   let syncedBookmarkSignature = $state('');
   let draggedBookmarkID = $state<string | null>(null);
-  // svelte-ignore state_referenced_locally -- server invalidation recreates the preferences data
-  let dateConfiguration = $state<DateControlConfiguration>(cloneDateControlConfiguration(data.userDateControlSettings.hasStoredConfiguration ? data.userDateControlSettings.configuration : data.dateControlSettings.configuration));
-  // svelte-ignore state_referenced_locally
-  let customizingDateControls = $state(Boolean(data.userDateControlSettings.hasStoredConfiguration));
+  let dateConfiguration = $state<DateControlConfiguration>(initialDateConfiguration());
+  let originalDateConfiguration = $state<DateControlConfiguration>(initialDateConfiguration());
+  let originalHasStoredDateControlConfiguration = $state(hasStoredDateControlConfiguration());
+  let customizingDateControls = $state(hasStoredDateControlConfiguration());
+  let syncedDateControlSignature = $state('');
   let dragOverBookmarkID = $state<string | null>(null);
   const menuPreferenceParentByID = new Map(menuPreferenceDefinitions.map((item) => [item.id, item.parentID]));
 
@@ -83,6 +84,18 @@
       originalBookmarks = createBookmarks();
       syncedBookmarkSignature = nextBookmarkSignature;
     }
+
+    const nextDateControlSignature = dateControlSignature();
+
+    if (nextDateControlSignature !== syncedDateControlSignature) {
+      const hasStoredConfiguration = Boolean(data.userDateControlSettings.hasStoredConfiguration);
+      const configuration = hasStoredConfiguration ? data.userDateControlSettings.configuration : data.dateControlSettings.configuration;
+      dateConfiguration = useGlobalFinancialYear(configuration, data.dateControlSettings.configuration);
+      originalDateConfiguration = cloneDateControlConfiguration(dateConfiguration);
+      originalHasStoredDateControlConfiguration = hasStoredConfiguration;
+      customizingDateControls = hasStoredConfiguration;
+      syncedDateControlSignature = nextDateControlSignature;
+    }
   });
 
   const enhanceSavePreferences: SubmitFunction = () => {
@@ -99,6 +112,8 @@
         originalValuationPriceConvention = valuationPriceConvention;
         originalShowZeroBalances = showZeroBalances;
         originalBookmarks = cloneBookmarks(bookmarks);
+        originalDateConfiguration = cloneDateControlConfiguration(dateConfiguration);
+        originalHasStoredDateControlConfiguration = customizingDateControls;
         submitting = false;
         onsaved?.();
         await invalidateAll();
@@ -125,9 +140,23 @@
     return Object.fromEntries(normalizeMenuPreferenceItems(data.menuPreferences.items).map((item) => [item.menuItemID, item.visible]));
   }
 
+  function initialDateConfiguration() {
+    const configuration = hasStoredDateControlConfiguration() ? data.userDateControlSettings.configuration : data.dateControlSettings.configuration;
+    return useGlobalFinancialYear(configuration, data.dateControlSettings.configuration);
+  }
+
+  function hasStoredDateControlConfiguration() {
+    return Boolean(data.userDateControlSettings.hasStoredConfiguration);
+  }
+
   function customizeDateControls() {
     dateConfiguration = cloneDateControlConfiguration(data.dateControlSettings.configuration);
     customizingDateControls = true;
+  }
+
+  function restoreGlobalDateControls() {
+    dateConfiguration = cloneDateControlConfiguration(data.dateControlSettings.configuration);
+    customizingDateControls = false;
   }
 
   function createBookmarks() {
@@ -165,6 +194,14 @@
 
   function bookmarkSignature() {
     return JSON.stringify(data.userBookmarks?.items ?? []);
+  }
+
+  function dateControlSignature() {
+    return JSON.stringify({
+      global: data.dateControlSettings.configuration,
+      stored: data.userDateControlSettings.hasStoredConfiguration,
+      user: data.userDateControlSettings.configuration
+    });
   }
 
   function cloneBookmarks(items: UserBookmarkItem[]) {
@@ -392,19 +429,19 @@
           </div>
         {/if}
       </div>
-    </form>
 
-    <form class="data-panel menu-preference-card" method="POST" action="/User/Preferences?/saveDateControls" use:enhance>
-      <h2 class="menu-preference-title">Date and Range Controls</h2>
-      {#if displayedForm?.intent === 'saveDateControls'}
-        <Card class="mb-4" density="compact" intent={displayedForm.status === 'success' ? 'success' : 'error'}>{displayedForm.message}</Card>
-      {/if}
-      <input name="configuration" type="hidden" value={JSON.stringify(dateConfiguration)} />
-      <input name="hasStoredConfiguration" type="hidden" value={String(data.userDateControlSettings.hasStoredConfiguration)} />
-      <DateControlConfigurationEditor bind:configuration={dateConfiguration} inherited={!customizingDateControls} oncustomize={customizeDateControls} />
-      <div class="date-control-actions">
-        {#if customizingDateControls}<button class="house-button house-button-primary house-button-md" type="submit">Save date controls</button>{/if}
-        {#if data.userDateControlSettings.hasStoredConfiguration}<button class="house-button house-button-secondary house-button-md" name="clear" type="submit" value="true">Restore global settings</button>{/if}
+      <div class="data-panel menu-preference-card">
+        <h2 class="menu-preference-title">Date and Range Controls</h2>
+        <input name="dateConfiguration" type="hidden" value={JSON.stringify(dateConfiguration)} />
+        <input name="originalDateConfiguration" type="hidden" value={JSON.stringify(originalDateConfiguration)} />
+        <input name="hasStoredDateControlConfiguration" type="hidden" value={String(originalHasStoredDateControlConfiguration)} />
+        <input name="customizingDateControls" type="hidden" value={String(customizingDateControls)} />
+        <DateControlConfigurationEditor bind:configuration={dateConfiguration} inherited={!customizingDateControls} oncustomize={customizeDateControls} showFinancialYearSettings={false} />
+        {#if customizingDateControls}
+          <div class="date-control-actions">
+            <button class="house-button house-button-danger house-button-md" onclick={restoreGlobalDateControls} type="button">Restore global settings</button>
+          </div>
+        {/if}
       </div>
     </form>
 

@@ -3,7 +3,7 @@ import { getFormString } from '$lib/server/forms';
 import type { PageServerLoad, Actions } from './$types';
 import { defaultUserBookmarks } from '$lib/bookmarks';
 import { defaultUserMenuPreferences, menuPreferenceDefinitions } from '$lib/menuPreferences';
-import { defaultDateControlConfiguration } from '$lib/dateRules';
+import { defaultDateControlConfiguration, useGlobalFinancialYear } from '$lib/dateRules';
 import { defaultEndValuationDateOption, defaultStartValuationDateOption, defaultUserValuationPreferences, normalizeHoldingDateBasis, normalizeValuationDateOption, normalizeValuationPriceConvention } from '$lib/valuationPreferences';
 import { requireCurrentUser } from '$lib/server/currentUser';
 import {
@@ -103,6 +103,10 @@ export const actions: Actions = {
     const originalShowZeroBalances = getFormString(formData, 'originalShowZeroBalances') === 'true';
     const bookmarks = parseBookmarks(getFormString(formData, 'bookmarks'));
     const originalBookmarks = parseBookmarks(getFormString(formData, 'originalBookmarks'));
+    const dateConfiguration = parseDateConfiguration(getFormString(formData, 'dateConfiguration'));
+    const originalDateConfiguration = parseDateConfiguration(getFormString(formData, 'originalDateConfiguration'));
+    const hasStoredDateControlConfiguration = getFormString(formData, 'hasStoredDateControlConfiguration') === 'true';
+    const customizingDateControls = getFormString(formData, 'customizingDateControls') === 'true';
     const menuChanged = !areMenuItemsEqual(items, originalItems);
     const valuationChanged = startValuationDateOption !== originalStartValuationDateOption
       || endValuationDateOption !== originalEndValuationDateOption
@@ -110,6 +114,9 @@ export const actions: Actions = {
       || valuationPriceConvention !== originalValuationPriceConvention
       || showZeroBalances !== originalShowZeroBalances;
     const bookmarkChanges = getBookmarkChanges(bookmarks, originalBookmarks);
+    const dateControlsChanged = customizingDateControls
+      ? !hasStoredDateControlConfiguration || !areDateConfigurationsEqual(dateConfiguration, originalDateConfiguration)
+      : hasStoredDateControlConfiguration;
 
     try {
       const eventIDs: string[] = [];
@@ -152,6 +159,17 @@ export const actions: Actions = {
         addEventID(eventIDs, result);
       }
 
+      if (dateControlsChanged) {
+        const globalDateControlSettings = await getDateControlSettings(fetch, eventDateTime, null);
+        const configuration = useGlobalFinancialYear(dateConfiguration, globalDateControlSettings.configuration);
+        const result = !customizingDateControls
+          ? await postUserDateControlSettingsClearedEvent(fetch, currentUser.userID)
+          : hasStoredDateControlConfiguration
+            ? await postUserDateControlSettingsModifiedEvent(fetch, currentUser.userID, configuration)
+            : await postUserDateControlSettingsCreatedEvent(fetch, currentUser.userID, configuration);
+        addEventID(eventIDs, result);
+      }
+
       for (const bookmark of bookmarkChanges.deleted) {
         const result = await postUserBookmarkDeletedEvent(fetch, {
           userID: currentUser.userID,
@@ -186,24 +204,16 @@ export const actions: Actions = {
         status: 'failure'
       });
     }
-  },
-  saveDateControls: async ({ fetch, locals, request }) => {
-    const currentUser = requireCurrentUser(locals);
-    const formData = await request.formData();
-    const clear = getFormString(formData, 'clear') === 'true';
-    const stored = getFormString(formData, 'hasStoredConfiguration') === 'true';
-    try {
-      const result = clear
-        ? await postUserDateControlSettingsClearedEvent(fetch, currentUser.userID)
-        : stored
-          ? await postUserDateControlSettingsModifiedEvent(fetch, currentUser.userID, JSON.parse(getFormString(formData, 'configuration')) as DateControlConfiguration)
-          : await postUserDateControlSettingsCreatedEvent(fetch, currentUser.userID, JSON.parse(getFormString(formData, 'configuration')) as DateControlConfiguration);
-      return { eventID: result.eventID, intent: 'saveDateControls', message: clear ? 'Global date controls restored.' : 'Your date controls were saved.', status: 'success' };
-    } catch (error) {
-      return fail(502, { intent: 'saveDateControls', message: error instanceof Error ? error.message : 'Unable to save date controls.', status: 'failure' });
-    }
   }
 };
+
+function parseDateConfiguration(value: string): DateControlConfiguration {
+  return JSON.parse(value) as DateControlConfiguration;
+}
+
+function areDateConfigurationsEqual(left: DateControlConfiguration, right: DateControlConfiguration) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
 function parseBookmarks(value: string) {
   if (!value)

@@ -2,7 +2,9 @@
   import BookmarkButton from '$lib/components/BookmarkButton.svelte';
   import DateTimeInput from '$lib/components/DateTimeInput.svelte';
   import Card from '$lib/components/page/Card.svelte';
+  import TableExportActions from '$lib/components/page/TableExportActions.svelte';
   import { formatDateTime } from '$lib/dates';
+  import type { TableExportDefinition } from '$lib/export';
   import type { RequestTrace, TraceHttpMessage } from '$lib/types';
 
   let { data, form } = $props();
@@ -18,6 +20,30 @@
   const pageSize = $derived(data.traces?.pageSize ?? 50);
   const queue = $derived(data.traces?.queue ?? { capacity: 0, droppedEventCount: 0 });
   const totalPages = $derived(Math.max(1, Math.ceil(totalCount / pageSize)));
+  const traceExportDefinition = $derived.by((): TableExportDefinition => ({
+    fileName: `request-trace-page-${page}`,
+    sheetName: `Request trace page ${page}`,
+    columns: [
+      { key: 'startedAtUtc', label: 'Started', kind: 'datetime' },
+      { key: 'method', label: 'Verb' },
+      { key: 'path', label: 'Path' },
+      { key: 'queryString', label: 'Query string' },
+      { key: 'status', label: 'Status' },
+      { key: 'logCount', label: 'Logs', kind: 'number' },
+      { key: 'durationMilliseconds', label: 'Duration (ms)', kind: 'number' },
+      { key: 'hasException', label: 'Exception', kind: 'boolean' }
+    ],
+    rows: traces.map((trace) => ({
+      startedAtUtc: trace.startedAtUtc,
+      method: trace.method,
+      path: trace.path,
+      queryString: trace.queryString,
+      status: statusText(trace),
+      logCount: trace.logCount,
+      durationMilliseconds: trace.durationMilliseconds,
+      hasException: trace.hasException
+    }))
+  }));
 
   function toggleExpanded(id: string) {
     if (expandedId === id) {
@@ -376,6 +402,7 @@
       </div>
 
       <div class="data-panel">
+        <div class="flex justify-end border-b border-slate-200 p-2"><TableExportActions definition={traceExportDefinition} /></div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
