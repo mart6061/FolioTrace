@@ -26656,3 +26656,40 @@
 20260701-02:12:23.512 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
    at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
    at QuickFix.SocketInitiatorThread.Read()
+20260729-22:46:06.783 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260729-22:46:06.793 : Session reset: New session
+20260729-22:46:06.796 : Created session
+20260729-22:46:06.812 : Connecting to 127.0.0.1 on port 9878
+20260729-22:46:08.867 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:46:37.135 : Connecting to 127.0.0.1 on port 9878
+20260729-22:46:39.168 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:47:07.374 : Connecting to 127.0.0.1 on port 9878
+20260729-22:47:09.402 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:47:37.733 : Connecting to 127.0.0.1 on port 9878
+20260729-22:47:39.752 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:48:08.055 : Connecting to 127.0.0.1 on port 9878
+20260729-22:48:10.076 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:48:38.632 : Connecting to 127.0.0.1 on port 9878
+20260729-22:48:40.651 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:49:08.784 : Connecting to 127.0.0.1 on port 9878
+20260729-22:49:10.818 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:49:38.982 : Connecting to 127.0.0.1 on port 9878
+20260729-22:49:41.002 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:50:09.265 : Connecting to 127.0.0.1 on port 9878
+20260729-22:50:11.283 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:50:39.396 : Connecting to 127.0.0.1 on port 9878
+20260729-22:50:41.431 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260729-22:51:09.482 : Connecting to 127.0.0.1 on port 9878
+20260729-22:51:11.500 : Connection failed: No connection could be made because the target machine actively refused it. 127.0.0.1:9878
+20260802-01:15:56.035 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER already disconnected: Resetting...
+20260802-01:15:56.045 : Session reset: New session
+20260802-01:15:56.046 : Created session
+20260802-01:15:56.089 : Connecting to 127.0.0.1 on port 9878
+20260802-01:15:56.134 : Connection succeeded
+20260802-01:15:56.144 : Session reset: ResetOnLogon
+20260802-01:15:56.169 : Session reset: ResetSeqNumFlag
+20260802-01:15:56.189 : Initiated logon request
+20260802-01:15:56.432 : Received logon
+20260802-01:27:24.999 : Session FIXT.1.1:FOLEOAPI->FOLEOTRADER disconnecting: System.Net.Sockets.SocketException (10054): An existing connection was forcibly closed by the remote host.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()

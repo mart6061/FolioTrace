@@ -105,3 +105,126 @@
 [0620/171618.253:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
 [0620/171619.326:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
 [0620/232037.344:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/185524.494:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/185525.286:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/185611.519:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/185612.313:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/185651.684:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/185652.432:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/190304.480:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/190305.163:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/194047.810:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0731/194048.701:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001236.177:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001236.971:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001822.257:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001823.326:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001923.991:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001946.863:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/001947.654:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002443.450:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002444.471:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002533.110:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002533.910:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002625.147:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002626.213:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002728.313:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/002728.388:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002732.771:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002841.315:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/002842.246:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/003339.936:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/003339.978:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/003340.580:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/003919.723:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/003920.531:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/004110.952:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/004111.029:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/004116.290:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/004812.520:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/004821.534:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/004833.121:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005133.911:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005145.465:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005147.197:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005320.865:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/005321.085:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005340.704:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005341.872:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005429.223:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005436.343:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/005437.152:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010503.233:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010506.602:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010508.697:WARNING:net\spdy\spdy_session.cc:3161] Received HEADERS for invalid stream 247
+[0801/010508.930:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010610.131:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010614.869:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010732.214:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010734.087:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010735.204:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010858.572:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/010858.648:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010903.727:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010906.345:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010943.536:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/010943.619:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010945.543:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/010946.828:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/011232.557:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/011237.022:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/011328.851:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/011328.893:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/011331.052:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/011745.007:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/014323.385:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/014326.387:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/014348.652:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/014416.191:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/014441.038:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015017.450:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/015021.377:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015023.109:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015052.986:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015054.162:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015109.732:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015147.074:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/015147.138:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015148.421:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015237.124:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/015237.204:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015240.268:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015258.793:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/015259.659:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/020055.558:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/020056.201:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/020115.134:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/020116.693:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021203.116:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021204.356:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021222.398:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021223.148:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021225.665:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021633.362:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/021636.827:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/024415.677:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/024448.738:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/024500.084:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/024556.626:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/024600.803:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124022.147:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/124022.316:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124031.311:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124220.671:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/124220.876:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124226.913:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124337.898:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124343.708:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124451.492:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124456.496:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124539.010:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/124539.462:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/124546.830:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0801/130442.026:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0801/130443.133:ERROR:net\socket\ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -202
+[0802/011618.449:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
