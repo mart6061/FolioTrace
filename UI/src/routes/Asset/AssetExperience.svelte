@@ -218,6 +218,10 @@
     }).format(value);
   }
 
+  function optionSummary(option: NonNullable<ValuationItem['option']>) {
+    return `${option.optionType} ${option.strikeCurrency} ${formatNumber(option.strikePrice)} ${option.expirationDate} x${formatNumber(option.contractMultiplier)}`;
+  }
+
   function formatWeightPercent(value: number | null | undefined) {
     if (value === null || value === undefined || !Number.isFinite(value))
       return '-';
