@@ -61,6 +61,71 @@ public sealed class HoldingBuilderTests
     }
 
     [Fact]
+    public void HoldingPositionOptionCreatedEventBuilder_CreatesOptionPositionHolding()
+    {
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments();
+        var result = HoldingPositionOptionCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create option holding",
+            HoldingIDBuilder.Create(),
+            AccountID,
+            OptionInstrumentID,
+            "Option position",
+            true,
+            true,
+            accounts,
+            instruments,
+            null);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
+        var holdings = CreateHoldings(accounts, instruments, result.Value!);
+        var holding = Assert.IsType<HoldingPositionOption>(Assert.Single(holdings.Items));
+        Assert.True(holding.IncludeInValuation);
+        Assert.Equal("PositionOption", holding.GetHoldingKindName());
+
+        var modified = HoldingPositionOptionModifiedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(3)),
+            "Rename option holding",
+            holding.HoldingID,
+            "Renamed option position",
+            false,
+            holdings);
+        Assert.True(modified.IsValid, string.Join(Environment.NewLine, modified.ValidationErrors));
+
+        var updatedHoldings = new Holdings(EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(4)), [result.Value!, modified.Value!]);
+        var updated = Assert.IsType<HoldingPositionOption>(Assert.Single(updatedHoldings.Items));
+        Assert.Equal("Renamed option position", updated.Name);
+        Assert.False(updated.Default);
+    }
+
+    [Fact]
+    public void PositionHoldingBuilders_EnforceOptionInstrumentClassificationForNewEvents()
+    {
+        var accounts = CreateAccounts();
+        var instruments = CreateInstruments();
+        var optionForEquity = HoldingPositionOptionCreatedEventBuilder.Create(
+            new HoldingPositionOptionCreatedRequest(UserID, EventDate, "Create option holding", null, AccountID, EquityInstrumentID, "Wrong option", true, false),
+            accounts,
+            instruments);
+        var assetForOption = HoldingPositionAssetCreatedEventBuilder.Create(
+            new HoldingPositionAssetCreatedRequest(UserID, EventDate, "Create asset holding", null, AccountID, OptionInstrumentID, "Wrong asset", true, false),
+            accounts,
+            instruments);
+
+        Assert.False(optionForEquity.IsValid);
+        Assert.Contains(optionForEquity.ValidationErrors, error => error.Contains("require an option instrument", StringComparison.Ordinal));
+        Assert.False(assetForOption.IsValid);
+        Assert.Contains(assetForOption.ValidationErrors, error => error.Contains("require a PositionOption holding", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void HoldingCreatedEventBuilder_RejectsDuplicateDefaultForSameKind()
     {
         var accounts = CreateAccounts();
@@ -409,6 +474,7 @@ public sealed class HoldingBuilderTests
     private static readonly AccountID AccountID = AccountIDBuilder.Create();
     private static readonly InstrumentID CashInstrumentID = InstrumentIDBuilder.Create();
     private static readonly InstrumentID EquityInstrumentID = InstrumentIDBuilder.Create();
+    private static readonly InstrumentID OptionInstrumentID = InstrumentIDBuilder.Create();
 
     private static Accounts CreateAccounts()
     {
@@ -461,8 +527,24 @@ public sealed class HoldingBuilderTests
             Alpha2Builder.Create("GB"),
             Alpha2Builder.Create("GB"),
             Alpha3Builder.Create("GBP")).Value!;
+        var option = InstrumentCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)),
+            "Create option",
+            OptionInstrumentID,
+            "Vodafone call",
+            "Vodafone call option",
+            ExchangeBuilder.Create("XLON"),
+            CFIBuilder.Create("OCXXXX"),
+            null,
+            true,
+            Alpha2Builder.Create("GB"),
+            Alpha2Builder.Create("GB"),
+            Alpha3Builder.Create("GBP")).Value!;
 
-        return new Instruments(EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(1)), [cash, equity]);
+        return new Instruments(EventDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)), [cash, equity, option]);
     }
 
     private static Holdings CreateHoldings(Accounts accounts, Instruments instruments, params HoldingCreatedEvent[] holdingEvents) =>

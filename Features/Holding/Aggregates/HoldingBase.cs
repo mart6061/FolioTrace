@@ -8,6 +8,7 @@ namespace FolioTrace.Aggregates;
 [JsonDerivedType(typeof(HoldingPositionMemo), nameof(HoldingPositionMemo))]
 [JsonDerivedType(typeof(HoldingPositionCash), nameof(HoldingPositionCash))]
 [JsonDerivedType(typeof(HoldingPositionAsset), nameof(HoldingPositionAsset))]
+[JsonDerivedType(typeof(HoldingPositionOption), nameof(HoldingPositionOption))]
 [JsonDerivedType(typeof(HoldingCashDebt), nameof(HoldingCashDebt))]
 [JsonDerivedType(typeof(HoldingCashInvestable), nameof(HoldingCashInvestable))]
 [JsonDerivedType(typeof(HoldingCashNonInvestable), nameof(HoldingCashNonInvestable))]

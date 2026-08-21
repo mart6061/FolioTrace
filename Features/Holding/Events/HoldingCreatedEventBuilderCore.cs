@@ -75,6 +75,7 @@ internal static class HoldingCreatedEventBuilderCore
     {
         var validationErrors = HoldingEventValidation.ValidateBase(eventId, userId, eventDateTime, auditDateTime, reason, holdingID);
         HoldingEventValidation.ValidateReferences(validationErrors, accountID, instrumentID, accounts, instruments);
+        HoldingEventValidation.ValidateInstrumentKind<TExpectedHolding>(validationErrors, instrumentID, instruments);
         HoldingEventValidation.ValidateDefinition<TExpectedHolding>(validationErrors, name, isDefault);
         HoldingEventValidation.ValidateCreatedHolding<TExpectedHolding>(validationErrors, holdingID, accountID, instrumentID, isDefault, holdings);
 

@@ -10,9 +10,10 @@ public sealed record Valuations : IAggregate
 {
     private static readonly Dictionary<string, int> HoldingKindOrder = new(StringComparer.Ordinal)
     {
-        [nameof(HoldingPositionMemo)] = 0,
-        [nameof(HoldingPositionCash)] = 1,
-        [nameof(HoldingPositionAsset)] = 2
+        [HoldingKindRuntime.GetKindName<HoldingPositionMemo>()] = 0,
+        [HoldingKindRuntime.GetKindName<HoldingPositionCash>()] = 1,
+        [HoldingKindRuntime.GetKindName<HoldingPositionAsset>()] = 2,
+        [HoldingKindRuntime.GetKindName<HoldingPositionOption>()] = 3
     };
 
     public required EventDateTime ValuationDateTime { get; init; }

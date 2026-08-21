@@ -5,5 +5,5 @@ namespace FolioTrace.Aggregates;
 
 public sealed record TicketTradeApprovalTransactionResult(
     TicketTradeApprovedEvent ApprovalEvent,
-    IReadOnlyList<HoldingPositionAssetCreatedEvent> HoldingEvents,
+    IReadOnlyList<HoldingCreatedEvent> HoldingEvents,
     IReadOnlyList<ITransactionMovementEvent> TransactionEvents);

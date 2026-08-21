@@ -52,6 +52,8 @@ public static class HoldingKindRuntime
 
     public static bool IsPositionAsset<T>() => typeof(T) == typeof(HoldingPositionAsset);
 
+    public static bool IsPositionOption<T>() => typeof(T) == typeof(HoldingPositionOption);
+
     public static bool IsNominal<T>() => typeof(IHoldingNominal).IsAssignableFrom(typeof(T));
 
     public static bool IsNominalKindName(string kindName) => NominalKindNames.Contains(kindName);

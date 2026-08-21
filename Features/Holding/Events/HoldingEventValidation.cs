@@ -41,6 +41,22 @@ internal static class HoldingEventValidation
             messages.Add($"No matching Instrument found for InstrumentID '{instrumentID}'.");
     }
 
+    public static void ValidateInstrumentKind<TExpectedHolding>(List<string> messages, InstrumentID? instrumentID, Instruments? instruments)
+        where TExpectedHolding : HoldingBase
+    {
+        if (instrumentID is null || instruments is null)
+            return;
+
+        var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == instrumentID);
+        if (instrument is null)
+            return;
+
+        if (HoldingKindRuntime.IsPositionOption<TExpectedHolding>() && !instrument.CFI.IsOption)
+            messages.Add($"PositionOption holdings require an option instrument. InstrumentID '{instrumentID}' has CFI '{instrument.CFI}'.");
+        else if (HoldingKindRuntime.IsPositionAsset<TExpectedHolding>() && instrument.CFI.IsOption)
+            messages.Add($"Option instruments require a PositionOption holding. InstrumentID '{instrumentID}' has CFI '{instrument.CFI}'.");
+    }
+
     public static void ValidateCreatedHolding<TExpectedHolding>(List<string> messages, HoldingID? holdingID, AccountID? accountID, InstrumentID? instrumentID, bool isDefault, Holdings? holdings)
         where TExpectedHolding : HoldingBase
     {

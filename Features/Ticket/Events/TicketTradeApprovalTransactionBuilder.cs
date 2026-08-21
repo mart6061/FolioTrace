@@ -50,7 +50,7 @@ public static partial class TicketEventBuilder
         IReadOnlyList<IHoldingEvent>? holdingEvents,
         FXRates? fxRates,
         out Ticket? ticket,
-        out IReadOnlyList<HoldingPositionAssetCreatedEvent> holdingEventsToCreate,
+        out IReadOnlyList<HoldingCreatedEvent> holdingEventsToCreate,
         out Holdings? effectiveHoldings,
         out IReadOnlyList<TicketTradeApprovalTransactionLegs> legsByAllocation)
     {
@@ -86,14 +86,14 @@ public static partial class TicketEventBuilder
         if (messages.Count > 0 || currentHoldings is null || accounts is null || instruments is null || holdingEvents is null)
             return messages;
 
-        var createdHoldingEvents = new List<HoldingPositionAssetCreatedEvent>();
+        var createdHoldingEvents = new List<HoldingCreatedEvent>();
         var legs = new List<TicketTradeApprovalTransactionLegs>();
         foreach (var allocation in ticket.TradeAllocations)
         {
-            var assetHolding = /*  */ResolveAssetHolding(allocation, ticket, currentHoldings, messages);
-            if (assetHolding is null)
+            var positionHolding = ResolvePositionHolding(allocation, ticket, currentHoldings, instruments, messages);
+            if (positionHolding is null)
             {
-                var createdHolding = ResolveCreatedAssetHolding(allocation, ticket, request, accounts, instruments, currentHoldings, createdHoldingEvents, messages);
+                var createdHolding = ResolveCreatedPositionHolding(allocation, ticket, request, accounts, instruments, currentHoldings, createdHoldingEvents, messages);
                 if (createdHolding is not null && createdHoldingEvents.All(@event => @event.EventID != createdHolding.EventID))
                     createdHoldingEvents.Add(createdHolding);
             }
@@ -107,12 +107,12 @@ public static partial class TicketEventBuilder
 
         foreach (var allocation in ticket.TradeAllocations)
         {
-            var assetHolding = ResolveAssetHolding(allocation, ticket, currentHoldings, messages);
+            var positionHolding = ResolvePositionHolding(allocation, ticket, currentHoldings, instruments, messages);
             var cashHolding = allocation.CashHoldingID is null
                 ? null
                 : currentHoldings.Items.SingleOrDefault(holding => holding.HoldingID == allocation.CashHoldingID);
 
-            if (assetHolding is null || cashHolding is null)
+            if (positionHolding is null || cashHolding is null)
                 continue;
 
             var account = accounts.Items.SingleOrDefault(item => item.AccountID == allocation.AccountID);
@@ -126,7 +126,7 @@ public static partial class TicketEventBuilder
 
             legs.Add(new TicketTradeApprovalTransactionLegs(
                 new TransactionRequest(
-                    assetHolding.HoldingID,
+                    positionHolding.HoldingID,
                     ticket.InstrumentID,
                     allocation.AccountID,
                     new TransactionQuantity(allocation.Quantity),
@@ -188,16 +188,42 @@ public static partial class TicketEventBuilder
             messages.Add($"Fills settlement amount must sum to trade allocation settlement amount {FormatValidationNumber(allocationSettlementAmount)}. Current total is {FormatValidationNumber(fillSettlementAmount)}.");
     }
 
-    private static HoldingPositionAsset? ResolveAssetHolding(TicketTradeAllocation allocation, Ticket ticket, Holdings holdings, List<string> messages)
+    private static HoldingBase? ResolvePositionHolding(TicketTradeAllocation allocation, Ticket ticket, Holdings holdings, Instruments instruments, List<string> messages)
     {
-        var matches = holdings.Items
-            .OfType<HoldingPositionAsset>()
-            .Where(holding =>
-                holding.Active &&
-                holding.AccountID == allocation.AccountID &&
-                holding.InstrumentID == ticket.InstrumentID)
-            .ToList();
+        var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == ticket.InstrumentID);
+        if (instrument?.CFI.IsOption == true)
+        {
+            var optionMatches = holdings.Items
+                .OfType<HoldingPositionOption>()
+                .Where(holding => IsActiveMatch(holding, allocation, ticket))
+                .Cast<HoldingBase>()
+                .ToList();
+            if (optionMatches.Count > 0)
+                return SelectPositionHolding(optionMatches, "option", allocation, ticket, messages);
 
+            var legacyMatches = holdings.Items
+                .OfType<HoldingPositionAsset>()
+                .Where(holding => IsActiveMatch(holding, allocation, ticket))
+                .Cast<HoldingBase>()
+                .ToList();
+            return SelectPositionHolding(legacyMatches, "legacy asset", allocation, ticket, messages);
+        }
+
+        var assetMatches = holdings.Items
+            .OfType<HoldingPositionAsset>()
+            .Where(holding => IsActiveMatch(holding, allocation, ticket))
+            .Cast<HoldingBase>()
+            .ToList();
+        return SelectPositionHolding(assetMatches, "asset", allocation, ticket, messages);
+    }
+
+    private static bool IsActiveMatch(HoldingBase holding, TicketTradeAllocation allocation, Ticket ticket) =>
+        holding.Active &&
+        holding.AccountID == allocation.AccountID &&
+        holding.InstrumentID == ticket.InstrumentID;
+
+    private static HoldingBase? SelectPositionHolding(IReadOnlyList<HoldingBase> matches, string holdingDescription, TicketTradeAllocation allocation, Ticket ticket, List<string> messages)
+    {
         if (matches.Count == 0)
             return null;
 
@@ -208,18 +234,18 @@ public static partial class TicketEventBuilder
         if (matches.Count == 1)
             return matches[0];
 
-        messages.Add($"Multiple active asset holdings found for AccountID '{allocation.AccountID}' and InstrumentID '{ticket.InstrumentID}'. Set one as default.");
+        messages.Add($"Multiple active {holdingDescription} holdings found for AccountID '{allocation.AccountID}' and InstrumentID '{ticket.InstrumentID}'. Set one as default.");
         return null;
     }
 
-    private static HoldingPositionAssetCreatedEvent? ResolveCreatedAssetHolding(
+    private static HoldingCreatedEvent? ResolveCreatedPositionHolding(
         TicketTradeAllocation allocation,
         Ticket ticket,
         TicketTradeApprovalRequest request,
         Accounts accounts,
         Instruments instruments,
         Holdings holdings,
-        IReadOnlyList<HoldingPositionAssetCreatedEvent> createdHoldingEvents,
+        IReadOnlyList<HoldingCreatedEvent> createdHoldingEvents,
         List<string> messages)
     {
         var existingCreated = createdHoldingEvents
@@ -228,8 +254,38 @@ public static partial class TicketEventBuilder
             return existingCreated;
 
         var instrument = instruments.Items.SingleOrDefault(item => item.InstrumentID == ticket.InstrumentID);
-        var name = string.IsNullOrWhiteSpace(instrument?.Name) ? "Asset" : instrument.Name;
-        var result = HoldingPositionAssetCreatedEventBuilder.Create(
+        if (instrument is null)
+        {
+            messages.Add($"No matching Instrument found for InstrumentID '{ticket.InstrumentID}'.");
+            return null;
+        }
+
+        var name = string.IsNullOrWhiteSpace(instrument.Name) ? "Asset" : instrument.Name;
+        if (instrument.CFI.IsOption)
+        {
+            var optionResult = HoldingPositionOptionCreatedEventBuilder.Create(
+                new HoldingPositionOptionCreatedRequest(
+                    request.UserID,
+                    ticket.TradeDateTime ?? request.EventDateTime,
+                    "Create option holding for ticket approval",
+                    null,
+                    allocation.AccountID,
+                    ticket.InstrumentID,
+                    name,
+                    true,
+                    false),
+                accounts,
+                instruments,
+                holdings);
+
+            if (optionResult.IsValid && optionResult.Value is not null)
+                return optionResult.Value;
+
+            messages.AddRange(optionResult.ValidationErrors);
+            return null;
+        }
+
+        var assetResult = HoldingPositionAssetCreatedEventBuilder.Create(
             new HoldingPositionAssetCreatedRequest(
                 request.UserID,
                 ticket.TradeDateTime ?? request.EventDateTime,
@@ -244,10 +300,10 @@ public static partial class TicketEventBuilder
             instruments,
             holdings);
 
-        if (result.IsValid && result.Value is not null)
-            return result.Value;
+        if (assetResult.IsValid && assetResult.Value is not null)
+            return assetResult.Value;
 
-        messages.AddRange(result.ValidationErrors);
+        messages.AddRange(assetResult.ValidationErrors);
         return null;
     }
 

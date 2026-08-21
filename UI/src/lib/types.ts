@@ -180,6 +180,7 @@ export type HoldingKind =
   | 'PositionMemo'
   | 'PositionCash'
   | 'PositionAsset'
+  | 'PositionOption'
   | 'NominalInflow'
   | 'NominalOutflow'
   | 'NominalInSpecieIn'

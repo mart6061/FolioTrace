@@ -5,8 +5,10 @@ namespace Test;
 
 public sealed class ValuationBuilderTests
 {
-    [Fact]
-    public void Valuations_ScalesOptionContractsAndZerosThemAfterExpiryDay()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Valuations_ScalesOptionContractsAndZerosThemAfterExpiryDay(bool useLegacyAssetHolding)
     {
         var accountID = AccountIDBuilder.Create();
         var underlyingID = InstrumentIDBuilder.Create();
@@ -30,7 +32,7 @@ public sealed class ValuationBuilderTests
         };
         var instruments = new Instruments(ValuationDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)), instrumentEvents.ToList());
         var holdings = new Holdings(ValuationDate, AuditDateTimeBuilder.Create(AuditDate.Value.AddTicks(2)),
-            [CreateAssetHolding(holdingID, accountID, optionID, "Option position"), CreateOutflowHolding(outflowHoldingID, accountID, optionID)]);
+            [useLegacyAssetHolding ? CreateAssetHolding(holdingID, accountID, optionID, "Option position") : CreateOptionHolding(holdingID, accountID, optionID, "Option position"), CreateOutflowHolding(outflowHoldingID, accountID, optionID)]);
         var transactions = TransactionBuilder.Create(
             new TransactionSetRequest(UserID, ValuationDate, SettlementDateTimeBuilder.Create(ValuationDate.Value.AddDays(1)), "Book option",
                 [CreateTransactionLeg(holdingID, optionID, accountID, 3m, 750m)],
@@ -390,6 +392,20 @@ public sealed class ValuationBuilderTests
             ValuationDate,
             AuditDate,
             "Create holding",
+            holdingID,
+            accountID,
+            instrumentID,
+            name,
+            true,
+            false).Value!;
+
+    private static HoldingPositionOptionCreatedEvent CreateOptionHolding(HoldingID holdingID, AccountID accountID, InstrumentID instrumentID, string name) =>
+        HoldingPositionOptionCreatedEventBuilder.CreateSeed(
+            CreateEventID(),
+            UserID,
+            ValuationDate,
+            AuditDate,
+            "Create option holding",
             holdingID,
             accountID,
             instrumentID,

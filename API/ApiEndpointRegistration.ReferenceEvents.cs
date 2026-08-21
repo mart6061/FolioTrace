@@ -587,6 +587,7 @@ public static partial class ApiEndpointRegistration
         MapHoldingCreatedEndpoint<HoldingPositionMemoCreatedRequest, HoldingPositionMemoCreatedEvent>(holdingEvents, nameof(HoldingPositionMemoCreatedEvent), HoldingPositionMemoCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingPositionCashCreatedRequest, HoldingPositionCashCreatedEvent>(holdingEvents, nameof(HoldingPositionCashCreatedEvent), HoldingPositionCashCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingPositionAssetCreatedRequest, HoldingPositionAssetCreatedEvent>(holdingEvents, nameof(HoldingPositionAssetCreatedEvent), HoldingPositionAssetCreatedEventBuilder.Create);
+        MapHoldingCreatedEndpoint<HoldingPositionOptionCreatedRequest, HoldingPositionOptionCreatedEvent>(holdingEvents, nameof(HoldingPositionOptionCreatedEvent), HoldingPositionOptionCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashDebtCreatedRequest, HoldingCashDebtCreatedEvent>(holdingEvents, nameof(HoldingCashDebtCreatedEvent), HoldingCashDebtCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashInvestableCreatedRequest, HoldingCashInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashInvestableCreatedEvent), HoldingCashInvestableCreatedEventBuilder.Create);
         MapHoldingCreatedEndpoint<HoldingCashNonInvestableCreatedRequest, HoldingCashNonInvestableCreatedEvent>(holdingEvents, nameof(HoldingCashNonInvestableCreatedEvent), HoldingCashNonInvestableCreatedEventBuilder.Create);
@@ -603,6 +604,7 @@ public static partial class ApiEndpointRegistration
         MapHoldingModifiedEndpoint<HoldingPositionMemoModifiedRequest, HoldingPositionMemoModifiedEvent>(holdingEvents, nameof(HoldingPositionMemoModifiedEvent), HoldingPositionMemoModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingPositionCashModifiedRequest, HoldingPositionCashModifiedEvent>(holdingEvents, nameof(HoldingPositionCashModifiedEvent), HoldingPositionCashModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingPositionAssetModifiedRequest, HoldingPositionAssetModifiedEvent>(holdingEvents, nameof(HoldingPositionAssetModifiedEvent), HoldingPositionAssetModifiedEventBuilder.Create);
+        MapHoldingModifiedEndpoint<HoldingPositionOptionModifiedRequest, HoldingPositionOptionModifiedEvent>(holdingEvents, nameof(HoldingPositionOptionModifiedEvent), HoldingPositionOptionModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashDebtModifiedRequest, HoldingCashDebtModifiedEvent>(holdingEvents, nameof(HoldingCashDebtModifiedEvent), HoldingCashDebtModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashInvestableModifiedRequest, HoldingCashInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashInvestableModifiedEvent), HoldingCashInvestableModifiedEventBuilder.Create);
         MapHoldingModifiedEndpoint<HoldingCashNonInvestableModifiedRequest, HoldingCashNonInvestableModifiedEvent>(holdingEvents, nameof(HoldingCashNonInvestableModifiedEvent), HoldingCashNonInvestableModifiedEventBuilder.Create);

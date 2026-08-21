@@ -240,6 +240,8 @@
         return 'Position cash';
       case 'PositionAsset':
         return 'Position asset';
+      case 'PositionOption':
+        return 'Position option';
       default:
         return value
           .replace(/([a-z])([A-Z])/g, '$1 $2')

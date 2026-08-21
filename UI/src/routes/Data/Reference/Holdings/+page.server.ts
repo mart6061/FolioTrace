@@ -176,6 +176,7 @@ function isHoldingKind(value: string): value is HoldingKind {
     'PositionMemo',
     'PositionCash',
     'PositionAsset',
+    'PositionOption',
     'NominalInflow',
     'NominalOutflow',
     'NominalInSpecieIn',

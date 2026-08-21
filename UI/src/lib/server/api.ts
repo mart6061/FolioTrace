@@ -2418,6 +2418,8 @@ function holdingEventPrefix(holdingKind: HoldingKind) {
       return 'HoldingPositionCash';
     case 'PositionAsset':
       return 'HoldingPositionAsset';
+    case 'PositionOption':
+      return 'HoldingPositionOption';
     case 'CashDebt':
       return 'HoldingCashDebt';
     case 'CashInvestable':
@@ -2460,6 +2462,7 @@ function isHoldingKind(value: string): value is HoldingKind {
     'PositionMemo',
     'PositionCash',
     'PositionAsset',
+    'PositionOption',
     'CashDebt',
     'CashInvestable',
     'CashNonInvestable',

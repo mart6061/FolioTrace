@@ -17,7 +17,7 @@
   const eventDateDefault = $derived(startOfDayForInput(data.valuationDate));
   type SortKey = 'name' | 'type' | 'account' | 'instrument' | 'status' | 'lastAudit';
 
-  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'PositionAsset', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'NominalInflow', 'NominalOutflow', 'NominalInSpecieIn', 'NominalInSpecieOut', 'NominalFeesCustodian', 'NominalFeesAdministrator', 'NominalFeesBank', 'NominalIncome', 'NominalInterest'];
+  const holdingKinds: HoldingKind[] = ['PositionMemo', 'PositionCash', 'PositionAsset', 'PositionOption', 'CashDebt', 'CashInvestable', 'CashNonInvestable', 'NominalInflow', 'NominalOutflow', 'NominalInSpecieIn', 'NominalInSpecieOut', 'NominalFeesCustodian', 'NominalFeesAdministrator', 'NominalFeesBank', 'NominalIncome', 'NominalInterest'];
   const historyDatePropertyNames = new Set(['ValuationDateTime', 'EventDateTime', 'SettlementDateTime', 'CancelledDateTime', 'CancellationDateTime', 'AuditDateTime']);
   const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const holdingCount = $derived(data.holdings?.items.length ?? 0);
@@ -29,6 +29,7 @@
   let sortDirection = $state<1 | -1>(1);
   let filterText = $state('');
   let addingHolding = $state(false);
+  let createHoldingKind = $state<HoldingKind>('PositionMemo');
   let editingHoldingID = $state('');
   let submittingHoldingID = $state('');
   let submittingCreate = $state(false);
@@ -76,6 +77,15 @@
     })
   );
 
+  const createInstruments = $derived(
+    (data.instruments?.items ?? []).filter((instrument) => instrumentMatchesHoldingKind(instrument.cfi, createHoldingKind))
+  );
+
+  $effect(() => {
+    if (form?.intent === 'createHolding' && isHoldingKind(form.values?.holdingKind))
+      createHoldingKind = form.values.holdingKind;
+  });
+
   $effect(() => {
     const nextHistoryContextKey = createHistoryContextKey();
     if (!loadedHistoryContextKey) {
@@ -110,6 +120,19 @@
     return holdingKind
       .replace(/([a-z])([A-Z])/g, '$1 $2')
       .replace(/^Nominal /, '');
+  }
+
+  function isHoldingKind(value: unknown): value is HoldingKind {
+    return typeof value === 'string' && holdingKinds.includes(value as HoldingKind);
+  }
+
+  function instrumentMatchesHoldingKind(cfi: string, holdingKind: HoldingKind) {
+    const isOption = cfi.startsWith('O');
+    if (holdingKind === 'PositionOption')
+      return isOption;
+    if (holdingKind === 'PositionAsset')
+      return !isOption;
+    return true;
   }
 
   function isBankHolding(holding: Holding) {
@@ -534,7 +557,7 @@
                   <td class="px-3 py-2">
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Type</span>
-                      <select class="house-control house-control-sm" form="holding-create" name="holdingKind">
+                      <select class="house-control house-control-sm" form="holding-create" name="holdingKind" bind:value={createHoldingKind}>
                         {#each holdingKinds as holdingKind (holdingKind)}
                           <option value={holdingKind}>{holdingKindLabel(holdingKind)}</option>
                         {/each}
@@ -566,10 +589,13 @@
                     <label class="grid gap-1 text-xs font-medium text-slate-600" form="holding-create">
                       <span>Instrument</span>
                       <select class="house-control house-control-sm w-44" form="holding-create" name="instrumentID" required>
-                        {#each data.instruments?.items ?? [] as instrument (instrument.instrumentID)}
+                        {#each createInstruments as instrument (instrument.instrumentID)}
                           <option value={instrument.instrumentID}>{instrument.name}</option>
                         {/each}
                       </select>
+                      {#if createInstruments.length === 0}
+                        <span class="text-xs font-normal text-amber-700">No matching instruments are available.</span>
+                      {/if}
                     </label>
                   </td>
                   <td class="px-3 py-2">

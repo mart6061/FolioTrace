@@ -185,6 +185,58 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
     }
 
     [Fact]
+    public void ApproveTradeWithTransactions_CreatesMissingOptionHolding()
+    {
+        var instruments = CreateInstruments(optionInstrument: true);
+        var result = TicketEventBuilder.ApproveTradeWithTransactions(
+            CreateApprovalRequest(),
+            CreatePendingTickets(optionInstrument: true),
+            CreateAccounts(),
+            instruments,
+            CreateHoldingEvents(includeAsset: false));
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
+        var createdHolding = Assert.IsType<HoldingPositionOptionCreatedEvent>(Assert.Single(result.Value!.HoldingEvents));
+        Assert.Equal(AccountID, createdHolding.AccountID);
+        Assert.Equal(InstrumentID, createdHolding.InstrumentID);
+        Assert.Equal("Vodafone call", createdHolding.Name);
+        Assert.Equal("Create option holding for ticket approval", createdHolding.Reason);
+        Assert.Equal(createdHolding.HoldingID, Assert.IsType<TransactionCreditEvent>(result.Value.TransactionEvents[0]).HoldingID);
+    }
+
+    [Fact]
+    public void ApproveTradeWithTransactions_ReusesLegacyAssetHoldingForOption()
+    {
+        var result = TicketEventBuilder.ApproveTradeWithTransactions(
+            CreateApprovalRequest(),
+            CreatePendingTickets(optionInstrument: true),
+            CreateAccounts(),
+            CreateInstruments(optionInstrument: true),
+            CreateHoldingEvents());
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
+        Assert.Empty(result.Value!.HoldingEvents);
+        Assert.Equal(AssetHoldingID, Assert.IsType<TransactionCreditEvent>(result.Value.TransactionEvents[0]).HoldingID);
+    }
+
+    [Fact]
+    public void ApproveTradeWithTransactions_PrefersOptionHoldingOverLegacyAssetHolding()
+    {
+        var holdingEvents = CreateHoldingEvents();
+        holdingEvents.Add(CreateOptionHolding());
+        var result = TicketEventBuilder.ApproveTradeWithTransactions(
+            CreateApprovalRequest(),
+            CreatePendingTickets(optionInstrument: true),
+            CreateAccounts(),
+            CreateInstruments(optionInstrument: true),
+            holdingEvents);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.ValidationErrors));
+        Assert.Empty(result.Value!.HoldingEvents);
+        Assert.Equal(OptionHoldingID, Assert.IsType<TransactionCreditEvent>(result.Value.TransactionEvents[0]).HoldingID);
+    }
+
+    [Fact]
     public void ApprovedTradeTransactions_AffectHoldingPositionsByEventAndSettlementDate()
     {
         var holdingEvents = CreateHoldingEvents();
@@ -240,12 +292,12 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
     private static TicketTradeApprovalRequest CreateApprovalRequest() =>
         new(UserID, EventDate, "Approve trade", TicketNumber);
 
-    private static Tickets CreatePendingTickets(TicketSide side = TicketSide.Buy, bool includeFill = true, decimal fillQuantity = 9m, decimal fillBookCost = 108m, SettlementDateTime? settlementDate = null)
+    private static Tickets CreatePendingTickets(TicketSide side = TicketSide.Buy, bool includeFill = true, decimal fillQuantity = 9m, decimal fillBookCost = 108m, SettlementDateTime? settlementDate = null, bool optionInstrument = false)
     {
         var created = TicketEventBuilder.Create(
             new TicketCreatedRequest(UserID, EventDate, "Create ticket", side, InstrumentID),
             TicketNumber,
-            CreateInstruments()).Value!;
+            CreateInstruments(optionInstrument)).Value!;
         var accountAdded = TicketEventBuilder.AddAccount(
             new TicketAccountRequest(UserID, EventDate, "Add account", TicketNumber, AccountID),
             new Tickets(EventDate, [created]),
@@ -277,7 +329,7 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
                 new TicketApprovalRequest(UserID, EventDate, "Request trade decision", TicketNumber),
                 new Tickets(EventDate, events),
                 CreateHoldings(),
-                CreateInstruments()).Value!
+                CreateInstruments(optionInstrument)).Value!
             : CreateTradeDecisionRequested();
         events.Add(decisionRequested);
 
@@ -338,7 +390,7 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
         return new Accounts(EventDate, AuditDate, [account]);
     }
 
-    private static Instruments CreateInstruments()
+    private static Instruments CreateInstruments(bool optionInstrument = false)
     {
         var asset = InstrumentCreatedEventBuilder.CreateSeed(
             new EventID(Guid.CreateGuid7()),
@@ -347,10 +399,10 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
             AuditDate,
             "Create instrument",
             InstrumentID,
-            "Vodafone",
-            "Vodafone Group plc",
+            optionInstrument ? "Vodafone call" : "Vodafone",
+            optionInstrument ? "Vodafone call option" : "Vodafone Group plc",
             ExchangeBuilder.Create("XLON"),
-            CFIBuilder.Create("ESVUFR"),
+            CFIBuilder.Create(optionInstrument ? "OCXXXX" : "ESVUFR"),
             null,
             true,
             Alpha2Builder.Create("GB"),
@@ -482,6 +534,20 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
             true,
             isDefault).Value!;
 
+    private static HoldingPositionOptionCreatedEvent CreateOptionHolding() =>
+        HoldingPositionOptionCreatedEventBuilder.CreateSeed(
+            new EventID(Guid.CreateGuid7()),
+            UserID,
+            EventDate,
+            AuditDate,
+            "Create option holding",
+            OptionHoldingID,
+            AccountID,
+            InstrumentID,
+            "Option",
+            true,
+            false).Value!;
+
     private static HoldingCashInvestableCreatedEvent CreateCashHolding() =>
         HoldingCashInvestableCreatedEventBuilder.CreateSeed(
             new EventID(Guid.CreateGuid7()),
@@ -555,6 +621,7 @@ public sealed class TicketTradeApprovalTransactionBuilderTests
     private static readonly InstrumentID UsdCashInstrumentID = InstrumentIDBuilder.Create();
     private static readonly HoldingID AssetHoldingID = HoldingIDBuilder.Create();
     private static readonly HoldingID SecondAssetHoldingID = HoldingIDBuilder.Create();
+    private static readonly HoldingID OptionHoldingID = HoldingIDBuilder.Create();
     private static readonly HoldingID CashHoldingID = HoldingIDBuilder.Create();
     private static readonly HoldingID UsdAssetHoldingID = HoldingIDBuilder.Create();
     private static readonly HoldingID UsdCashHoldingID = HoldingIDBuilder.Create();
